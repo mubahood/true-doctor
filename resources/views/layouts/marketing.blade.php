@@ -50,6 +50,25 @@
   </script>
   @stack('structured-data')
   @stack('styles')
+
+  {{-- Tells the stylesheet it may hide an element in order to reveal it.
+       Inline and in the head, so the starting state is in force before the
+       first paint — set from marketing.js instead and you get a flash of the
+       finished page collapsing into the unfinished one.
+
+       The timeout is the important half. If marketing.js never arrives — a
+       bad deploy, a 404, a blocked script — the class is removed and every
+       section is simply visible. Content must never depend on an animation
+       that did not run. --}}
+  <script>
+    (function () {
+      var h = document.documentElement;
+      h.classList.add('js');
+      window.setTimeout(function () {
+        if (!h.hasAttribute('data-site-ready')) { h.classList.remove('js'); }
+      }, 2500);
+    })();
+  </script>
 </head>
 <body>
 

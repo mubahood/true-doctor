@@ -117,6 +117,80 @@ class PublicSiteTest extends TestCase
         $this->assertStringContainsString('mask-image', $css, 'the pattern is not faded at its edges');
     }
 
+    // ── Movement, and the promise that it cannot hide anything ───────────
+
+    /**
+     * Content may only be hidden when the script that reveals it has run.
+     *
+     * The reveal styles are scoped to a `.js` class. If that class were in
+     * the markup, a page whose JavaScript 404'd after a bad deploy would
+     * render as a column of invisible sections — and nobody would find out
+     * from a 200. So it is added by an inline script that also removes it
+     * again if the site bundle never checks in.
+     */
+    public function test_nothing_is_hidden_unless_the_script_that_reveals_it_ran(): void
+    {
+        $html = $this->get(route('home'))->assertOk()->getContent();
+
+        // The class is not baked into the served markup...
+        $this->assertDoesNotMatchRegularExpression(
+            '/<html[^>]*class="[^"]*\bjs\b/',
+            $html,
+            'the `js` class is in the markup, so a failed script leaves the page blank',
+        );
+
+        // ...it is added by script, with a timeout that undoes it.
+        $this->assertStringContainsString("classList.add('js')", $html);
+        $this->assertStringContainsString('data-site-ready', $html);
+        $this->assertMatchesRegularExpression('/setTimeout\(.*classList\.remove\(.js.\)/s', $html);
+    }
+
+    public function test_the_reveal_styles_are_scoped_and_respect_reduced_motion(): void
+    {
+        $manifest = json_decode((string) file_get_contents(public_path('build/manifest.json')), true);
+        $css = (string) file_get_contents(public_path('build/'.$manifest['resources/css/marketing.css']['file']));
+
+        // Every hiding rule is behind `.js`.
+        preg_match_all('/([^{}]*)\{[^{}]*opacity:0[^{}]*\}/', $css, $matches);
+        foreach ($matches[1] as $selector) {
+            if (! str_contains($selector, 'data-reveal') && ! str_contains($selector, 'data-lift')) {
+                continue;
+            }
+            $this->assertStringContainsString(
+                '.js',
+                $selector,
+                "a reveal rule hides `{$selector}` without requiring JavaScript",
+            );
+        }
+
+        // And reduced motion switches them off rather than speeding them up.
+        $this->assertStringContainsString('prefers-reduced-motion', $css);
+        $this->assertMatchesRegularExpression(
+            '/prefers-reduced-motion[^@]*opacity:1\s*!important/s',
+            $css,
+            'reduced motion does not force revealed elements visible',
+        );
+    }
+
+    /** Movement is composited only — nothing below it may jump while it plays. */
+    public function test_the_reveal_animates_nothing_that_moves_the_layout(): void
+    {
+        $manifest = json_decode((string) file_get_contents(public_path('build/manifest.json')), true);
+        $css = (string) file_get_contents(public_path('build/'.$manifest['resources/css/marketing.css']['file']));
+
+        preg_match_all('/transition:([^;}]*)/', $css, $matches);
+
+        foreach ($matches[1] as $value) {
+            foreach (['height', 'width', 'margin', 'padding', 'top', 'left', 'font-size'] as $reflowing) {
+                $this->assertStringNotContainsString(
+                    $reflowing,
+                    $value,
+                    "transitioning `{$reflowing}` reflows the page while it animates",
+                );
+            }
+        }
+    }
+
     // ── Which currency, and why ──────────────────────────────────────────
 
     public function test_a_visitor_with_no_signals_is_quoted_in_dollars(): void

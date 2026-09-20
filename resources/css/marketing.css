@@ -51,7 +51,7 @@ header.site .bar{display:flex;align-items:center;gap:22px;height:var(--hd);}
 .nav a.on{color:var(--pri);}
 /* The current page is marked, not merely coloured — colour alone is not a
    signal for everybody. aria-current carries the same fact to a reader. */
-.nav a.on::after{content:'';position:absolute;left:0;right:0;bottom:-2px;height:2px;background:var(--pri);}
+.nav a.on::after{content:'';position:absolute;left:0;right:0;bottom:-2px;height:2px;background:var(--pri);transform:scaleX(1);}
 .hd-r{margin-left:auto;display:flex;align-items:center;gap:12px;}
 .hd-who{font-size:12.5px;color:var(--tx3);white-space:nowrap;}
 .hd-who b{font-weight:500;color:var(--tx2);}
@@ -354,3 +354,118 @@ footer{border-top:1px solid var(--line);background:var(--surface);padding:48px 0
   html{scroll-behavior:auto;}
   *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important;}
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   Movement
+
+   Three rules govern everything below.
+
+   1. NOTHING IS HIDDEN WITHOUT JAVASCRIPT. Every reveal is scoped to `.js`,
+      a class added by a one-line script in the head. Script blocked, script
+      failed, script still loading — the page is simply there, in full. A
+      site whose content depends on an animation finishing is a site that is
+      sometimes blank.
+   2. NOTHING MOVES FOR SOMEBODY WHO ASKED IT NOT TO. prefers-reduced-motion
+      does not shorten these; it removes them.
+   3. NOTHING MOVES THE LAYOUT. Only opacity and transform, both composited,
+      so nothing below shifts while it happens and nothing reflows.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Enter on scroll. The delay is set per element by the script, so a row of
+   cards arrives as a row rather than all at once. */
+.js [data-reveal]{opacity:0;transform:translateY(14px);}
+.js [data-reveal].is-in{
+  opacity:1;transform:none;
+  transition:opacity .5s cubic-bezier(.22,.61,.36,1) var(--reveal-delay,0ms),
+             transform .5s cubic-bezier(.22,.61,.36,1) var(--reveal-delay,0ms);
+}
+
+/* The hero is above the fold, so it plays on load rather than on scroll —
+   and faster, because it is the first thing anybody waits for. */
+.js .hero [data-lift]{opacity:0;transform:translateY(12px);}
+.js .hero.is-ready [data-lift]{
+  opacity:1;transform:none;
+  transition:opacity .45s cubic-bezier(.22,.61,.36,1) var(--reveal-delay,0ms),
+             transform .45s cubic-bezier(.22,.61,.36,1) var(--reveal-delay,0ms);
+}
+/* The mock arrives last and from slightly further, so it reads as the thing
+   the words were about. */
+.js .hero .shot{opacity:0;transform:translateY(22px) scale(.99);}
+.js .hero.is-ready .shot{
+  opacity:1;transform:none;
+  transition:opacity .6s cubic-bezier(.22,.61,.36,1) .28s,
+             transform .6s cubic-bezier(.22,.61,.36,1) .28s;
+}
+
+/* A hairline until the page moves, then a shadow — so the fixed header
+   separates itself from content passing under it, and not before. */
+header.site{transition:box-shadow .2s ease, background-color .2s ease;}
+header.site.is-scrolled{box-shadow:0 1px 16px rgba(13,27,42,.08);background:rgba(255,255,255,.94);}
+
+/* ── Micro-interactions. CSS only: they work whatever the script does. ── */
+
+/* Cards lift a little and their rule sharpens. Two pixels, not ten. */
+.card{transition:border-color .16s ease, transform .16s ease, box-shadow .16s ease;}
+.card:hover{transform:translateY(-2px);box-shadow:0 10px 24px -18px rgba(13,27,42,.4);}
+a.card:active{transform:translateY(0);}
+
+/* The arrow in a call to action leans the way it is pointing. */
+.btn i.fa-arrow-right{transition:transform .16s ease;}
+.btn:hover i.fa-arrow-right{transform:translateX(3px);}
+.btn{transition:background .15s,border-color .15s,color .15s,transform .12s ease;}
+.btn:active{transform:translateY(1px);}
+
+/* A plan card rises further, because choosing one is the point of the page. */
+.price{transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;}
+.price:hover{transform:translateY(-3px);border-color:var(--line-2);}
+.price.feat:hover{border-color:var(--pri);box-shadow:0 20px 48px -26px rgba(10,110,189,.55);}
+
+/* The nav underline grows from the middle on hover; the current page keeps
+   its solid one. scaleX rather than animating left/right — a transform is
+   composited, where the edges are a layout property and make the browser
+   re-measure on every frame for no visible gain. */
+.nav a::after{content:'';position:absolute;left:0;right:0;bottom:-2px;height:2px;
+  background:var(--pri);opacity:0;transform:scaleX(0);transform-origin:50% 50%;
+  transition:transform .18s ease,opacity .18s ease;}
+.nav a:hover::after{transform:scaleX(1);opacity:.45;}
+.nav a.on::after{transform:scaleX(1);opacity:1;}
+
+/* Step numbers and card icons warm up when their row is hovered. */
+.step:hover .n{transform:scale(1.06);}
+.step .n{transition:transform .18s ease;}
+.card:hover .ic{background:var(--pri);color:#fff;}
+.card .ic{transition:background .18s ease,color .18s ease;}
+
+/* ── Disclosure ────────────────────────────────────────────────────────
+   Opening animates; closing does not. Animating a <details> shut needs
+   JavaScript to hold the element open while it plays, and a closing panel
+   is not worth that — it is going away either way. */
+.faq details[open] > .a{animation:faq-open .24s cubic-bezier(.22,.61,.36,1);}
+@keyframes faq-open{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:none;}}
+.faq summary{transition:background .14s ease,color .14s ease;}
+.faq summary::after{transition:transform .2s ease;}
+.faq details[open] summary::after{transform:rotate(180deg);}
+
+/* ── The mobile sheet ────────────────────────────────────────────────── */
+.mmenu{opacity:0;transform:translateY(-8px);pointer-events:none;
+  transition:opacity .18s ease,transform .18s ease;}
+.mmenu.open{display:flex;opacity:1;transform:none;pointer-events:auto;}
+.burger i{transition:transform .2s ease;}
+.burger[aria-expanded="true"] i{transform:rotate(90deg);}
+
+/* ── A figure counting up ──────────────────────────────────────────────
+   Tabular numerals, so the width does not jitter as the digits change. */
+.stat b{font-variant-numeric:tabular-nums;}
+
+/* ── Everything above, off ─────────────────────────────────────────────
+   Not shortened — removed. Somebody who has asked their system for less
+   motion has asked for less motion, not for the same motion in a hurry. */
+@media(prefers-reduced-motion:reduce){
+  .js [data-reveal],
+  .js .hero [data-lift],
+  .js .hero .shot{opacity:1 !important;transform:none !important;transition:none !important;}
+  .faq details[open] > .a{animation:none !important;}
+  .card:hover,.price:hover,.btn:active,.step:hover .n{transform:none !important;}
+  .mmenu{transition:none;}
+}
+
