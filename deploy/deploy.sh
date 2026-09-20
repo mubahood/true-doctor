@@ -70,7 +70,10 @@ say "PHP dependencies"
 # ── Writable paths ───────────────────────────────────────────────────────
 say "Permissions"
 mkdir -p storage/framework/{sessions,views,cache/data} storage/logs bootstrap/cache
-chmod -R 775 storage bootstrap/cache
+# Directories need the execute bit to be traversable; files do not, and a log
+# file marked executable is a small thing that looks wrong in every audit.
+find storage bootstrap/cache -type d -exec chmod 775 {} +
+find storage bootstrap/cache -type f -exec chmod 664 {} +
 
 say "Database migrations"
 "$PHP" artisan migrate --force --no-interaction
