@@ -128,6 +128,14 @@
         @endforeach
       </div>
       @error('plan_id')<p class="a-err" role="alert"><i class="fas fa-circle-exclamation" aria-hidden="true"></i> {{ $message }}</p>@enderror
+      {{-- A converted price has to say so here too, not only on the pricing
+           page. Somebody reading a dollar figure on the form they are about
+           to submit is entitled to know it is a conversion and what of. --}}
+      @if(app(\App\Support\VisitorRegion::class)->currency() === 'USD')
+        <div class="a-hint">{{ \App\Support\PlatformPrice::conversionNote() }}</div>
+      @else
+        <div class="a-hint">Billed monthly in Uganda shillings. Cancel from inside your account at any time.</div>
+      @endif
     </div>
   </div>
 

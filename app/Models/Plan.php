@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\BillingCycle;
+use App\Support\PlatformPrice;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -71,16 +72,26 @@ class Plan extends Model
     }
 
     /**
-     * The monthly price, as the public pages print it.
+     * The monthly price, as a public page prints it.
      *
-     * Here rather than in each view so the pricing page and the sign-up form
-     * cannot quote the same plan differently — which is the one disagreement
-     * on a pricing page nobody forgives. Plan prices are platform-level, not
-     * tenant-level, so this deliberately does NOT go through HospitalSettings:
-     * a visitor has no hospital, and the price is the same whoever is reading.
+     * Plan prices are stored in shillings — that is what a subscription is
+     * settled in. This quotes them in shillings to a reader in East Africa
+     * and converts for everyone else, at the one platform rate that the
+     * subscription checkout also charges against.
+     *
+     * It used to be `'$'.number_format($this->price)`, which put a dollar
+     * sign in front of a shilling figure and advertised the Starter plan at
+     * ten thousand dollars a month on the sign-up form while the pricing
+     * page beside it said $2.63.
+     *
+     * Deliberately NOT HospitalSettings: that formats a hospital's own
+     * billing currency, which is what it charges its patients. What we
+     * charge the hospital is a different number in a different currency.
+     *
+     * @param  string|null  $currency  null resolves from where the reader is
      */
-    public function priceLabel(): string
+    public function priceLabel(?string $currency = null): string
     {
-        return '$'.number_format((float) $this->price, 0);
+        return PlatformPrice::make($this->price, $currency)->label();
     }
 }

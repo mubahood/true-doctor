@@ -72,7 +72,11 @@ return [
         // One rate for the whole platform. The public pricing page quotes
         // against it and this charges against it, so the figure somebody
         // reads and the figure they pay cannot drift apart.
-        'usd_to_ugx_rate' => (float) env('USD_TO_UGX_RATE', env('PRICING_USD_RATE', 3800)),
+        // THE platform exchange rate. One key, read by one accessor
+        // (App\Support\PlatformCurrency::rate()), used by both the public
+        // pricing pages and this checkout — so the figure somebody reads and
+        // the figure they are charged cannot drift apart.
+        'usd_to_ugx_rate' => (float) env('USD_TO_UGX_RATE', 3800),
     ],
 
 ];

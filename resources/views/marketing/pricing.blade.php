@@ -41,7 +41,7 @@
         <div class="price {{ $plan->is_featured ? 'feat' : '' }}">
           @if($plan->is_featured)<span class="flag">Most chosen</span>@endif
           <div class="tag">{{ $plan->name }}</div>
-          <div class="amt">{{ $price->label() }}<small>/month</small></div>
+          <div class="amt">{{ $plan->priceLabel($region->currency()) }}<small>/month</small></div>
           <div class="alt">{{ $price->yearly() }} a year · billed monthly</div>
           <div class="who">{{ $m['who'] ?: $plan->description }}</div>
           <ul>

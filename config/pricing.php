@@ -22,19 +22,15 @@ return [
     | Shillings to the dollar
     |--------------------------------------------------------------------------
     |
-    | Used to quote a plan to somebody outside East Africa. A fixed rate, not
-    | a live one: a price that moves while somebody is reading it is worse
-    | than one that is a few percent stale, and a public page has no business
-    | making an outbound call to a rates API on every render. Review it when
-    | it drifts.
+    | Not here. The rate lives in `services.pesapal.usd_to_ugx_rate` and is
+    | read through App\Support\PlatformCurrency::rate(), because the
+    | subscription checkout charges against it. A second copy in this file is
+    | how a plan came to be quoted at one price on the pricing page and
+    | charged at another on the screen where somebody pays for it.
+    |
+    | Set it with USD_TO_UGX_RATE.
     |
     */
-
-    // Read through App\Support\PlatformCurrency::rate(), which is the single
-    // source — the subscription checkout charges against the same figure, and
-    // a price quoted at one rate and billed at another is the one mistake a
-    // pricing page is never forgiven for.
-    'usd_rate' => (float) env('PRICING_USD_RATE', 3800),
 
     /*
     |--------------------------------------------------------------------------

@@ -252,6 +252,47 @@ class PublicSiteTest extends TestCase
         $this->assertSame(4000.0, \App\Support\PlatformCurrency::rate());
     }
 
+    /**
+     * Every page that quotes a plan quotes it identically.
+     *
+     * The gap this closes: the sign-up form rendered `'$'.number_format(price)`
+     * — a dollar sign in front of a shilling figure — and advertised the
+     * Starter plan at TEN THOUSAND DOLLARS a month, on the same screen where
+     * somebody types their card details, while the pricing page one click
+     * away said $2.63.
+     */
+    public function test_the_pricing_page_and_the_sign_up_form_quote_identically(): void
+    {
+        foreach ([['en-GB', 'USD'], ['en-UG', 'UGX']] as [$language, $currency]) {
+            $pricing = $this->withHeader('Accept-Language', $language)->get(route('pricing'))->getContent();
+            $register = $this->withHeader('Accept-Language', $language)->get(route('register'))->getContent();
+
+            foreach (Plan::where('is_active', true)->get() as $plan) {
+                $label = PlatformPrice::make($plan->price, $currency)->label();
+
+                $this->assertStringContainsString($label, $pricing, "pricing does not quote {$plan->name} as {$label}");
+                $this->assertStringContainsString($label, $register, "sign-up does not quote {$plan->name} as {$label}");
+            }
+        }
+    }
+
+    /** A shilling figure must never be printed with a dollar sign on it. */
+    public function test_no_public_page_prints_a_shilling_figure_as_dollars(): void
+    {
+        // Plan prices are four, five and six figures in shillings. A dollar
+        // amount in the thousands on a page selling clinic software is a
+        // shilling figure that has been mislabelled.
+        foreach (['pricing', 'register'] as $page) {
+            $html = $this->withHeader('Accept-Language', 'en-GB')->get(route($page))->getContent();
+
+            $this->assertDoesNotMatchRegularExpression(
+                '/\$\s?\d{1,3},\d{3}(?!\d)/',
+                $html,
+                "{$page} prints a thousands-scale dollar figure — almost certainly shillings with a \$ on them",
+            );
+        }
+    }
+
     public function test_a_converted_price_says_it_is_converted(): void
     {
         $this->get(route('pricing'))

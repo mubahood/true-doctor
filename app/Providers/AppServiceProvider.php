@@ -23,11 +23,15 @@ class AppServiceProvider extends ServiceProvider
         // request over CurrentHospital; nothing about money is hardcoded.
         $this->app->singleton(\App\Support\HospitalSettings::class);
 
-        // Which currency to quote a public visitor in. Scoped, so the header,
-        // every price on the page and the footer switch all read one answer —
-        // and so the work behind it (a header read, or a cached IP lookup)
-        // happens once per request rather than once per price.
-        $this->app->scoped(\App\Support\VisitorRegion::class);
+        // Which currency to quote a public visitor in.
+        //
+        // Deliberately NOT scoped or singleton. It takes the Request in its
+        // constructor, so a cached instance keeps answering from whichever
+        // request happened to build it — correct under FPM, where the
+        // container dies with the request, and wrong under anything that
+        // reuses one (Octane, a queue worker, a test making two requests).
+        // Resolving it fresh costs a cookie read and a header parse.
+        $this->app->bind(\App\Support\VisitorRegion::class);
 
         // Payment gateway adapter (HMS_PLAN.md §16) — swap the binding to change
         // providers; the app only ever depends on the PaymentGateway interface.
