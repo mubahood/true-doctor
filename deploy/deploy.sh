@@ -75,13 +75,18 @@ chmod -R 775 storage bootstrap/cache
 say "Database migrations"
 "$PHP" artisan migrate --force --no-interaction
 
-# Reference data that the application needs to function at all: the role and
+# Reference data the application needs to function at all: the role and
 # permission matrix, the districts list and the public plans. All three are
 # idempotent; none of them touches a hospital's own records.
+#
+# Single-quoted class names. Unquoted backslashes are eaten by one shell or
+# another on the way to artisan and the class silently "does not exist" —
+# which a seeder reports as a failure the deploy then walks straight past.
 say "Reference data"
-"$PHP" artisan db:seed --class=Database\\Seeders\\RbacSeeder --force --no-interaction
-"$PHP" artisan db:seed --class=Database\\Seeders\\DistrictSeeder --force --no-interaction
-"$PHP" artisan db:seed --class=Database\\Seeders\\PlanSeeder --force --no-interaction
+for seeder in RbacSeeder DistrictSeeder PlanSeeder; do
+    "$PHP" artisan db:seed --class='Database\Seeders\'"$seeder" --force --no-interaction \
+        || die "$seeder failed — the application will not work without it."
+done
 
 say "Storage link"
 [ -L "public/storage" ] || "$PHP" artisan storage:link --force >/dev/null 2>&1 || true
@@ -108,6 +113,19 @@ say "Caches"
 "$PHP" artisan config:clear
 "$PHP" artisan optimize        # config + routes + events
 "$PHP" artisan view:cache
+
+# ── Prove it, rather than assume it ──────────────────────────────────────
+# A deploy that "succeeded" and left a site returning 500 is worse than one
+# that failed, because nobody goes and looks.
+say "Checking"
+roles=$("$PHP" artisan tinker --execute='echo \Spatie\Permission\Models\Role::count();' 2>/dev/null | tr -cd '0-9')
+[ "${roles:-0}" -gt 0 ] || die "no roles in the database — the RBAC seeder did not land."
+echo "    roles: $roles"
+
+grep -q 'RewriteRule \^ index.php' "$DOCROOT/.htaccess" \
+    || die "$DOCROOT/.htaccess is not the production one (it must route to index.php IN this directory)."
+[ -f "$DOCROOT/index.php" ] || die "no front controller in $DOCROOT."
+echo "    document root wired"
 
 say "Done — bringing the site back up"
 "$PHP" artisan up
