@@ -46,10 +46,23 @@ say "Maintenance mode on"
 restore() { "$PHP" artisan up >/dev/null 2>&1 || true; }
 trap restore EXIT
 
-say "Fetching $(git rev-parse --abbrev-ref HEAD)"
-git fetch --prune origin
-git reset --hard "origin/$(git rev-parse --abbrev-ref HEAD)"
-echo "    now at $(git rev-parse --short HEAD) — $(git log -1 --pretty=%s)"
+# ── Update the code, then restart into the NEW script ───────────────────
+# bash reads a script incrementally, by byte offset. `git reset --hard` here
+# rewrites deploy.sh underneath the shell that is executing it, and everything
+# after this point then runs from whatever happens to be at those offsets in
+# the new file — which is how a deploy silently kept installing the previous
+# version's files. So: update, then hand over to the updated script, once.
+if [ "${TD_RELOADED:-}" != "1" ]; then
+    say "Fetching $(git rev-parse --abbrev-ref HEAD)"
+    git fetch --prune origin
+    git reset --hard "origin/$(git rev-parse --abbrev-ref HEAD)"
+    echo "    now at $(git rev-parse --short HEAD) — $(git log -1 --pretty=%s)"
+
+    "$PHP" artisan up >/dev/null 2>&1 || true   # the new run puts it back down
+    trap - EXIT
+    say "Restarting into the deploy script from this commit"
+    TD_RELOADED=1 exec bash "$APP_DIR/deploy/deploy.sh" "$@"
+fi
 
 say "PHP dependencies"
 "$PHP" "$COMPOSER" install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
