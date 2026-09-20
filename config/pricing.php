@@ -30,6 +30,10 @@ return [
     |
     */
 
+    // Read through App\Support\PlatformCurrency::rate(), which is the single
+    // source — the subscription checkout charges against the same figure, and
+    // a price quoted at one rate and billed at another is the one mistake a
+    // pricing page is never forgiven for.
     'usd_rate' => (float) env('PRICING_USD_RATE', 3800),
 
     /*

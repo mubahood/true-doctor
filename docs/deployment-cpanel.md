@@ -97,8 +97,11 @@ crontab /tmp/ct
 | `SESSION_DRIVER` | `database` | Same |
 | `QUEUE_CONNECTION` | `database` | Same — and every notification is queued |
 | `SESSION_SECURE_COOKIE` | `true` | The site is HTTPS-only |
-| `MAIL_MAILER` | `sendmail` | cPanel's local MTA works with no credentials |
-| `MAIL_FROM_ADDRESS` | `noreply@true-doctor.online` | Must be a domain this host may send for |
+| `MAIL_MAILER` | `smtp` | See "Mail" below |
+| `MAIL_HOST` / `MAIL_PORT` / `MAIL_SCHEME` | `mail.true-doctor.online` / `465` / `smtps` | The domain's own mailbox |
+| `MAIL_PASSWORD` | **quoted** | Brackets and plus signs are not a valid unquoted dotenv value |
+| `MAIL_FROM_ADDRESS` | `hello@true-doctor.online` | Must be a domain this host may send for |
+| `MAIL_ENQUIRIES_TO` | where contact-form enquiries land | Falls back to the from-address |
 | `TELESCOPE_ENABLED` / `DEBUGBAR_ENABLED` | `false` | Never in production |
 | `PRICING_USD_RATE` | `3800` | See [public-site.md](public-site.md) |
 
@@ -120,6 +123,46 @@ curl -s -o /dev/null -w '%{http_code}\n' \
   -H 'Accept: application/json' -H "Origin: https://true-doctor.online" \
   -b cookiejar "https://true-doctor.online/api/v1/sync/status"   # 200, not 401
 ```
+
+## Mail
+
+Sent through the domain's own cPanel mailbox — `hello@true-doctor.online` on
+`mail.true-doctor.online:465`, implicit TLS — not through the local sendmail
+binary and not through Gmail. The reason is authentication: true-doctor.online
+publishes SPF, DKIM and DMARC, so mail sent *as* that domain from that host
+passes all three. Mail sent through an unrelated provider as an address it does
+not own does not, and lands in spam.
+
+**Quote the password in `.env`.** A cPanel mailbox password full of brackets
+and plus signs is not a valid unquoted dotenv value; unquoted it arrives at the
+SMTP server truncated and authentication fails with nothing in the log to
+explain why.
+
+Checking it end to end, without waiting for somebody to report that mail is
+broken:
+
+```bash
+# 1. Do the credentials authenticate at all?
+php -r '$s=stream_socket_client("ssl://mail.true-doctor.online:465",$e,$m,10);echo $s?"open\n":"blocked\n";'
+
+# 2. Does Laravel read the password intact? (21 characters, not 2)
+php artisan tinker --execute='echo strlen(config("mail.mailers.smtp.password"));'
+
+# 3. Send one.
+php artisan tinker --execute='Mail::raw("test", fn($m) => $m->to("you@example.com")->subject("test"));'
+```
+
+The domain's records, as they stand:
+
+| Record | Value |
+| --- | --- |
+| SPF | `v=spf1 a mx include:websitewelcome.com ~all` |
+| DKIM | published at `default._domainkey` |
+| DMARC | `v=DMARC1; p=none;` — monitoring only |
+
+`p=none` means a receiver is told to report failures and deliver anyway. Once
+you are confident nothing legitimate is failing, tightening it to
+`p=quarantine` is what stops somebody else sending as your domain.
 
 ## The queue
 

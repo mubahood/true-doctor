@@ -45,7 +45,12 @@ final readonly class PlatformPrice
             return $base;
         }
 
-        $rate = (float) config('pricing.usd_rate', 3800);
+        // PlatformCurrency's rate, not a second one of our own. It already
+        // owns the shilling-to-dollar figure and the subscription checkout
+        // already charges against it — a separate rate here would quote a
+        // plan at one price on the public page and another on the screen
+        // where somebody actually pays for it.
+        $rate = PlatformCurrency::rate();
 
         // A rate of zero would divide by nothing and hand the page an INF.
         return $rate > 0 ? $base / $rate : $base;
@@ -97,7 +102,7 @@ final readonly class PlatformPrice
     /** The sentence a converted price has to carry to be honest about itself. */
     public static function conversionNote(): string
     {
-        $rate = (float) config('pricing.usd_rate', 3800);
+        $rate = PlatformCurrency::rate();
 
         return 'Converted at USh '.number_format($rate, 0).' to US$1. '
             .'Subscriptions are settled in Uganda shillings; your bank applies its own rate on the day.';

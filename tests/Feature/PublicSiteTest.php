@@ -29,7 +29,7 @@ class PublicSiteTest extends TestCase
         parent::setUp();
         $this->seed(PlanSeeder::class);
 
-        config()->set('pricing.usd_rate', 3800);
+        config()->set('services.pesapal.usd_to_ugx_rate', 3800);
         config()->set('pricing.base_currency', 'UGX');
     }
 
@@ -229,6 +229,27 @@ class PublicSiteTest extends TestCase
         // Twelve months, converted — not converted then multiplied by a
         // rounded figure, which is how a yearly total ends up off by cents.
         $this->assertSame('$31.58', PlatformPrice::make('10000', 'USD')->yearly());
+    }
+
+    /**
+     * One rate for the whole platform.
+     *
+     * The gap this closes: the public pricing page and the subscription
+     * checkout each had their own shilling-to-dollar figure — 3800 and 3600.
+     * A hospital would have read one price on the way in and been charged
+     * against another on the screen where they paid. Whatever the rate is,
+     * both have to be reading the same one.
+     */
+    public function test_the_public_page_and_the_checkout_use_the_same_rate(): void
+    {
+        config()->set('services.pesapal.usd_to_ugx_rate', 4000);
+
+        $quoted = PlatformPrice::make('40000', 'USD')->label();
+        $charged = \App\Support\PlatformCurrency::toUsd('40000');
+
+        $this->assertSame('$10.00', $quoted);
+        $this->assertSame('10.00', $charged, 'the checkout converts at a different rate from the pricing page');
+        $this->assertSame(4000.0, \App\Support\PlatformCurrency::rate());
     }
 
     public function test_a_converted_price_says_it_is_converted(): void

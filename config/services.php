@@ -69,7 +69,10 @@ return [
         'ipn_url' => env('PESAPAL_IPN_URL'),
         'callback_url' => env('PESAPAL_CALLBACK_URL'),
         'timeout' => (int) env('PESAPAL_TIMEOUT', 30),
-        'usd_to_ugx_rate' => (float) env('USD_TO_UGX_RATE', 3600),
+        // One rate for the whole platform. The public pricing page quotes
+        // against it and this charges against it, so the figure somebody
+        // reads and the figure they pay cannot drift apart.
+        'usd_to_ugx_rate' => (float) env('USD_TO_UGX_RATE', env('PRICING_USD_RATE', 3800)),
     ],
 
 ];

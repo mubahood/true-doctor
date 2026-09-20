@@ -27,7 +27,7 @@ class MarketingSignupTest extends TestCase
         parent::setUp();
 
         config()->set('pricing.base_currency', 'UGX');
-        config()->set('pricing.usd_rate', 3800);
+        config()->set('services.pesapal.usd_to_ugx_rate', 3800);
     }
 
     public function test_pricing_page_lists_real_plans_with_trial_ctas(): void
