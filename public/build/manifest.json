@@ -1,0 +1,102 @@
+{
+  "_clock-eTwQ4uq-.js": {
+    "file": "assets/clock-eTwQ4uq-.js",
+    "name": "clock"
+  },
+  "_worker-Bm9PQCtX.js": {
+    "file": "assets/worker-Bm9PQCtX.js",
+    "name": "worker"
+  },
+  "resources/css/admin.css": {
+    "file": "assets/admin-pd13CsvP.css",
+    "src": "resources/css/admin.css",
+    "isEntry": true,
+    "name": "admin",
+    "names": [
+      "admin.css"
+    ]
+  },
+  "resources/css/auth.css": {
+    "file": "assets/auth-Cj1fWcGJ.css",
+    "src": "resources/css/auth.css",
+    "isEntry": true,
+    "name": "auth",
+    "names": [
+      "auth.css"
+    ]
+  },
+  "resources/css/field.css": {
+    "file": "assets/field-Bth_xxBx.css",
+    "src": "resources/css/field.css",
+    "isEntry": true,
+    "name": "field",
+    "names": [
+      "field.css"
+    ]
+  },
+  "resources/css/marketing.css": {
+    "file": "assets/marketing-BGtGmN6_.css",
+    "src": "resources/css/marketing.css",
+    "isEntry": true,
+    "name": "marketing",
+    "names": [
+      "marketing.css"
+    ]
+  },
+  "resources/js/admin.js": {
+    "file": "assets/admin-ClsrvDlQ.js",
+    "name": "admin",
+    "src": "resources/js/admin.js",
+    "isEntry": true,
+    "imports": [
+      "_worker-Bm9PQCtX.js"
+    ],
+    "dynamicImports": [
+      "resources/js/offline/index.js",
+      "resources/js/offline/readiness.js"
+    ]
+  },
+  "resources/js/auth.js": {
+    "file": "assets/auth-_HJaaxMh.js",
+    "name": "auth",
+    "src": "resources/js/auth.js",
+    "isEntry": true
+  },
+  "resources/js/field.js": {
+    "file": "assets/field-BQCChVeu.js",
+    "name": "field",
+    "src": "resources/js/field.js",
+    "isEntry": true,
+    "imports": [
+      "resources/js/offline/index.js",
+      "_worker-Bm9PQCtX.js",
+      "_clock-eTwQ4uq-.js"
+    ]
+  },
+  "resources/js/marketing.js": {
+    "file": "assets/marketing-BCgAUv96.js",
+    "name": "marketing",
+    "src": "resources/js/marketing.js",
+    "isEntry": true
+  },
+  "resources/js/offline/index.js": {
+    "file": "assets/index-Dowv8mAz.js",
+    "name": "index",
+    "src": "resources/js/offline/index.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_clock-eTwQ4uq-.js",
+      "_worker-Bm9PQCtX.js"
+    ]
+  },
+  "resources/js/offline/readiness.js": {
+    "file": "assets/readiness-kLW-mVJJ.js",
+    "name": "readiness",
+    "src": "resources/js/offline/readiness.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_worker-Bm9PQCtX.js",
+      "_clock-eTwQ4uq-.js"
+    ]
+  }
+}

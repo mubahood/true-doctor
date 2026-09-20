@@ -1,0 +1,14 @@
+<x-dash.section title="Report queue — studies performed, awaiting report" icon="fa-file-waveform"
+  :count="$count" :href="route('admin.radiology-orders.index')">
+  <div class="dash-queue">
+    @forelse($rows as $o)
+      <a class="dash-queue-row" wire:navigate href="{{ route('admin.radiology-orders.show', $o) }}">
+        <div class="qmain"><div class="qname">{{ $o->patient?->first_name }} {{ $o->patient?->last_name }}</div>
+          <div class="qmeta"><x-ui.badge :tone="$o->status->badge()">{{ $o->status->label() }}</x-ui.badge></div></div>
+        <span class="qtime">{{ $o->created_at->diffForHumans(null, true) }}</span>
+      </a>
+    @empty
+      <x-dash.empty icon="fa-circle-check" text="No studies awaiting a report" />
+    @endforelse
+  </div>
+</x-dash.section>

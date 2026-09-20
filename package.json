@@ -1,0 +1,26 @@
+{
+    "$schema": "https://www.schemastore.org/package.json",
+    "private": true,
+    "type": "module",
+    "engines": {
+        "node": ">=20.19"
+    },
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite",
+        "test:js": "vitest run",
+        "test:js:watch": "vitest"
+    },
+    "devDependencies": {
+        "autoprefixer": "^10.4.2",
+        "fake-indexeddb": "^6.2.5",
+        "laravel-vite-plugin": "^2.0.0",
+        "postcss": "^8.4.31",
+        "vite": "^7.0.7",
+        "vitest": "^5.0.1"
+    },
+    "dependencies": {
+        "alpinejs": "^3.17.3",
+        "dexie": "^4.4.6"
+    }
+}

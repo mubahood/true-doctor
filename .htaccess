@@ -1,0 +1,56 @@
+# ---------------------------------------------------------------------------
+# INTERIM subdirectory-hosting bootstrap (MAMP / shared hosting only).
+#
+# The supported production deployment sets DocumentRoot to public/ — see
+# docs/deployment.md — in which case this file and the root index.php are not
+# used at all. While the project root IS the document root, every real file
+# would otherwise be served verbatim (rule 3 below), so the application tree
+# and sensitive file types are denied explicitly.
+#
+# IMPORTANT: the deny rules must only fire for paths that really exist in the
+# application tree. Several public asset paths collide with directory names at
+# the root — /vendor/fa/* (FontAwesome) with the Composer vendor/ directory,
+# and /storage/* (the public disk symlink) with the framework's storage/ —
+# so an unconditional deny makes icons and uploaded files disappear.
+# ---------------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # 0a. Deny the application tree — but only where the path resolves to a real
+    #     file or directory at the project root. /vendor/fa/css/all.min.css does
+    #     not exist here (it lives in public/), so it falls through to rule 4.
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^(\.git|\.github|app|bootstrap|config|database|docs|lang|node_modules|resources|routes|scripts|storage|tests|vendor|_legacy)(/|$) - [F,L]
+
+    # 0b. Deny dotfiles and dot-directories in any segment (.env, .git, .gitignore…),
+    #     except .well-known which certificate issuers need.
+    RewriteRule (^|/)\.(?!well-known)  - [F,L]
+
+    # 0c. Deny sensitive file types anywhere (never valid public assets).
+    RewriteRule ^(\.env.*|\.htaccess|\.gitignore|\.editorconfig|\.gitattributes|artisan|composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml|phpstan\.neon|pint\.json|vite\.config\.js|postcss\.config\.js|ssh\.txt|.*\.(md|sql|sql\.gz|dump|bak|log|neon|lock|yml|yaml))$ - [F,L]
+
+    # 1. Leave index.php alone
+    RewriteRule ^index\.php$ - [L]
+
+    # 2. Root directory request → serve index.php directly (LiteSpeed compatible)
+    RewriteRule ^$ index.php [L]
+
+    # 3. Serve real files / directories directly (public assets living at the root)
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # 4. Everything else → proxy into public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>

@@ -1,0 +1,37 @@
+*.log
+.DS_Store
+.env
+.env.backup
+.env.production
+.phpactor.json
+.phpunit.result.cache
+/.fleet
+/.idea
+/.nova
+/.phpunit.cache
+/.vscode
+/.zed
+/auth.json
+/node_modules
+# NOT ignored: /public/build
+# The production host (shared cPanel) has no Node, so `npm run build` cannot
+# run there and the compiled assets have to arrive with the code. They are
+# small — a few hundred KB — and DesignSystemCssTest fails if what is
+# committed no longer matches the sources. See docs/DEPLOYMENT.md.
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+/vendor
+Homestead.json
+Homestead.yaml
+Thumbs.db
+ssh.txt
+# Database dumps/backups must never be tracked (see docs/PJAX_LIVEWIRE_IMPROVEMENT_PLAN.md I1)
+/storage/backups
+*.sql
+*.sql.gz
+*.dump
+
+# Local agent/tool state
+/.claude

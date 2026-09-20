@@ -1,0 +1,2024 @@
+/* ==========================================================================
+   True-Doctor — Back-office design system (light · flat · square · thin Inter)
+   Redefines the existing .tb-* / .btn-tb / .badge-tb vocabulary so every admin
+   view adopts the new look with no per-view rewrite. Matches the public site.
+   ========================================================================== */
+
+:root{
+  --bg:#f5f7fa; --surface:#ffffff; --surface-2:#eef2f7; --elev:#ffffff;
+  --line:#e2e8f0; --line-2:#cbd5e1;
+  --tx:#111c2e; --mt:#5a6b80; --mt2:#93a1b3;
+  --br:#0a6ebd; --br-d:#08588f; --br-soft:#e8f1fb; --ac:#0a6ebd;
+  --ok:#15803d; --ok-soft:#e6f4ea; --warn:#b45309; --warn-soft:#fbf0e2; --warn-line:#e7c9a0;
+  --bad:#b91c1c; --bad-soft:#fbe9e9; --info:#0a6ebd; --info-soft:#e8f1fb;
+  --bd:var(--line); --mt-c:var(--mt);
+  --sw:248px; --th:50px;
+  --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --tb-muted:var(--mt);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{font-family:var(--font);font-size:13px;font-weight:400;color:var(--tx);background:var(--bg);
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;letter-spacing:.002em;line-height:1.55;}
+a{color:inherit;text-decoration:none;} ul{list-style:none;} button{font-family:inherit;}
+strong,b{font-weight:600;}
+::selection{background:var(--br-soft);}
+
+/* ── Shell ─────────────────────────────────────────────────── */
+.tb-wrapper{display:flex;min-height:100vh;}
+.tb-sidebar{width:var(--sw);flex-shrink:0;background:var(--surface);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;position:fixed;inset:0 auto 0 0;height:100vh;z-index:50;overflow-y:auto;}
+.tb-main{flex:1;min-width:0;margin-left:var(--sw);display:flex;flex-direction:column;min-height:100vh;}
+.tb-content{padding:16px 30px 60px;flex:1;}
+/* Slim fixed app footer (offset by the sidebar; sits above content, below modals). */
+.tb-footer{position:fixed;left:var(--sw);right:0;bottom:0;height:30px;z-index:20;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 30px;
+  background:rgba(245,247,250,.92);backdrop-filter:saturate(180%) blur(8px);
+  border-top:1px solid var(--line);font-size:11.5px;color:var(--mt);}
+.tb-footer-brand{display:flex;align-items:center;gap:7px;font-weight:500;white-space:nowrap;}
+.tb-footer-brand i{color:var(--br);}
+.tb-footer-meta{display:flex;align-items:center;gap:8px;min-width:0;white-space:nowrap;overflow:hidden;}
+.tb-footer-meta .sep{color:var(--mt2);}
+.tb-footer-meta i{color:var(--mt2);margin-right:3px;}
+
+.tb-sidebar-brand{display:flex;align-items:center;gap:11px;padding:0 18px;height:var(--th);
+  border-bottom:1px solid var(--line);position:relative;}
+.tb-sidebar-brand .bk{width:30px;height:30px;object-fit:contain;flex-shrink:0;display:block;}
+.tb-sidebar-brand .btext{display:flex;flex-direction:column;justify-content:center;min-width:0;gap:2px;}
+.tb-sidebar-brand .bt{font-size:14px;font-weight:600;letter-spacing:.01em;color:var(--tx);line-height:1.1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tb-sidebar-brand .bs{font-size:10px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--mt2);
+  line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tb-sidebar-close{display:none;margin-left:auto;border:none;background:none;color:var(--mt);font-size:16px;cursor:pointer;}
+
+.tb-sidebar-user{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);cursor:pointer;}
+.tb-sidebar-user:hover{background:var(--surface-2);}
+.tb-sidebar-avatar{width:32px;height:32px;background:var(--br-soft);color:var(--br);display:flex;align-items:center;
+  justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;}
+.tb-sidebar-user-info{min-width:0;}
+.tb-sidebar-uname{font-size:13px;font-weight:500;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tb-sidebar-role{font-size:10.5px;font-weight:500;letter-spacing:.03em;text-transform:uppercase;color:var(--mt2);margin-top:2px;}
+
+.tb-nav{flex:1;padding:8px 0;overflow-y:auto;}
+.tb-nav-list{list-style:none;}
+.tb-nav-list ul{list-style:none;}
+.tb-nav-item a{display:flex;align-items:center;gap:10px;padding:8px 18px;font-size:13px;font-weight:450;color:var(--mt);
+  border-left:3px solid transparent;transition:background .14s,color .14s,border-color .14s;}
+.tb-nav-item a i{width:16px;text-align:center;font-size:13px;color:var(--mt2);transition:color .14s;}
+.tb-nav-item a:hover{background:var(--surface-2);color:var(--tx);}
+.tb-nav-item a:hover i{color:var(--mt);}
+.tb-nav-item.active a{background:var(--br-soft);color:var(--br);border-left-color:var(--br);font-weight:600;}
+.tb-nav-item.active a i{color:var(--br);}
+
+/* ── Sections: the rank above the groups ─────────────────────
+   The menu reads Dashboard → Patient care → Billing & finance → Administration,
+   so each band gets a quiet caption and a hairline to separate it from the one
+   before. Three ranks, three weights: caption · destination · sub-destination. */
+.tb-nav-sec + .tb-nav-sec{margin-top:6px;border-top:1px solid var(--line);}
+.tb-nav-section{margin:0;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--mt);padding:14px 18px 6px;}
+
+/* ── Collapsible nav groups (accordion) ─────────────────────── */
+.tb-nav-rule{height:1px;background:var(--line);margin:10px 16px;}
+.tb-nav-group{margin-bottom:1px;}
+.tb-nav-gh{width:100%;display:flex;align-items:center;gap:11px;padding:7px 16px;background:none;border:none;
+  cursor:pointer;font-family:inherit;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--mt);border-left:3px solid transparent;transition:color .14s,background .14s,border-color .14s;}
+.tb-nav-gh:hover{color:var(--tx);background:var(--surface-2);}
+.tb-nav-gh .gicon{width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:13px;
+  color:var(--mt);background:var(--surface-2);border:1px solid var(--line);transition:all .14s;flex-shrink:0;}
+.tb-nav-gh:hover .gicon{color:var(--br);background:var(--br-soft);border-color:var(--br-soft);}
+.tb-nav-gh .glabel{flex:1;text-align:left;}
+.glabel{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tb-nav-gh .gcaret{font-size:10px;color:var(--mt);transition:transform .2s ease,color .14s;}
+.tb-nav-gh.open{color:var(--tx);background:var(--surface-2);}
+.tb-nav-gh.open .gcaret{transform:rotate(180deg);}
+.tb-nav-gh.open .gicon{color:var(--tx);border-color:var(--line-2);}
+.tb-nav-gh.has-active{color:var(--br);background:var(--br-soft);border-left-color:var(--br);}
+.tb-nav-gh.has-active .gicon{color:#fff;background:var(--br);border-color:var(--br);box-shadow:0 1px 3px rgba(10,110,189,.35);}
+.tb-nav-gh.has-active .gcaret{color:var(--br);}
+/* A destination with no children — Dashboard, Patients, Visits — sits at the
+   same RANK as a group header, so it takes the same chip and the same type.
+   The caret is then the only difference, and it means exactly one thing:
+   "this one opens". Two typographic ranks, not four. */
+.tb-nav-sec > ul > .tb-nav-item > a{padding:7px 16px;gap:11px;font-size:11px;font-weight:600;
+  letter-spacing:.05em;text-transform:uppercase;color:var(--mt);}
+.tb-nav-sec > ul > .tb-nav-item > a > i{width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+  font-size:13px;color:var(--mt);background:var(--surface-2);border:1px solid var(--line);flex-shrink:0;
+  transition:color .14s,background .14s,border-color .14s;}
+.tb-nav-sec > ul > .tb-nav-item > a:hover{color:var(--tx);background:var(--surface-2);}
+.tb-nav-sec > ul > .tb-nav-item > a:hover > i{color:var(--br);background:var(--br-soft);border-color:var(--br-soft);}
+.tb-nav-sec > ul > .tb-nav-item.active > a{color:var(--br);background:var(--br-soft);border-left-color:var(--br);}
+.tb-nav-sec > ul > .tb-nav-item.active > a > i{color:#fff;background:var(--br);border-color:var(--br);
+  box-shadow:0 1px 3px rgba(10,110,189,.35);}
+
+/* nested sub-items ride a subtle rail so the hierarchy reads at a glance */
+.tb-nav-sub{list-style:none;overflow:hidden;padding-bottom:4px;}
+.tb-nav-sub .tb-nav-item a{padding:7px 18px 7px 20px;margin-left:27px;font-size:12.5px;
+  border-left:2px solid var(--line);}
+.tb-nav-sub .tb-nav-item a i{font-size:12px;}
+.tb-nav-sub .tb-nav-item a:hover{border-left-color:var(--line-2);}
+.tb-nav-sub .tb-nav-item.active a{background:var(--br-soft);border-left-color:var(--br);}
+
+/* ── Setup mode: the menu is deliberately short, so say how short ────
+   Sits above the nav list while onboarding is outstanding. Same square, flat,
+   blue-accented language as the rest of the shell; sized to the 248px rail. */
+.tb-nav-setup{margin:0 16px 12px;padding:10px 11px;background:var(--surface-2);
+  border:1px solid var(--line);border-left:3px solid var(--br);}
+.tb-nav-setup .tb-progress-wrap{gap:6px;}
+.tb-nav-setup .tb-progress-meta{gap:8px;}
+.tb-nav-setup .tb-progress-label{font-size:10.5px;letter-spacing:.06em;color:var(--tx);}
+.tb-nav-setup .tb-progress-value{font-size:11px;font-weight:600;color:var(--br);white-space:nowrap;}
+.tb-nav-setup .tb-progress{height:5px;background:var(--surface);}
+.tb-nav-setup p{margin:8px 0 0;font-size:11.5px;line-height:1.45;color:var(--mt);
+  overflow-wrap:anywhere;}
+
+.tb-sidebar-footer{padding:14px 18px;border-top:1px solid var(--line);}
+.tb-logout-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;
+  background:var(--surface);border:1px solid var(--line-2);color:var(--tx);font-size:12.5px;font-weight:500;cursor:pointer;transition:.12s;}
+.tb-logout-btn:hover{border-color:var(--bad);color:var(--bad);}
+
+/* ── Topbar ────────────────────────────────────────────────── */
+.tb-topbar{height:var(--th);background:rgba(245,247,250,.9);backdrop-filter:saturate(180%) blur(8px);
+  border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 30px;position:sticky;top:0;z-index:30;}
+.tb-topbar-left{display:flex;align-items:center;gap:12px;min-width:0;}
+.tb-topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+/* Clean, borderless icon buttons — a bare icon at rest, only a subtle tint on hover. */
+.tb-topbar-bell,.tb-topbar-toggle{position:relative;display:inline-flex;align-items:center;justify-content:center;
+  width:40px;height:40px;padding:0;border:none;background:none;color:var(--mt);cursor:pointer;
+  transition:color .12s,background .12s;}
+.tb-topbar-bell i{font-size:17px;}
+.tb-topbar-toggle i{font-size:20px;}
+.tb-topbar-bell:hover,.tb-topbar-toggle:hover{color:var(--tx);background:var(--surface-2);}
+.tb-topbar-bell.active{color:var(--br);}
+.tb-bell-badge{position:absolute;top:5px;right:5px;min-width:16px;height:16px;padding:0 4px;border-radius:9px;
+  background:#c0392b;color:#fff;font-size:9.5px;font-weight:600;line-height:16px;text-align:center;
+  border:2px solid var(--bg);box-sizing:content-box;}
+.tb-topbar-toggle{display:none;}
+.tb-page-title{font-size:15px;font-weight:500;letter-spacing:-.01em;color:var(--tx);}
+.tb-search-wrap{position:relative;display:flex;align-items:center;}
+.tb-search-wrap i{position:absolute;left:11px;color:var(--mt2);font-size:12px;pointer-events:none;}
+.tb-search-wrap input{width:220px;max-width:40vw;font-family:var(--font);font-size:13px;color:var(--tx);
+  background:var(--surface);border:1px solid var(--line-2);padding:8px 12px 8px 32px;transition:border-color .12s,box-shadow .12s;}
+.tb-search-wrap input:focus{outline:none;border-color:var(--br);box-shadow:0 0 0 3px var(--br-soft);}
+
+.tb-user-menu{position:relative;}
+.tb-user-trigger{display:flex;align-items:center;gap:9px;cursor:pointer;padding:5px 8px;border:none;background:none;
+  transition:background .12s;}
+.tb-user-trigger:hover{background:var(--surface-2);}
+.tb-user-avatar-sm{width:28px;height:28px;background:var(--br-soft);color:var(--br);display:flex;align-items:center;
+  justify-content:center;font-size:10px;font-weight:600;}
+.tb-user-name{font-size:13px;font-weight:500;} .tb-user-caret{font-size:10px;color:var(--mt2);}
+.tb-user-dropdown{position:absolute;right:0;top:calc(100% + 6px);min-width:210px;background:var(--surface);
+  border:1px solid var(--line);box-shadow:0 12px 34px -18px rgba(17,28,46,.3);padding:5px;display:none;z-index:40;}
+.tb-user-menu.open .tb-user-dropdown{display:block;}
+.tb-user-dropdown a,.tb-user-dropdown button{display:flex;align-items:center;gap:10px;width:100%;padding:9px 11px;
+  font-size:13px;font-weight:400;color:var(--tx);background:none;border:none;cursor:pointer;text-align:left;}
+.tb-user-dropdown a:hover,.tb-user-dropdown button:hover{background:var(--surface-2);}
+.tb-user-dropdown a i,.tb-user-dropdown button i{width:15px;color:var(--mt2);}
+.tb-user-dropdown hr{border:none;border-top:1px solid var(--line);margin:5px 0;}
+.tb-user-dropdown button.danger:hover{color:var(--bad);}
+
+/* ── Row actions menu (x-ui.actions-menu) ───────────────────
+   Same vocabulary as the account menu above, but position:fixed and placed
+   from the trigger by tdMenu: every table sits in .tb-table-wrap{overflow-x:auto},
+   which would clip an absolutely-positioned popup at the row's edge. */
+.tb-menu{position:relative;display:inline-block;}
+.tb-menu-pop{position:fixed;z-index:60;background:var(--surface);border:1px solid var(--line);
+  box-shadow:0 14px 38px -16px rgba(17,28,46,.36);padding:5px;max-height:min(60vh,420px);overflow-y:auto;}
+.tb-menu-pop a,.tb-menu-pop button{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;
+  font-family:inherit;font-size:12.5px;font-weight:400;color:var(--tx);background:none;border:none;
+  cursor:pointer;text-align:left;transition:background .12s,color .12s;}
+.tb-menu-pop a:hover,.tb-menu-pop button:hover,
+.tb-menu-pop a:focus-visible,.tb-menu-pop button:focus-visible{background:var(--surface-2);}
+.tb-menu-pop a i,.tb-menu-pop button i{width:15px;text-align:center;color:var(--mt2);flex-shrink:0;}
+.tb-menu-pop a:hover i,.tb-menu-pop button:hover i{color:var(--br);}
+.tb-menu-pop button[disabled]{opacity:.45;cursor:not-allowed;}
+.tb-menu-pop button[disabled]:hover{background:none;}
+.tb-menu-pop button.danger{color:var(--bad);}
+.tb-menu-pop button.danger i{color:var(--bad);}
+.tb-menu-pop button.danger:hover{background:var(--bad-soft);}
+.tb-menu-pop hr{border:none;border-top:1px solid var(--line);margin:5px 0;}
+/* A quiet caption grouping the actions below it — not itself a target. */
+.tb-menu-sec{display:block;padding:8px 10px 4px;font-size:9.5px;font-weight:600;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--mt);}
+
+/* Row action cluster: the primary link, then the menu. */
+.tb-row-actions{display:flex;align-items:center;justify-content:flex-end;gap:2px;}
+
+/* A modal that hosts a visit panel. The panel is the detail page's own card,
+   so its frame and its title are stripped here — the dialog already provides
+   both, and two nested headers read as two separate things. */
+.tb-action-modal > .tb-card{border:none;box-shadow:none;background:none;}
+.tb-action-modal > .tb-card > .tb-card-header{display:none;}
+.tb-action-modal > .tb-card > .tb-card-body{padding:0;}
+.tb-action-modal .tb-stage-btn{width:100%;justify-content:center;}
+.tb-action-modal .tb-cancel-row{display:flex;align-items:flex-end;gap:10px;padding-top:6px;
+  border-top:1px solid var(--line);margin-top:4px;}
+.tb-action-modal .tb-cancel-row .tb-form-group{flex:1;margin:0;}
+/* Which record the dialog is acting on — the row that triggered it is hidden
+   behind the backdrop, so the dialog has to say. */
+.tb-modal-sub{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 20px;
+  border-bottom:1px solid var(--line);background:var(--surface-2);font-size:12px;color:var(--mt);}
+.tb-modal-sub .sep{color:var(--line-2);}
+
+/* ── Visit workspace dialog ──────────────────────────────────────
+   The whole visit on one page: a rail down the side, one scrolling pane
+   beside it holding every section. Jumping is a scroll, never a fetch — the
+   sections are all in the DOM from the first paint. */
+.tb-vs{flex:1;min-height:min(74vh,660px);display:grid;grid-template-columns:216px minmax(0,1fr);}
+
+/* The rail: a map of the visit, always visible. */
+.tb-vs-rail{display:flex;flex-direction:column;border-right:1px solid var(--line);
+  background:var(--surface-2);min-height:0;overflow-y:auto;}
+.tb-vs-rail ul{list-style:none;flex:1;padding:8px 0;}
+.tb-vs-rail button{display:flex;align-items:center;gap:10px;width:100%;padding:8px 14px;
+  background:none;border:none;border-left:3px solid transparent;cursor:pointer;font-family:inherit;
+  font-size:12.5px;color:var(--mt);text-align:left;transition:color .12s,background .12s,border-color .12s;}
+.tb-vs-rail button:hover{color:var(--tx);background:var(--surface);}
+.tb-vs-rail button.is-at{color:var(--br);background:var(--surface);border-left-color:var(--br);font-weight:600;}
+.tb-vs-rail button > i{width:15px;text-align:center;font-size:12px;color:var(--mt2);flex-shrink:0;}
+.tb-vs-rail button.is-at > i{color:var(--br);}
+.tb-vs-rail button span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tb-vs-rail button b{font-size:11px;font-weight:600;color:var(--tx);background:var(--surface);
+  border:1px solid var(--line);min-width:20px;text-align:center;padding:0 5px;}
+.tb-vs-rail button b.is-zero{color:var(--mt2);font-weight:400;background:none;border-color:transparent;}
+.tb-vs-rail-foot{padding:11px 12px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:6px;}
+.tb-vs-rail-foot .btn-tb,.tb-vs-move{width:100%;justify-content:center;}
+
+/* The pane: the one scroll container on the page. */
+.tb-vs-pane{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:4px 22px 60px;}
+.tb-vs-pane:focus-visible{outline:2px solid var(--br);outline-offset:-2px;}
+.tb-vs-sec{padding-top:16px;scroll-margin-top:8px;}
+.tb-vs-sec + .tb-vs-sec{margin-top:4px;border-top:1px solid var(--line);}
+.tb-vs-sec > h3{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:600;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--mt);margin-bottom:10px;}
+/* A section with nothing in it should cost a line, not a screen: the heading,
+   the action that would fill it, and one quiet sentence. */
+.tb-vs-sec.is-empty{padding-top:10px;}
+.tb-vs-sec.is-empty > h3{margin-bottom:4px;}
+.tb-vs-sec.is-empty .tb-card > .tb-card-header{padding-bottom:4px;}
+.tb-vs-sec > h3 i{color:var(--mt2);font-size:11px;}
+/* A panel brings its own card. Inside a section that frame is one border too
+   many, so it is flattened — but the HEADER stays, because that is where the
+   panel's action button lives. Only its title is dropped, the section heading
+   above having already said the same word. */
+.tb-vs-sec .tb-card{border:none;box-shadow:none;background:none;}
+.tb-vs-sec .tb-card > .tb-card-header{display:flex;justify-content:flex-end;
+  padding:0 0 8px;border-bottom:none;min-height:0;}
+.tb-vs-sec .tb-card > .tb-card-header .tb-card-title{display:none;}
+.tb-vs-sec .tb-card > .tb-card-body{padding:0;}
+
+/* Summary: facts and money side by side, then the notes, then the pipeline. */
+.tb-vs-summary{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:20px;align-items:start;}
+.tb-vs-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:13px 18px;}
+.tb-vs-facts dt{font-size:9.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mt);}
+.tb-vs-facts dd{margin-top:2px;font-size:13px;color:var(--tx);line-height:1.35;}
+.tb-vs-facts dd .s{display:block;font-size:11px;color:var(--mt);}
+
+.tb-vs-money{padding:11px 13px;background:var(--surface-2);border:1px solid var(--line);}
+.tb-vs-money .k{display:block;font-size:9.5px;font-weight:600;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--mt);}
+.tb-vs-money .v{display:block;font-size:21px;font-weight:500;color:var(--tx);line-height:1.25;}
+.tb-vs-money .ok{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--ok);}
+.tb-vs-money .due{font-size:11.5px;color:var(--warn);font-weight:500;}
+
+.tb-vs-notes{margin-top:16px;border-left:2px solid var(--line);padding-left:12px;
+  display:flex;flex-direction:column;gap:7px;}
+.tb-vs-notes p{font-size:12.5px;line-height:1.5;color:var(--tx);}
+.tb-vs-notes span{display:block;font-size:9.5px;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--mt);}
+
+.tb-vs-admitted{margin-top:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;
+  background:var(--info-soft);border-left:3px solid var(--info);font-size:12px;color:var(--tx);}
+.tb-vs-admitted i{color:var(--info);}
+
+.tb-vs-stage{margin-top:16px;padding:11px 13px;border:1px solid var(--line);
+  display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;}
+/* Last in the dialog and read as a footer: what the visit does NEXT, after
+   everything it has already done. A tint sets it apart from the record above
+   it without another heading. */
+.tb-vs-pane > .tb-vs-stage{margin-top:0;background:var(--surface-2);}
+.tb-vs-stage .k{font-size:9.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--mt);
+  flex-basis:100%;}
+.tb-vs-stage-btns{display:flex;gap:6px;flex-wrap:wrap;}
+.tb-vs-stage .tb-form-group{margin:0;min-width:190px;flex:1;}
+
+.tb-vs-trail{list-style:none;display:flex;flex-direction:column;gap:8px;
+  border-left:2px solid var(--line);padding-left:13px;}
+.tb-vs-trail li{position:relative;font-size:12px;line-height:1.45;}
+.tb-vs-trail li::before{content:'';position:absolute;left:-18px;top:4px;width:6px;height:6px;
+  background:var(--surface);border:2px solid var(--line-2);}
+.tb-vs-trail li:first-child::before{background:var(--br);border-color:var(--br);}
+.tb-vs-trail .w{color:var(--mt2);margin-right:8px;}
+.tb-vs-trail .s{color:var(--mt);}
+.tb-vs-trail .s b{color:var(--tx);font-weight:600;}
+.tb-vs-trail .n{display:block;color:var(--mt);font-style:italic;}
+.tb-vs-trail .b{display:block;font-size:11px;color:var(--mt2);}
+
+/* Narrow: the rail lies down across the top and the pane takes the width. */
+@media(max-width:940px){
+  .tb-vs{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);}
+  .tb-vs-rail{flex-direction:row;align-items:center;gap:8px;border-right:none;
+    border-bottom:1px solid var(--line);overflow-x:auto;overflow-y:hidden;}
+  .tb-vs-rail ul{display:flex;padding:0;flex:1;}
+  .tb-vs-rail button{white-space:nowrap;padding:11px 13px;border-left:none;
+    border-bottom:3px solid transparent;}
+  .tb-vs-rail button.is-at{border-left-color:transparent;border-bottom-color:var(--br);}
+  .tb-vs-rail-foot{border-top:none;border-left:1px solid var(--line);flex-direction:row;
+    padding:8px 10px;flex-shrink:0;}
+  .tb-vs-rail-foot .btn-tb{width:auto;}
+  .tb-vs-summary{grid-template-columns:1fr;}
+  .tb-vs-pane{padding:4px 16px 48px;}
+}
+
+/* A panel header may carry more than one action. */
+.tb-panel-acts{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+
+/* A short record of what was written, read far more often than edited. */
+.tb-notes dt{font-size:9.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mt);}
+.tb-notes dd{margin:2px 0 10px;font-size:13px;line-height:1.55;color:var(--tx);}
+.tb-notes dd:last-child{margin-bottom:0;}
+
+/* Vitals: a band of small readings rather than a page of full-width rows. */
+.tb-vitals-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--line);}
+.tb-vitals-strip > div{background:var(--surface);padding:7px 9px;min-width:0;}
+.tb-vitals-strip span{display:block;font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:var(--mt);}
+.tb-vitals-strip b{font-size:14px;font-weight:500;color:var(--tx);white-space:nowrap;}
+
+/* A panel embedded inside the summary rather than standing as its own section. */
+.tb-vs-sub{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);}
+
+/* ── Orders: one list, every kind of work ────────────────────── */
+.tb-ord-filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+.tb-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:var(--surface);
+  border:1px solid var(--line);cursor:pointer;font-family:inherit;font-size:11.5px;color:var(--mt);
+  transition:color .12s,background .12s,border-color .12s;}
+.tb-chip:hover{color:var(--tx);border-color:var(--line-2);}
+.tb-chip.is-on{color:var(--br);background:var(--br-soft);border-color:var(--br);font-weight:600;}
+.tb-chip i{font-size:10px;color:var(--mt2);}
+.tb-chip.is-on i{color:var(--br);}
+.tb-chip b{font-weight:600;}
+.tb-chip b.is-zero{color:var(--mt2);font-weight:400;}
+
+.tb-ord{padding:11px 0;border-top:1px solid var(--line);}
+.tb-ord:first-of-type{border-top:none;padding-top:0;}
+.tb-ord-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.tb-ord-icon{width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-size:11px;color:var(--mt);background:var(--surface-2);border:1px solid var(--line);}
+.tb-ord-what{flex:1;min-width:0;}
+.tb-ord-title{font-size:13px;font-weight:500;color:var(--tx);}
+.tb-ord-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--mt);}
+.tb-ord-meta .sep{color:var(--line-2);}
+.tb-ord-total{font-size:13px;font-weight:600;color:var(--tx);}
+.tb-ord-notes{margin-top:6px;padding-left:36px;font-size:12px;font-style:italic;color:var(--mt);}
+
+.tb-ord-items{list-style:none;margin-top:7px;padding-left:36px;display:flex;flex-direction:column;gap:3px;}
+.tb-ord-items li{display:flex;align-items:baseline;gap:8px;font-size:12px;color:var(--mt);}
+.tb-ord-items li > span:first-child{flex:1;min-width:0;}
+.tb-ord-items .q{color:var(--mt2);}
+.tb-ord-items li.is-cancelled{text-decoration:line-through;color:var(--mt2);}
+
+.tb-ord-acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px;padding-left:36px;}
+.tb-ord-danger{color:var(--bad);}
+.tb-ord-danger:hover{background:var(--bad-soft);}
+
+/* Suggestions under a search box: the few likely picks, one click each. */
+.tb-picker-pills{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;}
+.tb-pill{max-width:100%;padding:3px 9px;background:var(--surface-2);border:1px solid var(--line);
+  cursor:pointer;font-family:inherit;font-size:11.5px;color:var(--mt);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;transition:color .12s,background .12s,border-color .12s;}
+.tb-pill:hover,.tb-pill:focus-visible{color:var(--br);background:var(--br-soft);border-color:var(--br);}
+.tb-pill.is-on{color:var(--br);background:var(--br-soft);border-color:var(--br);font-weight:600;}
+/* A word before a row of suggestions, so the pills read as offers rather than
+   as a set of controls somebody has to work out. */
+.tb-pill-lead{font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--mt2);align-self:center;margin-right:2px;}
+
+/* ── Choosing the kind of work ───────────────────────────────
+   Six things to choose between, shown as such. A closed <select> hides five of
+   six options behind a click, and this choice decides everything below it. */
+.tb-kinds{border:none;padding:0;margin-bottom:16px;}
+.tb-kind-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:6px;margin-top:6px;}
+.tb-kind{display:flex;flex-direction:column;align-items:center;gap:5px;padding:11px 8px;cursor:pointer;
+  background:var(--surface);border:1px solid var(--line);text-align:center;
+  transition:border-color .14s,background .14s,color .14s;}
+.tb-kind:hover{border-color:var(--line-2);background:var(--surface-2);}
+.tb-kind i{font-size:15px;color:var(--mt2);transition:color .14s;}
+.tb-kind span{font-size:11.5px;color:var(--mt);line-height:1.2;}
+.tb-kind.is-on{border-color:var(--br);background:var(--br-soft);}
+.tb-kind.is-on i,.tb-kind.is-on span{color:var(--br);}
+.tb-kind.is-on span{font-weight:600;}
+.tb-kind:focus-within{outline:2px solid var(--br);outline-offset:2px;}
+
+/* The body changes with the kind; a min-height keeps the dialog from jumping
+   as the choice moves between a picker, two fields and a single input. */
+.tb-kind-body{min-height:104px;}
+
+/* A catalogue pick-list: rows, searchable, capped. */
+.tb-pick{display:flex;flex-direction:column;max-height:196px;overflow-y:auto;
+  border:1px solid var(--line);background:var(--surface);}
+.tb-pick label{display:flex;align-items:center;gap:9px;padding:7px 11px;font-size:12.5px;
+  color:var(--tx);cursor:pointer;border-bottom:1px solid var(--line);transition:background .12s;}
+.tb-pick label:last-child{border-bottom:none;}
+.tb-pick label:hover{background:var(--br-soft);}
+.tb-pick label > span{flex:1;min-width:0;}
+.tb-pick label > b{font-weight:500;color:var(--mt);}
+.tb-pick > .muted{padding:11px;}
+.tb-pick-note{margin-top:6px;font-size:11px;color:var(--mt2);}
+
+/* The wait, and what follows it.
+
+   Placing an order is not one insert: it can move stock, raise a lab order and
+   put a line on the bill together, so it is worth showing properly. The veil
+   covers the whole dialog rather than the body alone, so the footer cannot be
+   pressed twice; a rule sweeps the top edge and four squares march below it,
+   which is the design's own vocabulary rather than a borrowed spinner. */
+.tb-working{position:absolute;inset:0;z-index:5;display:none;
+  flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  padding:24px;cursor:progress;
+  background:color-mix(in srgb, var(--surface) 90%, transparent);
+  backdrop-filter:saturate(120%) blur(1.5px);
+  animation:tb-veil .16s ease both;}
+.tb-working::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--surface-2);}
+.tb-working::after{content:'';position:absolute;top:0;left:0;height:2px;width:34%;background:var(--br);
+  animation:tb-sweep 1.25s cubic-bezier(.65,.02,.35,1) infinite;}
+.tb-working-mark{display:flex;align-items:center;gap:6px;}
+.tb-working-mark i{width:11px;height:11px;border:1px solid var(--br);
+  animation:tb-fill 1.05s ease-in-out infinite;}
+.tb-working-mark i:nth-child(2){animation-delay:.12s;}
+.tb-working-mark i:nth-child(3){animation-delay:.24s;}
+.tb-working-mark i:nth-child(4){animation-delay:.36s;}
+.tb-working-head{margin:18px 0 0;font-size:13.5px;font-weight:600;color:var(--tx);}
+.tb-working-sub{margin:4px 0 0;font-size:12px;color:var(--mt);}
+@keyframes tb-veil{from{opacity:0;}to{opacity:1;}}
+@keyframes tb-sweep{from{left:-34%;}to{left:100%;}}
+@keyframes tb-fill{0%,70%,100%{background:transparent;transform:scaleY(1);}
+  25%,45%{background:var(--br);transform:scaleY(1.4);}}
+
+/* Placed. The dialog stays and asks, instead of closing and making the reader
+   find the button again for the scan they were always going to order too. */
+.tb-done{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:44px 24px;}
+.tb-done-mark{width:46px;height:46px;display:grid;place-items:center;font-size:17px;
+  border:1px solid var(--ok);background:var(--ok-soft);color:var(--ok);
+  animation:tb-done-pop .3s cubic-bezier(.34,1.32,.64,1) both;}
+.tb-done-head{margin:17px 0 0;font-size:15px;font-weight:600;color:var(--tx);}
+.tb-done-sub{margin:5px 0 0;font-size:12.5px;color:var(--mt);}
+@keyframes tb-done-pop{from{transform:scale(.7);opacity:0;}to{transform:none;opacity:1;}}
+
+@media (prefers-reduced-motion: reduce){
+  /* Still legible once the global rule stops everything on its first frame. */
+  .tb-working-mark i{background:var(--br);}
+  .tb-working::after{display:none;}
+}
+
+/* The browse list is longer than a search page — it is there to be read
+   through — so it scrolls rather than pushing the form about. */
+.tb-picker-results.is-browsing{max-height:264px;overflow-y:auto;}
+.tb-picker-group{padding:5px 11px;font-size:9.5px;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--mt2);background:var(--surface-2);
+  border-bottom:1px solid var(--line);position:sticky;top:0;z-index:1;}
+
+/* ── What a clinician needs in front of them ────────────────────────────
+   Allergies first and loudest: prescribing against one is the mistake this
+   screen sits closest to. Nothing here is new data — it is the record, shown
+   at the moment it matters instead of a click away. */
+.tb-ctx{margin-bottom:16px;border:1px solid var(--line);background:var(--surface-2);}
+.tb-ctx-row{display:flex;align-items:baseline;gap:9px;padding:8px 11px;font-size:12.5px;
+  border-bottom:1px solid var(--line);}
+.tb-ctx-row:last-child{border-bottom:none;}
+.tb-ctx-row > i{color:var(--mt2);font-size:11px;flex:none;width:13px;}
+.tb-ctx-row .k{font-size:9.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--mt);flex:none;width:72px;}
+.tb-ctx-row .v{color:var(--tx);min-width:0;}
+.tb-ctx-row .v em{font-style:normal;color:var(--mt2);font-size:11.5px;}
+.tb-ctx-row.is-alert{background:var(--bad-soft);border-left:3px solid var(--bad);}
+.tb-ctx-row.is-alert > i,.tb-ctx-row.is-alert .k{color:var(--bad);}
+.tb-ctx-row.is-alert .v{font-weight:600;color:var(--bad);}
+
+/* Phrases under a note. What reception already wrote is marked, because it is
+   this visit's own words rather than a common turn of phrase. */
+.tb-phrase-pills{margin-top:6px;}
+.tb-phrase-pills .tb-pill.is-from-desk{border-color:var(--br);color:var(--br);background:var(--br-soft);}
+.tb-phrase-pills .tb-pill.is-from-desk i{font-size:9px;margin-right:4px;}
+
+/* Suggestions under a measurement. The patient's own last reading is marked,
+   because it is a fact about them rather than a common value. */
+.tb-vital-pills{margin-top:5px;gap:4px;}
+.tb-vital-pills .tb-pill{font-size:10.5px;padding:2px 7px;}
+.tb-vital-pills .tb-pill.is-last{border-color:var(--br);color:var(--br);background:var(--br-soft);}
+.tb-vital-pills .tb-pill.is-last i{font-size:8.5px;margin-right:3px;}
+.tb-vital-pills .tb-pill.is-on{border-color:var(--tx);color:var(--tx);font-weight:600;}
+
+/* A count in a table cell. Ringed when some of them are still open, because
+   that is the number that decides whether the visit can be billed. */
+.tb-count{display:inline-grid;place-items:center;min-width:24px;height:20px;padding:0 6px;
+  font-size:11.5px;font-weight:600;color:var(--mt);background:var(--surface-2);
+  border:1px solid transparent;}
+.tb-count.is-open{color:var(--warn);background:var(--warn-soft);border-color:var(--warn-soft);}
+
+/* ── Where a visit is, and what is holding it ───────────────────────────
+   One row: where it is now, what it may do next (or why it may not), and the
+   two ways out. A shut gate states its blocker in words rather than greying
+   a button out and leaving the reader to guess. */
+.tb-gate{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.tb-gate-now{display:flex;align-items:center;gap:8px;}
+.tb-gate-now .k{font-size:9.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mt);}
+.tb-gate-next{display:flex;align-items:center;gap:9px;flex-wrap:wrap;flex:1;min-width:200px;}
+.tb-gate-acts{display:flex;align-items:center;gap:6px;margin-left:auto;}
+.tb-gate-off{display:flex;align-items:center;gap:6px;margin-left:auto;}
+.tb-gate-off .tb-input{min-width:180px;}
+.tb-gate-block{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--mt);}
+.tb-gate-block i{color:var(--mt2);font-size:11px;}
+.tb-gate-auto{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--br);}
+.tb-gate-auto i{font-size:11px;}
+
+/* ── Changing a visit's stage ───────────────────────────────────────────
+   Two lists, and the difference between them is the whole point: the moves
+   the pipeline allows, and the ones that overrule it. */
+.tb-stages{border:none;padding:0;margin-bottom:16px;}
+.tb-stages .tb-label{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px;}
+.tb-stages-warn{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:600;
+  letter-spacing:.04em;text-transform:none;color:var(--warn);}
+.tb-stage-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:6px;}
+.tb-stage{display:flex;flex-direction:column;gap:2px;padding:9px 11px;cursor:pointer;text-align:left;
+  background:var(--surface);border:1px solid var(--line);transition:border-color .14s,background .14s;}
+.tb-stage:hover{border-color:var(--line-2);background:var(--surface-2);}
+.tb-stage .l{font-size:12.5px;font-weight:500;color:var(--tx);}
+.tb-stage .t{font-size:10px;color:var(--mt2);}
+.tb-stage.is-on{border-color:var(--br);background:var(--br-soft);}
+.tb-stage.is-on .l{color:var(--br);font-weight:600;}
+.tb-stage:focus-within{outline:2px solid var(--br);outline-offset:2px;}
+/* Out of turn: dashed, because it is not part of the normal path. */
+.tb-stage.is-off{border-style:dashed;}
+.tb-stage.is-off.is-on{border-style:solid;border-color:var(--warn);background:var(--warn-soft);}
+.tb-stage.is-off.is-on .l{color:var(--warn);}
+.tb-stages-any .tb-stage .t{color:var(--warn);}
+
+.tb-vs-stage-done{display:block;margin-top:8px;font-size:11.5px;color:var(--mt2);}
+.tb-vs-cancelbtn:hover{color:var(--bad);border-color:var(--bad);}
+
+/* A move that overruled the pipeline is marked wherever the trail is read. */
+.tb-vs-trail li.is-override .s b{color:var(--warn);}
+.tb-trail-flag{display:inline-flex;align-items:center;gap:4px;margin-left:7px;
+  font-size:9.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  padding:1px 5px;background:var(--warn-soft);color:var(--warn);}
+
+/* A count riding along with a menu entry. */
+.tb-menu-count{margin-left:auto;font-size:10.5px;font-weight:600;color:var(--mt);
+  background:var(--surface-2);padding:1px 6px;}
+
+/* ── Starting a visit ───────────────────────────────────────────────────
+   Two questions and the answers to them, on one screen.
+
+   The spacing used to STACK: the modal body's own 14px gap, plus a 20px
+   margin, plus 16px of padding, plus a rule — fifty pixels and a line between
+   every section, three times down a form that then needed scrolling to reach
+   its own submit button. One rhythm now does it: 12px between fields, 20px
+   between groups, and a heading heavy enough that no rule is needed to say a
+   new group has started. */
+.tb-vform .tb-form-grid{gap:12px 16px;}
+.tb-vform .tb-check-group{margin-top:8px;}
+.tb-vform-step{display:flex;flex-direction:column;gap:12px;}
+.tb-vform-step + .tb-vform-step{margin-top:6px;}
+.tb-step-h{display:flex;align-items:baseline;gap:9px;margin:0;
+  font-size:12.5px;font-weight:700;letter-spacing:.01em;color:var(--tx);}
+/* A field inside a group carries no margin of its own — the group's gap is
+   the only thing setting the rhythm, so nothing can stack against it. */
+.tb-vform-step > .tb-form-group{margin:0;}
+.tb-vform-step .tb-picker-pills{margin-top:6px;}
+.tb-vform-step .tb-textarea{min-height:56px;}
+/* Inside the group, the gap is the only spacing. A margin here would stack
+   against it exactly as the section rules used to. */
+.tb-vform-step .tb-kinds{margin-bottom:0;}
+.tb-vform-step .tb-kind-grid{margin-top:0;}
+.tb-kind-grid-sex{grid-template-columns:repeat(auto-fit,minmax(90px,1fr));max-width:340px;}
+.tb-kind-grid-sex .tb-kind{padding:8px;}
+
+/* What we already know about this patient — shown at the moment of choosing
+   them, because every line of it is something discovered too late otherwise. */
+.tb-brief{margin-top:10px;border:1px solid var(--line);background:var(--surface-2);}
+.tb-brief-who{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;padding:10px 12px;
+  border-bottom:1px solid var(--line);font-size:13px;}
+.tb-brief-who .no{font-size:11px;color:var(--mt);}
+.tb-brief-who .meta{font-size:11.5px;color:var(--mt2);}
+.tb-brief-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:9px 12px;
+  font-size:12.5px;color:var(--tx);border-bottom:1px solid var(--line);background:var(--surface);}
+.tb-brief-row:last-child{border-bottom:none;}
+.tb-brief-row > span{flex:1;min-width:180px;}
+.tb-brief-row > i{font-size:12px;flex:none;}
+.tb-brief-row.is-warn{border-left:3px solid var(--warn);}
+.tb-brief-row.is-warn > i{color:var(--warn);}
+.tb-brief-row.is-info{border-left:3px solid var(--br);}
+.tb-brief-row.is-info > i{color:var(--br);}
+.tb-brief-row.is-due{border-left:3px solid var(--bad);}
+.tb-brief-row.is-due > i{color:var(--bad);}
+.tb-brief-done{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--ok);}
+
+/* ── Managing one order ─────────────────────────────────────────────────
+   The dialog is where the work is actually done, so the facts are the
+   smallest part of it and the two things that accumulate — what was used and
+   what was found — get the room. */
+/* The facts are the smallest part of this dialog, so they sit tight at the
+   top and the two sections that accumulate get the room below them. */
+.tb-ordm .tb-vs-facts{gap:11px 18px;}
+.tb-ordm .tb-vs-notes{margin-top:14px;}
+.tb-ordm-sec{margin-top:22px;padding-top:18px;border-top:1px solid var(--line);}
+.tb-ordm-sec:first-of-type{margin-top:18px;}
+.tb-ordm-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;}
+.tb-ordm-head .tb-label{margin:0;display:flex;align-items:center;gap:7px;}
+.tb-ordm-head .tb-label i{color:var(--mt2);font-size:11px;}
+.tb-ordm-sum{font-size:13px;font-weight:600;color:var(--tx);}
+.tb-ordm-saved{font-size:11px;color:var(--mt2);min-height:15px;display:inline-flex;align-items:center;gap:5px;}
+.tb-ordm-saved i{color:var(--ok);font-size:10px;}
+
+/* A removed line stays visible: an audit of a patient's charges needs to see
+   what came off as well as what went on. */
+.tb-ordm-table td{vertical-align:middle;font-size:12.5px;}
+.tb-ordm-table tr.is-gone td{color:var(--mt2);text-decoration:line-through;}
+.tb-ordm-table tr.is-gone td:last-child{text-decoration:none;}
+.tb-ordm-kind{display:inline-flex;width:20px;color:var(--mt2);font-size:11px;}
+.tb-ordm-gone{margin-left:7px;font-size:9.5px;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--bad);text-decoration:none;}
+
+/* Adding one: what kind, which one, how many — and a total nobody types. */
+.tb-ordm-add{margin-top:14px;padding:14px;background:var(--surface-2);border:1px solid var(--line);}
+.tb-ordm-add .tb-kinds{margin-bottom:12px;}
+.tb-kinds-2 .tb-kind-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-width:280px;}
+.tb-ordm-add-row{display:grid;grid-template-columns:minmax(0,2.4fr) 92px minmax(110px,auto) auto;
+  gap:12px;align-items:end;}
+.tb-ordm-total{display:flex;flex-direction:column;gap:1px;padding-bottom:7px;}
+.tb-ordm-total .k{font-size:9.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mt);}
+.tb-ordm-total .v{font-size:16px;font-weight:600;color:var(--tx);}
+.tb-ordm-calc{font-size:10.5px;color:var(--mt2);}
+.tb-ordm-go{margin-bottom:6px;}
+.tb-ordm-report{min-height:96px;resize:vertical;}
+
+/* The drop target. The hidden input is the real control; this is a bigger
+   target for it, and it says what happens to what lands on it. */
+.tb-drop{position:relative;margin-top:12px;padding:20px;text-align:center;cursor:default;
+  border:1px dashed var(--line-2);background:var(--surface);
+  transition:border-color .14s,background .14s;}
+.tb-drop > i{font-size:18px;color:var(--mt2);}
+.tb-drop p{margin-top:7px;font-size:12.5px;color:var(--mt);}
+.tb-drop-hint{display:block;margin-top:3px;font-size:10.5px;color:var(--mt2);}
+.tb-drop.is-over{border-color:var(--br);border-style:solid;background:var(--br-soft);}
+.tb-drop.is-over > i{color:var(--br);}
+.tb-drop-busy{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:8px;
+  font-size:12.5px;color:var(--br);background:color-mix(in srgb, var(--surface) 92%, transparent);}
+.tb-linkish{border:none;background:none;padding:0;font:inherit;color:var(--br);
+  cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
+.tb-linkish:hover{color:var(--br-d);}
+
+/* What is attached. */
+.tb-files{display:flex;flex-direction:column;margin-top:12px;border:1px solid var(--line);}
+.tb-files li{display:flex;align-items:center;gap:9px;padding:8px 11px;font-size:12.5px;
+  border-bottom:1px solid var(--line);}
+.tb-files li:last-child{border-bottom:none;}
+.tb-files li > i{color:var(--mt2);font-size:12px;}
+.tb-files a{color:var(--tx);text-decoration:none;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tb-files a:hover{color:var(--br);text-decoration:underline;}
+.tb-files .meta{font-size:10.5px;color:var(--mt2);flex-shrink:0;}
+
+/* ── Taking a payment ───────────────────────────────────────────────────
+   Each method needs something different, and the form asks for exactly that:
+   a card needs a card, a transfer needs the reference that proves it. */
+.tb-pay-bar{margin:12px 0 4px;}
+.tb-pay-ref{display:block;margin-top:2px;font-size:10.5px;color:var(--mt2);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+.tb-pay-amount{display:flex;align-items:center;gap:8px;}
+.tb-pay-amount .tb-input{flex:1;min-width:0;}
+
+/* The next step, at the foot of the section that earns it. */
+.tb-next{display:flex;align-items:center;justify-content:flex-end;gap:11px;flex-wrap:wrap;
+  padding:12px 16px;border-top:1px solid var(--line);background:var(--surface-2);}
+.tb-next-say{font-size:12px;color:var(--mt);}
+.tb-next-block{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--mt);}
+.tb-next-block i{font-size:11px;color:var(--mt2);}
+.tb-next-auto{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--br);}
+.tb-next-auto i{font-size:11px;}
+
+/* ── The bill ───────────────────────────────────────────────────────────
+   Read-only about its own lines. Every charge belongs to a piece of work, so
+   every row offers the way into it — which is the only place it can change. */
+.tb-bill-table td{vertical-align:top;}
+.tb-bill-table tr.is-off td{color:var(--mt2);}
+.tb-bill-table tr.is-off td:first-child{text-decoration:line-through;}
+.tb-bill-order{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--mt);
+  background:none;border:none;padding:0;cursor:pointer;text-align:left;}
+.tb-bill-order:hover{color:var(--br);}
+.tb-bill-order > i:first-child{font-size:11px;color:var(--mt2);}
+.tb-bill-order:hover > i{color:var(--br);}
+.tb-bill-go{font-size:9px;opacity:0;transition:opacity .14s;}
+.tb-bill-order:hover .tb-bill-go{opacity:1;}
+.tb-bill-hint{display:flex;align-items:flex-start;gap:7px;margin-top:12px;font-size:11.5px;color:var(--mt2);}
+.tb-bill-hint i{font-size:10px;margin-top:2px;}
+/* The same shape as a hint but impossible to skim past: a figure nobody has
+   been asked to pay is not a footnote. */
+.tb-bill-warn{display:flex;align-items:flex-start;gap:8px;margin-top:10px;padding:9px 11px;
+  border-left:2px solid var(--warn,#9a6b00);background:var(--surface-2);
+  font-size:12px;line-height:1.5;color:var(--tx);}
+.tb-bill-warn i{color:var(--warn,#9a6b00);font-size:11px;margin-top:3px;flex-shrink:0;}
+
+/* Says why the tax is what it is, on the line that decides it. */
+.tb-line-exempt{margin-left:7px;font-size:9.5px;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;padding:1px 5px;background:var(--surface-2);color:var(--mt);}
+
+.tb-bill-discount th{color:var(--warn);}
+.tb-bill-discount em{font-style:normal;font-weight:400;color:var(--mt2);font-size:11px;}
+.tb-disc-preview{display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+  margin-top:12px;padding:9px 11px;font-size:12.5px;background:var(--surface-2);border:1px solid var(--line);}
+.tb-disc-preview b{font-size:14px;color:var(--tx);}
+
+/* The invoice, once it exists. It lives here rather than on another page:
+   whoever raised it is looking at the visit. */
+.tb-inv{margin-top:18px;padding:14px;border:1px solid var(--line);border-left:3px solid var(--ok);
+  background:var(--surface-2);}
+.tb-inv-head{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:12px;}
+.tb-inv-no{font-size:13.5px;font-weight:600;color:var(--tx);}
+.tb-inv .tb-vs-facts{gap:10px 18px;}
+.tb-inv-acts{display:flex;align-items:center;gap:6px;margin-top:13px;}
+
+/* The words beside a charge, and the hands on it. A line that can be
+   corrected has to say who corrected it. */
+.tb-line-note{display:block;margin-top:2px;font-size:11.5px;color:var(--tx);}
+.tb-line-note::before{content:'“';color:var(--mt2);}
+.tb-line-note::after{content:'”';color:var(--mt2);}
+.tb-line-who{display:block;margin-top:2px;font-size:10.5px;color:var(--mt2);}
+.tb-line-who em{font-style:normal;color:var(--warn);}
+
+/* Corrected in place: the row becomes the form, so nothing moves under the
+   reader and no third dialog opens over the two already stacked. */
+.tb-ordm-table tr.is-editing > td{background:var(--br-soft);padding:12px;}
+.tb-line-edit{display:grid;grid-template-columns:minmax(0,1.4fr) 92px minmax(0,1.6fr) auto;
+  gap:12px;align-items:end;}
+.tb-line-edit-name{display:flex;align-items:center;gap:7px;padding-bottom:7px;
+  font-size:12.5px;font-weight:500;color:var(--tx);}
+.tb-line-edit-name i{color:var(--mt2);font-size:11px;}
+.tb-line-edit .tb-form-group{margin:0;}
+.tb-line-edit-acts{display:flex;align-items:center;gap:6px;padding-bottom:1px;}
+
+@media (max-width: 820px){
+  .tb-line-edit{grid-template-columns:1fr;}
+}
+
+/* Two choices is a switch, not a pair of cards: the cards were as tall as the
+   fields under them and said less. */
+.tb-seg{display:flex;align-items:center;gap:0;margin-bottom:12px;}
+.tb-seg-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;cursor:pointer;
+  font-size:12px;color:var(--mt);background:var(--surface);border:1px solid var(--line);
+  transition:color .14s,background .14s,border-color .14s;}
+.tb-seg-btn + .tb-seg-btn{border-left:none;}
+.tb-seg-btn i{font-size:11px;}
+.tb-seg-btn:hover{color:var(--tx);background:var(--surface-2);}
+.tb-seg-btn.is-on{color:var(--br);background:var(--br-soft);border-color:var(--br);font-weight:600;}
+.tb-seg-btn.is-on + .tb-seg-btn{border-left:1px solid var(--line);}
+.tb-seg-btn:focus-visible{outline:2px solid var(--br);outline-offset:2px;z-index:1;}
+.tb-seg-hint{margin-left:11px;font-size:11.5px;color:var(--mt2);}
+
+/* What actually happened to this order, on one line. A grid of half-empty
+   definition pairs is not a trail. */
+.tb-ord-trail{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:12px;
+  font-size:11.5px;color:var(--mt);}
+.tb-ord-trail i{font-size:10px;color:var(--mt2);margin-right:5px;}
+.tb-ord-trail .is-off{color:var(--bad);}
+.tb-ord-trail .is-off i{color:var(--bad);}
+
+/* The way out sits with Close, not beside the button people mean to press. */
+.tb-ord-acts-left{display:flex;align-items:center;gap:6px;}
+.tb-ord-kill:hover{color:var(--bad);border-color:var(--bad);}
+
+/* ── The stay, inside its order ─────────────────────────────────────────
+   An inpatient stay IS an order (docs/orders.md), so the bed, the nights and
+   the rate are read here from the admission itself rather than copied. */
+.tb-stay{margin-top:16px;padding:14px;border:1px solid var(--line);border-left:3px solid var(--br);
+  background:var(--surface-2);}
+.tb-stay-bed{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:12px;font-size:13.5px;}
+.tb-stay-bed > i{color:var(--br);font-size:13px;}
+.tb-stay .tb-vs-facts{gap:10px 18px;}
+.tb-stay-note{display:flex;align-items:flex-start;gap:7px;margin-top:12px;font-size:12px;color:var(--mt);}
+.tb-stay-note i{color:var(--mt2);font-size:11px;margin-top:2px;}
+.tb-stay .tb-form-group{margin-top:10px;}
+.tb-stay > .btn-tb{margin-top:12px;}
+
+/* ── What cancelling costs ──────────────────────────────────────────────
+   Not a confirm box. Cancelling reverses money and puts goods back on a
+   shelf, so the dialog becomes the receipt for both before either happens. */
+.tb-undo{text-align:center;padding:6px 0 18px;}
+.tb-undo-mark{width:42px;height:42px;margin:0 auto;display:grid;place-items:center;font-size:15px;
+  border:1px solid var(--bad);background:var(--bad-soft);color:var(--bad);}
+.tb-undo h3{margin-top:13px;font-size:15px;font-weight:600;color:var(--tx);}
+.tb-undo p{margin-top:3px;font-size:12.5px;}
+.tb-undo-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;margin-bottom:16px;}
+.tb-undo-list{display:flex;flex-direction:column;border:1px solid var(--line);}
+.tb-undo-list li{display:flex;align-items:center;gap:8px;padding:8px 11px;font-size:12.5px;
+  border-bottom:1px solid var(--line);}
+.tb-undo-list li:last-child{border-bottom:none;}
+.tb-undo-list li > span:first-child{flex:1;min-width:0;}
+.tb-undo-list .q{color:var(--mt2);font-size:11px;flex:none;}
+.tb-undo-list b{font-weight:600;color:var(--bad);}
+.tb-undo-cols section:last-child .tb-undo-list b{color:var(--ok);}
+.tb-undo-total{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  margin-top:9px;padding-top:9px;border-top:1px solid var(--line);font-size:12.5px;}
+.tb-undo-total b{font-size:14px;font-weight:600;color:var(--bad);}
+
+@media (max-width: 820px){
+  .tb-ordm-add-row{grid-template-columns:1fr;align-items:stretch;}
+  .tb-ordm-go{margin-bottom:0;}
+  .tb-ordm-total{flex-direction:row;align-items:baseline;gap:9px;padding-bottom:0;}
+}
+
+/* Orders as rows: one line apiece, the detail a click away. */
+.tb-ord-table td{vertical-align:middle;}
+.tb-ord-row{cursor:pointer;transition:background .12s;}
+.tb-ord-row:hover,.tb-ord-row:focus-visible{background:var(--br-soft);}
+.tb-ord-t{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--tx);}
+.tb-ord-t i{width:14px;text-align:center;font-size:11px;color:var(--mt2);}
+.tb-ord-row:hover .tb-ord-t i{color:var(--br);}
+.tb-ord-k{display:block;padding-left:22px;font-size:11px;color:var(--mt);}
+.tb-ord-go{font-size:10px;color:var(--line-2);}
+.tb-ord-row:hover .tb-ord-go{color:var(--br);}
+.tb-ord-foot{justify-content:space-between;}
+
+/* ── Payments: where the bill stands ─────────────────────────── */
+.tb-pay-state{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:12px;
+  padding:11px 13px;margin-bottom:13px;background:var(--surface-2);border:1px solid var(--line);}
+.tb-pay-state .k{display:block;font-size:9.5px;font-weight:600;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--mt);}
+.tb-pay-state .v{display:block;font-size:16px;font-weight:500;color:var(--tx);}
+.tb-pay-state .v.ok{color:var(--ok);font-size:13px;font-weight:600;}
+.tb-pay-state .v.due{color:var(--warn);}
+
+/* A table cell that opens a dialog instead of navigating. */
+.tb-rowbtn{background:none;border:none;padding:0;font:inherit;color:var(--br);cursor:pointer;text-align:left;}
+.tb-rowbtn:hover{text-decoration:underline;}
+
+/* ── Page header / breadcrumb ──────────────────────────────── */
+.tb-page-header{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:22px;flex-wrap:wrap;}
+.tb-page-header h1{font-size:24px;font-weight:200;letter-spacing:-.02em;line-height:1.15;}
+.tb-breadcrumb{font-size:12px;font-weight:400;color:var(--mt2);margin-top:6px;}
+.tb-breadcrumb a{color:var(--mt);} .tb-breadcrumb a:hover{color:var(--br);}
+.tb-breadcrumb span{margin:0 6px;color:var(--line-2);}
+
+/* ── Cards ─────────────────────────────────────────────────── */
+.tb-card{background:var(--surface);border:1px solid var(--line);}
+.tb-card-header{padding:15px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.tb-card-title{font-size:13px;font-weight:600;letter-spacing:.01em;}
+.tb-card-body{padding:18px;}
+.tb-card-footer{padding:14px 18px;border-top:1px solid var(--line);}
+
+/* ── Tables ────────────────────────────────────────────────── */
+.tb-table-wrap{overflow-x:auto;}
+.tb-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.tb-table thead th{text-align:left;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--mt2);padding:7px 12px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface);}
+.tb-table tbody td{padding:8px 12px;border-bottom:1px solid var(--line);color:var(--tx);vertical-align:middle;}
+.tb-table tbody tr:last-child td{border-bottom:none;}
+.tb-table tbody tr:hover td{background:var(--surface-2);}
+.tb-table-actions{display:flex;gap:6px;align-items:center;}
+.mono{font-family:var(--font);letter-spacing:.04em;font-size:12px;}
+
+/* ── Buttons (square, one system) ──────────────────────────── */
+.btn-tb{display:inline-flex;align-items:center;justify-content:center;gap:7px;font-family:var(--font);
+  font-weight:500;font-size:12px;letter-spacing:.01em;padding:7px 13px;cursor:pointer;border:1px solid transparent;
+  transition:background .13s,border-color .13s,color .13s;white-space:nowrap;}
+.btn-tb i{font-size:11px;}
+.btn-tb-primary{background:var(--br);color:#fff;border-color:var(--br);}
+.btn-tb-primary:hover{background:var(--br-d);border-color:var(--br-d);}
+.btn-tb-ghost{background:var(--surface);border-color:var(--line-2);color:var(--tx);}
+.btn-tb-ghost:hover{border-color:var(--br);color:var(--br);}
+.btn-tb-danger{background:var(--surface);border-color:var(--line-2);color:var(--bad);}
+.btn-tb-danger:hover{background:var(--bad);border-color:var(--bad);color:#fff;}
+.btn-tb-success{background:var(--ok);color:#fff;border-color:var(--ok);}
+.btn-tb-success:hover{filter:brightness(.94);}
+.btn-tb-sm{padding:6px 11px;font-size:11.5px;}
+.btn-tb-icon{padding:5px 7px;}
+
+/* ── Badges (status-tinted, square) ────────────────────────── */
+.badge-tb,.tb-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;
+  letter-spacing:.03em;padding:2px 7px;text-transform:uppercase;background:var(--surface-2);color:var(--mt);}
+.badge-active,.badge-verified{background:var(--ok-soft);color:var(--ok);}
+.badge-ongoing,.badge-pending,.badge-info{background:var(--info-soft);color:var(--info);}
+.badge-high,.badge-warn{background:var(--warn-soft);color:var(--warn);}
+.badge-closed,.badge-danger{background:var(--bad-soft);color:var(--bad);}
+.badge-brown,.badge-neutral{background:var(--surface-2);color:var(--mt);}
+
+/* ── Forms ─────────────────────────────────────────────────── */
+.tb-form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px 14px;}
+.tb-form-group{display:flex;flex-direction:column;}
+.tb-form-group.full{grid-column:1/-1;}
+.tb-label,label.tb-label{font-size:10.5px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--mt2);margin-bottom:5px;}
+.tb-input,.tb-select,.tb-textarea{width:100%;font-family:var(--font);font-size:13px;font-weight:400;color:var(--tx);
+  background:var(--surface);border:1px solid var(--line-2);padding:8px 11px;font-size:13px;transition:border-color .13s,box-shadow .13s;}
+.tb-input:focus,.tb-select:focus,.tb-textarea:focus{outline:none;border-color:var(--br);box-shadow:0 0 0 3px var(--br-soft);}
+.tb-input::placeholder,.tb-textarea::placeholder{color:var(--mt2);font-weight:300;}
+.tb-textarea{resize:vertical;min-height:64px;}
+.tb-field-error{color:var(--bad);font-size:11px;margin-top:3px;}
+/* A hint sits with its control, not as a line of its own. */
+.tb-field-hint{font-size:11px;color:var(--mt2);margin-top:4px;line-height:1.4;}
+.tb-check-group{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--tx);}
+.tb-check-group input{width:15px;height:15px;accent-color:var(--br);}
+
+/* ── Filter bar / tabs ─────────────────────────────────────── */
+.tb-filter-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:16px;}
+.tb-filter-bar .tb-input,.tb-filter-bar .tb-select{width:auto;min-width:160px;padding:6px 10px;font-size:12.5px;}
+
+/* ── Consolidated page toolbar (search/filters left, actions right) ─── */
+.tb-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px;padding-top:0;}
+.tb-toolbar-actions{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.tb-toolbar-bare{justify-content:flex-end;min-height:0;margin-bottom:10px;}
+@media(max-width:640px){
+  .tb-toolbar-actions{margin-left:0;width:100%;}
+}
+.tb-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px;}
+.tb-tab{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;font-size:12.5px;font-weight:500;color:var(--mt);
+  background:var(--surface);border:1px solid var(--line);cursor:pointer;transition:.12s;}
+.tb-tab:hover{border-color:var(--line-2);color:var(--tx);}
+.tb-tab.on{background:var(--br);color:#fff;border-color:var(--br);}
+.tb-tab .n{font-size:11px;opacity:.85;}
+
+/* ── Stat cards ────────────────────────────────────────────── */
+.tb-stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;}
+.tb-stat-card{background:var(--surface);border:1px solid var(--line);padding:16px 18px;display:flex;align-items:center;gap:13px;
+  transition:border-color .12s;}
+.tb-stat-card:hover{border-color:var(--line-2);}
+.tb-stat-icon{width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;
+  background:var(--br-soft);color:var(--br);}
+.tb-stat-value{font-size:23px;font-weight:200;line-height:1;letter-spacing:-.01em;}
+.tb-stat-label{font-size:10.5px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:var(--mt2);margin-top:5px;}
+
+/* ── Role dashboards ───────────────────────────────────────── */
+/* One tight vertical rhythm — a single small gap between every block, no
+   stacked per-element margins. Compact but well organised. */
+.dash-root{display:flex;flex-direction:column;gap:12px;}
+.dash-section{margin:0;}
+.dash-section-title{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--mt2);margin:0 0 8px;}
+.dash-section-title i{color:var(--mt2);}
+/* responsive multi-column dashboard grid */
+.dash-grid{display:grid;gap:12px;}
+.dash-grid.cols-2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr));}
+.dash-grid.cols-3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr));}
+/* Cards keep their own height instead of stretching to the tallest in the row.
+   A three-bar chart beside a fifteen-row table was being pulled to the table's
+   height, so the short card ended in a panel of empty space. The dashboards
+   want the stretched version (their rows are deliberately even), so this is a
+   modifier rather than a change to .dash-grid. */
+.dash-grid.tops{align-items:start;}
+/* Compact dashboard cards/stats (scoped so the rest of the system is untouched) */
+.dash-root .tb-stats-grid{gap:12px;}
+.dash-root .tb-stat-card{padding:12px 14px;gap:11px;}
+.dash-root .tb-stat-icon{width:36px;height:36px;font-size:15px;}
+.dash-root .tb-card-header{padding:11px 15px;}
+.dash-root .tb-card-body{padding:12px 15px;}
+/* stat card: clickable + tone + sub-line */
+a.tb-stat-card{text-decoration:none;color:inherit;}
+a.tb-stat-card:hover{border-color:var(--br);}
+.tb-stat-sub{font-size:11px;color:var(--mt);margin-top:3px;font-weight:500;}
+.tb-stat-icon.tone-ok{background:var(--ok-soft);color:var(--ok);}
+.tb-stat-icon.tone-warn{background:var(--warn-soft);color:var(--warn);}
+.tb-stat-icon.tone-bad{background:var(--bad-soft);color:var(--bad);}
+.tb-stat-value.tone-warn{color:var(--warn);} .tb-stat-value.tone-bad{color:var(--bad);}
+/* quick-action tiles */
+.dash-actions{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+.dash-action{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);
+  font-size:12.5px;font-weight:500;color:var(--tx);transition:all .13s;}
+.dash-action:hover{border-color:var(--br);background:var(--br-soft);color:var(--br);}
+.dash-action i{width:30px;height:30px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  background:var(--br-soft);color:var(--br);font-size:13px;transition:all .13s;}
+.dash-action:hover i{background:var(--br);color:#fff;}
+/* queue list widget */
+.dash-queue{display:flex;flex-direction:column;}
+.dash-queue-row{display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--line);font-size:12.5px;}
+.dash-queue-row:last-child{border-bottom:none;}
+a.dash-queue-row{color:inherit;text-decoration:none;transition:background .12s;}
+a.dash-queue-row:hover{background:var(--surface-2);}
+.dash-queue-row .qmain{flex:1;min-width:0;}
+.dash-queue-row .qname{font-weight:500;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dash-queue-row .qmeta{font-size:11px;color:var(--mt);margin-top:1px;}
+.dash-queue-row .qtime{font-size:11.5px;color:var(--mt);font-variant-numeric:tabular-nums;flex-shrink:0;}
+.dash-empty{padding:16px 12px;text-align:center;color:var(--mt2);font-size:12px;}
+.dash-empty i{display:block;font-size:19px;margin-bottom:6px;color:var(--line-2);}
+.dash-count-badge{background:var(--br-soft);color:var(--br);font-size:11px;font-weight:600;padding:1px 8px;min-width:22px;text-align:center;}
+/* horizontal mini bar-chart */
+.dash-bars{display:flex;flex-direction:column;gap:9px;}
+.dash-bar-row{display:grid;grid-template-columns:96px 1fr auto;align-items:center;gap:10px;font-size:12px;}
+.dash-bar-row .bl{color:var(--mt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:capitalize;}
+.dash-bar-track{height:8px;background:var(--surface-2);overflow:hidden;}
+.dash-bar-fill{display:block;height:100%;min-width:2px;background:var(--br);}
+.dash-bar-row .bv{font-weight:600;color:var(--tx);font-variant-numeric:tabular-nums;min-width:42px;text-align:right;}
+/* donut (conic-gradient) + legend */
+.dash-donut-wrap{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+.dash-donut{width:120px;height:120px;border-radius:50%;flex-shrink:0;position:relative;}
+.dash-donut::after{content:'';position:absolute;inset:26px;background:var(--surface);border-radius:50%;}
+.dash-donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1;}
+.dash-donut-center .dn{font-size:22px;font-weight:300;line-height:1;}
+.dash-donut-center .dl{font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--mt2);margin-top:2px;}
+.dash-legend{display:flex;flex-direction:column;gap:6px;font-size:12px;}
+.dash-legend-row{display:flex;align-items:center;gap:8px;}
+.dash-legend-dot{width:10px;height:10px;flex-shrink:0;}
+.dash-legend-row .ll{color:var(--mt);text-transform:capitalize;flex:1;}
+.dash-legend-row .lv{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.dash-legend-row .lv em{font-style:normal;font-weight:400;color:var(--mt2);margin-left:6px;font-size:11px;}
+.dash-legend-sub{margin:4px 0 0;font-size:11px;color:var(--mt2);}
+.dash-legend{flex:1;min-width:150px;}
+/* sparkline */
+.dash-spark{width:100%;height:56px;display:block;}
+.dash-spark-foot{display:flex;justify-content:space-between;font-size:10.5px;color:var(--mt2);margin-top:6px;}
+
+/* ── Alerts / flash ────────────────────────────────────────── */
+.tb-flash-wrap{position:fixed;top:74px;right:24px;z-index:60;display:flex;flex-direction:column;gap:10px;max-width:360px;}
+.tb-alert{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;font-size:13px;background:var(--surface);
+  border:1px solid var(--line);border-left:3px solid var(--mt2);box-shadow:0 10px 30px -18px rgba(17,28,46,.35);}
+.tb-alert-success{border-left-color:var(--ok);} .tb-alert-success i{color:var(--ok);}
+.tb-alert-error{border-left-color:var(--bad);} .tb-alert-error i{color:var(--bad);}
+.tb-alert-warning{border-left-color:var(--warn);} .tb-alert-warning i{color:var(--warn);}
+.tb-alert-x{margin-left:auto;border:none;background:none;color:var(--mt2);cursor:pointer;}
+.tb-alert ul{margin:4px 0 0;padding-left:16px;list-style:disc;}
+
+/* ── Empty state ───────────────────────────────────────────── */
+.tb-empty{text-align:center;padding:48px 20px;color:var(--mt2);}
+/* One line, not one screen — for a section inside a page full of sections. */
+.tb-empty-sm{display:flex;align-items:center;gap:8px;padding:2px 0 4px;text-align:left;font-size:12.5px;}
+.tb-empty-sm i{font-size:12px;margin:0;display:inline;}
+.tb-empty i{font-size:26px;color:var(--line-2);margin-bottom:10px;display:block;}
+.tb-empty p{font-size:13px;}
+
+/* ── Timeline (status history) ─────────────────────────────── */
+.tb-timeline{position:relative;padding-left:22px;}
+.tb-timeline::before{content:'';position:absolute;left:5px;top:4px;bottom:4px;width:1px;background:var(--line);}
+.tb-tl-item{position:relative;padding:0 0 16px;}
+.tb-tl-item::before{content:'';position:absolute;left:-21px;top:4px;width:9px;height:9px;background:var(--surface);
+  border:2px solid var(--br);}
+.tb-tl-item .t{font-size:12.5px;font-weight:500;} .tb-tl-item .m{font-size:11.5px;color:var(--mt2);margin-top:2px;}
+
+/* ── Modal / drawer ────────────────────────────────────────── */
+
+.tb-drawer{position:fixed;top:0;right:0;height:100vh;width:min(420px,92vw);background:var(--surface);border-left:1px solid var(--line);
+  z-index:85;transform:translateX(100%);transition:transform .2s;display:flex;flex-direction:column;}
+.tb-drawer.open{transform:none;}
+
+/* ── Pagination ────────────────────────────────────────────── */
+.tb-content nav[role="navigation"] span,.tb-content nav[role="navigation"] a,
+.pagination a,.pagination span{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:34px;
+  padding:0 8px;border:1px solid var(--line);background:var(--surface);color:var(--tx);font-size:12.5px;margin:0 -1px 0 0;}
+.pagination .active span,nav[role="navigation"] [aria-current] span{background:var(--br);color:#fff;border-color:var(--br);}
+
+/* ── Utilities ─────────────────────────────────────────────── */
+.muted{color:var(--mt2);} .thin{font-weight:300;}
+
+/* ── Responsive ────────────────────────────────────────────── */
+/* Mobile drawer backdrop (only visible while the drawer is open on mobile) */
+.tb-sidebar-backdrop{position:fixed;inset:0;background:rgba(15,23,32,.45);z-index:49;}
+@media(min-width:901px){.tb-sidebar-backdrop{display:none !important;}}
+
+@media(max-width:900px){
+  .tb-sidebar{transform:translateX(-100%);transition:transform .22s ease;box-shadow:4px 0 24px -8px rgba(15,23,32,.35);}
+  .tb-sidebar.open{transform:none;}
+  .tb-sidebar-close{display:block;}
+  .tb-main{margin-left:0;}
+  .tb-topbar{padding:0 14px;gap:8px;}
+  .tb-topbar-toggle{display:inline-flex;flex-shrink:0;}
+  .tb-topbar-right{gap:4px;}
+  .tb-page-title{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tb-user-name{display:none;}          /* avatar + caret only on mobile */
+  .tb-user-trigger{padding:5px 4px;gap:5px;}
+  .tb-content{padding:14px 16px 48px;}
+  .tb-form-grid{grid-template-columns:1fr;}
+  .tb-footer{left:0;padding:0 16px;}
+}
+@media(max-width:600px){
+  .tb-footer{padding:0 14px;font-size:11px;}
+  .tb-footer-brand,.tb-foot-sm-hide{display:none;}
+}
+
+/* ── Toast host (Livewire feedback) ─────────────────────────── */
+.tb-toast-host{position:fixed;top:16px;right:16px;z-index:1200;display:flex;flex-direction:column;gap:10px;max-width:360px;}
+.tb-toast{display:flex;align-items:flex-start;gap:10px;background:var(--surface);border:1px solid var(--line);
+  border-left:3px solid var(--br);border-radius:8px;padding:12px 14px;box-shadow:0 8px 30px -10px rgba(0,0,0,.22);font-size:.88rem;}
+.tb-toast i:first-child{margin-top:1px;}
+.tb-toast-success{border-left-color:#16a34a;} .tb-toast-success > i:first-child{color:#16a34a;}
+.tb-toast-error{border-left-color:#c0392b;} .tb-toast-error > i:first-child{color:#c0392b;}
+.tb-toast-info{border-left-color:#2563eb;} .tb-toast-info > i:first-child{color:#2563eb;}
+.tb-toast-warning{border-left-color:#b45309;} .tb-toast-warning > i:first-child{color:#b45309;}
+.tb-toast span{flex:1;color:var(--tx);line-height:1.4;}
+.tb-toast-x{border:none;background:none;color:var(--mt2);cursor:pointer;padding:0 2px;font-size:.9rem;}
+.tb-toast-x:hover{color:var(--tx);}
+
+/* ── Modal (the standard dialog for every form / inline action) ──
+   Centred over a dimmed backdrop, sized by the component's `size` prop, with a
+   sticky head and foot and a scrolling body. Full-screen sheet on phones. */
+.tb-modal-backdrop{position:fixed;inset:0;z-index:1100;background:rgba(15,23,32,.55);backdrop-filter:saturate(140%) blur(2px);
+  display:flex;align-items:center;justify-content:center;padding:28px 22px;overflow-y:auto;}
+.tb-modal{position:relative;z-index:1110;width:100%;background:var(--surface);border:1px solid var(--line);
+  box-shadow:0 30px 80px -30px rgba(15,23,32,.55);display:flex;flex-direction:column;max-height:calc(100vh - 56px);}
+.tb-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 22px;
+  border-bottom:1px solid var(--line);background:var(--surface);flex-shrink:0;}
+.tb-modal-head h2{font-size:1.05rem;font-weight:600;margin:0;flex:1;min-width:0;}
+.tb-modal-head-acts{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.tb-modal-head b{font-size:14px;font-weight:600;}
+.tb-modal-x{border:none;background:none;color:var(--mt);cursor:pointer;width:34px;height:34px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:17px;transition:color .12s,background .12s;}
+.tb-modal-x:hover{color:var(--tx);background:var(--surface-2);}
+.tb-modal-body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+  padding:20px 22px;display:flex;flex-direction:column;gap:14px;}
+/* Two-column form grid inside wide modals — long forms stop being a single tall column. */
+.tb-modal-body .tb-form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 18px;}
+.tb-modal-foot{padding:14px 22px;border-top:1px solid var(--line);background:var(--surface);flex-shrink:0;
+  display:flex;gap:10px;justify-content:flex-end;align-items:center;}
+.tb-loading{opacity:.55;pointer-events:none;transition:opacity .12s;}
+/* Locks page scroll behind any open modal (reference-counted in JS). */
+.tb-scroll-lock{overflow:hidden;}
+
+/* Modal enter animation — a short rise, not a slide from the edge. */
+.tb-modal-enter{transition:transform .18s cubic-bezier(.4,0,.2,1),opacity .18s ease;}
+.tb-modal-start{transform:translateY(14px) scale(.985);opacity:0;}
+.tb-modal-end{transform:none;opacity:1;}
+
+/* ── Modal: phones — a full-screen sheet ───────────────────── */
+@media(max-width:640px){
+  .tb-modal-backdrop{padding:0;align-items:stretch;}
+  .tb-modal{max-width:100% !important;max-height:100%;min-height:100%;border:none;}
+  .tb-modal-head{padding:14px 16px;position:sticky;top:0;z-index:1;}
+  .tb-modal-body{padding:14px 16px;}
+  .tb-modal-body .tb-form-grid{grid-template-columns:1fr;}
+  .tb-modal-foot{padding:12px 16px;position:sticky;bottom:0;}
+  .tb-modal-foot .btn-tb{flex:1;min-height:44px;justify-content:center;}
+  .tb-modal-x{width:40px;height:40px;font-size:19px;}
+  /* 16px inputs prevent iOS Safari from auto-zooming the page on focus. */
+  .tb-input,.tb-select,.tb-textarea{font-size:16px;}
+}
+
+/* ── Sample/starter data import modal ───────────────────────── */
+.smpl-tools{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+.smpl-table th{padding:8px 10px;}
+.smpl-table td{padding:7px 10px;vertical-align:middle;}
+.smpl-table tbody tr:hover{background:var(--surface-2);}
+.smpl-input{padding:6px 9px;font-size:12.5px;max-width:130px;}
+.smpl-table td .smpl-input[type=number]{text-align:right;}
+.btn-tb-sm{padding:5px 10px;font-size:11px;}
+
+/* Visually-hidden but accessible (page headings live in the topbar now) */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Additions for the PJAX/Livewire foundation (docs/PJAX_LIVEWIRE_IMPROVEMENT_PLAN.md)
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Aliases for classes that views already use but the system never defined */
+.tb-alert-danger{border-left-color:var(--bad);} .tb-alert-danger i{color:var(--bad);}
+.badge-success{background:var(--ok-soft);color:var(--ok);}
+
+/* Livewire navigate progress bar (color set in config/livewire.php) */
+#nprogress .bar{height:2px !important;}
+
+/* Offline banner (shell) */
+.tb-offline{position:fixed;left:50%;bottom:44px;transform:translateX(-50%);z-index:1300;background:var(--tx);color:#fff;
+  font-size:12px;font-weight:500;padding:8px 14px;box-shadow:0 8px 24px -10px rgba(0,0,0,.4);display:flex;align-items:center;gap:8px;}
+
+/* Session flash bridge marker never renders */
+template[data-td-flash]{display:none;}
+
+/* Skeleton (lazy sections) */
+.tb-skeleton{display:flex;flex-direction:column;gap:10px;padding:18px;}
+.tb-skeleton-line{height:12px;background:linear-gradient(90deg,var(--surface-2) 25%,var(--line) 50%,var(--surface-2) 75%);
+  background-size:200% 100%;animation:tb-shimmer 1.2s infinite;}
+.tb-skeleton-line.w60{width:60%;} .tb-skeleton-line.w40{width:40%;} .tb-skeleton-line.w80{width:80%;}
+@keyframes tb-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* Themed Livewire pagination (resources/views/livewire/partials/pagination.blade.php) */
+.tb-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px;font-size:12.5px;}
+.tb-pagination .pg-info{color:var(--mt);}
+.tb-pagination .pg-links{display:flex;align-items:center;}
+.tb-pagination .pg-links button,.tb-pagination .pg-links span{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:34px;
+  padding:0 8px;border:1px solid var(--line);background:var(--surface);color:var(--tx);font-size:12.5px;margin:0 -1px 0 0;
+  font-family:var(--font);cursor:pointer;transition:background .12s,color .12s;}
+.tb-pagination .pg-links button:hover{background:var(--surface-2);}
+.tb-pagination .pg-links button:disabled{color:var(--mt2);cursor:default;background:var(--surface);}
+.tb-pagination .pg-links span[aria-current]{background:var(--br);color:#fff;border-color:var(--br);}
+.tb-pagination .pg-links .pg-gap{color:var(--mt2);border-color:transparent;background:none;}
+.tb-per-page{display:inline-flex;align-items:center;gap:6px;color:var(--mt);}
+.tb-per-page select{width:auto;padding:5px 8px;font-size:12px;}
+
+/* Sortable table headers */
+.tb-table thead th.sortable{cursor:pointer;user-select:none;}
+.tb-table thead th.sortable:hover{color:var(--tx);}
+.tb-table thead th.sortable i{margin-left:3px;}
+
+/* Row link cell: the whole primary cell is the navigate link */
+.tb-table td.rowlink a{display:block;color:inherit;}
+.tb-table td.rowlink a:hover{color:var(--br);}
+
+/* Detail-page two-column layout (replaces 7 duplicated @push('styles') blocks) */
+.tb-detail-cols{display:grid;grid-template-columns:minmax(280px,340px) 1fr;gap:20px;align-items:start;}
+.tb-detail-cols > *{min-width:0;}
+.tb-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
+.tb-stack{display:flex;flex-direction:column;gap:20px;}
+@media(max-width:900px){.tb-detail-cols,.tb-grid-2,.pt-cols,.rep-cols{grid-template-columns:1fr;}}
+
+/* Spacing / alignment utilities (so views stop inlining style="") */
+.tb-mt-2{margin-top:8px;} .tb-mt-3{margin-top:12px;} .tb-mt-4{margin-top:16px;}
+/* The bottom half of the scale was missing its small end, so `tb-mb-3` looked
+   like a utility and rendered as nothing. */
+.tb-mb-2{margin-bottom:8px;} .tb-mb-3{margin-bottom:12px;} .tb-mb-4{margin-bottom:16px;} .tb-mb-5{margin-bottom:20px;}
+.tb-text-right{text-align:right;} .tb-text-center{text-align:center;} .tb-nowrap{white-space:nowrap;}
+.tb-flex{display:flex;align-items:center;gap:10px;flex-wrap:wrap;} .tb-flex-end{justify-content:flex-end;}
+.tb-flex-between{justify-content:space-between;width:100%;}
+.tb-grow{flex:1;min-width:0;}
+.tb-fw-500{font-weight:500;} .tb-fw-600{font-weight:600;} .tb-small{font-size:.8rem;} .tb-xs{font-size:.72rem;}
+.tb-w-full{width:100%;}
+.tb-subhead{margin:20px 0 12px;font-size:14px;font-weight:600;color:var(--tx);}
+.tb-panel{padding:12px;background:var(--br-soft);margin-bottom:12px;}
+.tb-danger{color:var(--bad);} .tb-primary{color:var(--br);} .tb-ok{color:var(--ok);} .tb-warn{color:var(--warn);}
+
+/* Live value preview (currency format in billing settings, etc.) — shows the
+   effect of the settings above before anything is saved. */
+.tb-preview{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding:10px 12px;background:var(--br-soft);border:1px solid var(--line);}
+.tb-preview-value{font-size:15px;font-weight:600;color:var(--br);}
+
+.tb-inline-form{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
+.tb-required::after{content:' *';color:var(--bad);}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;}
+}
+
+/* Self-hosted Inter fallback weight (the Google stylesheet still supplies the full set) */
+.tb-search-wrap .tb-input{padding-left:32px;min-width:220px;}
+
+/* Async typeahead picker (livewire.ui.select-search) — replaces whole-table <select>s */
+.tb-picker{position:relative;}
+.tb-picker-input .tb-input{width:100%;}
+.tb-picker-spinner{position:absolute;right:10px;color:var(--mt2);font-size:12px;}
+.tb-picker-selected{display:flex;align-items:center;gap:8px;justify-content:space-between;
+  padding:7px 8px 7px 11px;border:1px solid var(--line);background:var(--surface-2);}
+.tb-picker-selected-label{font-weight:500;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tb-picker-results{list-style:none;margin:4px 0 0;padding:0;max-height:220px;overflow-y:auto;
+  border:1px solid var(--line);background:var(--surface);box-shadow:0 6px 18px rgba(0,0,0,.08);}
+.tb-picker-option{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;
+  padding:8px 11px;background:none;border:0;text-align:left;cursor:pointer;font-family:var(--font);font-size:13px;color:var(--tx);}
+.tb-picker-option:hover,.tb-picker-option:focus-visible{background:var(--br-soft);outline:none;}
+.tb-picker-option-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tb-picker-none{padding:8px 11px;}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Progress bar (x-ui.progress) + the setup wizard (Onboarding)
+   ══════════════════════════════════════════════════════════════════════ */
+.tb-progress-wrap{display:flex;flex-direction:column;gap:7px;}
+.tb-progress-meta{display:flex;align-items:baseline;justify-content:space-between;gap:12px;}
+.tb-progress-label{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--mt2);}
+.tb-progress-value{font-size:12px;font-weight:500;color:var(--tx);font-variant-numeric:tabular-nums;}
+.tb-progress{height:6px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden;}
+.tb-progress-bar{height:100%;background:var(--br);transition:width .3s cubic-bezier(.4,0,.2,1);}
+.tb-progress-bar.tone-ok{background:var(--ok);} .tb-progress-bar.tone-warn{background:var(--warn);}
+
+/* ── Setup wizard ─────────────────────────────────────────── */
+.wz{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start;}
+.wz-main{min-width:0;display:flex;flex-direction:column;gap:12px;}
+.wz-rail{display:flex;flex-direction:column;gap:12px;position:sticky;top:64px;}
+
+/* Header card: progress + what is still blocking */
+.wz-head{background:var(--surface);border:1px solid var(--line);padding:18px 20px;display:flex;flex-direction:column;gap:14px;}
+.wz-head h2{font-size:19px;font-weight:200;letter-spacing:-.01em;}
+.wz-head p{font-size:12.5px;color:var(--mt);font-weight:300;}
+
+/* "Still needed" chips — jump straight to a blocking step. These are buttons,
+   not the passive .badge-tb <span> they echo visually, so — like every other
+   pill-shaped button in this file (.wz-step-head, .wz-mini-item) — they need
+   their own full reset: nothing here may inherit the browser's button chrome. */
+.wz-still{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.wz-chip{appearance:none;-webkit-appearance:none;display:inline-flex;align-items:center;
+  font-family:var(--font);font-size:10px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;
+  line-height:1.4;padding:4px 9px;background:var(--bad-soft);color:var(--bad);
+  border:1px solid var(--bad-soft);cursor:pointer;transition:background .12s,border-color .12s,color .12s;}
+.wz-chip:hover{background:var(--bad);border-color:var(--bad);color:#fff;}
+.wz-chip:focus-visible{outline:none;box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--bad);}
+
+/* One step */
+.wz-step{background:var(--surface);border:1px solid var(--line);}
+.wz-step.is-open{border-color:var(--br);box-shadow:0 0 0 1px var(--br-soft);}
+.wz-step.is-done{background:var(--surface);}
+.wz-step-head{display:flex;align-items:center;gap:13px;width:100%;padding:14px 18px;background:none;border:none;
+  cursor:pointer;text-align:left;font-family:var(--font);transition:background .12s;}
+.wz-step-head:hover{background:var(--surface-2);}
+.wz-step-head:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--br);}
+.wz-step-num{width:30px;height:30px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:600;background:var(--surface-2);color:var(--mt);border:1px solid var(--line);}
+.wz-step.is-done .wz-step-num{background:var(--ok-soft);color:var(--ok);border-color:var(--ok-soft);}
+.wz-step.is-open .wz-step-num{background:var(--br);color:#fff;border-color:var(--br);}
+.wz-step-main{flex:1;min-width:0;}
+.wz-step-title{font-size:13.5px;font-weight:600;color:var(--tx);}
+.wz-step-sum{font-size:12px;color:var(--mt);font-weight:300;margin-top:1px;}
+.wz-step-detail{font-size:11.5px;color:var(--mt2);margin-top:3px;font-variant-numeric:tabular-nums;}
+.wz-step-aside{display:flex;align-items:center;gap:9px;flex-shrink:0;}
+.wz-step-caret{color:var(--mt2);font-size:11px;transition:transform .2s;}
+.wz-step.is-open .wz-step-caret{transform:rotate(180deg);}
+.wz-step-body{padding:2px 18px 18px;border-top:1px solid var(--line);}
+.wz-why{display:flex;gap:9px;padding:11px 13px;margin:14px 0 16px;background:var(--br-soft);
+  border-left:3px solid var(--br);font-size:12.5px;color:var(--tx);font-weight:300;line-height:1.5;}
+.wz-why i{color:var(--br);margin-top:2px;flex-shrink:0;}
+.wz-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);}
+.wz-actions .spacer{margin-left:auto;}
+/* Separates two unrelated sub-lists inside one step (e.g. lab tests / stock categories). */
+.wz-divider{border-top:1px solid var(--line);margin:24px 0 20px;}
+/* One specialty group inside a long suggestion list (e.g. price list, grouped by department). */
+.wz-cat{margin-top:18px;} .wz-cat:first-child{margin-top:10px;}
+.wz-cat-title{display:block;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--br);margin-bottom:8px;}
+
+/* Existing records listed inside a step, so the admin sees what is already there */
+.wz-have{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+.wz-have-item{font-size:11.5px;padding:3px 9px;background:var(--surface-2);color:var(--mt);border:1px solid var(--line);}
+.wz-have-item i{color:var(--ok);margin-right:5px;font-size:10px;}
+
+/* Issue list (things done but worth a second look) */
+.wz-issues{display:flex;flex-direction:column;gap:7px;margin-top:12px;}
+.wz-issue{display:flex;gap:8px;font-size:12px;color:var(--warn);background:var(--warn-soft);padding:9px 11px;}
+.wz-issue i{margin-top:2px;flex-shrink:0;}
+
+/* Rail: remaining checklist + help */
+.wz-mini{display:flex;flex-direction:column;}
+.wz-mini-item{display:flex;align-items:center;gap:9px;padding:9px 14px;border-bottom:1px solid var(--line);
+  font-size:12px;color:var(--mt);background:none;border-left:none;border-right:none;border-top:none;width:100%;
+  text-align:left;cursor:pointer;font-family:var(--font);transition:background .12s;}
+.wz-mini-item:last-child{border-bottom:none;}
+.wz-mini-item:hover{background:var(--surface-2);color:var(--tx);}
+.wz-mini-item.is-current{background:var(--br-soft);color:var(--br);font-weight:500;box-shadow:inset 3px 0 0 var(--br);}
+.wz-mini-item .tick{width:15px;flex-shrink:0;text-align:center;font-size:11px;}
+.wz-mini-item.is-done .tick{color:var(--ok);}
+.wz-mini-item.is-todo .tick{color:var(--line-2);}
+.wz-mini-item .lbl{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+@media(max-width:1100px){
+  .wz{grid-template-columns:minmax(0,1fr);}
+  .wz-rail{position:static;}
+}
+@media(max-width:640px){
+  .wz-step-head{padding:12px 14px;gap:10px;}
+  .wz-step-body{padding:2px 14px 16px;}
+  .wz-step-aside .badge-tb{display:none;}
+  .wz-actions .btn-tb{flex:1;min-height:42px;justify-content:center;}
+}
+
+/* ── Standalone "blocked" page (subscription lapsed, non-admin) ─────
+   Deliberately outside the .tb-wrapper shell — no sidebar, since there is
+   nothing this viewer can do here but sign out and wait for an admin. */
+.blk-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--bg);}
+.blk-card{max-width:440px;width:100%;}
+.blk-body{text-align:center;padding:36px 30px;}
+.blk-icon{width:56px;height:56px;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;
+  font-size:22px;color:var(--bad);background:var(--bad-soft);border:1px solid var(--bad-soft);}
+.blk-title{font-size:19px;font-weight:200;letter-spacing:-.01em;margin-bottom:10px;}
+.blk-body p{line-height:1.6;}
+.blk-actions{margin-top:22px;}
+
+/* ── Subscription page ────────────────────────────────────────────── */
+.sub-status{display:flex;align-items:flex-start;gap:16px;background:var(--surface);border:1px solid var(--line);padding:20px 22px;}
+.sub-status.is-blocked{border-color:var(--bad-soft);border-left:3px solid var(--bad);}
+.sub-status.is-ok{border-left:3px solid var(--ok);}
+.sub-status-icon{width:38px;height:38px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;
+  background:var(--surface-2);color:var(--ok);}
+.sub-status.is-blocked .sub-status-icon{color:var(--bad);background:var(--bad-soft);}
+.sub-status-main{flex:1;min-width:0;}
+.sub-status-plan{font-size:16px;font-weight:600;color:var(--tx);}
+.sub-status-line{margin-top:5px;font-size:12.5px;color:var(--mt);line-height:1.5;}
+.sub-status.is-blocked .sub-status-line{color:var(--bad);font-weight:500;}
+.sub-status-price{flex-shrink:0;text-align:right;}
+.sub-price-usd{font-size:19px;font-weight:300;color:var(--tx);}
+
+.sub-empty{background:var(--surface);border:1px dashed var(--line-2);padding:40px 24px;text-align:center;}
+.sub-empty i{font-size:26px;color:var(--br);margin-bottom:12px;}
+.sub-empty h2{font-size:16px;font-weight:600;margin-bottom:6px;}
+
+.sub-plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;}
+.sub-plan-card{position:relative;background:var(--surface);border:1px solid var(--line);padding:22px;display:flex;flex-direction:column;}
+.sub-plan-card.is-featured{border-color:var(--br);box-shadow:0 0 0 1px var(--br-soft);}
+.sub-plan-card.is-current{border-color:var(--ok);background:var(--ok-soft);}
+.sub-plan-ribbon{position:absolute;top:0;right:0;background:var(--br);color:#fff;font-size:10px;font-weight:600;
+  letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;}
+.sub-plan-name{font-size:15px;font-weight:600;color:var(--tx);}
+.sub-plan-price{margin:10px 0 2px;font-size:26px;font-weight:300;letter-spacing:-.01em;color:var(--tx);}
+.sub-plan-price small{margin-left:2px;font-size:12px;font-weight:400;color:var(--mt);}
+.sub-plan-features{list-style:none;margin:14px 0;padding:14px 0;flex:1;
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  display:flex;flex-direction:column;gap:8px;font-size:12.5px;color:var(--tx);}
+.sub-plan-features i{color:var(--ok);margin-right:8px;font-size:11px;}
+
+.sub-wiz-review .sub-plan-features{border-top:none;padding-top:0;margin-top:0;}
+
+@media(max-width:640px){
+  .sub-status{flex-direction:column;}
+  .sub-status-price{text-align:left;}
+}
+
+/* ── Payment methods strip (x-ui.pay-methods) ────────────────────── */
+.pay-methods{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.pay-mark{display:inline-flex;align-items:center;height:18px;padding:0 6px;font-size:9.5px;font-weight:700;
+  letter-spacing:.02em;border-radius:2px;}
+.pay-mark.is-mtn{background:#ffcc00;color:#000;}
+.pay-mark.is-airtel{background:#e40000;color:#fff;text-transform:lowercase;}
+.pay-card{font-size:20px;line-height:1;}
+.pay-card.is-visa{color:#1a1f71;}
+.pay-card.is-mc{color:#eb001b;}
+
+/* ── Subscribe wizard: months + running total ────────────────────── */
+.sub-months{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 14px;}
+.sub-month{appearance:none;-webkit-appearance:none;font-family:var(--font);font-size:12px;font-weight:500;
+  padding:7px 12px;cursor:pointer;color:var(--tx);background:var(--surface);border:1px solid var(--line-2);
+  transition:background .12s,border-color .12s,color .12s;}
+.sub-month:hover{border-color:var(--br);color:var(--br);}
+.sub-month.is-on{background:var(--br);border-color:var(--br);color:#fff;}
+.sub-month:focus-visible{outline:none;box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--br);}
+.sub-total{padding:12px 14px;background:var(--br-soft);border-left:3px solid var(--br);}
+.sub-total-amount{font-size:17px;font-weight:600;color:var(--br);font-variant-numeric:tabular-nums;}
+.sub-method{text-transform:capitalize;}
+
+/* ── Subscription badge (topbar) ─────────────────────────────────
+   Reads as information when things are fine and as a call to action when
+   they are not — colour carries the urgency, the words carry the meaning. */
+.sub-badge{display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 11px;
+  font-size:11.5px;font-weight:600;letter-spacing:.01em;white-space:nowrap;
+  border:1px solid transparent;transition:background .14s,border-color .14s,color .14s;}
+.sub-badge i{font-size:11px;}
+.sub-badge:hover{filter:brightness(.97);}
+.sub-badge:focus-visible{outline:none;box-shadow:0 0 0 2px var(--surface),0 0 0 4px currentColor;}
+.sub-badge.tone-ok{background:var(--ok-soft);color:var(--ok);border-color:var(--ok-soft);}
+.sub-badge.tone-warn{background:var(--warn-soft);color:var(--warn);border-color:var(--warn-soft);}
+.sub-badge.tone-danger{background:var(--bad);color:#fff;border-color:var(--bad);}
+.sub-badge.tone-primary{background:var(--br);color:#fff;border-color:var(--br);}
+/* An urgent badge earns one quiet ring — never a blink, never movement. */
+.sub-badge.is-urgent.tone-danger{box-shadow:0 0 0 3px var(--bad-soft);}
+.sub-badge.is-urgent.tone-primary{box-shadow:0 0 0 3px var(--br-soft);}
+
+@media(max-width:700px){
+  .sub-badge-label{display:none;}
+  .sub-badge{padding:0 9px;}
+}
+
+/* ── Hospital letterhead (docs/documents.md) ────────────────────────────── */
+/* The settings page shows the real letterhead at the real proportions: a
+   logo checked at 46px looks nothing like the same logo checked at 300px,
+   and the first anyone knew about it used to be a printed invoice. */
+.tb-logo-row{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;}
+.tb-logo-preview{width:190px;min-height:86px;border:1px solid var(--line);background:#fff;
+  display:flex;align-items:center;justify-content:center;padding:12px;flex-shrink:0;}
+.tb-logo-preview img{max-width:100%;max-height:62px;width:auto;height:auto;}
+.tb-logo-controls{flex:1;min-width:260px;}
+
+.tb-sheet{background:#fff;border:1px solid var(--line);padding:22px 24px;max-width:700px;
+  color:#1b2733;font-size:12px;line-height:1.5;}
+.tb-sheet-logo{height:38px;width:auto;max-width:120px;}
+.tb-sheet-name{font-size:17px;font-weight:700;color:#0e6b63;letter-spacing:-.2px;line-height:1.2;}
+.tb-sheet-lines{font-size:9px;color:#6b7a86;line-height:1.55;margin-top:3px;}
+.tb-sheet-lines b{color:#1b2733;font-weight:400;}
+.tb-sheet-doc{font-size:14px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;line-height:1.2;}
+.tb-sheet-ref{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:#0e6b63;margin-top:3px;}
+.tb-sheet-rule{border-bottom:2px solid #0e6b63;margin-top:10px;}
+.tb-sheet-body{padding:26px 0;border-bottom:1px solid #e3e8ec;}
+.tb-sheet-foot{font-size:8.5px;color:#9aa7b1;padding-top:8px;}
+
+/* ── Dashboard: the visit pipeline and the money chart ──────────────────── */
+/* A pipeline, not a bar chart: these are stages of one journey, so the order
+   is fixed and the eye is meant to find where people are piling up. Compact,
+   because four boxes of nothing is what a quiet morning looks like and it
+   should not cost a third of the screen. */
+.dash-flow{display:flex;align-items:stretch;gap:5px;flex-wrap:wrap;}
+.dash-flow-step{flex:1 1 104px;min-width:96px;padding:9px 11px 8px;border:1px solid var(--line);
+  background:var(--surface);text-decoration:none;color:inherit;display:block;transition:border-color .12s;}
+.dash-flow-step:hover{border-color:var(--br);}
+.dash-flow-step .n{display:block;font-size:19px;font-weight:300;line-height:1;letter-spacing:-.02em;color:var(--mt2);}
+.dash-flow-step.has .n{color:var(--tx);font-weight:400;}
+.dash-flow-step.has{border-color:var(--line-2);}
+.dash-flow-step.warn.has .n{color:#9a6b00;}
+.dash-flow-step.warn.has{border-color:#e6c98a;background:#fffbf2;}
+.dash-flow-step .l{display:block;font-size:9.5px;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--mt2);margin-top:5px;}
+.dash-flow-step .s{display:block;font-size:10px;color:var(--mt2);margin-top:2px;line-height:1.3;}
+.dash-flow-arrow{align-self:center;color:var(--line-2);font-size:10px;flex:0 0 auto;}
+.dash-flow-note{margin:10px 0 0;font-size:11.5px;color:var(--mt2);display:flex;align-items:center;gap:6px;}
+
+/* The money chart: bars against a scale you can read a figure off. */
+.dash-chart{display:flex;gap:9px;align-items:stretch;}
+.dash-chart-y{display:flex;flex-direction:column;justify-content:space-between;height:var(--h);
+  font-size:9.5px;color:var(--mt2);text-align:right;min-width:52px;font-variant-numeric:tabular-nums;
+  padding-bottom:0;flex:0 0 auto;}
+.dash-chart-y span{line-height:1;transform:translateY(-.35em);}
+.dash-chart-y span:last-child{transform:translateY(.15em);}
+.dash-chart-plot{position:relative;flex:1;height:var(--h);display:flex;align-items:flex-end;gap:3px;}
+.dash-grid-line{position:absolute;left:0;right:0;height:0;border-top:1px dashed var(--line);pointer-events:none;}
+.dash-grid-line.base{border-top:1px solid var(--line-2);}
+.dash-col{position:relative;flex:1;height:100%;display:flex;align-items:flex-end;justify-content:center;}
+.dash-col-billed,.dash-col-collected{position:absolute;bottom:0;display:block;}
+.dash-col-billed{left:0;right:0;background:var(--br-soft);}
+.dash-col-collected{left:18%;right:18%;background:var(--br);}
+.dash-col:hover .dash-col-billed{background:var(--line-2);}
+
+.dash-chart-x{display:flex;justify-content:space-between;font-size:9.5px;color:var(--mt2);
+  margin:6px 0 0 61px;}
+
+.dash-legend-inline{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;padding-top:9px;
+  border-top:1px solid var(--line);font-size:11.5px;color:var(--mt2);}
+.dash-legend-inline b{color:var(--tx);font-weight:600;font-variant-numeric:tabular-nums;}
+.dash-legend-inline .dash-key{display:inline-block;width:10px;height:10px;vertical-align:-1px;margin-right:5px;}
+.dash-legend-inline .dash-key.solid{background:var(--br);}
+.dash-legend-inline .dash-key.pale{background:var(--br-soft);}
+.dash-legend-inline .dash-gap{margin-left:auto;}
+
+@media (max-width:640px){
+  .dash-flow-arrow{display:none;}
+  .dash-flow-step{flex:1 1 44%;}
+  .dash-chart-y{min-width:44px;}
+  .dash-chart-x{margin-left:53px;}
+}
+
+/* A picker standing in for a <select> in a filter bar: same footprint, so a
+   toolbar of mixed selects and pickers still reads as one row. */
+.tb-filter-pick{min-width:200px;max-width:260px;}
+.tb-filter-pick .tb-picker{margin:0;}
+
+/* ── New visit: vitals at the desk ──────────────────────────────────────── */
+/* Eight small readings, so they sit as a dense grid rather than as eight
+   full-width rows — the whole point is that it fits on one screen with the
+   rest of the form. */
+.tb-vitals-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px 12px;}
+.tb-vitals-grid .tb-form-group{margin:0;}
+.tb-step-note{font-size:11px;font-weight:400;color:var(--mt2);text-transform:none;letter-spacing:0;margin-left:8px;}
+
+/* Two states, side by side, each saying what it means. A radio with a bare
+   label makes the reader work out the difference; this one states it.
+   NOT `.tb-seg`: that is the joined switch above, and defining it twice meant
+   whichever came last in the file silently restyled the other one. */
+.tb-seg-cards{display:flex;gap:8px;flex-wrap:wrap;}
+.tb-seg-opt{flex:1 1 150px;border:1px solid var(--line);background:var(--surface);padding:8px 11px;
+  cursor:pointer;transition:border-color .12s,background .12s;}
+.tb-seg-opt:hover{border-color:var(--line-2);}
+.tb-seg-opt.is-on{border-color:var(--br);background:var(--br-soft);}
+.tb-seg-opt span{display:block;font-size:12.5px;font-weight:600;color:var(--tx);}
+.tb-seg-opt.is-on span{color:var(--br);}
+.tb-seg-opt em{display:block;font-style:normal;font-size:11px;color:var(--mt2);margin-top:1px;}
+
+
+/* ── Doctor availability: the week, read as a week ──────────────────────── */
+/* One doctor sitting every day was seven near-identical rows; twenty doctors
+   were a hundred and forty. The roster puts the seven days across instead, so
+   one screen answers the question the page exists for: who sits when. */
+.tb-coverage{display:flex;align-items:stretch;gap:0;margin-bottom:14px;flex-wrap:wrap;}
+.tb-coverage-lead{display:flex;align-items:center;padding:0 11px 0 0;font-size:10.5px;font-weight:600;
+  letter-spacing:.05em;text-transform:uppercase;color:var(--mt2);}
+.tb-cov-day{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:52px;padding:6px 10px;
+  background:var(--surface);border:1px solid var(--line);cursor:pointer;
+  transition:color .14s,background .14s,border-color .14s;}
+.tb-cov-day + .tb-cov-day{border-left:none;}
+.tb-cov-day:hover{background:var(--surface-2);border-color:var(--line-2);}
+.tb-cov-name{font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--mt2);}
+.tb-cov-n{font-size:14px;font-weight:600;color:var(--tx);line-height:1.1;}
+.tb-cov-day.is-none .tb-cov-n{color:var(--warn);}
+.tb-cov-day.is-none{background:var(--warn-soft);}
+.tb-cov-day.is-on{border-color:var(--br);background:var(--br-soft);z-index:1;}
+.tb-cov-day.is-on .tb-cov-name,.tb-cov-day.is-on .tb-cov-n{color:var(--br);}
+.tb-cov-day:focus-visible{outline:2px solid var(--br);outline-offset:2px;z-index:2;}
+
+/* A consequence, not a decoration: overlapping windows make booking fail with
+   an error that points at a slot length nobody can see. */
+.tb-warnbar{display:flex;align-items:flex-start;gap:9px;padding:10px 13px;margin-bottom:14px;
+  background:var(--warn-soft);border:1px solid var(--warn-line);
+  font-size:12px;color:var(--tx);line-height:1.5;}
+.tb-warnbar i{color:var(--warn);margin-top:2px;}
+.tb-clash-mark{margin-left:6px;font-size:10px;color:var(--warn);}
+
+.tb-roster{table-layout:fixed;}
+.tb-roster th.tb-roster-who,.tb-roster td.tb-roster-who{width:max(150px,16%);}
+.tb-roster th.tb-roster-day{text-align:center;width:11%;}
+.tb-roster th.tb-roster-day.is-dim .tb-roster-dayname{color:var(--mt2);opacity:.65;}
+.tb-roster-dayname{font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;}
+.tb-roster td.tb-roster-cell{padding:5px 4px;vertical-align:top;text-align:center;}
+.tb-roster-none{display:block;font-size:10.5px;font-weight:400;color:var(--warn);margin-top:1px;}
+
+/* A window is a button because every one of them is editable — and the empty
+   cell is a button too, because "Dr Kasujja, Thursday, nothing" is already the
+   whole question the dialog would otherwise ask again. */
+.tb-win{display:block;width:100%;padding:4px 6px;margin-bottom:3px;cursor:pointer;text-align:center;
+  background:var(--br-soft);border:1px solid transparent;border-left:2px solid var(--br);
+  transition:border-color .12s,background .12s;}
+.tb-win:last-child{margin-bottom:0;}
+.tb-win:hover{border-color:var(--br);}
+.tb-win:focus-visible{outline:2px solid var(--br);outline-offset:1px;}
+.tb-win[disabled]{cursor:default;}
+.tb-win-time{display:block;font-size:11px;font-weight:600;color:var(--br);
+  font-variant-numeric:tabular-nums;white-space:nowrap;}
+.tb-win-meta{display:block;font-size:10px;color:var(--mt2);}
+.tb-win.is-off{background:var(--surface-2);border-left-color:var(--line-2);}
+.tb-win.is-off .tb-win-time{color:var(--mt2);text-decoration:line-through;}
+.tb-win.is-clash{border-left-color:var(--warn);background:var(--warn-soft);}
+.tb-win.is-clash .tb-win-meta i{color:var(--warn);}
+
+.tb-win-add{display:block;width:100%;padding:5px 0;cursor:pointer;color:var(--mt2);
+  background:none;border:1px dashed var(--line);opacity:0;transition:opacity .12s,color .12s,border-color .12s;}
+.tb-win-add i{font-size:10px;}
+tr:hover .tb-win-add{opacity:1;}
+.tb-win-add:hover{color:var(--br);border-color:var(--br);border-style:solid;}
+.tb-win-add:focus-visible{opacity:1;outline:2px solid var(--br);outline-offset:1px;}
+.tb-win-empty{color:var(--line-2);font-size:11px;}
+
+/* The status badge doubles as the switch: taking a doctor off for a week is
+   the commonest edit on this page and should not need the dialog. */
+.tb-badge-btn{background:none;border:none;padding:0;cursor:pointer;}
+.tb-badge-btn:focus-visible{outline:2px solid var(--br);outline-offset:2px;}
+
+@media (max-width: 1100px){
+  /* Seven columns stop being readable long before the page does, so the week
+     falls back to the list the toolbar also offers. */
+  .tb-roster th.tb-roster-day,.tb-roster td.tb-roster-cell{width:auto;}
+  .tb-win-time{font-size:10px;}
+  .tb-win-meta{display:none;}
+  .tb-win-add{opacity:1;}
+}
+
+/* ── Book appointment: which day, then which free time ──────────────────── */
+/* A datetime box asked for "18/09/2026, 20:46" in one go and never said the
+   doctor does not work that day, or that the hour was already taken. The two
+   questions are now asked separately, and the second one only offers times the
+   booking service will accept. */
+.tb-when{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin-bottom:14px;}
+.tb-when .tb-form-group{margin:0;}
+
+.tb-daystrip{display:flex;gap:0;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin;}
+.tb-day{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:1px;
+  min-width:58px;padding:6px 9px;cursor:pointer;background:var(--surface);
+  border:1px solid var(--line);transition:color .14s,background .14s,border-color .14s;}
+.tb-day + .tb-day{border-left:none;}
+.tb-day:hover{background:var(--surface-2);border-color:var(--line-2);}
+.tb-day-name{font-size:11.5px;font-weight:600;color:var(--tx);white-space:nowrap;}
+.tb-day-sub{font-size:10px;color:var(--mt2);white-space:nowrap;}
+.tb-day.is-on{border-color:var(--br);background:var(--br-soft);z-index:1;}
+.tb-day.is-on .tb-day-name,.tb-day.is-on .tb-day-sub{color:var(--br);}
+.tb-day:focus-visible{outline:2px solid var(--br);outline-offset:2px;z-index:2;}
+/* Not disabled — a day the doctor does not normally sit can still be booked
+   deliberately; it just should not look like an ordinary choice. */
+.tb-day.is-away{background:var(--surface-2);}
+.tb-day.is-away .tb-day-name{color:var(--mt2);font-weight:400;}
+
+.tb-when-exact{margin-top:7px;}
+.tb-when-exact summary{font-size:11px;color:var(--mt2);cursor:pointer;list-style:none;}
+.tb-when-exact summary::-webkit-details-marker{display:none;}
+.tb-when-exact summary::before{content:"+ ";font-weight:600;}
+.tb-when-exact[open] summary::before{content:"− ";}
+.tb-when-exact summary:hover{color:var(--br);}
+.tb-when-exact .tb-input{margin-top:6px;}
+
+.tb-slots{display:flex;flex-wrap:wrap;gap:4px;max-height:132px;overflow-y:auto;}
+.tb-slot{padding:4px 9px;cursor:pointer;font-size:11.5px;font-variant-numeric:tabular-nums;
+  color:var(--tx);background:var(--surface);border:1px solid var(--line);
+  transition:color .12s,background .12s,border-color .12s;}
+.tb-slot:hover{border-color:var(--br);color:var(--br);}
+.tb-slot.is-on{background:var(--br);border-color:var(--br);color:#fff;font-weight:600;}
+.tb-slot:focus-visible{outline:2px solid var(--br);outline-offset:2px;}
+/* Why there is nothing to click, in the words of whatever is missing. */
+.tb-slots-none{font-size:11.5px;color:var(--mt);line-height:1.5;margin:0;padding:7px 9px;
+  background:var(--surface-2);border-left:2px solid var(--line-2);}
+.tb-hint{font-size:11px;color:var(--mt2);margin:6px 0 0;}
+.tb-input-slim{max-width:110px;margin-top:6px;}
+
+@media (max-width: 760px){
+  .tb-when{grid-template-columns:1fr;}
+}
+
+/* ── Appointments: the week, and changing one from its row ──────────────── */
+.tb-weeknav{display:flex;align-items:center;gap:0;}
+.tb-weeknav-btn,.tb-weeknav-label{background:var(--surface);border:1px solid var(--line);cursor:pointer;
+  color:var(--mt);font-size:12px;padding:6px 10px;transition:color .14s,background .14s,border-color .14s;}
+.tb-weeknav-label{font-weight:600;color:var(--tx);min-width:150px;text-align:center;}
+.tb-weeknav-btn + .tb-weeknav-label,.tb-weeknav-label + .tb-weeknav-btn{border-left:none;}
+.tb-weeknav-btn:hover,.tb-weeknav-label:hover{background:var(--surface-2);color:var(--br);}
+.tb-weeknav-btn:focus-visible,.tb-weeknav-label:focus-visible{outline:2px solid var(--br);outline-offset:2px;z-index:1;}
+
+.tb-cal{display:grid;grid-template-columns:repeat(7,1fr);padding:0;overflow:hidden;}
+.tb-cal-day{border-left:1px solid var(--line);min-height:200px;display:flex;flex-direction:column;}
+.tb-cal-day:first-child{border-left:none;}
+.tb-cal-day.is-past{background:var(--surface-2);}
+.tb-cal-day.is-today{background:var(--br-soft);}
+.tb-cal-head{display:flex;align-items:baseline;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line);}
+.tb-cal-dow{font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mt2);}
+.tb-cal-date{font-size:12px;font-weight:600;color:var(--tx);}
+.tb-cal-day.is-today .tb-cal-dow,.tb-cal-day.is-today .tb-cal-date{color:var(--br);}
+.tb-cal-n{margin-left:auto;font-size:10.5px;color:var(--mt2);font-variant-numeric:tabular-nums;}
+.tb-cal-body{flex:1;padding:6px;display:flex;flex-direction:column;gap:4px;}
+
+/* Every appointment is a button: on a calendar the thing you want to change is
+   the block itself, not a row menu three columns away. */
+.tb-cal-appt{display:block;width:100%;text-align:left;padding:5px 7px;cursor:pointer;
+  background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--br);
+  transition:border-color .12s,box-shadow .12s;}
+.tb-cal-appt:hover{border-color:var(--br);box-shadow:0 1px 4px rgba(15,23,42,.09);}
+.tb-cal-appt:focus-visible{outline:2px solid var(--br);outline-offset:1px;}
+.tb-cal-appt[disabled]{cursor:default;}
+.tb-cal-time{display:block;font-size:11px;font-weight:600;color:var(--br);font-variant-numeric:tabular-nums;}
+.tb-cal-who{display:block;font-size:11.5px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tb-cal-doc{display:block;font-size:10px;color:var(--mt2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+/* The status is the block's colour, so a week reads without a legend. */
+.tb-cal-appt.is-checked_in,.tb-cal-appt.is-in_progress{border-left-color:var(--warn);}
+.tb-cal-appt.is-checked_in .tb-cal-time,.tb-cal-appt.is-in_progress .tb-cal-time{color:var(--warn);}
+.tb-cal-appt.is-completed{border-left-color:var(--ok);}
+.tb-cal-appt.is-completed .tb-cal-time{color:var(--ok);}
+.tb-cal-appt.is-cancelled,.tb-cal-appt.is-no_show{border-left-color:var(--line-2);background:var(--surface-2);}
+.tb-cal-appt.is-cancelled .tb-cal-time,.tb-cal-appt.is-no_show .tb-cal-time{color:var(--mt2);}
+.tb-cal-appt.is-cancelled .tb-cal-who,.tb-cal-appt.is-no_show .tb-cal-who{color:var(--mt2);text-decoration:line-through;}
+.tb-cal-free{color:var(--line-2);font-size:11px;padding:4px 7px;}
+
+/* The day and the hour, stacked: with no date filter the list spans the whole
+   diary, and an hour on its own does not say which day it belongs to. */
+.tb-when-day{display:block;font-size:12.5px;font-weight:500;}
+.tb-when-time{display:block;font-size:11px;color:var(--mt2);}
+.tb-row-sub{display:block;font-size:11px;font-weight:400;color:var(--mt2);margin-top:1px;}
+
+/* The next legal step, on the row, because it is what the desk presses all day. */
+.tb-nextbtn{padding:4px 10px;margin-right:4px;cursor:pointer;font-size:11.5px;font-weight:500;
+  color:var(--br);background:var(--br-soft);border:1px solid transparent;
+  transition:border-color .12s,background .12s;}
+.tb-nextbtn:hover{border-color:var(--br);}
+.tb-nextbtn:focus-visible{outline:2px solid var(--br);outline-offset:2px;}
+
+.tb-ending-who{margin:0;font-size:12.5px;color:var(--mt);}
+.tb-ending-who b{color:var(--tx);font-weight:600;}
+
+@media (max-width: 1000px){
+  /* Seven columns stop being legible well before the page does; the toolbar
+     still offers the list, which is the same diary in a narrow shape. */
+  .tb-cal{grid-template-columns:repeat(2,1fr);}
+  .tb-cal-day{min-height:120px;border-top:1px solid var(--line);}
+}
+
+/* ── Occupancy board ────────────────────────────────────────────────────── */
+/* Beds are small, numerous and read from across a ward, so they get a denser
+   grid than the dashboard's stat cards: the colour down the left edge is the
+   thing that carries at three metres, and the words are for the person who
+   walked over. */
+.tb-bedgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(184px,1fr));gap:10px;}
+.tb-bed{display:flex;align-items:flex-start;gap:10px;width:100%;text-align:left;
+  background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--line-2);
+  padding:10px 12px;cursor:pointer;font:inherit;color:inherit;
+  transition:border-color .12s,box-shadow .12s;}
+.tb-bed:hover{border-color:var(--line-2);border-left-color:var(--br);box-shadow:0 1px 3px rgb(16 24 40/.07);}
+.tb-bed:focus-visible{outline:2px solid var(--br);outline-offset:1px;}
+.tb-bed.is-free{border-left-color:var(--ok);}
+.tb-bed.is-taken{border-left-color:var(--warn);}
+.tb-bed.is-down{border-left-color:var(--bad);background:var(--surface-2);}
+.tb-bed-icon{flex:0 0 auto;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;}
+.tb-bed.is-free .tb-bed-icon{background:var(--ok-soft);color:var(--ok);}
+.tb-bed.is-taken .tb-bed-icon{background:var(--warn-soft);color:var(--warn);}
+.tb-bed.is-down .tb-bed-icon{background:var(--bad-soft);color:var(--bad);}
+.tb-bed-body{min-width:0;}
+.tb-bed-name{font-size:12.5px;font-weight:600;color:var(--tx);}
+.tb-bed-who{font-size:12px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tb-bed-sub{font-size:10.5px;color:var(--mt2);font-variant-numeric:tabular-nums;}
+
+/* The one figure a ward asks for before any other. */
+.tb-occ{display:flex;align-items:center;gap:10px;}
+.tb-occ-bar{flex:1;height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden;}
+.tb-occ-fill{display:block;height:100%;background:var(--br);}
+.tb-occ-fill.is-tight{background:var(--warn);}
+.tb-occ-fill.is-full{background:var(--bad);}
+.tb-occ-n{font-size:11px;color:var(--mt);font-variant-numeric:tabular-nums;white-space:nowrap;}
+
+/* ── Appointment quick view ─────────────────────────────────────────────── */
+/* The record over the list rather than instead of it: opening a whole page to
+   answer "what is this one, again?" loses the place somebody is working down. */
+.tb-peek-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  padding-bottom:12px;border-bottom:1px solid var(--line);}
+.tb-peek-when{font-size:13px;font-weight:600;color:var(--tx);}
+.tb-peek-time{font-size:12.5px;color:var(--br);font-variant-numeric:tabular-nums;margin-top:1px;}
+
+.tb-peek-facts{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;align-items:baseline;}
+.tb-peek-facts dt{font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--mt2);white-space:nowrap;}
+.tb-peek-facts dd{margin:0;font-size:12.5px;color:var(--tx);}
+.tb-peek-facts dd .mono{margin-left:6px;font-size:11px;}
+.tb-peek-bad{color:var(--bad);}
+.tb-peek-badges{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;}
+
+/* The two or three figures a reader came for, before the facts that explain
+   them. A dialog that buries the balance in a definition list makes somebody
+   read six rows to answer "can they pay?". */
+.tb-peek-figs{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);
+  border:1px solid var(--line);overflow:hidden;}
+.tb-peek-fig{background:var(--surface);padding:9px 11px;display:flex;flex-direction:column;gap:1px;}
+.tb-peek-fig-n{font-size:14px;font-weight:600;color:var(--tx);font-variant-numeric:tabular-nums;}
+.tb-peek-fig-n.is-bad{color:var(--bad);}
+.tb-peek-fig-l{font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--mt2);}
+.tb-peek-fig-s{font-size:10.5px;color:var(--mt);}
+@media (max-width:640px){.tb-peek-figs{grid-template-columns:1fr;}}
+
+.tb-peek-sec{font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--mt2);padding-top:12px;border-top:1px solid var(--line);}
+.tb-peek-trail{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px;}
+.tb-peek-trail li{border-left:2px solid var(--line-2);padding-left:10px;}
+.tb-peek-trail li:first-child{border-left-color:var(--br);}
+.tb-peek-step{display:block;font-size:12px;color:var(--tx);}
+.tb-peek-meta{display:block;font-size:10.5px;color:var(--mt2);}
+.tb-peek-note{display:block;font-size:11px;color:var(--mt);font-style:italic;margin-top:1px;}
+
+/* The way OUT of the dialog sits left, away from the buttons that act. */
+.tb-peek-foot .tb-peek-gap{flex:1;}
+
+/* The When cell is one control on two lines; only the day underlines. */
+.tb-rowbtn .tb-when-time{color:var(--mt2);}
+.tb-rowbtn:hover{text-decoration:none;}
+.tb-rowbtn:hover .tb-when-day{text-decoration:underline;}
+
+/* ── Appointment outcome: the report, and what it cost ───────────────────── */
+/* An appointment used to end with a button that said "Completed" and recorded
+   nothing. What it writes now is what any other clinical work writes — an
+   order on the visit, with a report and its billable lines. */
+.tb-out-sec{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+  padding-top:12px;border-top:1px solid var(--line);
+  font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mt2);}
+.tb-out-hint{font-weight:400;letter-spacing:0;text-transform:none;font-size:11px;}
+.tb-out-lines{margin-top:4px;}
+.tb-out-lines td,.tb-out-lines th{padding:6px 8px;}
+.tb-out-lines tfoot th{border-top:1px solid var(--line-2);font-size:12px;}
+.tb-out-none{margin:0;font-size:11.5px;color:var(--mt);padding:8px 10px;
+  background:var(--surface-2);border-left:2px solid var(--line-2);}
+.tb-qty{width:74px;text-align:right;padding:4px 7px;font-size:12px;}
+
+/* Finishing one is a different act from moving it along, and reads like it. */
+.tb-nextbtn.is-record{color:var(--ok);background:var(--ok-soft);}
+.tb-nextbtn.is-record:hover{border-color:var(--ok);}
+.tb-nextbtn.is-record i{font-size:10px;margin-right:3px;}
+
+/* Two catalogues, one list: a service is sold, a product also leaves a shelf. */
+.tb-out-pickers{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.tb-out-kind{display:inline-block;margin-left:7px;padding:1px 6px;font-size:9.5px;font-weight:600;
+  letter-spacing:.04em;text-transform:uppercase;color:var(--mt2);background:var(--surface-2);}
+.tb-out-stock{display:block;font-size:10.5px;font-weight:400;color:var(--mt2);margin-top:1px;}
+/* The choice of whether this finishes the appointment sits with the button
+   that acts on it, not buried above the fold. */
+.tb-out-foot{justify-content:flex-start;}
+.tb-out-done{margin-right:auto;font-size:12px;}
+@media (max-width: 620px){ .tb-out-pickers{grid-template-columns:1fr;} }
+
+/* ── Check-in queue: a board, not a table of today's rows ────────────────── */
+/* A queue answers "who is waiting, and how long". A booked time and a status
+   badge cannot tell somebody who arrived at 08:55 and has been sitting forty
+   minutes from somebody who has just walked in. */
+.tb-lane{margin-bottom:18px;}
+.tb-lane-head{display:flex;align-items:baseline;gap:9px;margin-bottom:7px;flex-wrap:wrap;}
+.tb-lane-title{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--tx);}
+.tb-lane-n{min-width:20px;padding:0 6px;text-align:center;font-size:11px;font-weight:600;
+  color:var(--mt);background:var(--surface-2);}
+.tb-lane-note{font-size:11px;color:var(--mt2);}
+
+.tb-q-wait{display:block;font-size:14px;font-weight:600;color:var(--ok);font-variant-numeric:tabular-nums;line-height:1.15;}
+.tb-q-wait.is-warn{color:var(--warn);}
+.tb-q-wait.is-bad{color:var(--bad);}
+.tb-q-time{display:block;font-size:13px;font-weight:600;color:var(--tx);font-variant-numeric:tabular-nums;}
+.tb-q-since{display:block;font-size:10.5px;color:var(--mt2);}
+.tb-q-since.is-bad{color:var(--bad);}
+
+/* ── A file field you can drop onto ──────────────────────────────────────── */
+/* `<input type="file">` is a button that says "Choose File" and nothing about
+   what it wants. Dragging the logo onto the page is what people try first. */
+.tb-drop{position:relative;border:1px dashed var(--line-2);background:var(--surface);
+  transition:border-color .14s,background .14s;}
+.tb-drop:hover{border-color:var(--br);}
+.tb-drop.is-over{border-color:var(--br);border-style:solid;background:var(--br-soft);}
+.tb-drop.has-file{border-style:solid;}
+/* The input IS the hit area, so a click anywhere opens the picker and the
+   keyboard still lands on a real control. */
+.tb-drop-input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;}
+.tb-drop-input:focus-visible + .tb-drop-face{outline:2px solid var(--br);outline-offset:-2px;}
+.tb-drop-face{display:flex;align-items:center;gap:13px;padding:12px 14px;pointer-events:none;}
+.tb-drop-icon{font-size:20px;color:var(--mt2);width:44px;text-align:center;}
+.tb-drop.is-over .tb-drop-icon{color:var(--br);}
+.tb-drop-shot{width:44px;height:44px;display:flex;align-items:center;justify-content:center;
+  background:var(--surface-2);overflow:hidden;flex-shrink:0;}
+.tb-drop-shot img{max-width:100%;max-height:100%;object-fit:contain;}
+.tb-drop-words{min-width:0;flex:1;}
+.tb-drop-lead{display:block;font-size:12.5px;color:var(--tx);}
+.tb-drop-hint{display:block;font-size:11px;color:var(--mt2);line-height:1.4;}
+/* Only the buttons take clicks back off the input underneath them. */
+.tb-drop-acts{pointer-events:auto;display:flex;gap:6px;}
+.tb-drop-busy{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:7px;
+  background:rgba(255,255,255,.86);font-size:12px;color:var(--br);}
+
+/* ── Hospital letterhead: the answer beside its consequence ──────────────── */
+.tb-letterhead{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:20px;align-items:start;}
+.tb-lh-form{background:var(--surface);border:1px solid var(--line);padding:16px 18px;}
+.tb-lh-remove{background:none;border:none;padding:2px 6px;cursor:pointer;font-size:11px;color:var(--bad);}
+.tb-lh-remove:hover{text-decoration:underline;}
+/* The preview follows you down the form it is previewing. */
+.tb-lh-preview{position:sticky;top:16px;}
+.tb-lh-preview-label{font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--mt2);margin-bottom:7px;}
+.tb-lh-save{margin-top:14px;display:flex;justify-content:flex-end;}
+
+@media (max-width: 1080px){
+  .tb-letterhead{grid-template-columns:1fr;}
+  .tb-lh-preview{position:static;}
+  .tb-lh-save{justify-content:flex-start;}
+}
+
+/* ── Settings: the answer, and the thing it decides ──────────────────────── */
+.tb-set-sec{font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mt2);
+  padding-top:14px;margin-bottom:9px;border-top:1px solid var(--line);}
+.tb-set-sec:first-child{padding-top:0;border-top:none;}
+
+/* An invoice is the only honest preview of invoice settings: a rate is not an
+   amount and a prefix is not a number, and both were being chosen blind. */
+.tb-set-preview{background:var(--surface);border:1px solid var(--line);padding:14px 16px;}
+.tb-set-row{display:flex;align-items:baseline;justify-content:space-between;gap:14px;
+  padding:4px 0;font-size:12.5px;color:var(--mt);}
+.tb-set-row b{color:var(--tx);font-weight:600;font-variant-numeric:tabular-nums;}
+.tb-set-rule{height:1px;background:var(--line);margin:8px 0;}
+.tb-set-row.is-total{border-top:1px solid var(--line-2);margin-top:6px;padding-top:8px;font-size:13px;}
+.tb-set-row.is-total b{font-size:15px;color:var(--br);}
+.tb-set-foot{margin-top:12px;padding-top:9px;border-top:1px dashed var(--line);
+  font-size:11px;color:var(--mt2);text-align:center;}
+
+/* ── Work that carries files ─────────────────────────────────────────────── */
+/* A typed result is half the record; the other half is what the machine
+   printed, and the benches had nowhere to put it. */
+.tb-files{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:5px;}
+.tb-files li{display:flex;align-items:center;gap:10px;padding:7px 9px;
+  background:var(--surface);border:1px solid var(--line);}
+.tb-file-icon{color:var(--mt2);font-size:13px;width:16px;text-align:center;}
+.tb-file-what{flex:1;min-width:0;}
+.tb-file-what a{font-size:12.5px;color:var(--br);text-decoration:none;
+  display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tb-file-what a:hover{text-decoration:underline;}
+.tb-file-meta{display:block;font-size:10.5px;color:var(--mt2);}
+
+/* How long it has been on the bench, when that has become the story. */
+.tb-lab-late{margin-left:6px;font-size:10.5px;font-weight:600;color:var(--warn);}
+.tb-rad-signed{margin:10px 0 0;font-size:11.5px;color:var(--ok);}
+
+/* A count that is a problem, and leads to the problem. */
+.tb-warnpill{display:inline-block;min-width:24px;padding:1px 7px;text-decoration:none;
+  font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums;
+  color:var(--warn);background:var(--warn-soft);border:1px solid transparent;}
+.tb-warnpill:hover{border-color:var(--warn);}
+
+/* ── The stock ledger: which way did it go ───────────────────────────────── */
+/* Direction is the colour, so a page of movements reads without anybody
+   working out from the words which reasons mean "off the shelf". */
+.tb-mv-why{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--bad);}
+.tb-mv-why.is-in{color:var(--ok);}
+.tb-mv-why i{font-size:9px;}
+.tb-mv-qty{font-weight:600;font-variant-numeric:tabular-nums;color:var(--bad);}
+.tb-mv-qty.is-in{color:var(--ok);}
+.tb-nextbtn.is-bad{color:var(--bad);background:var(--bad-soft);}
+.tb-nextbtn.is-bad:hover{border-color:var(--bad);}
+
+/* ── An explanation, behind an (i) ───────────────────────────────────────── */
+/* A page that opens with a paragraph about itself makes the person who read it
+   once scroll past it every day afterwards. The words are worth keeping — they
+   say what the page is FOR — so they sit here instead. */
+.tb-explain{position:relative;display:inline-flex;vertical-align:middle;margin-left:7px;}
+.tb-explain-btn{background:none;border:none;padding:0;cursor:pointer;line-height:1;
+  color:var(--mt2);font-size:13px;transition:color .12s;}
+.tb-explain-btn:hover{color:var(--br);}
+.tb-explain-btn:focus-visible{outline:2px solid var(--br);outline-offset:3px;}
+.tb-explain-pop{position:absolute;left:0;top:calc(100% + 7px);z-index:40;
+  width:max(260px,30ch);max-width:86vw;padding:11px 13px;
+  font-size:11.5px;font-weight:400;line-height:1.55;letter-spacing:normal;text-transform:none;
+  color:var(--mt);background:var(--surface);border:1px solid var(--line-2);
+  box-shadow:0 6px 20px rgba(15,23,42,.13);}
+.tb-explain-pop.is-above{top:auto;bottom:calc(100% + 7px);}
+@media (max-width: 560px){
+  /* Anchored to the left of the screen rather than the icon, so a note beside
+     a right-hand heading cannot run off the edge. */
+  .tb-explain-pop{position:fixed;left:12px;right:12px;width:auto;max-width:none;}
+}
+/* A delivery priced the wrong way round is invisible between two boxes and
+   obvious the moment the figure below them goes red. */
+.tb-set-preview.is-bad{border-color:var(--bad);background:var(--bad-soft);}
+.tb-set-preview.is-bad .tb-set-row.is-total b{color:var(--bad);}
+.tb-margin-pct{margin-left:6px;font-size:11px;font-weight:400;color:var(--mt2);}
+
+/* The row's number on the list. Narrow, quiet, and never the thing you read
+   first — it is there to be pointed at, not looked at. */
+.tb-serial{width:1%;padding-right:4px !important;color:var(--mt2);font-size:11px;text-align:right;
+  font-variant-numeric:tabular-nums;}
+th.tb-serial{font-size:10px;}
+.tb-peek-margin{margin-left:7px;font-size:11px;color:var(--ok);}
+.tb-peek-margin.is-bad{color:var(--bad);}
+
+/* ── The alerts board ────────────────────────────────────────────────────── */
+/* Four lanes, four problems. The title carries the severity so the reader does
+   not have to infer it from the words. */
+.tb-lane-title.is-bad{color:var(--bad);}
+.tb-lane-title.is-warn{color:var(--warn);}
+
+/* A month's expiries is a sweep, not eleven separate decisions. */
+.tb-sweepbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:10px 13px;margin-bottom:10px;font-size:12px;color:var(--tx);
+  background:var(--bad-soft);border:1px solid var(--bad);}
+.tb-sweepbar-acts{margin-left:auto;display:flex;align-items:center;gap:9px;}
+
+/* An expiry date says how close it is, not only when it is. */
+.tb-exp-when{display:block;font-size:12.5px;color:var(--tx);}
+.tb-exp-when.is-warn{color:var(--warn);font-weight:600;}
+.tb-exp-when.is-bad{color:var(--bad);font-weight:600;}
