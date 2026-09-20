@@ -1,3 +1,12 @@
+# DEVELOPMENT ONLY — do not copy this to a server.
+#
+# MAMP serves the repository root at /true-doctor, so the front-controller
+# rule below points at ../index.php (the repository root's) rather than at
+# index.php in this directory. On a host where THIS directory is the document
+# root, ../ is outside the web root and every route but / answers 400.
+#
+# Production uses deploy/docroot-htaccess, which deploy.sh installs.
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes

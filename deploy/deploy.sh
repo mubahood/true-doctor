@@ -84,8 +84,12 @@ rsync -a --delete \
   --exclude '.htaccess' --exclude '.user.ini' \
   "$APP_DIR/public/" "$DOCROOT/"
 
-install -m 644 "$APP_DIR/deploy/docroot-index.php" "$DOCROOT/index.php"
-install -m 644 "$APP_DIR/public/.htaccess"         "$DOCROOT/.htaccess"
+# Both come from deploy/, NOT from public/. public/.htaccess has been adapted
+# for the MAMP subdirectory setup and its front-controller rule points one
+# level above the document root — on a real host that is outside the web root,
+# and every route but `/` answers 400.
+install -m 644 "$APP_DIR/deploy/docroot-index.php"  "$DOCROOT/index.php"
+install -m 644 "$APP_DIR/deploy/docroot-htaccess"   "$DOCROOT/.htaccess"
 
 say "Caches"
 "$PHP" artisan config:clear
