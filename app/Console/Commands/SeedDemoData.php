@@ -24,8 +24,8 @@ class SeedDemoData extends Command
 
     public function handle(): int
     {
-        if (! app()->environment(['local', 'demo'])) {
-            $this->error('demo:seed refuses to run outside local/demo — these are known-password accounts.');
+        if (! app()->environment(['local', 'demo']) && ! config('demo.enabled')) {
+            $this->error('demo:seed needs either a local environment or DEMO_MODE=true — these are known-password accounts.');
 
             return self::FAILURE;
         }

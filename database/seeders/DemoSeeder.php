@@ -38,24 +38,35 @@ class DemoSeeder extends Seeder
 
     public function run(): void
     {
-        // Dev-only: never seeds default-password accounts in production (C14).
-        if (! app()->environment(['local', 'demo'])) {
-            $this->command->info('DemoSeeder: skipped (APP_ENV is not local/demo).');
+        // Two ways in. A developer's machine, or a deliberate DEMO_MODE on a
+        // real deployment that wants a public demonstration.
+        if (! app()->environment(['local', 'demo']) && ! config('demo.enabled')) {
+            $this->command->info('DemoSeeder: skipped (not local, and DEMO_MODE is off).');
 
             return;
         }
 
-        // Super Admin — id 1 (AdminUserSeeder created it first). Give it the
-        // known demo password locally and clear the forced reset so it can log in.
-        $super = User::firstWhere('email', 'admin@gmail.com');
-        if ($super !== null) {
-            $super->forceFill([
-                'password' => Hash::make(self::PASSWORD),
-                'password_change_required' => false,
-                'is_active' => true,
-                'email_verified_at' => now(),
-            ])->save();
-            $super->syncSpatieRole();
+        // ── The line that must never move ────────────────────────────────
+        // The platform super admin can see EVERY hospital on the platform.
+        // It gets the known demo password on a developer's machine and
+        // NOWHERE ELSE — not when DEMO_MODE is on, not when somebody sets
+        // APP_ENV=demo on a live box, not ever. A published password on that
+        // account would hand every tenant's patient records to anybody who
+        // read the documentation.
+        //
+        // This is why the check below is `local` alone and not the same
+        // condition as the one above (C14).
+        if (app()->environment('local')) {
+            $super = User::firstWhere('email', 'admin@gmail.com');
+            if ($super !== null) {
+                $super->forceFill([
+                    'password' => Hash::make(self::PASSWORD),
+                    'password_change_required' => false,
+                    'is_active' => true,
+                    'email_verified_at' => now(),
+                ])->save();
+                $super->syncSpatieRole();
+            }
         }
 
         // Hospital A is the one every demonstration lands in, so it is the
@@ -299,6 +310,7 @@ class DemoSeeder extends Seeder
         // create) which DatabaseSeeder mutes — restore them for this block.
         $previous = app(\App\Support\CurrentHospital::class)->id();
         app(\App\Support\CurrentHospital::class)->set($h->id);
+        $dispatcher = \Illuminate\Database\Eloquent\Model::getEventDispatcher();
         \Illuminate\Database\Eloquent\Model::setEventDispatcher(app('events'));
 
         try {
@@ -423,7 +435,16 @@ class DemoSeeder extends Seeder
                 'performed_at' => Carbon::now()->subDays(2)->toDateTimeString(),
             ], [], $doctor->id);
         } finally {
-            \Illuminate\Database\Eloquent\Model::unsetEventDispatcher();
+            // Restore whatever was there, rather than unsetting.
+            // `unsetEventDispatcher()` removes it GLOBALLY — so anything running
+            // afterwards in the same process silently loses model events, which
+            // in this codebase means uuids, slugs and (worse) the hospital_id
+            // that BelongsToHospital fills on create. Fine when the process ends
+            // straight after; a trap in a test, a queue worker, or a command that
+            // seeds and then keeps going.
+            $dispatcher
+                ? \Illuminate\Database\Eloquent\Model::setEventDispatcher($dispatcher)
+                : \Illuminate\Database\Eloquent\Model::unsetEventDispatcher();
             app(\App\Support\CurrentHospital::class)->set($previous);
         }
     }

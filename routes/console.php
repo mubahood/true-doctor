@@ -60,3 +60,21 @@ Artisan::command('inspire', function () {
 // Sessions expire on their own schedule; the rows do not. Only relevant on
 // the database session driver, which is what production uses.
 \Illuminate\Support\Facades\Schedule::command('auth:clear-resets')->daily();
+
+/*
+|--------------------------------------------------------------------------
+| The demonstration hospital
+|--------------------------------------------------------------------------
+| A public demo is a hospital that strangers change. Left alone it fills with
+| patients called "aaa" and every bed ends up occupied, and the next person
+| who comes to look at the product sees a mess instead.
+|
+| Registered only when BOTH switches are on, so turning the demo on cannot by
+| itself start something that deletes rows on a schedule. The command has its
+| own guards besides — see App\Console\Commands\ResetDemoHospital.
+*/
+if (config('demo.enabled') && config('demo.reset.enabled')) {
+    \Illuminate\Support\Facades\Schedule::command('demo:reset --force')
+        ->dailyAt((string) config('demo.reset.at', '03:30'))
+        ->withoutOverlapping();
+}

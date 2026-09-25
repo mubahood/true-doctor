@@ -58,14 +58,22 @@ class AuthenticatedSessionController extends Controller
     /**
      * Whether this installation has a demonstration door at all.
      *
-     * Deliberately not memoised. It is asked a few times per page, but the
-     * environment check short-circuits before the query everywhere except a
-     * developer's own machine — and a cached answer is a thing that can be
+     * Two conditions, and both have to hold. The switch has to be on — a
+     * deliberate `DEMO_MODE`, not a side effect of APP_ENV, because a live
+     * site wanting a public demo is a normal thing to want and should not
+     * require pretending to be a development machine. And the accounts have
+     * to actually exist, so the rail can never advertise a door that opens
+     * onto nothing.
+     *
+     * A developer's machine gets it without asking: local is a demonstration
+     * of the product by definition.
+     *
+     * Deliberately not memoised. A cached answer is a thing that can be
      * stale, which for a door is the wrong kind of thing to be.
      */
     public static function demoAvailable(): bool
     {
-        if (! app()->environment(['local', 'demo'])) {
+        if (! config('demo.enabled') && ! app()->environment(['local', 'demo'])) {
             return false;
         }
 
@@ -90,7 +98,7 @@ class AuthenticatedSessionController extends Controller
      */
     private static function demoAccounts(): Collection
     {
-        if (! app()->environment(['local', 'demo'])) {
+        if (! config('demo.enabled') && ! app()->environment(['local', 'demo'])) {
             return collect();
         }
 

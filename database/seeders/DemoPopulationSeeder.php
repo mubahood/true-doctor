@@ -100,8 +100,8 @@ class DemoPopulationSeeder extends Seeder
 
     public function run(): void
     {
-        if (! app()->environment(['local', 'demo'])) {
-            $this->command->info('DemoPopulationSeeder: skipped (APP_ENV is not local/demo).');
+        if (! app()->environment(['local', 'demo']) && ! config('demo.enabled')) {
+            $this->command->info('DemoPopulationSeeder: skipped (not local, and DEMO_MODE is off).');
 
             return;
         }
@@ -158,6 +158,7 @@ class DemoPopulationSeeder extends Seeder
     private function inTenant(\Closure $work): void
     {
         $previous = app(CurrentHospital::class)->id();
+        $dispatcher = Model::getEventDispatcher();
         app(CurrentHospital::class)->set($this->hospital->id);
         Model::setEventDispatcher(app('events'));
 
@@ -165,9 +166,17 @@ class DemoPopulationSeeder extends Seeder
             $work();
         } finally {
             // Whatever happened, do not leave the process pinned to a moment
-            // in the past or to somebody else's hospital.
+            // in the past, or to somebody else's hospital, or without model
+            // events.
             Carbon::setTestNow();
-            Model::unsetEventDispatcher();
+            // Restore whatever was there, rather than unsetting.
+            // `unsetEventDispatcher()` removes it GLOBALLY — so anything running
+            // afterwards in the same process silently loses model events, which
+            // in this codebase means uuids, slugs and (worse) the hospital_id
+            // that BelongsToHospital fills on create. Fine when the process ends
+            // straight after; a trap in a test, a queue worker, or a command that
+            // seeds and then keeps going.
+            $dispatcher ? Model::setEventDispatcher($dispatcher) : Model::unsetEventDispatcher();
             app(CurrentHospital::class)->set($previous);
         }
     }
