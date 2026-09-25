@@ -93,7 +93,7 @@
       <li>Every record carries its hospital and is filtered at the database layer, not by a condition somebody has to remember to write.</li>
       <li>Sensitive fields — card numbers, bank details and protected clinical data — are encrypted at rest.</li>
       <li>Access is role-based: each role sees only the records and fields its job needs.</li>
-      <li>Who viewed or changed a record, and when, is logged. Reads as well as writes.</li>
+      <li>Changes to patient and visit records are logged with who made them and when, and every workflow keeps an append-only status history. Read access is not currently logged.</li>
       <li>Credentials and third-party keys live only in server configuration, never in the code.</li>
     </ul>
     <p>See the <a class="link" href="{{ route('security') }}">security page</a> for the detail, including what we do not claim.</p>

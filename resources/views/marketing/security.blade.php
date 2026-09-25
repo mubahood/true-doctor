@@ -26,7 +26,7 @@
       @foreach([
         ['fa-shield-halved', 'One hospital cannot see another', 'Every record carries the hospital it belongs to, and every query is filtered by a scope applied at the database layer — not by a condition each developer has to remember. A dedicated test suite exists solely to try to read across that boundary and fail.'],
         ['fa-lock', 'Encryption at rest', 'Card numbers, bank details and other protected fields are encrypted in the database, so a copy of the data on its own does not give them up. Card numbers are additionally stored as a hash for lookup, never in the clear.'],
-        ['fa-list-check', 'A full audit trail', 'Who viewed or changed which record, and when. Reads as well as writes. Workflow histories — a visit&rsquo;s stages, a claim&rsquo;s statuses, an order&rsquo;s progress — are append-only and are never edited in place.'],
+        ['fa-list-check', 'Changes are recorded', 'Who changed a patient or visit record, when, and what the value was before. Every workflow — a visit&rsquo;s stages, a claim&rsquo;s statuses, an order&rsquo;s progress, an appointment&rsquo;s attendance — keeps an append-only history that is never edited in place. Read access is not currently logged; see what we do not claim, below.'],
         ['fa-user-shield', 'Role-based access', 'Nine roles, each with its own menu, screens and fields. A nurse cannot record a diagnosis; a cashier cannot open clinical notes. The same rules are enforced in the web panel and in the API, from one definition.'],
         ['fa-key', 'No default passwords', 'The first administrator account is created with a random password printed once to the console and a forced change on first sign-in. Staff are invited the same way. There is no shipped password to look up.'],
         ['fa-plug', 'One hardened API', 'A single token-authenticated API — versioned, rate-limited, origin-locked, with one response envelope. No second authentication path and no legacy bypass, because the one that gets less attention is the one somebody finds.'],
@@ -59,6 +59,7 @@
         ['We do not hold your data in your country unless you ask.', 'Where the application and its backups are hosted depends on the deployment. If data residency matters to your facility, raise it before you sign up rather than after.'],
         ['Availability is not guaranteed by a contract.', 'We take reasonable measures to keep the service up and we tell you when it is not. There is no uptime SLA with money attached to it, and we will not pretend otherwise on a marketing page.'],
         ['Two-factor authentication is not yet on every account.', 'It is planned for administrator accounts and is not shipped. Until it is, the protections that exist are a forced password change, per-attempt rate limiting on sign-in, and a session you can revoke.'],
+        ['We do not log who READ a record.', 'Changes are recorded with who made them and what the value was before, and every workflow keeps an append-only status history. But a member of staff opening a patient record and closing it again leaves no entry. If your regulator requires read auditing, tell us before you sign up rather than after — it is a real gap, not a wording choice.'],
       ] as [$q, $a])
         <details>
           <summary>{!! $q !!}</summary>
