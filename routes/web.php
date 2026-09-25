@@ -43,6 +43,12 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/admin/login', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'store']);
 Route::post('/admin/logout', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'destroy'])->name('admin.logout');
+
+// Leave the demonstration and go and create a real hospital. A fixed
+// destination rather than a redirect parameter on logout — see the controller.
+Route::post('/demo/leave', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'leaveDemo'])
+    ->middleware('auth')
+    ->name('demo.leave');
 Route::redirect('/login', '/admin/login')->name('login');
 Route::post('/register', [\App\Http\Controllers\Auth\RegistrationController::class, 'store']);
 

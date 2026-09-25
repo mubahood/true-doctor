@@ -89,6 +89,9 @@
         <span class="tb-page-title" x-text="title">{{ $title ?? (trim($__env->yieldContent('title')) ?: 'Dashboard') }}</span>
       </div>
       <div class="tb-topbar-right">
+        {{-- Only ever rendered inside the demonstration tenant; see the
+             component, which checks the hospital rather than the email. --}}
+        <livewire:shell.demo-invite />
         <x-shell.subscription-badge />
         <livewire:shell.notification-bell />
         <div class="tb-user-menu" :class="{'open': userMenu}" @click.outside="userMenu=false" @keydown.escape="userMenu=false">

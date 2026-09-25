@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\User;
+use App\Support\Demo;
 use App\Support\DemoAccount;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Http\RedirectResponse;
@@ -142,6 +143,30 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         return redirect()->intended(route('admin.dashboard'));
+    }
+
+    /**
+     * Leave the demonstration and go and make a real hospital.
+     *
+     * A separate action from signing out rather than a `?redirect=` on it.
+     * The destination is fixed in code, so there is nothing for anybody to
+     * put a URL into — an open redirect on a logout route is a phishing
+     * primitive, and "log out and then go here" is exactly the shape of one.
+     */
+    public function leaveDemo(Request $request): RedirectResponse
+    {
+        $wasDemo = Demo::isDemoUser($request->user());
+
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('register')->with(
+            'status',
+            $wasDemo
+                ? 'You have left the demonstration. Create your own hospital below — 14 days free, no card needed.'
+                : 'You have been signed out.',
+        );
     }
 
     /** Destroy an authenticated session. */

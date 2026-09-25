@@ -267,6 +267,134 @@ class DemoModeTest extends TestCase
         $this->assertSame($before, Patient::withoutGlobalScopes()->where('hospital_id', $demo->id)->count());
     }
 
+    // ── The invitation to start a real hospital ──────────────────────────
+
+    public function test_a_demo_visitor_is_invited_to_create_their_own(): void
+    {
+        $this->seedDemoInProduction();
+
+        $demoUser = User::where('email', 'doctor.a@test.com')->firstOrFail();
+        $this->actingAs($demoUser);
+        app(CurrentHospital::class)->set($demoUser->hospital_id);
+
+        $this->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('Create your own hospital')
+            ->assertSee('This is the demonstration hospital.');
+    }
+
+    /**
+     * The contract that matters. A hospital paying for the service must never
+     * be invited to sign up for the thing it is already paying for.
+     */
+    public function test_a_real_hospital_is_never_invited_to_sign_up(): void
+    {
+        $this->seedDemoInProduction();
+
+        $real = Hospital::factory()->create(['slug' => 'paying', 'name' => 'Paying Hospital']);
+        $staff = User::factory()->create([
+            'hospital_id' => $real->id,
+            'role' => 'hospital_admin',
+            'email' => 'admin@payinghospital.test',
+        ]);
+        $staff->syncSpatieRole();
+
+        $this->actingAs($staff);
+        app(CurrentHospital::class)->set($real->id);
+
+        $html = $this->get(route('admin.dashboard'))->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('Create your own hospital', $html);
+        $this->assertStringNotContainsString('demonstration hospital', $html);
+        $this->assertStringNotContainsString('tb-demo-cta', $html);
+    }
+
+    public function test_nobody_is_invited_when_the_demo_is_switched_off(): void
+    {
+        $this->app->detectEnvironment(fn () => 'production');
+        config()->set('demo.enabled', false);
+
+        $hospital = Hospital::factory()->create(['slug' => 'general-hospital-a']);
+        $staff = User::factory()->create(['hospital_id' => $hospital->id, 'role' => 'hospital_admin']);
+        $staff->syncSpatieRole();
+
+        $this->actingAs($staff);
+        app(CurrentHospital::class)->set($hospital->id);
+
+        // Same slug as the demo, but the demo is off — so there is no
+        // demonstration and nothing to invite anybody away from.
+        $this->get(route('admin.dashboard'))->assertOk()->assertDontSee('Create your own hospital');
+    }
+
+    public function test_leaving_the_demo_signs_you_out_onto_the_sign_up_form(): void
+    {
+        $this->seedDemoInProduction();
+
+        $demoUser = User::where('email', 'doctor.a@test.com')->firstOrFail();
+        $this->actingAs($demoUser);
+
+        // CSRF is disabled for these two only. These tests run as
+        // `production`, where Laravel does not waive it in tests — which is
+        // right, and the token is not what is being asserted here. The form
+        // in the dialog carries one.
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+
+        $this->post(route('demo.leave'))
+            ->assertRedirect(route('register'))
+            ->assertSessionHas('status');
+
+        $this->assertGuest();
+    }
+
+    /** No redirect parameter to smuggle a destination into. */
+    public function test_leaving_cannot_be_pointed_anywhere_else(): void
+    {
+        $this->seedDemoInProduction();
+        $this->actingAs(User::where('email', 'doctor.a@test.com')->firstOrFail());
+
+        // CSRF is disabled for these two only. These tests run as
+        // `production`, where Laravel does not waive it in tests — which is
+        // right, and the token is not what is being asserted here. The form
+        // in the dialog carries one.
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+
+        $this->post(route('demo.leave'), [
+            'redirect' => 'https://evil.test/phish',
+            'url' => 'https://evil.test/phish',
+            'intended' => 'https://evil.test/phish',
+        ])->assertRedirect(route('register'));
+
+        $this->assertGuest();
+    }
+
+    public function test_leaving_needs_somebody_to_be_signed_in(): void
+    {
+        $this->post(route('demo.leave'))->assertRedirect(route('admin.login'));
+    }
+
+    /** The helper is the thing everything else asks; hold it directly. */
+    public function test_the_demo_test_is_the_tenant_not_the_email(): void
+    {
+        $this->seedDemoInProduction();
+
+        $demoHospital = Hospital::where('slug', 'general-hospital-a')->firstOrFail();
+
+        // A staff account a visitor made while poking around: no @test.com
+        // address, every bit as temporary as the rest of the demonstration.
+        $theirs = User::factory()->create([
+            'hospital_id' => $demoHospital->id,
+            'email' => 'somebody@example.test',
+        ]);
+
+        $this->assertTrue(\App\Support\Demo::isDemoUser($theirs));
+
+        // And the platform super admin, who belongs to no hospital.
+        $this->runSeeder(\Database\Seeders\AdminUserSeeder::class);
+        $super = User::where('email', 'admin@gmail.com')->first();
+        $this->assertFalse(\App\Support\Demo::isDemoUser($super));
+        $this->assertFalse(\App\Support\Demo::isDemoUser(null));
+    }
+
     // ── The schedule ─────────────────────────────────────────────────────
 
     /** Turning the demo on must not by itself start something that deletes. */
