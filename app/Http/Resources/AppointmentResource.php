@@ -29,6 +29,10 @@ class AppointmentResource extends JsonResource
             'source' => $this->source->value,
             'reason' => $this->reason,
             'next_statuses' => array_map(fn ($s) => $s->value, $this->status->transitionsTo()),
+            // For the check-in queue: when they arrived, and where.
+            'checked_in_at' => $this->checked_in_at?->toIso8601String(),
+            'room' => $this->room?->name,
+            'patient_phone' => $this->patient?->phone_1,
         ];
     }
 }

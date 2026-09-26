@@ -58,6 +58,9 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('patients', PatientController::class);
 
         Route::post('appointments/{appointment}/transition', [AppointmentController::class, 'transition'])->name('api.appointments.transition');
+        Route::post('appointments/{appointment}/outcome', [AppointmentController::class, 'outcome'])->name('api.appointments.outcome');
+        // Today's check-in queue, as the web board shows it.
+        Route::get('queue', \App\Http\Controllers\Api\V1\QueueController::class)->name('api.queue');
         Route::apiResource('appointments', AppointmentController::class)->only(['index', 'store', 'show']);
 
         Route::post('visits/{visit}/vitals', [VisitController::class, 'vitals'])->name('api.visits.vitals');

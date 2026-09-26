@@ -56,6 +56,29 @@ class AppointmentController extends Controller
         return ApiResponse::success(new AppointmentResource($appointment->load(['patient', 'doctor'])));
     }
 
+    /**
+     * Record what was done at an appointment — the web's "Record outcome"
+     * (ActsOnAppointments::saveOutcome), same rule for the report, same
+     * service. Completing it is the default, as on the web.
+     */
+    public function outcome(\Illuminate\Http\Request $request, Appointment $appointment): JsonResponse
+    {
+        $this->authorize('update', $appointment);
+
+        $data = $request->validate([
+            'report' => ['required', 'string', 'min:3', 'max:5000'],
+            'complete' => ['sometimes', 'boolean'],
+        ]);
+
+        try {
+            $this->service->recordOutcome($appointment, (string) $data['report'], [], $request->user()->id, (bool) ($data['complete'] ?? true));
+        } catch (Throwable $e) {
+            return ApiResponse::error(\App\Enums\ApiErrorCode::ValidationFailed, $e->getMessage(), 422);
+        }
+
+        return ApiResponse::success(new AppointmentResource($appointment->fresh()->load(['patient', 'doctor', 'room'])), 'Outcome recorded.');
+    }
+
     public function transition(AppointmentTransitionRequest $request, Appointment $appointment): JsonResponse
     {
         $this->authorize('update', $appointment);
