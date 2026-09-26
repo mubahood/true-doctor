@@ -79,4 +79,12 @@ return [
         'usd_to_ugx_rate' => (float) env('USD_TO_UGX_RATE', 3800),
     ],
 
+    // The phone and desktop app (true-doctor-mobo): the oldest version this
+    // server still talks to, the newest one published, and where to get it.
+    'mobile' => [
+        'min_version' => env('MOBILE_MIN_VERSION', '1.0.0'),
+        'latest_version' => env('MOBILE_LATEST_VERSION', '1.0.0'),
+        'download_url' => env('MOBILE_DOWNLOAD_URL'),
+    ],
+
 ];

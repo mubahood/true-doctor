@@ -54,12 +54,13 @@ class ApiResponse
         string $message,
         int $status,
         ?array $errors = null,
+        mixed $data = null,
     ): JsonResponse {
         return response()->json([
             'success' => false,
             'code' => $code->value,
             'message' => $message,
-            'data' => null,
+            'data' => $data,
             'errors' => $errors,
         ], $status);
     }

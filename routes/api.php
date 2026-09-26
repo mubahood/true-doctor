@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Route;
 | tenancy by the global scope (ResolveHospital runs after auth via the middleware
 | priority list). Built module by module per HMS_PLAN.md §6.
 */
-Route::prefix('v1')->group(function () {
+Route::prefix('v1')->middleware('api.app-version')->group(function () {
     // Public: docs + auth
     Route::get('openapi.json', OpenApiController::class)->name('api.openapi');
     Route::post('auth/login', [AuthController::class, 'login'])->name('api.auth.login');

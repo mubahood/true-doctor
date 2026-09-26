@@ -21,4 +21,5 @@ enum ApiErrorCode: string
     case AccountDisabled = 'account_disabled';
     case PasswordChangeRequired = 'password_change_required';
     case SubscriptionEnded = 'subscription_ended';
+    case UpgradeRequired = 'upgrade_required';
 }

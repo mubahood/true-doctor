@@ -55,6 +55,12 @@ class MetaController extends Controller
             'sync_protocol' => SyncController::PROTOCOL_VERSION,
             'server_time' => now()->toIso8601String(),
             'web_url' => url('/'),
+            // So the app can say "a new version is out" before it is required.
+            'app' => [
+                'min_version' => config('services.mobile.min_version'),
+                'latest_version' => config('services.mobile.latest_version'),
+                'download_url' => config('services.mobile.download_url'),
+            ],
             'user' => (new UserResource($user))->toArray($request) + [
                 'role_label' => $user->role_label,
                 'phone' => $user->phone,

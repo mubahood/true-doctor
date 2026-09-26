@@ -87,6 +87,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'subscribed' => \App\Http\Middleware\EnsureSubscribed::class,
             // A disabled account or a temporary password, on the API.
             'api.account' => \App\Http\Middleware\EnsureApiAccount::class,
+            'api.app-version' => \App\Http\Middleware\EnsureAppVersion::class,
             'onboarding' => \App\Http\Middleware\RequireOnboarding::class,
             'no-store' => \App\Http\Middleware\NoStoreResponses::class,
             // Records where a visitor came from and routes an ad click to
