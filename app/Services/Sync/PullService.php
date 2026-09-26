@@ -187,6 +187,20 @@ class PullService
                     'chronic_conditions' => $p->chronic_conditions,
                     'emergency_contact_name' => $p->emergency_contact_name,
                     'emergency_contact_phone' => $p->emergency_contact_phone,
+                    // Every field a device may edit travels, so it holds the
+                    // base a three-way merge needs: a field sent without a
+                    // base is treated as contested, and an offline edit to an
+                    // email or a next of kin raised a conflict nobody caused.
+                    'email' => $p->email,
+                    'home_address' => $p->home_address,
+                    'district_id' => $p->district_id,
+                    'spouse_name' => $p->spouse_name,
+                    'father_name' => $p->father_name,
+                    'mother_name' => $p->mother_name,
+                    'notes' => $p->notes,
+                    'insurance_provider' => $p->insurance_provider,
+                    'insurance_member_no' => $p->insurance_member_no,
+                    'consent_given' => (bool) $p->consent_given,
                     'status' => $p->status->value,
                     'created_at' => $p->created_at->toIso8601String(),
                     'updated_at' => $p->updated_at?->toIso8601String(),

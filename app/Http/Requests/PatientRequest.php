@@ -15,6 +15,12 @@ use Illuminate\Validation\Rules\Enum;
  */
 class PatientRequest extends FormRequest
 {
+    /**
+     * The blood groups a patient record accepts — one list for the rule, the
+     * web forms, Field Mode and the app (GET /api/v1/meta options).
+     */
+    public const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+
     public function authorize(): bool
     {
         return true; // controller authorizes via the Patient policy
@@ -35,7 +41,7 @@ class PatientRequest extends FormRequest
             'home_address' => ['nullable', 'string', 'max:191'],
             'district_id' => ['nullable', Rule::exists('districts', 'id')],
 
-            'blood_type' => ['nullable', 'string', Rule::in(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'])],
+            'blood_type' => ['nullable', 'string', Rule::in(self::BLOOD_TYPES)],
             'allergies' => ['nullable', 'array'],
             'allergies.*' => ['string', 'max:100'],
             'chronic_conditions' => ['nullable', 'array'],

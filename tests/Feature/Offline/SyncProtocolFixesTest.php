@@ -465,4 +465,41 @@ class SyncProtocolFixesTest extends TestCase
         $this->assertSame('0772', $patient->fresh()->phone_1, "the device's change was merged");
         $this->assertSame('Kampala', $patient->fresh()->address, "the online change was kept");
     }
+
+    // ── A device holds the whole editable record ─────────────────────────
+
+    /** Every field a device may edit is pulled, so an edit to it has a base. */
+    public function test_a_pulled_patient_carries_every_field_a_device_may_edit(): void
+    {
+        Sanctum::actingAs($this->clerk);
+        Patient::factory()->create(['hospital_id' => $this->hospital->id, 'email' => 'amina@example.test', 'mother_name' => 'Sarah', 'insurance_provider' => 'Jubilee']);
+
+        $record = collect($this->withHeader('X-Device-Id', $this->clerkDevice->device_uuid)->getJson(route('api.sync.pull'))->json('data.changes'))
+            ->firstWhere('entity', 'patients')['record'];
+
+        $mergeable = (new \ReflectionClassConstant(\App\Services\Sync\Handlers\PatientHandler::class, 'MERGEABLE'))->getValue();
+        foreach ($mergeable as $field) {
+            $this->assertArrayHasKey($field, $record, "{$field} is editable on a device but never pulled, so it has no merge base");
+        }
+        $this->assertSame('amina@example.test', $record['email']);
+        $this->assertSame('Jubilee', $record['insurance_provider']);
+        $this->assertArrayNotHasKey('bank_details', $record);
+    }
+
+    public function test_insurance_and_consent_captured_on_a_device_are_kept(): void
+    {
+        Sanctum::actingAs($this->clerk);
+        $uuid = (string) Str::uuid();
+
+        $this->push([$this->op('patients', 'create', [
+            'uuid' => $uuid, 'first_name' => 'Amina', 'last_name' => 'Nakato',
+            'insurance_provider' => 'Jubilee', 'insurance_member_no' => 'JB-001', 'consent_given' => true,
+        ])], $this->clerkDevice)->assertJsonPath('data.results.0.status', 'accepted');
+
+        $patient = Patient::where('uuid', $uuid)->firstOrFail();
+        $this->assertSame('Jubilee', $patient->insurance_provider);
+        $this->assertSame('JB-001', $patient->insurance_member_no);
+        $this->assertTrue($patient->consent_given);
+        $this->assertNotNull($patient->consent_at);
+    }
 }

@@ -82,4 +82,23 @@ class PatientApiTest extends TestCase
         $this->postJson('/api/v1/patients', ['first_name' => ''])
             ->assertStatus(422)->assertJsonPath('code', 'validation_failed')->assertJsonStructure(['errors']);
     }
+
+    /** Enough to hold the patient on a device and edit it through sync. */
+    public function test_a_patient_carries_its_version_and_every_editable_field(): void
+    {
+        $h = Hospital::factory()->create();
+        $patient = \App\Models\Patient::factory()->create(['hospital_id' => $h->id, 'mother_name' => 'Sarah']);
+        Sanctum::actingAs($this->staff($h, 'receptionist'));
+
+        $data = $this->getJson('/api/v1/patients/'.$patient->uuid)->assertOk()->json('data');
+
+        $this->assertSame($patient->id, $data['server_id']);
+        $this->assertSame((int) $patient->fresh()->version, $data['version']);
+        $this->assertSame('Sarah', $data['mother_name']);
+        $mergeable = (new \ReflectionClassConstant(\App\Services\Sync\Handlers\PatientHandler::class, 'MERGEABLE'))->getValue();
+        foreach ($mergeable as $field) {
+            $this->assertArrayHasKey($field, $data, "{$field} is editable but not returned");
+        }
+        $this->assertArrayNotHasKey('bank_details', $data);
+    }
 }

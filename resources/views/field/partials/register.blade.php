@@ -86,7 +86,7 @@
           <label class="tb-label" for="rg-blood">Blood type</label>
           <select id="rg-blood" name="blood_type" class="tb-select">
             <option value="">—</option>
-            @foreach(['A+','A-','B+','B-','AB+','AB-','O+','O-'] as $type)
+            @foreach(\App\Http\Requests\PatientRequest::BLOOD_TYPES as $type)
               <option value="{{ $type }}">{{ $type }}</option>
             @endforeach
           </select>

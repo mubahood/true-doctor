@@ -65,6 +65,12 @@ class MetaController extends Controller
             'setup_required' => $inSetup,
             'navigation' => $this->navigation(Navigation::for($user, $inSetup)['sections']),
             'enums' => $this->enums(),
+            // Option lists that are data, not enums — the same lists the web
+            // forms read, so the app offers the same choices.
+            'options' => [
+                'districts' => \App\Models\District::query()->orderBy('name')->get(['id', 'name'])->toArray(),
+                'blood_types' => \App\Http\Requests\PatientRequest::BLOOD_TYPES,
+            ],
         ]);
     }
 

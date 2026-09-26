@@ -141,4 +141,14 @@ class MetaApiTest extends TestCase
         $this->assertSame('fa-flask', collect($enums['order_type'])->firstWhere('value', 'lab')['icon']);
         $this->assertSame('success', collect($enums['patient_status'])->firstWhere('value', 'active')['tone']);
     }
+
+    public function test_it_publishes_the_districts_the_patient_form_offers(): void
+    {
+        \Illuminate\Support\Facades\DB::table('districts')->insert([['name' => 'Kampala'], ['name' => 'Gulu']]);
+        Sanctum::actingAs($this->staff('receptionist'));
+
+        $names = collect($this->getJson('/api/v1/meta')->json('data.options.districts'))->pluck('name')->all();
+
+        $this->assertSame(['Gulu', 'Kampala'], $names);
+    }
 }

@@ -25,6 +25,29 @@ class PatientResource extends JsonResource
             'blood_type' => $this->blood_type,
             'status' => $this->status->value,
             'created_at' => $this->created_at->toIso8601String(),
+
+            // The rest of the editable record, and its version, so a client
+            // that found a patient by searching can hold it and edit it through
+            // offline sync with the base a three-way merge needs — the same
+            // fields the sync pull sends (PullService). Never bank_details.
+            'server_id' => $this->id,
+            'version' => (int) ($this->version ?? 1),
+            'phone_2' => $this->phone_2,
+            'address' => $this->address,
+            'home_address' => $this->home_address,
+            'district_id' => $this->district_id,
+            'allergies' => $this->allergies,
+            'chronic_conditions' => $this->chronic_conditions,
+            'spouse_name' => $this->spouse_name,
+            'father_name' => $this->father_name,
+            'mother_name' => $this->mother_name,
+            'emergency_contact_name' => $this->emergency_contact_name,
+            'emergency_contact_phone' => $this->emergency_contact_phone,
+            'notes' => $this->notes,
+            'insurance_provider' => $this->insurance_provider,
+            'insurance_member_no' => $this->insurance_member_no,
+            'consent_given' => (bool) $this->consent_given,
+            'updated_at' => $this->updated_at?->toIso8601String(),
         ];
     }
 }

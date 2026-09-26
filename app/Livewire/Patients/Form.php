@@ -66,7 +66,7 @@ class Form extends Component
             'districts' => District::orderBy('name')->get(['id', 'name']),
             'sexes' => PatientSex::options(),
             'statuses' => PatientStatus::options(),
-            'bloodTypes' => ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
+            'bloodTypes' => \App\Http\Requests\PatientRequest::BLOOD_TYPES,
         ])->title($this->patient ? 'Edit patient' : 'Register patient');
     }
 }

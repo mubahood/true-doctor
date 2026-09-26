@@ -46,6 +46,9 @@ class PatientHandler extends EntityHandler
         'spouse_name', 'father_name', 'mother_name',
         'emergency_contact_name', 'emergency_contact_phone',
         'notes', 'status',
+        // The web form's insurance and consent fields, so a patient registered
+        // on a device carries what one registered at the desk does.
+        'insurance_provider', 'insurance_member_no', 'consent_given',
     ];
 
     /**
