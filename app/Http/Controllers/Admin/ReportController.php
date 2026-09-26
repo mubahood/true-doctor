@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Services\ReportService;
 use App\Support\HospitalSettings;
+use App\Support\ReportRange;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -67,24 +68,10 @@ class ReportController extends Controller
      */
     private function range(Request $request): array
     {
-        $from = $this->parse($request->query('from'), Carbon::now()->startOfMonth());
-        $to = $this->parse($request->query('to'), Carbon::now()->endOfMonth());
+        [$from, $to] = ReportRange::read($request->query('from'), $request->query('to'));
 
-        // Back to front is a typo, not a request for nothing.
-        return $from->lte($to) ? [$from, $to] : [$to, $from];
-    }
-
-    private function parse(mixed $value, Carbon $default): Carbon
-    {
-        if (! is_string($value) || trim($value) === '') {
-            return $default;
-        }
-
-        try {
-            return Carbon::parse($value);
-        } catch (\Throwable) {
-            return $default;
-        }
+        // ReportService takes each day whole.
+        return [Carbon::parse($from), Carbon::parse($to)];
     }
 
     private function filename(?string $hospital, Carbon $from, Carbon $to): string

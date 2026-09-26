@@ -106,6 +106,8 @@ Route::prefix('v1')->group(function () {
         Route::put('radiology-orders/{radiologyOrder}/report', [\App\Http\Controllers\Api\V1\RadiologyOrderController::class, 'report'])->name('api.radiology-orders.report');
         Route::post('lab-orders/{labOrder}/transition', [LabOrderController::class, 'transition'])->name('api.lab-orders.transition');
         Route::apiResource('lab-orders', LabOrderController::class)->only(['index', 'show'])->parameters(['lab-orders' => 'labOrder']);
+        Route::get('reports', [\App\Http\Controllers\Api\V1\ReportController::class, 'index'])->name('api.reports.index');
+        Route::get('reports/pdf', [\App\Http\Controllers\Admin\ReportController::class, 'pdf'])->name('api.reports.pdf');
         Route::get('beds', [\App\Http\Controllers\Api\V1\AdmissionController::class, 'beds'])->name('api.beds.index');
         Route::post('admissions/{admission}/transfer', [\App\Http\Controllers\Api\V1\AdmissionController::class, 'transfer'])->name('api.admissions.transfer');
         Route::post('admissions/{admission}/discharge', [\App\Http\Controllers\Api\V1\AdmissionController::class, 'discharge'])->name('api.admissions.discharge');

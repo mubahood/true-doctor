@@ -4,6 +4,7 @@ namespace App\Livewire\Reports;
 
 use App\Services\ReportService;
 use App\Support\CurrentHospital;
+use App\Support\ReportRange;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -45,24 +46,10 @@ class Index extends Component
         abort_unless(Auth::user()?->can('reports.view'), 403);
     }
 
-    /** Empty / unparsable input falls back to the current month. */
+    /** Empty or unreadable falls back to this month (ReportRange), mid-edit ranges left alone. */
     private function normaliseRange(): void
     {
-        $this->from = $this->parse($this->from, fn () => Carbon::now()->startOfMonth());
-        $this->to = $this->parse($this->to, fn () => Carbon::now()->endOfMonth());
-    }
-
-    private function parse(string $value, \Closure $default): string
-    {
-        if ($value === '') {
-            return $default()->toDateString();
-        }
-
-        try {
-            return Carbon::parse($value)->toDateString();
-        } catch (\Throwable) {
-            return $default()->toDateString();
-        }
+        [$this->from, $this->to] = ReportRange::read($this->from, $this->to, swap: false);
     }
 
     public function updatedFrom(): void
@@ -152,54 +139,24 @@ class Index extends Component
      */
     public function presets(): array
     {
-        return [
-            'today' => 'Today',
-            'week' => 'This week',
-            'month' => 'This month',
-            'last-month' => 'Last month',
-            'quarter' => 'This quarter',
-            'year' => 'This year',
-        ];
+        return ReportRange::presets();
     }
 
-    /**
-     * The two dates a preset means.
-     *
-     * One place, so choosing a preset and recognising one cannot disagree.
-     *
-     * @return array{0:string,1:string}
-     */
+    /** @return array{0:string,1:string} */
     public function rangeFor(string $key): array
     {
-        $now = Carbon::now();
-
-        [$from, $to] = match ($key) {
-            'today' => [$now->copy()->startOfDay(), $now->copy()->endOfDay()],
-            'week' => [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()],
-            'last-month' => [$now->copy()->subMonthNoOverflow()->startOfMonth(), $now->copy()->subMonthNoOverflow()->endOfMonth()],
-            'quarter' => [$now->copy()->startOfQuarter(), $now->copy()->endOfQuarter()],
-            'year' => [$now->copy()->startOfYear(), $now->copy()->endOfYear()],
-            default => [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()],
-        };
-
-        return [$from->toDateString(), $to->toDateString()];
+        return ReportRange::forPreset($key);
     }
 
     public function usePreset(string $key): void
     {
-        [$this->from, $this->to] = $this->rangeFor($key);
+        [$this->from, $this->to] = ReportRange::forPreset($key);
     }
 
     /** Which preset the current range happens to be, so one can look chosen. */
     public function activePreset(): ?string
     {
-        foreach (array_keys($this->presets()) as $key) {
-            if ($this->rangeFor($key) === [$this->from, $this->to]) {
-                return $key;
-            }
-        }
-
-        return null;
+        return ReportRange::presetOf($this->from, $this->to);
     }
 
     public function render()
