@@ -24,6 +24,23 @@ enum PaymentMethod: string
     }
 
     /** Settled by an external gateway (recorded server-side after verification). */
+    /**
+     * Whether this payment's proof lives outside the system. Cash is its own
+     * receipt; a transfer, a mobile-money payment or an insurance settlement
+     * is somebody else's record, and without its reference there is no way
+     * back to it when the figures are questioned.
+     */
+    public function needsReference(): bool
+    {
+        return in_array($this, [self::MobileMoney, self::Bank, self::Insurance], true);
+    }
+
+    /** @return list<self> the methods a person records by hand (a gateway reports its own) */
+    public static function recordable(): array
+    {
+        return array_values(array_filter(self::cases(), fn (self $m) => ! $m->isGateway()));
+    }
+
     public function isGateway(): bool
     {
         return $this === self::Flutterwave;

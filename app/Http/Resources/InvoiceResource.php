@@ -30,6 +30,7 @@ class InvoiceResource extends JsonResource
                 'line_total' => $it->line_total,
             ])->values()),
             'payments' => $this->whenLoaded('payments', fn () => $this->payments->sortByDesc('id')->map(fn ($p) => [
+                'uuid' => $p->uuid,
                 'amount' => $p->amount,
                 'method' => $p->method->value,
                 'reference' => $p->reference,

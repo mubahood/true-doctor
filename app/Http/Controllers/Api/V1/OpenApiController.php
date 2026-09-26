@@ -128,6 +128,11 @@ class OpenApiController extends Controller
                 '/radiology-orders' => ['get' => ['summary' => 'The radiology worklist, with the tally in meta', 'tags' => ['Radiology'], 'security' => $secured, 'parameters' => [$this->q('q'), $this->q('status'), $this->q('outstanding')], 'responses' => ['200' => $ok, '403' => $ok]]],
                 '/radiology-orders/{uuid}/transition' => ['post' => ['summary' => 'Scheduled, performed, reported, cancelled', 'tags' => ['Radiology'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '422' => $ok]]],
                 '/radiology-orders/{uuid}/report' => ['put' => ['summary' => 'Findings and impression; sign_off=true also marks it reported', 'tags' => ['Radiology'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '422' => $ok]]],
+                '/visits/{uuid}/bill' => ['get' => ['summary' => 'A visit\'s bill: lines, totals, invoice, what is unbilled, how it may be paid', 'tags' => ['Billing'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '403' => $ok]]],
+                '/visits/{uuid}/invoice' => ['post' => ['summary' => 'Raise the invoice (with the visit\'s agreed discount)', 'tags' => ['Billing'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['201' => $ok, '422' => $ok]]],
+                '/invoices/{uuid}/payments' => ['post' => ['summary' => 'Record a payment (a reference for transfers, mobile money, insurance)', 'tags' => ['Billing'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['201' => $ok, '422' => $ok]]],
+                '/invoices/{uuid}/pdf' => ['get' => ['summary' => 'The invoice as a PDF', 'tags' => ['Billing'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok]]],
+                '/payments/{uuid}/receipt' => ['get' => ['summary' => 'A payment receipt as a PDF', 'tags' => ['Billing'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok]]],
                 '/invoices' => ['get' => ['summary' => 'List invoices', 'tags' => ['Billing'], 'security' => $secured, 'parameters' => [$this->q('q'), $this->q('status')], 'responses' => ['200' => $ok, '403' => $ok]]],
             ],
         ];

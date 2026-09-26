@@ -4,6 +4,7 @@ namespace App\Livewire\Visits\Panels;
 
 use App\Enums\PaymentMethod;
 use App\Enums\VisitStage;
+use App\Http\Requests\PaymentRequest;
 use App\Models\Invoice;
 use App\Models\PatientCard;
 use App\Models\Payment;
@@ -94,10 +95,7 @@ class Payments extends Component
     #[Computed]
     public function methods(): array
     {
-        return array_values(array_filter(
-            PaymentMethod::cases(),
-            fn (PaymentMethod $method) => ! $method->isGateway(),
-        ));
+        return PaymentMethod::recordable();
     }
 
     /**
@@ -137,11 +135,7 @@ class Payments extends Component
     #[Computed]
     public function needsReference(): bool
     {
-        return in_array(PaymentMethod::tryFrom($this->method), [
-            PaymentMethod::MobileMoney,
-            PaymentMethod::Bank,
-            PaymentMethod::Insurance,
-        ], true);
+        return PaymentMethod::tryFrom((string) $this->method)?->needsReference() ?? false;
     }
 
     public function updatedMethod(): void
@@ -185,15 +179,13 @@ class Payments extends Component
             return;
         }
 
-        $this->validate([
-            'method' => ['required', 'string', 'in:'.implode(',', array_column($this->methods, 'value'))],
-            'amount' => ['required', 'numeric', 'gt:0'],
+        // PaymentRequest's rules (method, amount, reference), with this
+        // panel's own card field.
+        $rules = PaymentRequest::rulesFor();
+        unset($rules['card_uuid']);
+        $this->validate($rules + [
             'patient_card_id' => [$this->method === PaymentMethod::Card->value ? 'required' : 'nullable', 'integer'],
-            'reference' => [$this->needsReference ? 'required' : 'nullable', 'string', 'max:120'],
-        ], [
-            'patient_card_id.required' => 'Choose the card to debit.',
-            'reference.required' => 'A reference is what proves this payment later.',
-        ]);
+        ], PaymentRequest::messagesFor() + ['patient_card_id.required' => 'Choose the card to debit.']);
 
         $opts = ['reference' => ($this->reference ?? '') !== '' ? trim((string) $this->reference) : null];
 

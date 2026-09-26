@@ -103,6 +103,12 @@ Route::prefix('v1')->group(function () {
         Route::put('radiology-orders/{radiologyOrder}/report', [\App\Http\Controllers\Api\V1\RadiologyOrderController::class, 'report'])->name('api.radiology-orders.report');
         Route::post('lab-orders/{labOrder}/transition', [LabOrderController::class, 'transition'])->name('api.lab-orders.transition');
         Route::apiResource('lab-orders', LabOrderController::class)->only(['index', 'show'])->parameters(['lab-orders' => 'labOrder']);
+        Route::get('visits/{visit}/bill', [\App\Http\Controllers\Api\V1\BillingController::class, 'bill'])->name('api.bill.show');
+        Route::post('visits/{visit}/invoice', [\App\Http\Controllers\Api\V1\BillingController::class, 'invoice'])->name('api.bill.invoice');
+        Route::post('invoices/{invoice}/payments', [\App\Http\Controllers\Api\V1\BillingController::class, 'pay'])->name('api.invoices.pay');
+        // The same PDFs the web prints, behind the same policies.
+        Route::get('invoices/{invoice}/pdf', [\App\Http\Controllers\Admin\InvoiceController::class, 'pdf'])->name('api.invoices.pdf');
+        Route::get('payments/{payment:uuid}/receipt', [\App\Http\Controllers\Admin\PaymentController::class, 'receipt'])->name('api.payments.receipt');
         Route::apiResource('invoices', InvoiceController::class)->only(['index', 'show']);
     });
 });

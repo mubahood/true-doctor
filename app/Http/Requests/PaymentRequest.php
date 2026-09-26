@@ -6,7 +6,6 @@ use App\Enums\PaymentMethod;
 use App\Support\CurrentHospital;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Enum;
 
 /** Record a payment. A card payment requires a prepaid card of this hospital. */
 class PaymentRequest extends FormRequest
@@ -31,14 +30,32 @@ class PaymentRequest extends FormRequest
     {
         $hospitalId = app(CurrentHospital::class)->id();
 
+        $needsReference = array_map(fn (PaymentMethod $m) => $m->value, array_filter(PaymentMethod::cases(), fn (PaymentMethod $m) => $m->needsReference()));
+
         return [
-            'method' => ['required', new Enum(PaymentMethod::class)],
+            // Recorded by hand: a gateway payment arrives from the gateway.
+            'method' => ['required', Rule::in(array_map(fn (PaymentMethod $m) => $m->value, PaymentMethod::recordable()))],
             'amount' => ['required', 'numeric', 'gt:0', 'max:99999999.99', 'decimal:0,2'],
-            'reference' => ['nullable', 'string', 'max:120'],
+            'reference' => ['nullable', 'required_if:method,'.implode(',', $needsReference), 'string', 'max:120'],
             'card_uuid' => [
                 'nullable', 'required_if:method,card', 'uuid',
                 Rule::exists('patient_cards', 'uuid')->where('hospital_id', $hospitalId),
             ],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return self::messagesFor();
+    }
+
+    /** @return array<string,string> */
+    public static function messagesFor(): array
+    {
+        return [
+            'reference.required_if' => 'A reference is what proves this payment later.',
+            'card_uuid.required_if' => 'Choose the card to debit.',
+            'method.in' => 'Choose how it was paid.',
         ];
     }
 

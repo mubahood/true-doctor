@@ -97,7 +97,7 @@ class Show extends Component
         $invoice = $this->invoice;
         $this->authorize('pay', $invoice);
 
-        $data = $this->validate(PaymentRequest::rulesFor());
+        $data = $this->validate(PaymentRequest::rulesFor(), PaymentRequest::messagesFor());
 
         $opts = ['reference' => $data['reference'] ?? null];
 
