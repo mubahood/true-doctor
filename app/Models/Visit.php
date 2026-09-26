@@ -318,9 +318,7 @@ class Visit extends Model
 
         return $query->where(function (Builder $qq) use ($term) {
             $qq->where('visit_no', 'like', "%{$term}%")
-                ->orWhereHas('patient', fn (Builder $p) => $p->where('first_name', 'like', "%{$term}%")
-                    ->orWhere('last_name', 'like', "%{$term}%")
-                    ->orWhere('patient_no', 'like', "%{$term}%"));
+                ->orWhereHas('patient', fn (Builder $p) => $p->search($term));
         });
     }
 

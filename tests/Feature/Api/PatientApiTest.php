@@ -43,6 +43,19 @@ class PatientApiTest extends TestCase
         $this->assertSame('Alpha', $res->json('data.0.first_name'));
     }
 
+    /** A full name is two words; each must match, and together they find the person. */
+    public function test_a_full_name_finds_the_patient(): void
+    {
+        $h = Hospital::factory()->create();
+        app(\App\Support\CurrentHospital::class)->set($h->id);
+        Patient::factory()->create(['hospital_id' => $h->id, 'first_name' => 'Amina', 'last_name' => 'Nakato']);
+        Patient::factory()->create(['hospital_id' => $h->id, 'first_name' => 'Amina', 'last_name' => 'Okello']);
+        Sanctum::actingAs($this->staff($h, 'receptionist'));
+
+        $this->assertSame(['Nakato'], collect($this->getJson('/api/v1/patients?q=amina%20nakato')->json('data'))->pluck('last_name')->all());
+        $this->assertCount(2, $this->getJson('/api/v1/patients?q=amina')->json('data'));
+    }
+
     public function test_create_via_api_registers_a_patient(): void
     {
         $h = Hospital::factory()->create();

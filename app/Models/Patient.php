@@ -166,21 +166,26 @@ class Patient extends Model
 
     // ── Scopes ─────────────────────────────────────────────────
 
-    /** Free-text search across name, patient_no and phone (tenant-scoped by the global scope). */
+    /**
+     * Free-text search across name, patient_no and phone (tenant-scoped by the
+     * global scope). Every word must match somewhere, so "Amina Nakato" finds
+     * Amina Nakato — each word alone matched only half of a full name.
+     */
     public function scopeSearch(Builder $query, ?string $term): Builder
     {
-        $term = trim((string) $term);
-        if ($term === '') {
-            return $query;
+        $words = preg_split('/\s+/', trim((string) $term), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        foreach ($words as $word) {
+            $query->where(function (Builder $q) use ($word) {
+                $q->where('patient_no', 'like', "%{$word}%")
+                    ->orWhere('first_name', 'like', "%{$word}%")
+                    ->orWhere('last_name', 'like', "%{$word}%")
+                    ->orWhere('phone_1', 'like', "%{$word}%")
+                    ->orWhere('phone_2', 'like', "%{$word}%");
+            });
         }
 
-        return $query->where(function (Builder $q) use ($term) {
-            $q->where('patient_no', 'like', "%{$term}%")
-                ->orWhere('first_name', 'like', "%{$term}%")
-                ->orWhere('last_name', 'like', "%{$term}%")
-                ->orWhere('phone_1', 'like', "%{$term}%")
-                ->orWhere('phone_2', 'like', "%{$term}%");
-        });
+        return $query;
     }
 
     public function getRouteKeyName(): string
