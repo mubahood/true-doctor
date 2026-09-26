@@ -13,6 +13,8 @@ class StockItemResource extends JsonResource
     {
         return [
             'uuid' => $this->uuid,
+            // What a dispensing line names (DispensationRequest takes the id).
+            'server_id' => $this->id,
             'name' => $this->name,
             'unit' => $this->unit,
             'category' => $this->whenLoaded('category', fn () => $this->category?->name),
