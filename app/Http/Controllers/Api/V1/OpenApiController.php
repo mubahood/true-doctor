@@ -97,6 +97,23 @@ class OpenApiController extends Controller
                 '/visits/{uuid}/clinical' => ['post' => ['summary' => 'Save clinical notes / diagnosis', 'tags' => ['Visits'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '403' => $ok]]],
                 '/visits/{uuid}/transition' => ['post' => ['summary' => 'Move the visit to its next stage, if its gate is open', 'tags' => ['Visits'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '422' => $ok]]],
 
+                '/visits/{uuid}/orders' => [
+                    'get' => ['summary' => 'The work on a visit, with a count per kind', 'tags' => ['Orders'], 'security' => $secured, 'parameters' => [$this->path('uuid'), $this->q('type')], 'responses' => ['200' => $ok]],
+                    'post' => ['summary' => 'Place an order (consultation, lab, imaging, pharmacy, procedure, admission)', 'tags' => ['Orders'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['201' => $ok, '403' => $ok, '422' => $ok]],
+                ],
+                '/orders/catalogue' => ['get' => ['summary' => 'Tests or studies to order from, and usual titles', 'tags' => ['Orders'], 'security' => $secured, 'parameters' => [$this->q('type'), $this->q('q')], 'responses' => ['200' => $ok]]],
+                '/orders/lines' => ['get' => ['summary' => 'Services or products an order line is picked from', 'tags' => ['Orders'], 'security' => $secured, 'parameters' => [$this->q('kind'), $this->q('q')], 'responses' => ['200' => $ok]]],
+                '/orders/{uuid}' => ['get' => ['summary' => 'One order, with what cancelling it would undo', 'tags' => ['Orders'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok]]],
+                '/orders/{uuid}/move' => ['post' => ['summary' => 'Start or finish an order (finishing a stay discharges)', 'tags' => ['Orders'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '422' => $ok]]],
+                '/orders/{uuid}/cancel' => ['post' => ['summary' => 'Cancel an order; its charges come off and goods go back', 'tags' => ['Orders'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '422' => $ok]]],
+                '/orders/{uuid}/report' => ['put' => ['summary' => 'Write the report', 'tags' => ['Orders'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '422' => $ok]]],
+                '/orders/{uuid}/items' => ['post' => ['summary' => 'Record a service or product the work used', 'tags' => ['Orders'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['201' => $ok, '422' => $ok]]],
+                '/visits/{uuid}/prescriptions' => [
+                    'get' => ['summary' => 'Prescriptions and their scheduled doses', 'tags' => ['Prescriptions'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok]],
+                    'post' => ['summary' => 'Prescribe', 'tags' => ['Prescriptions'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['201' => $ok, '403' => $ok, '422' => $ok]],
+                ],
+                '/doses/{id}' => ['post' => ['summary' => 'Mark a scheduled dose given or missed', 'tags' => ['Prescriptions'], 'security' => $secured, 'parameters' => [$this->path('id')], 'responses' => ['200' => $ok, '403' => $ok]]],
+
                 '/stock-items' => ['get' => ['summary' => 'List stock items', 'tags' => ['Inventory'], 'security' => $secured, 'parameters' => [$this->q('filter'), $this->q('category'), $this->q('q')], 'responses' => ['200' => $ok, '403' => $ok]]],
                 '/lab-orders' => ['get' => ['summary' => 'The lab worklist, with the bench tally in meta', 'tags' => ['Lab'], 'security' => $secured, 'parameters' => [$this->q('q'), $this->q('status'), $this->q('outstanding'), $this->q('per_page')], 'responses' => ['200' => $ok, '403' => $ok]]],
                 '/lab-orders/{uuid}/transition' => ['post' => ['summary' => 'Move a lab order (collected, processing, completed, cancelled)', 'tags' => ['Lab'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '403' => $ok, '422' => $ok]]],

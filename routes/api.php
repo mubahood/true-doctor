@@ -72,6 +72,20 @@ Route::prefix('v1')->group(function () {
         // Before the resource, or `phrases` would be taken for a visit's uuid.
         Route::get('visits/phrases', [VisitController::class, 'phrases'])->name('api.visits.phrases');
         Route::get('visits/{visit}/writing-aids', [VisitController::class, 'writingAids'])->name('api.visits.writing-aids');
+        Route::get('visits/{visit}/prescriptions', [\App\Http\Controllers\Api\V1\PrescriptionController::class, 'index'])->name('api.prescriptions.index');
+        Route::post('visits/{visit}/prescriptions', [\App\Http\Controllers\Api\V1\PrescriptionController::class, 'store'])->name('api.prescriptions.store');
+        Route::post('doses/{record}', [\App\Http\Controllers\Api\V1\PrescriptionController::class, 'markDose'])->name('api.doses.mark');
+        // The work on a visit (OrderDesk / OrderService).
+        Route::get('visits/{visit}/orders', [\App\Http\Controllers\Api\V1\OrderController::class, 'index'])->name('api.orders.index');
+        Route::post('visits/{visit}/orders', [\App\Http\Controllers\Api\V1\OrderController::class, 'store'])->name('api.orders.store');
+        Route::get('orders/catalogue', [\App\Http\Controllers\Api\V1\OrderController::class, 'catalogue'])->name('api.orders.catalogue');
+        Route::get('orders/lines', [\App\Http\Controllers\Api\V1\OrderController::class, 'lines'])->name('api.orders.lines');
+        Route::get('orders/{order}', [\App\Http\Controllers\Api\V1\OrderController::class, 'show'])->name('api.orders.show');
+        Route::post('orders/{order}/move', [\App\Http\Controllers\Api\V1\OrderController::class, 'move'])->name('api.orders.move');
+        Route::post('orders/{order}/cancel', [\App\Http\Controllers\Api\V1\OrderController::class, 'cancel'])->name('api.orders.cancel');
+        Route::put('orders/{order}/report', [\App\Http\Controllers\Api\V1\OrderController::class, 'report'])->name('api.orders.report');
+        Route::post('orders/{order}/items', [\App\Http\Controllers\Api\V1\OrderController::class, 'addItem'])->name('api.orders.items.store');
+        Route::delete('orders/{order}/items/{item}', [\App\Http\Controllers\Api\V1\OrderController::class, 'removeItem'])->name('api.orders.items.destroy');
         Route::apiResource('visits', VisitController::class)->only(['index', 'store', 'show']);
 
         // Read-only resources for integration/mobile clients

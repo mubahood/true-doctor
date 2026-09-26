@@ -25,6 +25,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property OrderType $type
  * @property OrderStatus $status
  * @property \Illuminate\Support\Carbon|null $report_updated_at
+ * @property \Illuminate\Support\Carbon|null $started_at
+ * @property \Illuminate\Support\Carbon|null $completed_at
  */
 class Order extends Model implements HoldsAttachments
 {

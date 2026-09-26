@@ -2,7 +2,6 @@
 
 namespace App\Livewire\Visits\Panels;
 
-use App\Enums\AdmissionStatus;
 use App\Enums\OrderStatus;
 use App\Models\Admission;
 use App\Models\Order;
@@ -10,8 +9,8 @@ use App\Models\OrderAttachment;
 use App\Models\OrderItem;
 use App\Models\Service;
 use App\Models\StockItem;
-use App\Services\AdmissionService;
 use App\Services\OrderAttachmentService;
+use App\Services\OrderDesk;
 use App\Services\OrderService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
@@ -484,40 +483,19 @@ class OrderDetail extends Component
             return;   // cancelling goes through the confirmation, never straight
         }
 
-        // Finishing an inpatient stay is a discharge, not a status change: the
-        // bed has to be freed and the nights billed. AdmissionService does
-        // both and completes this order itself, so the two can never disagree.
-        $stay = $this->stay;
-        if ($target === OrderStatus::Completed && $stay !== null && $stay->status->isActive()) {
-            abort_unless(Auth::user()?->can('ipd.manage'), 403);
-
-            try {
-                app(AdmissionService::class)->discharge(
-                    $stay, AdmissionStatus::Discharged, $this->notes ?: null, Auth::id(),
-                );
-            } catch (Throwable $e) {
-                $this->dispatch('toast', message: $this->plainly($e), type: 'error');
-
-                return;
-            }
-
-            $this->refreshOrder();
-            $this->dispatch('toast', message: 'Patient discharged and the bed freed.', type: 'success');
-            $this->dispatch('visit-updated');
-
-            return;
-        }
-
+        // OrderDesk decides what "done" means — for a stay, a discharge.
         try {
-            $orders->transition($order, $target, Auth::id());
-        } catch (RuntimeException $e) {
-            $this->dispatch('toast', message: $e->getMessage(), type: 'error');
+            $message = app(OrderDesk::class)->move($order, $target, Auth::user(), $this->notes ?: null);
+        } catch (\Illuminate\Auth\Access\AuthorizationException) {
+            abort(403);
+        } catch (Throwable $e) {
+            $this->dispatch('toast', message: $this->plainly($e), type: 'error');
 
             return;
         }
 
         $this->refreshOrder();
-        $this->dispatch('toast', message: 'Order '.$target->label().'.', type: 'success');
+        $this->dispatch('toast', message: $message, type: 'success');
         $this->dispatch('visit-updated');
     }
 
@@ -591,7 +569,7 @@ class OrderDetail extends Component
 
     private function canWrite(): bool
     {
-        return (bool) (Auth::user()?->can('visits.create') || Auth::user()?->can('visits.manage'));
+        return OrderDesk::canWrite(Auth::user());
     }
 
     /**

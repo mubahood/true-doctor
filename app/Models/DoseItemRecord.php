@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property DoseSlot $slot
  * @property DoseRecordStatus $status
  * @property \Illuminate\Support\Carbon $scheduled_date
+ * @property \Illuminate\Support\Carbon|null $administered_at
  */
 class DoseItemRecord extends Model
 {
