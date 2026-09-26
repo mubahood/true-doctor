@@ -88,6 +88,8 @@ class OpenApiController extends Controller
                     'get' => ['summary' => 'List visits', 'tags' => ['Visits'], 'security' => $secured, 'parameters' => [$this->q('q'), $this->q('status'), $this->q('stage'), $this->q('patient'), $this->q('open'), $this->q('per_page')], 'responses' => ['200' => $ok]],
                     'post' => ['summary' => 'Open a visit (with desk vitals and start_now)', 'tags' => ['Visits'], 'security' => $secured, 'responses' => ['201' => $ok, '403' => $ok, '422' => $ok]],
                 ],
+                '/visits/phrases' => ['get' => ['summary' => 'Suggested reasons, complaints and diagnoses for the open-visit form', 'tags' => ['Visits'], 'security' => $secured, 'responses' => ['200' => $ok, '403' => $ok]]],
+                '/visits/{uuid}/writing-aids' => ['get' => ['summary' => 'Allergies, vitals, last diagnosis and suggested words for writing notes', 'tags' => ['Visits'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '403' => $ok]]],
                 '/visits/intake' => ['post' => ['summary' => 'Register a new patient and open their visit', 'tags' => ['Visits'], 'security' => $secured, 'responses' => ['201' => $ok, '403' => $ok, '422' => $ok]]],
                 '/visits/{uuid}' => ['get' => ['summary' => 'Get a visit, with its gate and history', 'tags' => ['Visits'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '404' => $ok]]],
                 '/visits/{uuid}/cancel' => ['post' => ['summary' => 'Cancel a visit (reason required)', 'tags' => ['Visits'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '422' => $ok]]],

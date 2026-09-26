@@ -6,7 +6,7 @@ use App\Http\Requests\VisitClinicalRequest;
 use App\Livewire\Concerns\ChoosesPhrases;
 use App\Models\Visit;
 use App\Services\VisitService;
-use App\Support\SampleCatalogue;
+use App\Support\VisitPhrases;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Lazy;
@@ -32,13 +32,7 @@ class Clinical extends Component
 {
     use AuthorizesRequests, ChoosesPhrases, InteractsWithVisit;
 
-    private const TEXT_FIELDS = ['complaints', 'diagnosis', 'doctor_remarks'];
-
-    /** Long enough for a phrase, short enough that it is not somebody's paragraph. */
-    private const PHRASE_MAX = 60;
-
-    /** Enough to recognise one, not so many that reading them is work. */
-    private const PHRASE_LIMIT = 8;
+    private const TEXT_FIELDS = VisitPhrases::NOTE_FIELDS;
 
     public ?int $doctor_user_id = null;
 
@@ -82,34 +76,7 @@ class Clinical extends Component
     #[Computed]
     public function context(): array
     {
-        $visit = $this->visit;
-        $patient = $visit->patient;
-
-        $previous = Visit::where('patient_id', $visit->patient_id)
-            ->whereKeyNot($visit->id)
-            ->whereNotNull('diagnosis')
-            ->where('diagnosis', '!=', '')
-            ->latest('id')
-            ->first();
-
-        $vitals = array_filter([
-            $visit->temperature !== null ? $visit->temperature.'°C' : null,
-            $visit->blood_pressure,
-            $visit->pulse !== null ? $visit->pulse.' bpm' : null,
-            $visit->spo2 !== null ? 'SpO₂ '.$visit->spo2.'%' : null,
-            $visit->respiratory_rate !== null ? 'RR '.$visit->respiratory_rate : null,
-        ]);
-
-        return [
-            'allergies' => $patient === null ? [] : array_values(array_filter((array) $patient->allergies)),
-            'conditions' => $patient === null ? [] : array_values(array_filter((array) $patient->chronic_conditions)),
-            'reason' => $visit->reason,
-            'vitals' => $vitals,
-            'previous' => $previous === null ? null : [
-                'diagnosis' => (string) $previous->diagnosis,
-                'when' => $previous->created_at?->format('d M Y'),
-            ],
-        ];
+        return VisitPhrases::context($this->visit);
     }
 
     /**
@@ -125,71 +92,7 @@ class Clinical extends Component
     #[Computed]
     public function phrases(): array
     {
-        $curated = SampleCatalogue::clinicalPhrases();
-
-        $out = [];
-        foreach (self::TEXT_FIELDS as $field) {
-            $rows = [];
-            $seen = [];
-
-            $add = function (?string $value, string $source) use (&$rows, &$seen) {
-                $value = trim((string) $value);
-                // Long narratives are not phrases; offering one would paste
-                // somebody else's paragraph into this patient's record.
-                if ($value === '' || mb_strlen($value) > self::PHRASE_MAX) {
-                    return;
-                }
-                $key = mb_strtolower($value);
-                if (isset($seen[$key])) {
-                    return;
-                }
-                $seen[$key] = true;
-                $rows[] = ['value' => $value, 'label' => $value, 'source' => $source];
-            };
-
-            // What reception wrote, for the field it answers.
-            if ($field === 'complaints') {
-                $add($this->visit->reason, 'reception');
-            }
-
-            foreach ($this->mostWritten($field) as $value) {
-                $add($value, 'hospital');
-            }
-
-            foreach ($curated[$field] ?? [] as $value) {
-                $add($value, 'curated');
-            }
-
-            $out[$field] = array_slice($rows, 0, self::PHRASE_LIMIT);
-        }
-
-        return $out;
-    }
-
-    /**
-     * What this hospital actually writes in that field.
-     *
-     * More than once, or it is not a house phrase — it is one doctor's
-     * sentence about one patient, and offering it to the next would be
-     * pasting someone else's note into this record.
-     *
-     * @return list<string>
-     */
-    private function mostWritten(string $field): array
-    {
-        // Fetched wide and trimmed in PHP: the length cap is on CHARACTERS,
-        // and the two engines this runs on do not agree on how to count them.
-        return Visit::query()
-            ->whereNotNull($field)
-            ->where($field, '!=', '')
-            ->selectRaw($field.', count(*) as n')
-            ->groupBy($field)
-            ->havingRaw('count(*) > 1')
-            ->orderByDesc('n')
-            ->limit(self::PHRASE_LIMIT * 4)
-            ->pluck($field)
-            ->map(fn ($v) => (string) $v)
-            ->all();
+        return VisitPhrases::forNotes($this->visit);
     }
 
     /** Fill a field from its own phrases, appending rather than replacing. */

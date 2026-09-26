@@ -339,4 +339,44 @@ class VisitApiTest extends TestCase
         $this->postJson('/api/v1/visits', ['patient_id' => $patient->id, 'appointment_id' => $booking->id])
             ->assertStatus(422)->assertJsonValidationErrors(['appointment_id'], 'errors');
     }
+
+    /** The dialog's suggestions: this hospital's repeated wording leads. */
+    public function test_phrases_put_the_hospitals_own_words_first(): void
+    {
+        $h = Hospital::factory()->create();
+        app(CurrentHospital::class)->set($h->id);
+        Visit::factory()->count(2)->create(['hospital_id' => $h->id, 'reason' => 'Antenatal review']);
+        Visit::factory()->create(['hospital_id' => $h->id, 'reason' => 'A one-off typo']);
+        Sanctum::actingAs($this->staff($h, 'receptionist'));
+
+        $res = $this->getJson('/api/v1/visits/phrases')->assertOk();
+
+        $this->assertSame('Antenatal review', $res->json('data.reason.0'));
+        $this->assertNotContains('A one-off typo', $res->json('data.reason'));
+        $this->assertLessThanOrEqual(\App\Support\VisitPhrases::REASON_LIMIT, count($res->json('data.reason')));
+        $this->assertContains('Fever', $res->json('data.complaints'));
+        $this->assertNotEmpty($res->json('data.diagnosis'));
+    }
+
+    /** What a doctor sees while writing: allergies, vitals, last diagnosis, and words. */
+    public function test_writing_aids_carry_the_context_and_the_words(): void
+    {
+        $h = Hospital::factory()->create();
+        app(CurrentHospital::class)->set($h->id);
+        $patient = Patient::factory()->create(['hospital_id' => $h->id, 'allergies' => ['Sulfa'], 'chronic_conditions' => ['Asthma']]);
+        Visit::factory()->create(['hospital_id' => $h->id, 'patient_id' => $patient->id, 'diagnosis' => 'Malaria']);
+        $visit = Visit::factory()->create(['hospital_id' => $h->id, 'patient_id' => $patient->id, 'reason' => 'Cough', 'pulse' => 90]);
+
+        Sanctum::actingAs($this->staff($h, 'nurse'));
+        $this->getJson("/api/v1/visits/{$visit->uuid}/writing-aids")->assertStatus(403);
+
+        Sanctum::actingAs($this->staff($h, 'doctor'));
+        $this->getJson("/api/v1/visits/{$visit->uuid}/writing-aids")
+            ->assertOk()
+            ->assertJsonPath('data.context.allergies', ['Sulfa'])
+            ->assertJsonPath('data.context.conditions', ['Asthma'])
+            ->assertJsonPath('data.context.previous.diagnosis', 'Malaria')
+            ->assertJsonPath('data.context.vitals', ['90 bpm'])
+            ->assertJsonPath('data.phrases.complaints.0', 'Cough');
+    }
 }

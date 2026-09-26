@@ -69,6 +69,9 @@ Route::prefix('v1')->group(function () {
         Route::post('visits/{visit}/transition', [VisitController::class, 'transition'])->name('api.visits.transition');
         Route::post('visits/{visit}/cancel', [VisitController::class, 'cancel'])->name('api.visits.cancel');
         Route::post('visits/intake', [VisitController::class, 'intake'])->name('api.visits.intake');
+        // Before the resource, or `phrases` would be taken for a visit's uuid.
+        Route::get('visits/phrases', [VisitController::class, 'phrases'])->name('api.visits.phrases');
+        Route::get('visits/{visit}/writing-aids', [VisitController::class, 'writingAids'])->name('api.visits.writing-aids');
         Route::apiResource('visits', VisitController::class)->only(['index', 'store', 'show']);
 
         // Read-only resources for integration/mobile clients

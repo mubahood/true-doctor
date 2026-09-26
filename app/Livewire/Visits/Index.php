@@ -21,7 +21,7 @@ use App\Services\BillingService;
 use App\Services\VisitService;
 use App\Support\HospitalSettings;
 use App\Support\PatientBrief;
-use App\Support\SampleCatalogue;
+use App\Support\VisitPhrases;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -68,9 +68,6 @@ class Index extends Component
     private const PICKERS = ['patient_id'];
 
     private const TABS = ['existing', 'intake'];
-
-    /** Enough reasons to recognise one, not so many that reading them is work. */
-    private const REASON_LIMIT = 6;
 
     /**
      * The two filters answer the two questions the record now answers.
@@ -325,32 +322,7 @@ class Index extends Component
     #[Computed]
     public function reasonSuggestions(): array
     {
-        // Used more than once, or it is not a house phrase — it is a typo, a
-        // one-off, or seeded noise. A hospital's real wording repeats; junk
-        // does not, and a suggestion list that offers junk teaches junk.
-        $used = Visit::query()
-            ->whereNotNull('reason')
-            ->where('reason', '!=', '')
-            ->selectRaw('reason, count(*) as n')
-            ->groupBy('reason')
-            ->havingRaw('count(*) > 1')
-            ->orderByDesc('n')
-            ->limit(self::REASON_LIMIT)
-            ->pluck('reason')->all();
-
-        $out = [];
-        foreach ([...$used, ...SampleCatalogue::visitReasons()] as $phrase) {
-            $phrase = trim((string) $phrase);
-            if ($phrase === '' || mb_strlen($phrase) > 60) {
-                continue;
-            }
-            // Case-insensitively unique: "Follow-up" twice is one suggestion.
-            if (! isset($out[mb_strtolower($phrase)])) {
-                $out[mb_strtolower($phrase)] = $phrase;
-            }
-        }
-
-        return array_slice(array_values($out), 0, self::REASON_LIMIT);
+        return VisitPhrases::reasons();
     }
 
     /** Only ever a phrase that is actually on offer. */
@@ -561,7 +533,7 @@ class Index extends Component
     #[Computed]
     public function clinicalPhrases(): array
     {
-        return SampleCatalogue::clinicalPhrases();
+        return VisitPhrases::desk();
     }
 
     /** @return array<string, string> */

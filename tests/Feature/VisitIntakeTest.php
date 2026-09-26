@@ -87,4 +87,42 @@ class VisitIntakeTest extends TestCase
         $this->assertDatabaseCount('patients', 0);
         $this->assertDatabaseCount('visits', 0);
     }
+
+    /**
+     * The dialog asks for a diagnosis "if it is already known" — and for a
+     * while it was thrown away on the way to the database.
+     */
+    public function test_a_diagnosis_given_at_the_desk_is_kept(): void
+    {
+        $h = Hospital::factory()->create();
+        $this->actingReceptionist($h);
+        $patient = Patient::factory()->create(['hospital_id' => $h->id]);
+
+        Livewire::test(VisitsIndex::class)
+            ->call('create')
+            ->set('patient_id', $patient->id)
+            ->set('reason', 'Fever')
+            ->set('diagnosis', 'Malaria, uncomplicated')
+            ->set('pulse', '96')
+            ->set('start_now', true)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $visit = Visit::firstOrFail();
+        $this->assertSame('Malaria, uncomplicated', $visit->diagnosis);
+        $this->assertSame(96, (int) $visit->pulse);
+        $this->assertSame('ongoing', $visit->status->value);
+
+        // And the new-patient tab keeps it too.
+        Livewire::test(VisitsIndex::class)
+            ->call('create')
+            ->call('setTab', 'intake')
+            ->set('first_name', 'Walk')
+            ->set('last_name', 'In')
+            ->set('diagnosis', 'Sprained ankle')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertSame('Sprained ankle', Visit::latest('id')->firstOrFail()->diagnosis);
+    }
 }

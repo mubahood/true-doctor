@@ -20,6 +20,7 @@ use App\Models\Patient;
 use App\Models\Visit;
 use App\Services\VisitService;
 use App\Support\ApiResponse;
+use App\Support\VisitPhrases;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -168,6 +169,31 @@ class VisitController extends Controller
         }
 
         return ApiResponse::success($this->one($visit), 'Visit cancelled.');
+    }
+
+    /**
+     * The open-visit dialog's suggestions: this hospital's own reasons first,
+     * then curated complaints and diagnoses (App\Support\VisitPhrases).
+     */
+    public function phrases(): JsonResponse
+    {
+        $this->authorize('create', Visit::class);
+
+        return ApiResponse::success(['reason' => VisitPhrases::reasons()] + VisitPhrases::desk());
+    }
+
+    /**
+     * What the notes form puts in front of whoever is writing — allergies,
+     * conditions, the vitals, last time's diagnosis — and words to reach for.
+     */
+    public function writingAids(Visit $visit): JsonResponse
+    {
+        $this->authorize('diagnose', $visit);
+
+        return ApiResponse::success([
+            'context' => VisitPhrases::context($visit),
+            'phrases' => array_map(fn (array $rows) => array_column($rows, 'value'), VisitPhrases::forNotes($visit)),
+        ]);
     }
 
     /** One visit, as its page shows it: the gate and the trail. */
