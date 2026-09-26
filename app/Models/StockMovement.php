@@ -39,6 +39,16 @@ class StockMovement extends Model
         ];
     }
 
+    /**
+     * Who moved it.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
     /** @return BelongsTo<StockItem, $this> */
     public function stockItem(): BelongsTo
     {

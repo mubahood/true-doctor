@@ -89,6 +89,12 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('visits', VisitController::class)->only(['index', 'store', 'show']);
 
         // Read-only resources for integration/mobile clients
+        Route::get('visits/{visit}/dispensations', [\App\Http\Controllers\Api\V1\PharmacyController::class, 'dispensations'])->name('api.dispensations.index');
+        Route::post('visits/{visit}/dispensations', [\App\Http\Controllers\Api\V1\PharmacyController::class, 'dispense'])->name('api.dispensations.store');
+        Route::get('stock-items/{stock}/movements', [\App\Http\Controllers\Api\V1\PharmacyController::class, 'movements'])->name('api.stock-items.movements');
+        Route::post('stock-items/{stock}/receive', [\App\Http\Controllers\Api\V1\PharmacyController::class, 'receive'])->name('api.stock-items.receive');
+        Route::post('stock-items/{stock}/adjust', [\App\Http\Controllers\Api\V1\PharmacyController::class, 'adjust'])->name('api.stock-items.adjust');
+        Route::post('stock-items/{stock}/write-off', [\App\Http\Controllers\Api\V1\PharmacyController::class, 'writeOff'])->name('api.stock-items.write-off');
         Route::apiResource('stock-items', StockItemController::class)->only(['index'])->parameters(['stock-items' => 'stock']);
         Route::get('stock-items/{stock}', [StockItemController::class, 'show'])->name('api.stock-items.show');
         Route::get('radiology-orders', [\App\Http\Controllers\Api\V1\RadiologyOrderController::class, 'index'])->name('api.radiology-orders.index');

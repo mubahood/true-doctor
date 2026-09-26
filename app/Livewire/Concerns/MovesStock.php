@@ -5,10 +5,10 @@ namespace App\Livewire\Concerns;
 use App\Enums\StockMovementReason;
 use App\Http\Requests\StockAdjustRequest;
 use App\Http\Requests\StockReceiveRequest;
+use App\Http\Requests\StockWriteOffRequest;
 use App\Models\StockItem;
 use App\Services\StockService;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use RuntimeException;
 
@@ -300,17 +300,7 @@ trait MovesStock
      */
     private function postWriteOff(StockService $stock, StockItem $item): void
     {
-        $data = $this->validate([
-            'quantity' => ['required', 'numeric', 'gt:0', 'max:99999999.99', 'decimal:0,2'],
-            'reason' => ['required', Rule::in(array_map(
-                fn (StockMovementReason $r) => $r->value,
-                StockMovementReason::losses(),
-            ))],
-            'note' => ['required', 'string', 'min:3', 'max:255'],
-        ], [
-            'note.required' => 'Say why it is being written off — this is the record somebody audits.',
-            'reason.required' => 'Choose what happened to it.',
-        ]);
+        $data = $this->validate(StockWriteOffRequest::rulesFor(), StockWriteOffRequest::messagesFor());
 
         $stock->adjust(
             $item,

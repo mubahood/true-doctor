@@ -114,6 +114,14 @@ class OpenApiController extends Controller
                 ],
                 '/doses/{id}' => ['post' => ['summary' => 'Mark a scheduled dose given or missed', 'tags' => ['Prescriptions'], 'security' => $secured, 'parameters' => [$this->path('id')], 'responses' => ['200' => $ok, '403' => $ok]]],
 
+                '/visits/{uuid}/dispensations' => [
+                    'get' => ['summary' => 'What has been dispensed on a visit', 'tags' => ['Pharmacy'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok]],
+                    'post' => ['summary' => 'Dispense and bill (a shortfall is named against its row)', 'tags' => ['Pharmacy'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['201' => $ok, '403' => $ok, '422' => $ok]],
+                ],
+                '/stock-items/{uuid}/movements' => ['get' => ['summary' => 'One item\'s ledger', 'tags' => ['Inventory'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok]]],
+                '/stock-items/{uuid}/receive' => ['post' => ['summary' => 'Receive stock', 'tags' => ['Inventory'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '422' => $ok]]],
+                '/stock-items/{uuid}/adjust' => ['post' => ['summary' => 'Adjust stock with a reason', 'tags' => ['Inventory'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '422' => $ok]]],
+                '/stock-items/{uuid}/write-off' => ['post' => ['summary' => 'Write stock off (a loss reason and a note)', 'tags' => ['Inventory'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '422' => $ok]]],
                 '/stock-items' => ['get' => ['summary' => 'List stock items', 'tags' => ['Inventory'], 'security' => $secured, 'parameters' => [$this->q('filter'), $this->q('category'), $this->q('q')], 'responses' => ['200' => $ok, '403' => $ok]]],
                 '/lab-orders' => ['get' => ['summary' => 'The lab worklist, with the bench tally in meta', 'tags' => ['Lab'], 'security' => $secured, 'parameters' => [$this->q('q'), $this->q('status'), $this->q('outstanding'), $this->q('per_page')], 'responses' => ['200' => $ok, '403' => $ok]]],
                 '/lab-orders/{uuid}/transition' => ['post' => ['summary' => 'Move a lab order (collected, processing, completed, cancelled)', 'tags' => ['Lab'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '403' => $ok, '422' => $ok]]],
