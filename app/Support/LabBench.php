@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Enums\LabOrderStatus;
 use App\Models\LabOrder;
+use App\Models\Patient;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 
@@ -79,6 +80,6 @@ final class LabBench
         return $query
             ->when(($status ?? '') !== '', fn (Builder $q) => $q->where('status', $status))
             ->when($outstanding, fn (Builder $q) => $q->whereIn('status', self::outstandingStatuses()))
-            ->when($search !== '', fn (Builder $q) => $q->whereHas('patient', fn ($p) => $p->search($search)));
+            ->when($search !== '', fn (Builder $q) => $q->whereHas('patient', fn ($p) => Patient::matchWords($p, $search)));
     }
 }

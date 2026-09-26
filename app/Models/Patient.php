@@ -173,6 +173,20 @@ class Patient extends Model
      */
     public function scopeSearch(Builder $query, ?string $term): Builder
     {
+        return self::matchWords($query, $term);
+    }
+
+    /**
+     * The search itself, for a query over patients reached through a relation
+     * (a visit's, a lab order's, an invoice's patient).
+     *
+     * @template TQuery of Builder
+     *
+     * @param  TQuery  $query
+     * @return TQuery
+     */
+    public static function matchWords(Builder $query, ?string $term): Builder
+    {
         $words = preg_split('/\s+/', trim((string) $term), -1, PREG_SPLIT_NO_EMPTY) ?: [];
 
         foreach ($words as $word) {

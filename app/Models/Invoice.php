@@ -76,7 +76,7 @@ class Invoice extends Model
 
         return $term === '' ? $query : $query->where(fn (Builder $q) => $q
             ->where('invoice_no', 'like', "%{$term}%")
-            ->orWhereHas('patient', fn ($p) => $p->search($term)));
+            ->orWhereHas('patient', fn ($p) => Patient::matchWords($p, $term)));
     }
 
     /** @return HasMany<Payment, $this> */
