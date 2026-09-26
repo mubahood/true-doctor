@@ -209,6 +209,12 @@ class PatientHandler extends EntityHandler
         $changedByDevice = [];
 
         foreach ($incoming as $field => $value) {
+            // Left as it was confirmed: not the device's change, whatever the
+            // server holds now. An allergy added on the web must not turn an
+            // offline phone-number correction into a conflict.
+            if (array_key_exists($field, $baseFields) && $this->same($value, $baseFields[$field])) {
+                continue;
+            }
             // Equal to the server already: the device is echoing a value it
             // never touched, and there is nothing to fight about.
             if (! $this->same($patient->{$field}, $value)) {

@@ -254,6 +254,32 @@ class VisitClinicalSyncTest extends TestCase
         $this->assertSame('Headache and photophobia.', $visit->complaints);
     }
 
+    /**
+     * A device sends the whole narrative, including fields it did not touch.
+     * One it left at its confirmed value is not a disagreement with a remark
+     * somebody added on the web meanwhile — found by the app's end-to-end test.
+     */
+    public function test_a_field_the_device_left_alone_is_not_raised_when_the_web_moved_it(): void
+    {
+        $visit = $this->visit();
+        $visit->forceFill(['doctor_remarks' => 'Seen on the ward round.', 'version' => 2])->saveQuietly();
+
+        $result = $this->push([$this->op([
+            'uuid' => $visit->uuid,
+            'complaints' => $visit->complaints,
+            'diagnosis' => 'Migraine.',
+            'doctor_remarks' => null,
+        ], [
+            'base_version' => 1,
+            'base_fields' => ['complaints' => $visit->complaints, 'diagnosis' => null, 'doctor_remarks' => null],
+        ])])->assertOk()->json('data.results.0');
+
+        $this->assertSame('accepted', $result['status']);
+        $visit->refresh();
+        $this->assertSame('Migraine.', $visit->diagnosis);
+        $this->assertSame('Seen on the ward round.', $visit->doctor_remarks);
+    }
+
     public function test_a_field_both_sides_moved_is_always_raised_and_never_merged(): void
     {
         $visit = $this->visit();

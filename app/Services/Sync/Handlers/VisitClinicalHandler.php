@@ -143,6 +143,12 @@ class VisitClinicalHandler extends EntityHandler
         $changed = [];
 
         foreach ($incoming as $field => $value) {
+            // A field the device left as it was confirmed is not the device's
+            // change: a remark added on the web while the device wrote the
+            // diagnosis is somebody else's work, not a disagreement.
+            if (array_key_exists($field, $baseFields) && $this->same($value, $baseFields[$field])) {
+                continue;
+            }
             if (! $this->same($visit->{$field}, $value)) {
                 $changed[$field] = $value;
             }

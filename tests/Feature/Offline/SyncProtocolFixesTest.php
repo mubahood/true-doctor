@@ -419,6 +419,25 @@ class SyncProtocolFixesTest extends TestCase
         $this->assertSame('1985-05-05', $patient->fresh()->dob->format('Y-m-d'), 'the online correction was overwritten');
     }
 
+    /** An allergy added on the web does not block an offline phone correction the device sends whole. */
+    public function test_a_field_the_device_left_alone_is_not_its_change(): void
+    {
+        Sanctum::actingAs($this->clerk);
+        $uuid = (string) Str::uuid();
+        $this->push([$this->op('patients', 'create', ['uuid' => $uuid, 'first_name' => 'Amina', 'last_name' => 'Nakato', 'phone_1' => '0700'])], $this->clerkDevice);
+        $patient = Patient::where('uuid', $uuid)->firstOrFail();
+        app(\App\Services\PatientService::class)->update($patient, ['first_name' => 'Amina', 'last_name' => 'Nakato', 'phone_1' => '0700', 'allergies' => ['Penicillin']]);
+
+        $result = $this->push([$this->op('patients', 'update', [
+            'uuid' => $uuid, 'first_name' => 'Amina', 'last_name' => 'Nakato', 'phone_1' => '0711', 'allergies' => null,
+        ], ['base_version' => 1, 'base_fields' => ['first_name' => 'Amina', 'last_name' => 'Nakato', 'phone_1' => '0700', 'allergies' => null]])], $this->clerkDevice)->json('data.results.0');
+
+        $this->assertSame('accepted', $result['status']);
+        $patient->refresh();
+        $this->assertSame('0711', $patient->phone_1);
+        $this->assertSame(['Penicillin'], $patient->allergies);
+    }
+
     public function test_a_save_that_changes_nothing_does_not_advance_the_version(): void
     {
         $patient = Patient::factory()->create(['hospital_id' => $this->hospital->id]);
@@ -463,7 +482,7 @@ class SyncProtocolFixesTest extends TestCase
 
         $this->assertSame('accepted', $result['status'], json_encode($result));
         $this->assertSame('0772', $patient->fresh()->phone_1, "the device's change was merged");
-        $this->assertSame('Kampala', $patient->fresh()->address, "the online change was kept");
+        $this->assertSame('Kampala', $patient->fresh()->address, 'the online change was kept');
     }
 
     // ── A device holds the whole editable record ─────────────────────────
