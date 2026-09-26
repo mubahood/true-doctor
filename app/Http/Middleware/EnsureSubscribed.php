@@ -25,6 +25,9 @@ class EnsureSubscribed
 {
     private const ALLOWED = [
         'admin.subscription.*', 'admin.logout',
+        // The app's equivalents: enough to say who you are, show the
+        // "subscription ended" screen, and sign out.
+        'api.auth.me', 'api.auth.logout', 'api.auth.password', 'api.meta',
     ];
 
     public function __construct(private readonly SubscriptionState $state) {}
@@ -63,6 +66,16 @@ class EnsureSubscribed
     private function blocked(Request $request): Response
     {
         $message = "Your hospital's subscription has ended.";
+
+        // The app needs to tell this apart from any other refusal, to show
+        // the renewal screen instead of an error.
+        if ($request->is('api/*')) {
+            return \App\Support\ApiResponse::error(
+                \App\Enums\ApiErrorCode::SubscriptionEnded,
+                $message.' An administrator can renew it on the web.',
+                403,
+            );
+        }
 
         if (! $request->isMethod('get') || $request->ajax() || $request->wantsJson() || $request->hasHeader('X-Livewire')) {
             abort(403, $message);

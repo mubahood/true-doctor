@@ -56,6 +56,12 @@ class OpenApiController extends Controller
                 ]],
                 '/auth/me' => ['get' => ['summary' => 'Current user', 'tags' => ['Auth'], 'security' => $secured, 'responses' => ['200' => $ok, '401' => $ok]]],
                 '/auth/logout' => ['post' => ['summary' => 'Revoke the current token', 'tags' => ['Auth'], 'security' => $secured, 'responses' => ['200' => $ok]]],
+                '/auth/password' => ['post' => [
+                    'summary' => 'Change your own password (clears a temporary one; signs out other devices)', 'tags' => ['Auth'], 'security' => $secured,
+                    'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['type' => 'object', 'required' => ['current_password', 'password', 'password_confirmation'], 'properties' => ['current_password' => ['type' => 'string'], 'password' => ['type' => 'string', 'minLength' => 6], 'password_confirmation' => ['type' => 'string']]]]]],
+                    'responses' => ['200' => $ok, '422' => $ok],
+                ]],
+                '/meta' => ['get' => ['summary' => 'Hospital, money format, subscription, menu and status lists for drawing the app', 'tags' => ['App'], 'security' => $secured, 'responses' => ['200' => $ok, '401' => $ok]]],
 
                 '/patients' => [
                     'get' => ['summary' => 'List patients', 'tags' => ['Patients'], 'security' => $secured, 'parameters' => [$this->q('q'), $this->q('status'), $this->q('per_page')], 'responses' => ['200' => $ok, '403' => $ok]],

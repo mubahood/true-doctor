@@ -86,3 +86,30 @@ service+policy+resource pattern as needed.
 auth flow, resources, the bearer security scheme, and the standard response envelope as a
 reusable schema. Point Swagger UI / Redoc / a client generator at it. Kept in
 `OpenApiController` alongside the routes so it evolves with them.
+
+## Account state and `meta` (for the mobile & desktop app)
+
+Three states of the *account* — not of the request — each with its own code, so a client can
+show the right screen instead of a generic error. All enforced by `EnsureApiAccount` (runs after
+`auth:sanctum`, before `subscribed`) and `EnsureSubscribed`:
+
+| Code | Status | When | What still works |
+|---|---|---|---|
+| `account_disabled` | 401 | the user was deactivated after the token was issued; the token is **deleted** | nothing — sign in again |
+| `password_change_required` | 403 | the account is on a temporary password | `auth/me`, `meta`, `auth/password`, `auth/logout` |
+| `subscription_ended` | 403 | the hospital's subscription has lapsed (grace included) | the same four |
+
+- `POST /api/v1/auth/password` `{current_password, password, password_confirmation}` — the same
+  rules and messages as the web page (`PasswordChangeRequest`, at least 6 characters, must differ
+  from the current one). Clears `password_change_required` and **revokes every other token** of the
+  user.
+- `GET /api/v1/meta` — what the app draws the system from, never copied into its code:
+  `api_version`, `sync_protocol`, `server_time`, `web_url`; `user` (+ `role_label`, `permissions`);
+  `hospital` (name, logo URL, timezone, `money` {code, symbol, position, decimals, separators},
+  `tax`); `subscription` (status, plan, grants_access, days_remaining, badge); `setup_required`;
+  `navigation` — the web sidebar for this user, from the same `App\Support\Navigation` definition
+  (each destination named by its web route, with `web_url`); `enums` — every status/option list in
+  `app/Enums` with the web's label and badge tone (`success|info|warn|danger|neutral`).
+
+Tests: `AccountStateApiTest`, `MetaApiTest` (the menu is asserted equal to the web sidebar for
+each role).

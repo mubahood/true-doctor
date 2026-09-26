@@ -63,6 +63,30 @@ class AuthController extends Controller
         return ApiResponse::success(new UserResource($user));
     }
 
+    /**
+     * Change your own password — the same rules and words as the web page
+     * (PasswordChangeRequest). Clears a temporary password, and signs out
+     * every OTHER device: a password changed because it leaked should not
+     * leave the leak signed in.
+     */
+    public function password(\App\Http\Requests\PasswordChangeRequest $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $user->forceFill([
+            'password' => Hash::make($request->validated('password')),
+            'password_change_required' => false,
+        ])->save();
+
+        $current = $user->currentAccessToken();
+        $user->tokens()
+            ->when($current instanceof \Laravel\Sanctum\PersonalAccessToken, fn ($q) => $q->whereKeyNot($current->getKey()))
+            ->delete();
+
+        return ApiResponse::success(['password_change_required' => false], 'Your password is set.');
+    }
+
     public function logout(): JsonResponse
     {
         $token = request()->user()?->currentAccessToken();

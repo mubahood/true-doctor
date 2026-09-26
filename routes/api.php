@@ -26,9 +26,16 @@ Route::prefix('v1')->group(function () {
     Route::post('auth/login', [AuthController::class, 'login'])->name('api.auth.login');
 
     // Authenticated
-    Route::middleware(['auth:sanctum', 'subscribed'])->group(function () {
+    // `api.account` before `subscribed`: a disabled account is told it is
+    // disabled, not that its hospital's subscription ended.
+    Route::middleware(['auth:sanctum', 'api.account', 'subscribed'])->group(function () {
         Route::get('auth/me', [AuthController::class, 'me'])->name('api.auth.me');
         Route::post('auth/logout', [AuthController::class, 'logout'])->name('api.auth.logout');
+        Route::post('auth/password', [AuthController::class, 'password'])->name('api.auth.password');
+
+        // What an app needs to draw the system the way the web does:
+        // hospital, money format, subscription, menu, statuses.
+        Route::get('meta', \App\Http\Controllers\Api\V1\MetaController::class)->name('api.meta');
 
         // ── Offline sync ─────────────────────────────────────────────
         // Dedicated endpoints rather than bending the CRUD ones: batching,

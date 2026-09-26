@@ -15,4 +15,10 @@ enum ApiErrorCode: string
     case NotFound = 'not_found';
     case TooManyRequests = 'too_many_requests';
     case ServerError = 'server_error';
+
+    // States of the ACCOUNT rather than of the request, each with its own
+    // screen in the app: signed out, set a password, renew.
+    case AccountDisabled = 'account_disabled';
+    case PasswordChangeRequired = 'password_change_required';
+    case SubscriptionEnded = 'subscription_ended';
 }
