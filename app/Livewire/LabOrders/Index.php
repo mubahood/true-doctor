@@ -10,6 +10,7 @@ use App\Livewire\Concerns\WithTable;
 use App\Models\Contracts\HoldsAttachments;
 use App\Models\LabOrder;
 use App\Services\LabService;
+use App\Support\LabBench;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
@@ -42,7 +43,7 @@ class Index extends Component
     use ChargesWorkDone, CollectsAttachments, WithTable;
 
     /** Waiting longer than this is the thing a bench needs to see. */
-    public const OLD_HOURS = 24;
+    public const OLD_HOURS = LabBench::OLD_HOURS;
 
     #[Url(history: true, except: '')]
     public string $status = '';
@@ -148,43 +149,18 @@ class Index extends Component
     #[Computed]
     public function waiting(): array
     {
-        $counts = LabOrder::query()
-            ->selectRaw('status, count(*) as total')
-            ->groupBy('status')
-            ->pluck('total', 'status');
-
-        $oldest = LabOrder::query()
-            ->whereIn('status', $this->outstandingStatuses())
-            ->min('created_at');
-
-        return [
-            'ordered' => (int) ($counts[LabOrderStatus::Ordered->value] ?? 0),
-            'collected' => (int) ($counts[LabOrderStatus::Collected->value] ?? 0),
-            'processing' => (int) ($counts[LabOrderStatus::Processing->value] ?? 0),
-            'completed' => (int) LabOrder::whereDate('completed_at', now()->toDateString())->count(),
-            'oldest' => $oldest === null ? null : (int) \Illuminate\Support\Carbon::parse($oldest)->diffInHours(now()),
-        ];
-    }
-
-    /** @return list<string> the statuses that still owe a result */
-    private function outstandingStatuses(): array
-    {
-        return [
-            LabOrderStatus::Ordered->value,
-            LabOrderStatus::Collected->value,
-            LabOrderStatus::Processing->value,
-        ];
+        return LabBench::tally();
     }
 
     /** How long this order has been on the bench, in hours. */
     public function waitedHours(LabOrder $order): int
     {
-        return (int) $order->created_at->diffInHours(now());
+        return LabBench::waitedHours($order);
     }
 
     public function isOverdue(LabOrder $order): bool
     {
-        return ! $order->status->isTerminal() && $this->waitedHours($order) >= self::OLD_HOURS;
+        return LabBench::isOverdue($order);
     }
 
     public function hasFilters(): bool
@@ -360,11 +336,7 @@ class Index extends Component
         $this->authorizeView();
 
         $query = LabOrder::with(['patient', 'visit'])->withCount(['items', 'attachments'])
-            ->when($this->status !== '', fn (Builder $q) => $q->where('status', $this->status))
-            ->when($this->outstanding, fn (Builder $q) => $q->whereIn('status', $this->outstandingStatuses()))
-            ->when($this->search !== '', fn (Builder $q) => $q->whereHas('patient', fn (Builder $p) => $p->where('first_name', 'like', "%{$this->search}%")
-                ->orWhere('last_name', 'like', "%{$this->search}%")
-                ->orWhere('patient_no', 'like', "%{$this->search}%")));
+            ->tap(fn (Builder $q) => LabBench::filter($q, $this->status, $this->outstanding, $this->search));
 
         /** @var Builder<LabOrder> $sorted */
         $sorted = $this->applySort($query, fn (Builder $q) => $q->latest('id'));

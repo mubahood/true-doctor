@@ -98,7 +98,8 @@ class OpenApiController extends Controller
                 '/visits/{uuid}/transition' => ['post' => ['summary' => 'Move the visit to its next stage, if its gate is open', 'tags' => ['Visits'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '422' => $ok]]],
 
                 '/stock-items' => ['get' => ['summary' => 'List stock items', 'tags' => ['Inventory'], 'security' => $secured, 'parameters' => [$this->q('filter'), $this->q('q')], 'responses' => ['200' => $ok, '403' => $ok]]],
-                '/lab-orders' => ['get' => ['summary' => 'List lab orders', 'tags' => ['Lab'], 'security' => $secured, 'parameters' => [$this->q('status')], 'responses' => ['200' => $ok, '403' => $ok]]],
+                '/lab-orders' => ['get' => ['summary' => 'The lab worklist, with the bench tally in meta', 'tags' => ['Lab'], 'security' => $secured, 'parameters' => [$this->q('q'), $this->q('status'), $this->q('outstanding'), $this->q('per_page')], 'responses' => ['200' => $ok, '403' => $ok]]],
+                '/lab-orders/{uuid}/transition' => ['post' => ['summary' => 'Move a lab order (collected, processing, completed, cancelled)', 'tags' => ['Lab'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '403' => $ok, '422' => $ok]]],
                 '/invoices' => ['get' => ['summary' => 'List invoices', 'tags' => ['Billing'], 'security' => $secured, 'parameters' => [$this->q('status')], 'responses' => ['200' => $ok, '403' => $ok]]],
             ],
         ];

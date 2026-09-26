@@ -77,6 +77,7 @@ Route::prefix('v1')->group(function () {
         // Read-only resources for integration/mobile clients
         Route::apiResource('stock-items', StockItemController::class)->only(['index'])->parameters(['stock-items' => 'stock']);
         Route::get('stock-items/{stock}', [StockItemController::class, 'show'])->name('api.stock-items.show');
+        Route::post('lab-orders/{labOrder}/transition', [LabOrderController::class, 'transition'])->name('api.lab-orders.transition');
         Route::apiResource('lab-orders', LabOrderController::class)->only(['index', 'show'])->parameters(['lab-orders' => 'labOrder']);
         Route::apiResource('invoices', InvoiceController::class)->only(['index', 'show']);
     });

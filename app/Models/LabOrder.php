@@ -11,7 +11,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-/** @property LabOrderStatus $status */
+/**
+ * @property LabOrderStatus $status
+ * @property \Illuminate\Support\Carbon|null $completed_at
+ */
 class LabOrder extends Model implements HoldsAttachments
 {
     use BelongsToHospital, HasFactory, SoftDeletes;

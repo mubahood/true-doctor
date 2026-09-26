@@ -30,7 +30,8 @@ class ApiResponse
      * A paginated list in the standard envelope: items under `data`, page info
      * under `meta` (so the envelope shape stays consistent across endpoints).
      */
-    public static function paginated(\Illuminate\Contracts\Pagination\LengthAwarePaginator $paginator, mixed $items = null): JsonResponse
+    /** @param  array<string,mixed>  $extraMeta  more for the meta block (a list's tally, say) */
+    public static function paginated(\Illuminate\Contracts\Pagination\LengthAwarePaginator $paginator, mixed $items = null, array $extraMeta = []): JsonResponse
     {
         return response()->json([
             'success' => true,
@@ -42,7 +43,7 @@ class ApiResponse
                 'per_page' => $paginator->perPage(),
                 'total' => $paginator->total(),
                 'last_page' => $paginator->lastPage(),
-            ],
+            ] + $extraMeta,
             'errors' => null,
         ]);
     }

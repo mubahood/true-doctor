@@ -347,4 +347,62 @@ class LabResultSyncTest extends TestCase
 
         $this->assertContains('lab_items', $accepts);
     }
+
+    // ── The bench, as the app reads and works it ─────────────────────────
+
+    /** The web worklist's own limits: a flag the web cannot show is refused. */
+    public function test_a_result_is_held_to_the_bench_worklists_rules(): void
+    {
+        $item = $this->pendingItem();
+
+        $result = $this->push([$this->op([
+            'uuid' => $item->uuid, 'result_value' => str_repeat('9', 121), 'result_flag' => 'weird',
+        ], ['base_version' => (int) $item->version])])->assertOk()->json('data.results.0');
+
+        $this->assertSame('rejected', $result['status']);
+        $this->assertArrayHasKey('result_value', $result['errors']);
+        $this->assertArrayHasKey('result_flag', $result['errors']);
+        $this->assertNull($item->fresh()->result_value);
+    }
+
+    /** The worklist: outstanding oldest first, the tally, and each line's version. */
+    public function test_the_worklist_filters_and_counts_like_the_web(): void
+    {
+        $item = $this->pendingItem();
+        $order = $item->order;
+        Sanctum::actingAs($this->tech);
+
+        $res = $this->getJson('/api/v1/lab-orders?outstanding=1')->assertOk();
+
+        $res->assertJsonPath('data.0.uuid', $order->uuid)
+            ->assertJsonPath('data.0.items.0.uuid', $item->uuid)
+            ->assertJsonPath('data.0.items.0.version', (int) $item->version)
+            ->assertJsonPath('data.0.next_statuses', ['collected', 'cancelled'])
+            ->assertJsonPath('data.0.overdue', false)
+            ->assertJsonPath('meta.tally.ordered', 1)
+            ->assertJsonPath('meta.old_hours', \App\Support\LabBench::OLD_HOURS);
+
+        $this->getJson('/api/v1/lab-orders?q='.urlencode($order->patient->last_name))->assertJsonCount(1, 'data');
+        $this->getJson('/api/v1/lab-orders?q=nobody-by-that-name')->assertJsonCount(0, 'data');
+        $this->getJson('/api/v1/lab-orders?status=completed')->assertJsonCount(0, 'data');
+    }
+
+    /** Moving an order: the bench may, along LabOrderStatus's rules only. */
+    public function test_an_order_moves_only_where_its_status_allows(): void
+    {
+        $order = $this->pendingItem()->order;
+        Sanctum::actingAs($this->tech);
+
+        $this->postJson("/api/v1/lab-orders/{$order->uuid}/transition", ['status' => 'completed'])
+            ->assertStatus(422);
+        $this->postJson("/api/v1/lab-orders/{$order->uuid}/transition", ['status' => 'collected'])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'collected')
+            ->assertJsonPath('data.next_statuses', ['processing', 'cancelled']);
+
+        $doctor = User::factory()->create(['hospital_id' => $this->hospital->id, 'role' => 'doctor']);
+        $doctor->syncSpatieRole();
+        Sanctum::actingAs($doctor);
+        $this->postJson("/api/v1/lab-orders/{$order->uuid}/transition", ['status' => 'processing'])->assertStatus(403);
+    }
 }

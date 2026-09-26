@@ -70,11 +70,12 @@ class LabResultHandler extends EntityHandler
             );
         }
 
-        $errors = Validator::make($payload, [
-            'result_value' => ['required', 'string', 'max:191'],
-            'result_flag' => ['nullable', 'string', 'max:12'],
-            'result_notes' => ['nullable', 'string', 'max:191'],
-        ])->errors()->toArray();
+        // The bench worklist's own rules (LabResultRequest), so a device can
+        // never store a flag or a length the web could not; a device reports
+        // a value, so the value is required here.
+        $rules = \App\Http\Requests\LabResultRequest::rulesFor();
+        $rules['result_value'] = ['required', ...array_values(array_filter($rules['result_value'], fn ($r) => $r !== 'nullable'))];
+        $errors = Validator::make($payload, $rules)->errors()->toArray();
 
         if ($errors !== []) {
             return $this->rejected('validation_failed', 'This result could not be saved as recorded.', $errors);
