@@ -79,7 +79,8 @@ class DemoSeeder extends Seeder
             'tax_enabled' => true, 'tax_label' => 'VAT', 'tax_rate' => 18,
             'consultation_fee' => 25, 'invoice_prefix' => 'INV',
         ]);
-        $b = $this->hospital('City Clinic B', 'city-clinic-b', 'UGX', [
+        // The second tenant: local and tests only (config demo.second_tenant).
+        $b = ! config('demo.second_tenant') ? null : $this->hospital('City Clinic B', 'city-clinic-b', 'UGX', [
             'currency_code' => 'UGX', 'currency_symbol' => 'USh', 'currency_position' => 'before',
             'decimals' => 0, 'thousands_separator' => ',', 'decimal_separator' => '.',
             'tax_enabled' => false, 'tax_label' => 'Tax', 'tax_rate' => 0,
@@ -107,7 +108,9 @@ class DemoSeeder extends Seeder
         }
 
         // A second tenant for isolation testing.
-        $this->user($b, 'Hospital Admin B', 'admin.b@test.com', 'hospital_admin');
+        if ($b !== null) {
+            $this->user($b, 'Hospital Admin B', 'admin.b@test.com', 'hospital_admin');
+        }
         $doctorB = $this->user($b, 'Dr. Bob (Doctor)', 'doctor.b@test.com', 'doctor');
 
         $this->seedHospitalData($a, $doctorA);

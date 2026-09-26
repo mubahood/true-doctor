@@ -41,6 +41,14 @@ return [
     'hospital' => env('DEMO_HOSPITAL', 'general-hospital-a'),
 
     /*
+    | A second, empty tenant (City Clinic B) on another currency, for proving
+    | tenant isolation while developing. Not on a live site, where it is just
+    | a dummy hospital in the customer list and an extra account on the demo
+    | sign-in page.
+    */
+    'second_tenant' => (bool) env('DEMO_SECOND_TENANT', env('APP_ENV', 'production') !== 'production'),
+
+    /*
     |--------------------------------------------------------------------------
     | Putting it back
     |--------------------------------------------------------------------------
