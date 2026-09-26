@@ -19,7 +19,7 @@ class PatientFactory extends Factory
         return [
             'uuid' => (string) Str::uuid(),
             'hospital_id' => Hospital::factory(),
-            'patient_no' => 'PT-'.date('Y').'-'.str_pad((string) $this->faker->unique()->numberBetween(1, 999999), 6, '0'),
+            'patient_no' => 'PT-'.date('Y').'-'.str_pad((string) $this->faker->unique()->numberBetween(1, 999999), 6, '0', STR_PAD_LEFT),
             'first_name' => $this->faker->firstName(),
             'last_name' => $this->faker->lastName(),
             'sex' => $this->faker->randomElement(['male', 'female']),
