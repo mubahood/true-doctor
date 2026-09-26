@@ -32,7 +32,7 @@ class SubscriptionEmailTest extends TestCase
         Notification::fake();
         $plan = Plan::factory()->create(['is_active' => true]);
 
-        $this->post('/register', [
+        $this->post('/register', [...$this->humanCheck('register'),
             'hospital_name' => 'Welcome Clinic', 'name' => 'Owner', 'email' => 'owner@welcome.test',
             'password' => 'password1', 'password_confirmation' => 'password1', 'plan_id' => $plan->id,
         ]);

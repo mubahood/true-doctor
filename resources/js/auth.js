@@ -1,3 +1,5 @@
+import { initHumanChecks } from './human-check';
+
 /**
  * Auth pages: sign in, sign up, reset, and the demonstration door.
  *
@@ -147,3 +149,7 @@ accounts.forEach((button) => {
         document.querySelector('.a-btn')?.focus();
     });
 });
+
+
+// The picture check on this page's forms, if it has any.
+initHumanChecks();

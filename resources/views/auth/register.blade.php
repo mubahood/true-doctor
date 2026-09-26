@@ -141,6 +141,8 @@
 
   {{-- Disabled on submit: creating a hospital twice because somebody
        double-clicked is not a mistake they can undo themselves. --}}
+  <x-human-check form="register" />
+
   <button type="submit" class="a-btn" data-busy="Setting up your hospital…">
     <i class="fas fa-rocket" aria-hidden="true"></i> Start 14-day free trial
   </button>

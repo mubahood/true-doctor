@@ -317,7 +317,7 @@ class LandingTrafficTest extends TestCase
         // …and the sign-up, several pages later.
         $this->asBrowser()
             ->withCookie(TrafficRecorder::COOKIE, 'visitor-1')
-            ->post('/register', [
+            ->post('/register', [...$this->humanCheck('register'),
                 'hospital_name' => 'Attributed Clinic',
                 'name' => 'Sarah Nakato',
                 'email' => 'sarah@attributed.test',
@@ -350,7 +350,7 @@ class LandingTrafficTest extends TestCase
         $this->asBrowser()->withCookie($cookie, 'v2')->get('/?utm_source=google&utm_campaign=first-campaign&gclid=FIRST');
         $this->asBrowser()->withCookie($cookie, 'v2')->get('/?utm_source=facebook&utm_campaign=second-campaign&gclid=SECOND');
 
-        $this->asBrowser()->withCookie($cookie, 'v2')->post('/register', [
+        $this->asBrowser()->withCookie($cookie, 'v2')->post('/register', [...$this->humanCheck('register'),
             'hospital_name' => 'First Touch Clinic',
             'name' => 'A', 'email' => 'a@first.test',
             'password' => 'password1', 'password_confirmation' => 'password1',
@@ -368,7 +368,7 @@ class LandingTrafficTest extends TestCase
     {
         $plan = \App\Models\Plan::where('slug', 'starter')->firstOrFail();
 
-        $this->asBrowser()->post('/register', [
+        $this->asBrowser()->post('/register', [...$this->humanCheck('register'),
             'hospital_name' => 'Organic Clinic',
             'name' => 'B', 'email' => 'b@organic.test',
             'password' => 'password1', 'password_confirmation' => 'password1',
@@ -436,7 +436,7 @@ class LandingTrafficTest extends TestCase
             $request = $request->withCookie(TrafficRecorder::COOKIE, $cookie);
         }
 
-        return $request->post('/register', [
+        return $request->post('/register', [...$this->humanCheck('register'),
             'hospital_name' => $name,
             'name' => 'Owner', 'email' => \Illuminate\Support\Str::slug($name).'@signup.test',
             'password' => 'password1', 'password_confirmation' => 'password1',
@@ -600,7 +600,7 @@ class LandingTrafficTest extends TestCase
         $this->asBrowser()->withCookie($cookie, 'v-steps')->get('/pricing');
         $this->asBrowser()->withCookie($cookie, 'v-steps')->get('/test-login')->assertOk();
         $this->asBrowser()->withCookie($cookie, 'v-steps')->get('/register');
-        $this->asBrowser()->withCookie($cookie, 'v-steps')->post(route('contact.send'), [
+        $this->asBrowser()->withCookie($cookie, 'v-steps')->post(route('contact.send'), [...$this->humanCheck('contact'),
             'name' => 'Sarah', 'email' => 'sarah@clinic.test',
             'message' => 'We would like a walkthrough of the pharmacy module.',
         ])->assertRedirect(route('contact'));

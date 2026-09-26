@@ -474,7 +474,7 @@ class PublicSiteTest extends TestCase
         Notification::fake();
         config()->set('mail.enquiries_to', 'sales@example.test');
 
-        $this->post(route('contact.send'), [
+        $this->post(route('contact.send'), [...$this->humanCheck('contact'),
             'name' => 'Sarah Nakato',
             'email' => 'sarah@clinic.test',
             'hospital' => 'St. Mary’s Clinic',
@@ -489,7 +489,7 @@ class PublicSiteTest extends TestCase
         Notification::fake();
 
         $this->from(route('contact'))
-            ->post(route('contact.send'), ['name' => '', 'email' => 'not-an-email', 'message' => 'hi'])
+            ->post(route('contact.send'), [...$this->humanCheck('contact'), 'name' => '', 'email' => 'not-an-email', 'message' => 'hi'])
             ->assertSessionHasErrors(['name', 'email', 'message']);
 
         Notification::assertNothingSent();
@@ -501,7 +501,7 @@ class PublicSiteTest extends TestCase
         Notification::fake();
 
         $this->from(route('contact'))
-            ->post(route('contact.send'), [
+            ->post(route('contact.send'), [...$this->humanCheck('contact'),
                 'name' => 'Definitely A Person',
                 'email' => 'bot@example.test',
                 'message' => 'Buy cheap watches from our website today.',
@@ -518,14 +518,14 @@ class PublicSiteTest extends TestCase
         RateLimiter::clear('enquiry:127.0.0.1');
 
         for ($i = 0; $i < 5; $i++) {
-            $this->post(route('contact.send'), [
+            $this->post(route('contact.send'), [...$this->humanCheck('contact'),
                 'name' => 'Sarah', 'email' => 'sarah@clinic.test',
                 'message' => 'A perfectly reasonable enquiry about your plans.',
             ]);
         }
 
         $this->from(route('contact'))
-            ->post(route('contact.send'), [
+            ->post(route('contact.send'), [...$this->humanCheck('contact'),
                 'name' => 'Sarah', 'email' => 'sarah@clinic.test',
                 'message' => 'A perfectly reasonable enquiry about your plans.',
             ])
@@ -539,14 +539,14 @@ class PublicSiteTest extends TestCase
         Notification::fake();
         RateLimiter::clear('enquiry:127.0.0.1');
 
-        $this->post(route('contact.send'), [
+        $this->post(route('contact.send'), [...$this->humanCheck('contact'),
             'name' => 'Sarah', 'email' => 'sarah@clinic.test',
             'message' => 'We would like to see the inpatient module in action.',
         ]);
 
         // Post/redirect/get: refreshing the page must not send it twice.
         $this->followingRedirects()
-            ->post(route('contact.send'), [
+            ->post(route('contact.send'), [...$this->humanCheck('contact'),
                 'name' => 'Sarah', 'email' => 'sarah@clinic.test',
                 'message' => 'We would like to see the inpatient module in action.',
             ])

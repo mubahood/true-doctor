@@ -57,6 +57,11 @@
 
   <x-auth.remember />
 
+  {{-- Only after wrong passwords from this connection (LoginRequest::needsHumanCheck). --}}
+  @if(\App\Http\Requests\Auth\LoginRequest::needsHumanCheck(request()))
+    <x-human-check form="login" />
+  @endif
+
   <button type="submit" class="a-btn" data-busy="Signing in…">
     <i class="fas fa-right-to-bracket" aria-hidden="true"></i> Sign in to the demonstration
   </button>

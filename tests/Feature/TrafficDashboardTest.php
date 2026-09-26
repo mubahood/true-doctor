@@ -80,7 +80,7 @@ class TrafficDashboardTest extends TestCase
     {
         $plan = \App\Models\Plan::where('slug', 'starter')->firstOrFail();
 
-        $this->as($visitor)->post('/register', [
+        $this->as($visitor)->post('/register', [...$this->humanCheck('register'),
             'hospital_name' => $name, 'name' => 'Owner', 'email' => Str::slug($name).'@dash.test',
             'password' => 'password1', 'password_confirmation' => 'password1', 'plan_id' => $plan->id,
         ])->assertRedirect();

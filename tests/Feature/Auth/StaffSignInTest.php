@@ -311,11 +311,12 @@ class StaffSignInTest extends TestCase
     {
         $user = $this->staff();
 
+        // Answering the picture check each time, as a person would once it appears.
         for ($attempt = 0; $attempt < 5; $attempt++) {
-            $this->post('/admin/login', ['email' => $user->email, 'password' => 'wrong']);
+            $this->post('/admin/login', ['email' => $user->email, 'password' => 'wrong', ...$this->humanCheck('login')]);
         }
 
-        $this->post('/admin/login', ['email' => $user->email, 'password' => 'password1'])
+        $this->post('/admin/login', ['email' => $user->email, 'password' => 'password1', ...$this->humanCheck('login')])
             ->assertSessionHasErrors('email');
 
         $this->assertGuest();

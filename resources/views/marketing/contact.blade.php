@@ -39,13 +39,6 @@
       <form method="POST" action="{{ route('contact.send') }}" novalidate>
         @csrf
 
-        {{-- The honeypot. Off-screen rather than display:none, because the
-             point is that an automated filler DOES fill it; a person never
-             sees it, so a person never does. --}}
-        <div class="hp" aria-hidden="true">
-          <label for="website">Website</label>
-          <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
-        </div>
 
         <div class="fgrid">
           <div class="f">
@@ -106,6 +99,8 @@
             @enderror
           </div>
         </div>
+
+        <x-human-check form="contact" />
 
         <button type="submit" class="btn lg" style="width:100%;justify-content:center;" data-busy="Sending…">
           <i class="fas fa-paper-plane" aria-hidden="true"></i> Send it

@@ -1,0 +1,21 @@
+/* The picture check on public forms — resources/views/components/human-check.blade.php */
+.hc { margin: 18px 0 18px; padding: 14px; border: 1px solid var(--line, #e2e8f0); background: var(--surface-2, #f5f7fa); }
+.hc-label { display: flex; align-items: center; gap: 7px; margin-bottom: 9px; font-size: 12.5px; font-weight: 600; color: var(--tx, #111c2e); }
+.hc-label i { color: var(--br, #0a6ebd); }
+.hc-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.hc-pic { position: relative; flex: none; line-height: 0; border: 1px solid var(--line-2, #cbd5e1); background: #fff; }
+.hc-pic img { display: block; width: 240px; max-width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.hc-new { position: absolute; right: 4px; bottom: 4px; width: 26px; height: 26px; display: grid; place-items: center;
+  border: 1px solid var(--line-2, #cbd5e1); background: rgba(255,255,255,.92); color: var(--mt, #5a6b80); cursor: pointer; font-size: 12px; }
+.hc-new:hover, .hc-new:focus-visible { color: var(--br, #0a6ebd); border-color: var(--br, #0a6ebd); }
+.hc-new.is-spinning i { animation: hc-spin .6s linear infinite; }
+@keyframes hc-spin { to { transform: rotate(360deg); } }
+.hc-input { flex: 1 1 140px; min-width: 120px; height: 44px; padding: 0 12px; border: 1px solid var(--line-2, #cbd5e1); background: #fff;
+  font: 600 18px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .28em; text-transform: uppercase; color: var(--tx, #111c2e); }
+.hc-input::placeholder { letter-spacing: .08em; font-weight: 400; font-size: 14px; color: var(--mt2, #93a1b3); text-transform: none; }
+.hc-input:focus { outline: 2px solid var(--br, #0a6ebd); outline-offset: -1px; }
+.hc-input.is-bad { border-color: var(--bad, #b91c1c); }
+.hc-hint { margin: 7px 0 0; font-size: 11.5px; color: var(--mt2, #93a1b3); }
+.hc-err { margin: 7px 0 0; font-size: 12px; color: var(--bad, #b91c1c); }
+/* Off-screen, not display:none: an automated filler does fill it; a person never sees it. */
+.hc-trap { position: absolute !important; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }

@@ -33,6 +33,14 @@ Route::post('/contact', [\App\Http\Controllers\MarketingController::class, 'enqu
 // GET that changes state is a GET a crawler will change state with.
 Route::post('/currency', [\App\Http\Controllers\MarketingController::class, 'currency'])->name('currency');
 
+// The picture check on the public forms (App\Support\HumanCheck). Throttled:
+// a script fetching pictures to learn from them gets very few.
+Route::middleware('throttle:40,1')->group(function () {
+    Route::get('/human-check/new', [\App\Http\Controllers\HumanCheckController::class, 'fresh'])->name('human-check.new');
+    Route::get('/human-check/{id}.png', [\App\Http\Controllers\HumanCheckController::class, 'image'])
+        ->where('id', '[A-Za-z0-9]{32}')->name('human-check.image');
+});
+
 Route::get('/sitemap.xml', [\App\Http\Controllers\MarketingController::class, 'sitemap'])->name('sitemap');
 Route::view('/privacy', 'marketing.privacy')->middleware('landing')->name('privacy');
 Route::view('/terms', 'marketing.terms')->middleware('landing')->name('terms');
@@ -69,7 +77,9 @@ Route::post('/demo/leave', [\App\Http\Controllers\Auth\AuthenticatedSessionContr
     ->middleware('auth')
     ->name('demo.leave');
 Route::redirect('/login', '/admin/login')->name('login');
-Route::post('/register', [\App\Http\Controllers\Auth\RegistrationController::class, 'store']);
+// Ten tries an hour from one connection: plenty for a person correcting a
+// typo, a wall for a script creating hospitals.
+Route::post('/register', [\App\Http\Controllers\Auth\RegistrationController::class, 'store'])->middleware('throttle:10,60');
 
 /*
 |--------------------------------------------------------------------------

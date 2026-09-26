@@ -1,3 +1,5 @@
+import { initHumanChecks } from './human-check';
+
 /**
  * Public site behaviour.
  *
@@ -244,3 +246,7 @@ stillMotion.addEventListener?.('change', (e) => {
         document.querySelector('.hero')?.classList.add('is-ready');
     }
 });
+
+
+// The picture check on this page's forms, if it has any.
+initHumanChecks();

@@ -7,8 +7,8 @@ use App\Notifications\PublicEnquiryReceived;
 use App\Support\VisitorRegion;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Response;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -168,20 +168,19 @@ class MarketingController extends Controller
     {
         $this->assertNotFlooding($request);
 
+        // The picture check, its hidden field and its stamp come from
+        // HumanCheck, as on every public form.
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
+            'name' => ['required', 'string', 'max:120', new \App\Rules\PlainName],
             'email' => ['required', 'email', 'max:191'],
-            'hospital' => ['nullable', 'string', 'max:160'],
+            'hospital' => ['nullable', 'string', 'max:160', new \App\Rules\PlainName],
             'phone' => ['nullable', 'string', 'max:40'],
             'size' => ['nullable', 'string', 'max:40'],
             'message' => ['required', 'string', 'min:10', 'max:4000'],
-            // The honeypot. A person never sees it, so a person never fills
-            // it; the rule is that it must stay empty.
-            'website' => ['prohibited'],
-        ], [
-            'website.prohibited' => 'Something went wrong. Please try again.',
+        ] + \App\Support\HumanCheck::rules('contact'), [
             'message.min' => 'Please tell us a little more — a sentence or two is plenty.',
-        ]);
+        ] + \App\Support\HumanCheck::messages());
+        unset($data['human_id'], $data['human_answer'], $data['human_started'], $data['website']);
 
         $to = (string) config('mail.enquiries_to', config('mail.from.address'));
 

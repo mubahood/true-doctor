@@ -2,9 +2,11 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Support\HumanCheck;
 use App\Support\StaffSession;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -30,7 +32,33 @@ class LoginRequest extends FormRequest
         return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
-        ];
+        ] + (self::needsHumanCheck($this) ? HumanCheck::rules('login') : []);
+    }
+
+    public function messages(): array
+    {
+        return HumanCheck::messages();
+    }
+
+    /** Wrong passwords from one connection before the picture check appears. */
+    public const HUMAN_CHECK_AFTER = 2;
+
+    /**
+     * Whether this connection has to pass the picture check to sign in.
+     *
+     * Not at first: staff sign in every day and should not be asked to read
+     * pictures to do it. After a couple of wrong passwords from the same
+     * connection, though, guessing gets a wall — per connection, not per
+     * email, because a guesser tries many emails.
+     */
+    public static function needsHumanCheck(Request $request): bool
+    {
+        return RateLimiter::attempts(self::suspectKey($request)) >= self::HUMAN_CHECK_AFTER;
+    }
+
+    private static function suspectKey(Request $request): string
+    {
+        return 'login-suspect:'.$request->ip();
     }
 
     /**
@@ -80,6 +108,7 @@ class LoginRequest extends FormRequest
 
         if (! $authenticated) {
             RateLimiter::hit($this->throttleKey());
+            RateLimiter::hit(self::suspectKey($this), 3600);
 
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
@@ -87,6 +116,7 @@ class LoginRequest extends FormRequest
         }
 
         RateLimiter::clear($this->throttleKey());
+        RateLimiter::clear(self::suspectKey($this));
     }
 
     /**

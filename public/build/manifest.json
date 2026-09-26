@@ -3,6 +3,10 @@
     "file": "assets/clock-eTwQ4uq-.js",
     "name": "clock"
   },
+  "_human-check-D0LzdSSo.js": {
+    "file": "assets/human-check-D0LzdSSo.js",
+    "name": "human-check"
+  },
   "_worker-Bm9PQCtX.js": {
     "file": "assets/worker-Bm9PQCtX.js",
     "name": "worker"
@@ -17,7 +21,7 @@
     ]
   },
   "resources/css/auth.css": {
-    "file": "assets/auth-Cj1fWcGJ.css",
+    "file": "assets/auth-D6ErBEur.css",
     "src": "resources/css/auth.css",
     "isEntry": true,
     "name": "auth",
@@ -35,7 +39,7 @@
     ]
   },
   "resources/css/marketing.css": {
-    "file": "assets/marketing-DWnW6VAd.css",
+    "file": "assets/marketing-DTVc5bPU.css",
     "src": "resources/css/marketing.css",
     "isEntry": true,
     "name": "marketing",
@@ -57,10 +61,13 @@
     ]
   },
   "resources/js/auth.js": {
-    "file": "assets/auth-BLvZJvFt.js",
+    "file": "assets/auth-BLPabBBq.js",
     "name": "auth",
     "src": "resources/js/auth.js",
-    "isEntry": true
+    "isEntry": true,
+    "imports": [
+      "_human-check-D0LzdSSo.js"
+    ]
   },
   "resources/js/field.js": {
     "file": "assets/field-DfRpZTZB.js",
@@ -74,10 +81,13 @@
     ]
   },
   "resources/js/marketing.js": {
-    "file": "assets/marketing-Dq1plsUs.js",
+    "file": "assets/marketing-TJsS5ATl.js",
     "name": "marketing",
     "src": "resources/js/marketing.js",
-    "isEntry": true
+    "isEntry": true,
+    "imports": [
+      "_human-check-D0LzdSSo.js"
+    ]
   },
   "resources/js/offline/index.js": {
     "file": "assets/index-Dowv8mAz.js",

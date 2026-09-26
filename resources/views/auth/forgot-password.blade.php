@@ -26,6 +26,8 @@
     </div>
     @error('email')<p class="a-err" id="email-error" role="alert"><i class="fas fa-circle-exclamation" aria-hidden="true"></i> {{ $message }}</p>@enderror
   </div>
+  <x-human-check form="forgot-password" />
+
   <button type="submit" class="a-btn" data-busy="Sending the link…"><i class="fas fa-paper-plane" aria-hidden="true"></i> Email me a reset link</button>
 </form>
 

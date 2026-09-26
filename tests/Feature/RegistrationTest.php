@@ -30,7 +30,7 @@ class RegistrationTest extends TestCase
     {
         $plan = Plan::factory()->create(['is_active' => true]);
 
-        $res = $this->post('/register', [
+        $res = $this->post('/register', [...$this->humanCheck('register'),
             'hospital_name' => 'Sunrise Medical', 'name' => 'Dr Owner',
             'email' => 'owner@sunrise.test', 'password' => 'password1', 'password_confirmation' => 'password1',
             'plan_id' => $plan->id,
@@ -59,7 +59,7 @@ class RegistrationTest extends TestCase
         $plan = Plan::factory()->create(['is_active' => true]);
         User::factory()->create(['email' => 'taken@test.com']);
 
-        $this->post('/register', [
+        $this->post('/register', [...$this->humanCheck('register'),
             'hospital_name' => 'X Clinic', 'name' => 'A', 'email' => 'taken@test.com',
             'password' => 'password1', 'password_confirmation' => 'password1', 'plan_id' => $plan->id,
         ])->assertSessionHasErrors('email');
@@ -69,7 +69,7 @@ class RegistrationTest extends TestCase
     public function test_the_setup_wizard_shows_after_signup(): void
     {
         $plan = Plan::factory()->create(['is_active' => true]);
-        $this->post('/register', [
+        $this->post('/register', [...$this->humanCheck('register'),
             'hospital_name' => 'Y Clinic', 'name' => 'B', 'email' => 'b@y.test',
             'password' => 'password1', 'password_confirmation' => 'password1', 'plan_id' => $plan->id,
         ]);

@@ -43,7 +43,7 @@ class RegistrationController extends Controller
 
     public function store(RegistrationRequest $request): RedirectResponse
     {
-        $owner = $this->service->register($request->validated());
+        $owner = $this->service->register($request->safe()->except(['human_id', 'human_answer', 'human_started', 'website']));
 
         // Signed in for the same ninety days as anybody who used the sign-in
         // form. Somebody who has just set up a hospital is the last person

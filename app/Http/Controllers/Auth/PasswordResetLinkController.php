@@ -25,9 +25,11 @@ class PasswordResetLinkController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        // A reset link sends an email to whatever address is typed: the
+        // picture check keeps this from being a way to mail-bomb somebody.
         $request->validate([
             'email' => ['required', 'email'],
-        ]);
+        ] + \App\Support\HumanCheck::rules('forgot-password'), \App\Support\HumanCheck::messages());
 
         // We will send the password reset link to this user. Once we have attempted
         // to send the link, we will examine the response then see the message we

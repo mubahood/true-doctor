@@ -26,4 +26,21 @@ abstract class TestCase extends BaseTestCase
         // browser behaves, and a test that wants it off says so itself.
         SupportLazyLoading::$disableWhileTesting = false;
     }
+
+    /**
+     * The picture check, answered as a person would: the code from the
+     * picture, on a form drawn ten seconds ago, with the hidden field empty.
+     *
+     * @return array<string,string>
+     */
+    protected function humanCheck(string $form): array
+    {
+        $id = \App\Support\HumanCheck::issue($form);
+
+        return [
+            'human_id' => $id,
+            'human_answer' => strtolower((string) \App\Support\HumanCheck::code($id)),
+            'human_started' => \Illuminate\Support\Facades\Crypt::encryptString($form.'|'.(time() - 10)),
+        ];
+    }
 }
