@@ -416,4 +416,20 @@ class SyncPullTest extends TestCase
 
         return app(AdmissionService::class)->admit($patient, $bed, [], $this->nurse->id);
     }
+
+    /** A patient admitted long ago still reaches the ward tablet — it has to name the patient in the bed. */
+    public function test_an_admitted_patient_is_on_the_device_however_long_ago_they_came(): void
+    {
+        $ward = \App\Models\Ward::factory()->create(['hospital_id' => $this->hospital->id]);
+        $bed = \App\Models\Bed::factory()->create(['hospital_id' => $this->hospital->id, 'ward_id' => $ward->id]);
+        $patient = Patient::factory()->create(['hospital_id' => $this->hospital->id]);
+        app(\App\Services\AdmissionService::class)->admit($patient, $bed, [], $this->nurse->id);
+        // Nothing about them has changed for months.
+        Patient::whereKey($patient->id)->update(['updated_at' => now()->subYear()]);
+        \App\Models\Visit::where('patient_id', $patient->id)->update(['status' => 'completed', 'outcome' => 'closed', 'updated_at' => now()->subYear()]);
+
+        $uuids = collect($this->pull()->assertOk()->json('data.changes'))->where('entity', 'patients')->pluck('record.uuid');
+
+        $this->assertContains($patient->uuid, $uuids->all());
+    }
 }

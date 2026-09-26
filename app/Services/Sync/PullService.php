@@ -168,6 +168,12 @@ class PullService
                         ->where('updated_at', '>=', now()->subDays($this->patientDays()))
                         ->orWhereIn('id', Visit::query()
                             ->where('status', '!=', VisitStatus::Completed)
+                            ->select('patient_id'))
+                        // On a ward now, however long ago they came in: a
+                        // bedside device that cannot name the patient in the
+                        // bed is no use at the bedside.
+                        ->orWhereIn('id', Admission::query()
+                            ->where('status', AdmissionStatus::Admitted)
                             ->select('patient_id'))),
                 'shape' => fn (Patient $p) => [
                     'uuid' => $p->uuid,
