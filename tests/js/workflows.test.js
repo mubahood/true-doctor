@@ -194,7 +194,7 @@ describe('vitals', () => {
         const flows = new Workflows(clientFor(db));
 
         // A typo caught at the bedside beats a rejected operation later.
-        await expect(flows.recordVitals(admissionUuid, { pulse: '9000' })).rejects.toThrow(/between 20 and 250/);
+        await expect(flows.recordVitals(admissionUuid, { pulse: '9000' })).rejects.toThrow(/between 20 and 300/);
         expect(await db.vitals.count()).toBe(0);
     });
 

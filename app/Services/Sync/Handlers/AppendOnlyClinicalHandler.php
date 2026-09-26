@@ -3,6 +3,8 @@
 namespace App\Services\Sync\Handlers;
 
 use App\Http\Requests\MedicationAdministrationRequest;
+use App\Http\Requests\NursingNoteRequest;
+use App\Http\Requests\VitalRoundRequest;
 use App\Models\Admission;
 use App\Models\MedicationAdministration;
 use App\Models\NursingNote;
@@ -134,34 +136,18 @@ class AppendOnlyClinicalHandler extends EntityHandler
     /** @return array<string, array<int, mixed>> */
     private function rules(): array
     {
-        return match ($this->entity) {
-            'vitals' => [
-                'uuid' => ['required', 'uuid'],
-                'admission_uuid' => ['required', 'uuid'],
-                'temperature' => ['nullable', 'numeric', 'between:25,45'],
-                'pulse' => ['nullable', 'integer', 'between:20,250'],
-                'blood_pressure' => ['nullable', 'string', 'max:20'],
-                'respiratory_rate' => ['nullable', 'integer', 'between:5,80'],
-                'spo2' => ['nullable', 'integer', 'between:30,100'],
-                'note' => ['nullable', 'string', 'max:2000'],
-            ],
-            'nursing_notes' => [
-                'uuid' => ['required', 'uuid'],
-                'admission_uuid' => ['required', 'uuid'],
-                'note' => ['required', 'string', 'max:5000'],
-            ],
-            'med_administrations' => [
-                'uuid' => ['required', 'uuid'],
-                'admission_uuid' => ['required', 'uuid'],
-                'drug_name' => ['required', 'string', 'max:150'],
-                'dose' => ['nullable', 'string', 'max:60'],
-                'route' => ['nullable', 'string', 'max:40'],
-                // The web form's own rule (MedicationAdministrationRequest). It
-                // used to be "any string", so a value outside the enum reached
-                // the model cast and threw — a crash where a refusal belonged.
-                'status' => MedicationAdministrationRequest::rulesFor()['status'],
-                'note' => ['nullable', 'string', 'max:2000'],
-            ],
+        // The ward's own rules — the same FormRequests the web's inpatient
+        // screens validate with — so a device can never record what the web
+        // would refuse (a blood pressure of "high", a note eight times longer).
+        $ids = [
+            'uuid' => ['required', 'uuid'],
+            'admission_uuid' => ['required', 'uuid'],
+        ];
+
+        return $ids + match ($this->entity) {
+            'vitals' => VitalRoundRequest::rulesFor(),
+            'nursing_notes' => NursingNoteRequest::rulesFor(),
+            'med_administrations' => MedicationAdministrationRequest::rulesFor(),
         };
     }
 

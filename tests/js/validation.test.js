@@ -124,12 +124,18 @@ describe('a patient, against PatientRequest', () => {
 describe('vitals', () => {
     it('refuses a reading no human body produces', () => {
         expect(validate({ pulse: '9000' }, VITALS_RULES).errors.pulse)
-            .toBe('Pulse should be between 20 and 250.');
+            .toBe('Pulse should be between 20 and 300.');
     });
 
     it('accepts a reading at the edge of the range', () => {
         expect(validate({ pulse: '20' }, VITALS_RULES).errors.pulse).toBeUndefined();
-        expect(validate({ pulse: '250' }, VITALS_RULES).errors.pulse).toBeUndefined();
+        expect(validate({ pulse: '300' }, VITALS_RULES).errors.pulse).toBeUndefined();
+    });
+
+    it('holds a blood pressure to the ward form\'s shape', () => {
+        expect(validate({ blood_pressure: 'high' }, VITALS_RULES).errors.blood_pressure)
+            .toBe('Blood pressure should read like 120/80.');
+        expect(validate({ blood_pressure: '120/80' }, VITALS_RULES).errors.blood_pressure).toBeUndefined();
     });
 
     it('says a number is not a number before complaining about its range', () => {

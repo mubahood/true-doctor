@@ -47,27 +47,27 @@ export const CLINICAL_RULES = {
     doctor_remarks: ['max:2000'],
 };
 
-/** @see App\Services\Sync\Handlers\LabResultHandler */
+/** @see app/Http/Requests/LabResultRequest.php — the bench worklist's rules, which the server now holds a device to */
 export const LAB_RESULT_RULES = {
-    result_value: ['required', 'max:191'],
-    result_flag: ['max:12'],
-    result_notes: ['max:191'],
+    result_value: ['required', 'max:120'],
+    result_flag: ['in:normal,low,high,abnormal'],
+    result_notes: ['max:255'],
 };
 
 /**
  * A vitals round, with the ranges a human body occupies.
  *
- * Not in the server's FormRequest — it is the sort of thing that only ever
- * gets typed at a bedside, and a pulse of 9,000 caught here saves a rejected
+ * @see app/Http/Requests/VitalRoundRequest.php — the ward's own rules, which
+ * the server holds a device to. A pulse of 9,000 caught here saves a rejected
  * operation nobody will understand tomorrow.
  */
 export const VITALS_RULES = {
     temperature: ['numeric', 'between:25,45'],
-    pulse: ['numeric', 'between:20,250'],
-    respiratory_rate: ['numeric', 'between:5,80'],
-    spo2: ['numeric', 'between:30,100'],
-    blood_pressure: ['max:20'],
-    note: ['max:2000'],
+    pulse: ['numeric', 'between:20,300'],
+    respiratory_rate: ['numeric', 'between:4,80'],
+    spo2: ['numeric', 'between:50,100'],
+    blood_pressure: ['max:12', 'bp'],
+    note: ['max:255'],
 };
 
 /**
@@ -133,6 +133,11 @@ function apply(check, field, value) {
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value))
                 ? null
                 : `${label(field)} must be a valid email address.`;
+
+        case 'bp':
+            return /^\d{2,3}\/\d{2,3}$/.test(String(value))
+                ? null
+                : `${label(field)} should read like 120/80.`;
 
         case 'numeric':
             return Number.isNaN(Number(value)) ? `${label(field)} must be a number.` : null;
