@@ -115,4 +115,32 @@ class AppointmentApiTest extends TestCase
         $this->postJson('/api/v1/appointments', ['patient_id' => $patient->id, 'doctor_user_id' => $doctor->id, 'scheduled_at' => $this->mon0900, 'duration_minutes' => 30, 'source' => 'walk_in'])
             ->assertStatus(403);
     }
+
+    /** The times offered are the times that book, and a moved appointment keeps its own. */
+    public function test_availability_offers_times_that_book_and_rescheduling_moves(): void
+    {
+        $h = Hospital::factory()->create();
+        $doctor = $this->doctorWithWindow($h);
+        $patient = Patient::factory()->create(['hospital_id' => $h->id]);
+        Sanctum::actingAs($this->staff($h, 'receptionist'));
+        $monday = substr($this->mon0900, 0, 10);
+
+        $this->getJson('/api/v1/booking/doctors')->assertOk()->assertJsonPath('data.0.id', $doctor->id);
+        $free = $this->getJson("/api/v1/booking/availability?doctor={$doctor->id}&date={$monday}&duration=30")->assertOk();
+        $this->assertSame('09:00', $free->json('data.times.0'));
+        $this->assertCount(14, $free->json('data.days'));
+
+        $uuid = $this->postJson('/api/v1/appointments', [
+            'patient_id' => $patient->id, 'doctor_user_id' => $doctor->id,
+            'scheduled_at' => $this->mon0900, 'duration_minutes' => 30, 'source' => 'phone',
+        ])->assertCreated()->json('data.uuid');
+
+        $this->assertNotContains('09:00', $this->getJson("/api/v1/booking/availability?doctor={$doctor->id}&date={$monday}&duration=30")->json('data.times'));
+        $this->assertContains('09:00', $this->getJson("/api/v1/booking/availability?doctor={$doctor->id}&date={$monday}&duration=30&ignore={$uuid}")->json('data.times'),
+            'its own time stays free to the one being moved');
+
+        $this->postJson("/api/v1/appointments/{$uuid}/reschedule", ['scheduled_at' => $monday.' 03:00', 'duration_minutes' => 30])->assertStatus(422);
+        $this->postJson("/api/v1/appointments/{$uuid}/reschedule", ['scheduled_at' => $monday.' 10:00', 'duration_minutes' => 30])
+            ->assertOk()->assertJsonPath('message', 'Appointment moved.');
+    }
 }

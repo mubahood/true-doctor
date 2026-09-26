@@ -81,6 +81,9 @@ class OpenApiController extends Controller
                 ],
                 '/appointments/{uuid}/transition' => ['post' => ['summary' => 'Advance appointment status', 'tags' => ['Appointments'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '422' => $ok]]],
                 '/appointments/{uuid}/outcome' => ['post' => ['summary' => 'Record what was done and complete the appointment', 'tags' => ['Appointments'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '422' => $ok]]],
+                '/booking/doctors' => ['get' => ['summary' => 'Doctors a booking may be made with', 'tags' => ['Appointments'], 'security' => $secured, 'parameters' => [$this->q('q')], 'responses' => ['200' => $ok]]],
+                '/booking/availability' => ['get' => ['summary' => 'A doctor\'s days and free times (times that book)', 'tags' => ['Appointments'], 'security' => $secured, 'parameters' => [$this->q('doctor'), $this->q('date'), $this->q('duration'), $this->q('ignore')], 'responses' => ['200' => $ok]]],
+                '/appointments/{uuid}/reschedule' => ['post' => ['summary' => 'Move an appointment', 'tags' => ['Appointments'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '422' => $ok]]],
                 '/queue' => ['get' => ['summary' => "Today's check-in queue: lanes, clocks and tally", 'tags' => ['Appointments'], 'security' => $secured, 'responses' => ['200' => $ok, '403' => $ok]]],
                 '/dashboard' => ['get' => ['summary' => 'The dashboard stat cards for this user', 'tags' => ['App'], 'security' => $secured, 'responses' => ['200' => $ok]]],
 

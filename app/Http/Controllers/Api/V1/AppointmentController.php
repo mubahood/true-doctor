@@ -9,6 +9,7 @@ use App\Http\Resources\AppointmentResource;
 use App\Models\Appointment;
 use App\Services\AppointmentService;
 use App\Support\ApiResponse;
+use App\Support\DoctorSlots;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Throwable;
@@ -47,6 +48,63 @@ class AppointmentController extends Controller
         }
 
         return ApiResponse::success(new AppointmentResource($appointment->load(['patient', 'doctor'])), 'Appointment booked.', 201);
+    }
+
+    /** The doctors a booking may be made with. */
+    public function doctors(Request $request): JsonResponse
+    {
+        $this->authorize('create', Appointment::class);
+        $q = trim((string) $request->query('q', ''));
+
+        return ApiResponse::success(\App\Models\User::currentHospital()->where('role', 'doctor')
+            ->when($q !== '', fn ($x) => $x->where('name', 'like', "%{$q}%"))
+            ->orderBy('name')->limit(50)->get(['id', 'name'])
+            ->map(fn ($u) => ['id' => $u->id, 'name' => $u->name])->values());
+    }
+
+    /**
+     * When a doctor can be booked: the fortnight's days (which they sit), and
+     * for a chosen day the free times at this length — the web dialog's own
+     * answer (App\Support\DoctorSlots), so an offered time books.
+     */
+    public function availability(Request $request): JsonResponse
+    {
+        $this->authorize('create', Appointment::class);
+        $data = $request->validate([
+            'doctor' => ['required', 'integer'],
+            'date' => ['nullable', 'date_format:Y-m-d'],
+            'duration' => ['nullable', 'integer', 'min:5', 'max:480'],
+            'ignore' => ['nullable', 'string'],
+        ]);
+        $doctor = (int) $data['doctor'];
+        $length = (int) ($data['duration'] ?? 30);
+        $ignore = filled($data['ignore'] ?? null) ? Appointment::where('uuid', $data['ignore'])->value('id') : null;
+
+        return ApiResponse::success([
+            'days' => DoctorSlots::days($doctor),
+            'times' => isset($data['date']) ? DoctorSlots::open($doctor, $data['date'], $length, $ignore) : [],
+            'note' => DoctorSlots::note($doctor, $data['date'] ?? null, $length),
+        ]);
+    }
+
+    /** Move it — the new time is checked as a booking is (its own slot stays free to it). */
+    public function reschedule(Request $request, Appointment $appointment): JsonResponse
+    {
+        $this->authorize('update', $appointment);
+        $rules = AppointmentRequest::rulesFor();
+        $data = $request->validate([
+            'scheduled_at' => $rules['scheduled_at'],
+            'duration_minutes' => $rules['duration_minutes'],
+            'room_id' => $rules['room_id'],
+        ]);
+
+        try {
+            $this->service->reschedule($appointment, (string) $data['scheduled_at'], (int) $data['duration_minutes'], isset($data['room_id']) ? (int) $data['room_id'] : null, $request->user()->id);
+        } catch (\RuntimeException $e) {
+            return ApiResponse::error(\App\Enums\ApiErrorCode::ValidationFailed, $e->getMessage(), 422, ['scheduled_at' => [$e->getMessage()]]);
+        }
+
+        return ApiResponse::success(new AppointmentResource($appointment->fresh(['patient', 'doctor'])), 'Appointment moved.');
     }
 
     public function show(Appointment $appointment): JsonResponse

@@ -58,6 +58,9 @@ Route::prefix('v1')->group(function () {
         Route::get('patients/{patient}/brief', [PatientController::class, 'brief'])->name('api.patients.brief');
         Route::apiResource('patients', PatientController::class);
 
+        Route::get('booking/doctors', [AppointmentController::class, 'doctors'])->name('api.booking.doctors');
+        Route::get('booking/availability', [AppointmentController::class, 'availability'])->name('api.booking.availability');
+        Route::post('appointments/{appointment}/reschedule', [AppointmentController::class, 'reschedule'])->name('api.appointments.reschedule');
         Route::post('appointments/{appointment}/transition', [AppointmentController::class, 'transition'])->name('api.appointments.transition');
         Route::post('appointments/{appointment}/outcome', [AppointmentController::class, 'outcome'])->name('api.appointments.outcome');
         // Today's check-in queue, as the web board shows it.

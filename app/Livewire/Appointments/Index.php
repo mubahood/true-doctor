@@ -9,10 +9,10 @@ use App\Http\Requests\AppointmentRequest;
 use App\Livewire\Appointments\Concerns\ActsOnAppointments;
 use App\Livewire\Concerns\WithTable;
 use App\Models\Appointment;
-use App\Models\Service;
 use App\Models\User;
 use App\Models\Visit;
 use App\Services\AppointmentService;
+use App\Support\DoctorSlots;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Attributes\Computed;
@@ -98,7 +98,7 @@ class Index extends Component
 
     public ?string $scheduled_at = null;
 
-    public int $duration_minutes = 30;
+    public ?int $duration_minutes = 30;
 
     public ?string $source = null;
 
@@ -597,31 +597,7 @@ class Index extends Component
     #[Computed]
     public function dayChoices(): array
     {
-        $sitsOn = $this->doctor_user_id === null ? null : \App\Models\DoctorSchedule::query()
-            ->where('user_id', $this->doctor_user_id)
-            ->where('is_active', true)
-            ->pluck('weekday')
-            ->map(fn ($d) => $d instanceof \App\Enums\Weekday ? $d->value : (int) $d)
-            ->all();
-
-        $days = [];
-
-        for ($i = 0; $i < 14; $i++) {
-            $day = now()->startOfDay()->addDays($i);
-
-            $days[] = [
-                'date' => $day->format('Y-m-d'),
-                'label' => match ($i) {
-                    0 => 'Today',
-                    1 => 'Tomorrow',
-                    default => $day->format('D'),
-                },
-                'sub' => $i < 2 ? $day->format('D j M') : $day->format('j M'),
-                'sits' => $sitsOn === null || in_array($day->dayOfWeek, $sitsOn, true),
-            ];
-        }
-
-        return $days;
+        return DoctorSlots::days($this->doctor_user_id);
     }
 
     /**
@@ -644,56 +620,7 @@ class Index extends Component
             return [];
         }
 
-        $day = \Illuminate\Support\Carbon::parse($date)->startOfDay();
-        $length = max(5, $this->duration_minutes);
-
-        $windows = \App\Models\DoctorSchedule::query()
-            ->where('user_id', $this->doctor_user_id)
-            ->where('weekday', $day->dayOfWeek)
-            ->where('is_active', true)
-            ->orderBy('start_time')
-            ->get();
-
-        if ($windows->isEmpty()) {
-            return [];
-        }
-
-        $taken = Appointment::query()
-            ->where('doctor_user_id', $this->doctor_user_id)
-            ->whereDate('scheduled_at', $day->toDateString())
-            // An appointment being moved must not block its own time: leaving
-            // it where it is has to stay one of the answers, and the service
-            // ignores it too (assertBookable's $ignoreId).
-            ->when($this->editingId !== null, fn ($q) => $q->where('id', '!=', $this->editingId))
-            ->whereIn('status', array_map(
-                fn (AppointmentStatus $s) => $s->value,
-                array_filter(AppointmentStatus::cases(), fn (AppointmentStatus $s) => $s->occupiesSlot()),
-            ))
-            ->get(['scheduled_at', 'ends_at']);
-
-        $slots = [];
-
-        foreach ($windows as $window) {
-            $cursor = $day->copy()->setTimeFromTimeString($window->start_time);
-            $closes = $day->copy()->setTimeFromTimeString($window->end_time);
-
-            while ($cursor->copy()->addMinutes($length) <= $closes) {
-                $ends = $cursor->copy()->addMinutes($length);
-
-                $free = ! $cursor->isPast()
-                    && ! $taken->contains(fn ($a) => $a->scheduled_at < $ends && $a->ends_at > $cursor);
-
-                if ($free) {
-                    $slots[$cursor->format('H:i')] = true;
-                }
-
-                $cursor->addMinutes($window->slot_minutes);
-            }
-        }
-
-        ksort($slots);
-
-        return array_keys($slots);
+        return DoctorSlots::open($this->doctor_user_id, $date, $this->length(), $this->editingId);
     }
 
     /**
@@ -702,33 +629,13 @@ class Index extends Component
      */
     public function slotsNote(): ?string
     {
-        if ($this->doctor_user_id === null) {
-            return 'Choose a doctor to see the times they are free.';
-        }
-        if ($this->chosenDate() === null) {
-            return 'Choose a day to see the times they are free.';
-        }
-        if ($this->openSlots() !== []) {
-            return null;
-        }
+        return DoctorSlots::note($this->doctor_user_id, $this->chosenDate(), $this->length());
+    }
 
-        $name = (string) (User::currentHospital()
-            ->whereKey($this->doctor_user_id)
-            ->value('name') ?: 'This doctor');
-        $day = \Illuminate\Support\Carbon::parse((string) $this->chosenDate());
-
-        $sits = \App\Models\DoctorSchedule::query()
-            ->where('user_id', $this->doctor_user_id)
-            ->where('weekday', $day->dayOfWeek)
-            ->where('is_active', true)
-            ->exists();
-
-        if (! $sits) {
-            return $name.' has no availability on '.$day->format('l').'s. Set it on Doctor availability.';
-        }
-
-        return $name.' is fully booked on '.$day->format('D j M')
-            .' at '.$this->duration_minutes.' minutes. Try a shorter appointment or another day.';
+    /** The length being booked — a cleared box is not a length, so the default stands. */
+    private function length(): int
+    {
+        return max(5, $this->duration_minutes ?? 30);
     }
 
     /** The doctor a filter is currently pinned to, so the picker can show it. */
