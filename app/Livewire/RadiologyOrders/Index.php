@@ -10,6 +10,7 @@ use App\Livewire\Concerns\WithTable;
 use App\Models\Contracts\HoldsAttachments;
 use App\Models\RadiologyOrder;
 use App\Services\RadiologyService;
+use App\Support\RadiologyBench;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
@@ -40,7 +41,7 @@ class Index extends Component
     use ChargesWorkDone, CollectsAttachments, WithTable;
 
     /** A study unread for this long is the thing the list exists to show. */
-    public const OLD_HOURS = 24;
+    public const OLD_HOURS = \App\Support\RadiologyBench::OLD_HOURS;
 
     #[Url(history: true, except: '')]
     public string $status = '';
@@ -138,42 +139,17 @@ class Index extends Component
     #[Computed]
     public function waiting(): array
     {
-        $counts = RadiologyOrder::query()
-            ->selectRaw('status, count(*) as total')
-            ->groupBy('status')
-            ->pluck('total', 'status');
-
-        $oldest = RadiologyOrder::query()
-            ->whereIn('status', $this->outstandingStatuses())
-            ->min('created_at');
-
-        return [
-            'ordered' => (int) ($counts[RadiologyOrderStatus::Ordered->value] ?? 0),
-            'scheduled' => (int) ($counts[RadiologyOrderStatus::Scheduled->value] ?? 0),
-            'performed' => (int) ($counts[RadiologyOrderStatus::Performed->value] ?? 0),
-            'reported' => (int) RadiologyOrder::whereDate('reported_at', now()->toDateString())->count(),
-            'oldest' => $oldest === null ? null : (int) \Illuminate\Support\Carbon::parse($oldest)->diffInHours(now()),
-        ];
-    }
-
-    /** @return list<string> */
-    private function outstandingStatuses(): array
-    {
-        return [
-            RadiologyOrderStatus::Ordered->value,
-            RadiologyOrderStatus::Scheduled->value,
-            RadiologyOrderStatus::Performed->value,
-        ];
+        return RadiologyBench::tally();
     }
 
     public function waitedHours(RadiologyOrder $order): int
     {
-        return (int) $order->created_at->diffInHours(now());
+        return RadiologyBench::waitedHours($order);
     }
 
     public function isOverdue(RadiologyOrder $order): bool
     {
-        return ! $order->status->isTerminal() && $this->waitedHours($order) >= self::OLD_HOURS;
+        return RadiologyBench::isOverdue($order);
     }
 
     public function hasFilters(): bool
@@ -308,11 +284,7 @@ class Index extends Component
         $this->authorizeView();
 
         $query = RadiologyOrder::with(['patient', 'visit'])->withCount(['items', 'attachments'])
-            ->when($this->status !== '', fn (Builder $q) => $q->where('status', $this->status))
-            ->when($this->outstanding, fn (Builder $q) => $q->whereIn('status', $this->outstandingStatuses()))
-            ->when($this->search !== '', fn (Builder $q) => $q->whereHas('patient', fn (Builder $p) => $p->where('first_name', 'like', "%{$this->search}%")
-                ->orWhere('last_name', 'like', "%{$this->search}%")
-                ->orWhere('patient_no', 'like', "%{$this->search}%")));
+            ->tap(fn (Builder $q) => RadiologyBench::filter($q, $this->status, $this->outstanding, $this->search));
 
         /** @var Builder<RadiologyOrder> $sorted */
         $sorted = $this->applySort($query, fn (Builder $q) => $q->latest('id'));

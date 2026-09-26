@@ -91,6 +91,10 @@ Route::prefix('v1')->group(function () {
         // Read-only resources for integration/mobile clients
         Route::apiResource('stock-items', StockItemController::class)->only(['index'])->parameters(['stock-items' => 'stock']);
         Route::get('stock-items/{stock}', [StockItemController::class, 'show'])->name('api.stock-items.show');
+        Route::get('radiology-orders', [\App\Http\Controllers\Api\V1\RadiologyOrderController::class, 'index'])->name('api.radiology-orders.index');
+        Route::get('radiology-orders/{radiologyOrder}', [\App\Http\Controllers\Api\V1\RadiologyOrderController::class, 'show'])->name('api.radiology-orders.show');
+        Route::post('radiology-orders/{radiologyOrder}/transition', [\App\Http\Controllers\Api\V1\RadiologyOrderController::class, 'transition'])->name('api.radiology-orders.transition');
+        Route::put('radiology-orders/{radiologyOrder}/report', [\App\Http\Controllers\Api\V1\RadiologyOrderController::class, 'report'])->name('api.radiology-orders.report');
         Route::post('lab-orders/{labOrder}/transition', [LabOrderController::class, 'transition'])->name('api.lab-orders.transition');
         Route::apiResource('lab-orders', LabOrderController::class)->only(['index', 'show'])->parameters(['lab-orders' => 'labOrder']);
         Route::apiResource('invoices', InvoiceController::class)->only(['index', 'show']);
