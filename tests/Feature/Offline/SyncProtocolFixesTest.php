@@ -389,4 +389,80 @@ class SyncProtocolFixesTest extends TestCase
 
         $this->assertNull(SyncConflict::sole()->resolved_at);
     }
+
+    // ── Online edits advance the version ─────────────────────────────────
+
+    /**
+     * Found by the mobile app's end-to-end test: a date of birth corrected
+     * ONLINE was silently overwritten by a device's older edit, because only
+     * sync writes moved `version` and the device's base looked current.
+     */
+    public function test_an_online_correction_is_not_overwritten_by_an_older_device_edit(): void
+    {
+        Sanctum::actingAs($this->clerk);
+        $uuid = (string) Str::uuid();
+        $this->push([$this->op('patients', 'create', ['uuid' => $uuid, 'first_name' => 'Amina', 'last_name' => 'Nakato', 'dob' => '1990-01-01'])], $this->clerkDevice);
+        $patient = Patient::where('uuid', $uuid)->firstOrFail();
+        $this->assertSame(1, (int) $patient->version);
+
+        // Somebody at the desk corrects the date of birth in the web panel.
+        app(\App\Services\PatientService::class)->update($patient, ['first_name' => 'Amina', 'last_name' => 'Nakato', 'dob' => '1985-05-05']);
+        $this->assertSame(2, (int) $patient->fresh()->version, 'an online edit did not advance the version');
+
+        // The device, which last saw version 1, sends its own change.
+        $result = $this->push([$this->op('patients', 'update', [
+            'uuid' => $uuid, 'first_name' => 'Amina', 'last_name' => 'Nakato', 'dob' => '1992-02-02',
+        ], ['base_version' => 1, 'base_fields' => ['dob' => '1990-01-01', 'first_name' => 'Amina', 'last_name' => 'Nakato']])], $this->clerkDevice)->json('data.results.0');
+
+        $this->assertSame('conflict', $result['status']);
+        $this->assertContains('dob', $result['conflict']['contested']);
+        $this->assertSame('1985-05-05', $patient->fresh()->dob->format('Y-m-d'), 'the online correction was overwritten');
+    }
+
+    public function test_a_save_that_changes_nothing_does_not_advance_the_version(): void
+    {
+        $patient = Patient::factory()->create(['hospital_id' => $this->hospital->id]);
+        $version = (int) $patient->fresh()->version;
+
+        $patient->fresh()->save();
+        $patient->fresh()->touch();
+
+        $this->assertSame($version, (int) $patient->fresh()->version);
+    }
+
+    public function test_a_sync_write_is_counted_once_not_twice(): void
+    {
+        Sanctum::actingAs($this->clerk);
+        $uuid = (string) Str::uuid();
+        $this->push([$this->op('patients', 'create', ['uuid' => $uuid, 'first_name' => 'A', 'last_name' => 'B'])], $this->clerkDevice);
+
+        $version = $this->push([$this->op('patients', 'update', ['uuid' => $uuid, 'first_name' => 'A', 'last_name' => 'C'], ['base_version' => 1, 'base_fields' => ['last_name' => 'B']])], $this->clerkDevice)->json('data.results.0.version');
+
+        $this->assertSame(2, $version);
+        $this->assertSame(2, (int) Patient::where('uuid', $uuid)->value('version'));
+    }
+
+    /**
+     * Found by the mobile app's end-to-end test: merging an edit into a
+     * patient whose sex is recorded threw (an enum compared as a string), so
+     * the edit failed with a server error instead of merging or conflicting.
+     */
+    public function test_a_patient_with_a_recorded_sex_can_be_merged(): void
+    {
+        Sanctum::actingAs($this->clerk);
+        $uuid = (string) Str::uuid();
+        $this->push([$this->op('patients', 'create', ['uuid' => $uuid, 'first_name' => 'Amina', 'last_name' => 'Nakato', 'sex' => 'female', 'phone_1' => '0700'])], $this->clerkDevice);
+        $patient = Patient::where('uuid', $uuid)->firstOrFail();
+        app(\App\Services\PatientService::class)->update($patient, ['first_name' => 'Amina', 'last_name' => 'Nakato', 'address' => 'Kampala']);
+
+        $payload = ['uuid' => $uuid, 'first_name' => 'Amina', 'last_name' => 'Nakato', 'sex' => 'female', 'status' => 'active', 'phone_1' => '0772'];
+        $result = $this->push([$this->op('patients', 'update', $payload, [
+            'base_version' => 1,
+            'base_fields' => ['first_name' => 'Amina', 'last_name' => 'Nakato', 'sex' => 'female', 'status' => 'active', 'phone_1' => '0700'],
+        ])], $this->clerkDevice)->json('data.results.0');
+
+        $this->assertSame('accepted', $result['status'], json_encode($result));
+        $this->assertSame('0772', $patient->fresh()->phone_1, "the device's change was merged");
+        $this->assertSame('Kampala', $patient->fresh()->address, "the online change was kept");
+    }
 }

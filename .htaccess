@@ -20,6 +20,13 @@
 
     RewriteEngine On
 
+    # Pass the Authorization header through. Rule 4 below rewrites into
+    # public/, and by the time public/.htaccess runs Apache has renamed the
+    # variable, so a Sanctum bearer token (the mobile app, API clients) never
+    # reached PHP here and every token request answered 401.
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
     # 0a. Deny the application tree — but only where the path resolves to a real
     #     file or directory at the project root. /vendor/fa/css/all.min.css does
     #     not exist here (it lives in public/), so it falls through to rule 4.

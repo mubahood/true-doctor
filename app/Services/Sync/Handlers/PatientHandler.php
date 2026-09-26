@@ -335,6 +335,13 @@ class PatientHandler extends EntityHandler
 
     private function same(mixed $a, mixed $b): bool
     {
+        // An enum-cast attribute (sex, status) is an object here and a string
+        // in the payload. Casting the object to string threw, so every merge
+        // of a patient with a recorded sex failed with a server error. Found
+        // by the mobile app's end-to-end test.
+        $a = $a instanceof \BackedEnum ? $a->value : $a;
+        $b = $b instanceof \BackedEnum ? $b->value : $b;
+
         if (is_array($a) || is_array($b)) {
             return json_encode($a) === json_encode($b);
         }
@@ -359,7 +366,11 @@ class PatientHandler extends EntityHandler
 
         foreach ($fields as $field) {
             $value = $patient->{$field};
-            $state[$field] = $value instanceof \DateTimeInterface ? $value->format('Y-m-d') : $value;
+            $state[$field] = match (true) {
+                $value instanceof \DateTimeInterface => $value->format('Y-m-d'),
+                $value instanceof \BackedEnum => $value->value,
+                default => $value,
+            };
         }
 
         return $state;

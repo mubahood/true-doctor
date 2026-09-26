@@ -48,6 +48,37 @@ class SyncRevisionObserver
         }
 
         $model->setAttribute('sync_revision', SyncRevision::next($hospitalId));
+
+        $this->advanceVersion($model);
+    }
+
+    /**
+     * Every content change to a versioned record advances its version — not
+     * only the ones that arrive through sync.
+     *
+     * `version` is what a device's edit is compared against: "was this made
+     * against what the server holds now?". It used to move only when the sync
+     * handler wrote it, so an edit made online (the web form, the API) left it
+     * where it was — and a device's later edit, made against the old value,
+     * was taken as uncontested and silently overwrote the online one. Found by
+     * the mobile app's end-to-end test: a date of birth corrected online was
+     * replaced by the device's without a conflict being raised.
+     *
+     * Skipped when the writer set the version itself (the sync handler does,
+     * and must not be counted twice), on create (it starts at 1), and when
+     * only bookkeeping moved.
+     */
+    private function advanceVersion(Model $model): void
+    {
+        if (! $model->exists || ! array_key_exists('version', $model->getAttributes()) || $model->isDirty('version')) {
+            return;
+        }
+
+        $content = array_diff(array_keys($model->getDirty()), ['sync_revision', 'updated_at', 'version']);
+
+        if ($content !== []) {
+            $model->setAttribute('version', (int) $model->getAttribute('version') + 1);
+        }
     }
 
     /**
