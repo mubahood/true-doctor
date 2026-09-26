@@ -36,21 +36,21 @@ document.querySelectorAll('.a-input.is-bad').forEach((input) => {
 });
 
 // ── Password strength, as a description rather than a verdict ─────────────
-// Deliberately not a gate. The rule that decides is Password::min(8)->letters()
-// ->numbers() on the server; this only tells somebody where they are.
+// Deliberately not a gate. The rule that decides is Password::min(6) on the
+// server; this only tells somebody where they are.
 const strengthOf = (value) => {
     if (!value) return { score: 0, word: '' };
 
     let score = 0;
-    if (value.length >= 8) score++;
-    if (value.length >= 12) score++;
+    if (value.length >= 10) score++;
+    if (value.length >= 14) score++;
     if (/[a-z]/.test(value) && /[A-Z]/.test(value)) score++;
     if (/\d/.test(value)) score++;
     if (/[^\w\s]/.test(value)) score++;
 
     // Below the server's own floor, say so plainly rather than scoring it.
-    if (value.length < 8 || !/[a-zA-Z]/.test(value) || !/\d/.test(value)) {
-        return { score: 1, word: 'Too short — needs 8 characters, letters and numbers' };
+    if (value.length < 6) {
+        return { score: 1, word: 'Too short — at least 6 characters' };
     }
 
     const words = ['', 'Weak', 'Fair', 'Good', 'Strong', 'Very strong'];

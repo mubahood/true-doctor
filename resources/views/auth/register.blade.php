@@ -76,14 +76,14 @@
       <div class="a-inwrap">
         <i class="fas fa-lock" aria-hidden="true"></i>
         <input class="a-input has-eye @error('password') is-bad @enderror" id="password" type="password" name="password"
-               required autocomplete="new-password" minlength="8"
+               required autocomplete="new-password" minlength="6"
                data-strength-for="pw-strength"
                aria-describedby="password-rule {{ $errors->has('password') ? 'password-error' : '' }}"
                @error('password') aria-invalid="true" @enderror>
         <button type="button" class="a-eye" data-eye="password" aria-label="Show password"><i class="fas fa-eye" aria-hidden="true"></i></button>
       </div>
       @error('password')<p class="a-err" id="password-error" role="alert"><i class="fas fa-circle-exclamation" aria-hidden="true"></i> {{ $message }}</p>@enderror
-      <div class="a-hint" id="password-rule">At least 8 characters, with letters and numbers.</div>
+      <div class="a-hint" id="password-rule">At least 6 characters.</div>
       {{-- Filled in by auth.js. Empty and hidden until typing starts, so the
            page does not open with a meter reading "too short". --}}
       <div class="a-strength" id="pw-strength" hidden>

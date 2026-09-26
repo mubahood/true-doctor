@@ -37,7 +37,7 @@
         <x-ui.field label="Current password" for="pw-current" required>
           <input id="pw-current" type="password" wire:model="current_password" class="tb-input" autocomplete="current-password" required>
         </x-ui.field>
-        <x-ui.field label="New password" for="pw-new" required hint="At least 8 characters with letters and numbers.">
+        <x-ui.field label="New password" for="pw-new" required hint="At least 6 characters.">
           <input id="pw-new" type="password" wire:model="password" class="tb-input" autocomplete="new-password" required>
         </x-ui.field>
         <x-ui.field label="Confirm new password" for="pw-confirm" required>
