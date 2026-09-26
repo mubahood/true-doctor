@@ -37,6 +37,9 @@ Route::prefix('v1')->group(function () {
         // hospital, money format, subscription, menu, statuses.
         Route::get('meta', \App\Http\Controllers\Api\V1\MetaController::class)->name('api.meta');
 
+        // The stat cards at the top of this person's dashboard, as the web draws them.
+        Route::get('dashboard', \App\Http\Controllers\Api\V1\DashboardController::class)->name('api.dashboard');
+
         // ── Offline sync ─────────────────────────────────────────────
         // Dedicated endpoints rather than bending the CRUD ones: batching,
         // per-operation results, idempotency and version checks are all things
