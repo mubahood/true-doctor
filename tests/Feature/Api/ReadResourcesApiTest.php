@@ -45,6 +45,12 @@ class ReadResourcesApiTest extends TestCase
         $this->assertSame(1, $res->json('meta.total'));
         $this->assertSame('LowMed', $res->json('data.0.name'));
         $this->getJson("/api/v1/stock-items/{$low->uuid}")->assertOk()->assertJsonPath('data.is_low_stock', true);
+
+        // The web register's shelf figures and filters.
+        $old = StockItem::factory()->create(['hospital_id' => $h->id, 'name' => 'OldMed', 'current_quantity' => '50', 'reorder_level' => '1', 'expiry_date' => now()->subDay()->toDateString()]);
+        $this->getJson('/api/v1/stock-items')->assertJsonPath('meta.shelf.low', 1)->assertJsonPath('meta.shelf.expired', 1);
+        $this->assertSame(['OldMed'], collect($this->getJson('/api/v1/stock-items?filter=expired')->json('data'))->pluck('name')->all());
+        $this->assertSame(['LowMed'], collect($this->getJson('/api/v1/stock-items?q=low')->json('data'))->pluck('name')->all());
     }
 
     public function test_stock_items_forbidden_for_non_pharmacy_role(): void
@@ -67,7 +73,13 @@ class ReadResourcesApiTest extends TestCase
 
         $this->getJson('/api/v1/invoices')->assertOk()->assertJsonPath('meta.total', 1);
         $this->getJson("/api/v1/invoices/{$invoice->uuid}")->assertOk()
-            ->assertJsonPath('data.total', '100.00')->assertJsonPath('data.invoice_no', $invoice->invoice_no);
+            ->assertJsonPath('data.total', '100.00')->assertJsonPath('data.invoice_no', $invoice->invoice_no)
+            ->assertJsonPath('data.payments', []);
+
+        // The ledger's search: invoice number, or the patient by name.
+        $this->getJson('/api/v1/invoices?q='.urlencode($invoice->invoice_no))->assertJsonPath('meta.total', 1);
+        $this->getJson('/api/v1/invoices?q='.urlencode($patient->first_name.' '.$patient->last_name))->assertJsonPath('meta.total', 1);
+        $this->getJson('/api/v1/invoices?q=nobody-at-all')->assertJsonPath('meta.total', 0);
     }
 
     public function test_read_resources_are_tenant_scoped(): void

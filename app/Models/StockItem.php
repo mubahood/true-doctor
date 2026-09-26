@@ -98,6 +98,48 @@ class StockItem extends Model
     }
 
     /** @param Builder<StockItem> $q */
+    /** Days ahead an expiry date counts as "expiring" — the alerts page's horizon. */
+    public const EXPIRY_HORIZON_DAYS = 90;
+
+    /**
+     * The stock register's filters — low, expiring, expired; a category; a
+     * name. Shared by the web register and the API.
+     *
+     * @param  Builder<StockItem>  $q
+     * @return Builder<StockItem>
+     */
+    public function scopeListed(Builder $q, ?string $filter, int|string|null $category, ?string $search): Builder
+    {
+        $search = trim((string) $search);
+
+        return $q
+            ->when($filter === 'low', fn (Builder $x) => $x->lowStock())
+            ->when($filter === 'expiring', fn (Builder $x) => $x->expiringBefore(now()->addDays(self::EXPIRY_HORIZON_DAYS)->toDateString()))
+            ->when($filter === 'expired', fn (Builder $x) => $x->expiringBefore(now()->toDateString()))
+            ->when(($category ?? '') !== '' && (int) $category > 0, fn (Builder $x) => $x->where('stock_category_id', (int) $category))
+            ->when($search !== '', fn (Builder $x) => $x->where('name', 'like', "%{$search}%"));
+    }
+
+    /**
+     * What the store holds, by the same rules the alerts page uses.
+     *
+     * @return array{items:int,quantity:string,value:string,low:int,expiring:int,expired:int}
+     */
+    public static function shelf(): array
+    {
+        $horizon = now()->addDays(self::EXPIRY_HORIZON_DAYS)->toDateString();
+        $active = fn () => self::where('is_active', true);
+
+        return [
+            'items' => $active()->count(),
+            'quantity' => (string) ($active()->sum('current_quantity') ?: '0'),
+            'value' => (string) ($active()->sum('current_stock_value') ?: '0'),
+            'low' => self::applyLowStock($active())->count(),
+            'expiring' => self::applyExpiringBefore($active(), $horizon)->count(),
+            'expired' => self::applyExpiringBefore($active(), now()->toDateString())->count(),
+        ];
+    }
+
     public function scopeLowStock(Builder $q): Builder
     {
         return self::applyLowStock($q);

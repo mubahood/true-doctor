@@ -149,17 +149,7 @@ class Index extends Component
     #[Computed]
     public function shelf(): array
     {
-        $horizon = now()->addDays(Alerts::EXPIRY_HORIZON_DAYS)->toDateString();
-        $active = fn () => StockItem::where('is_active', true);
-
-        return [
-            'items' => $active()->count(),
-            'quantity' => (string) ($active()->sum('current_quantity') ?: '0'),
-            'value' => (string) ($active()->sum('current_stock_value') ?: '0'),
-            'low' => StockItem::applyLowStock($active())->count(),
-            'expiring' => StockItem::applyExpiringBefore($active(), $horizon)->count(),
-            'expired' => StockItem::applyExpiringBefore($active(), now()->toDateString())->count(),
-        ];
+        return StockItem::shelf();
     }
 
     protected function rules(): array
@@ -251,11 +241,7 @@ class Index extends Component
         $this->authorize('viewAny', StockItem::class);
 
         $query = StockItem::with('category')
-            ->when($this->filter === 'low', fn (Builder $q) => $q->lowStock())
-            ->when($this->filter === 'expiring', fn (Builder $q) => $q->expiringBefore(now()->addDays(Alerts::EXPIRY_HORIZON_DAYS)->toDateString()))
-            ->when($this->filter === 'expired', fn (Builder $q) => $q->expiringBefore(now()->toDateString()))
-            ->when($this->category !== '', fn (Builder $q) => $q->where('stock_category_id', (int) $this->category))
-            ->when($this->search !== '', fn (Builder $q) => $q->where('name', 'like', "%{$this->search}%"));
+            ->listed($this->filter, $this->category, $this->search);
 
         /** @var Builder<StockItem> $sorted */
         $sorted = $this->applySort($query, fn (Builder $q) => $q->orderBy('name'));

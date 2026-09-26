@@ -16,14 +16,18 @@ class StockItemController extends Controller
     {
         $this->authorize('viewAny', StockItem::class);
 
+        // The web register's filters (StockItem::listed): low, expiring,
+        // expired; a category; a name — and its shelf figures in meta.
         $items = StockItem::with('category')
-            ->when($request->query('filter') === 'low', fn ($q) => $q->lowStock())
-            ->when($request->query('filter') === 'expiring', fn ($q) => $q->expiringBefore(now()->addDays(90)->toDateString()))
-            ->when($request->filled('q'), fn ($q) => $q->where('name', 'like', '%'.$request->query('q').'%'))
+            ->listed((string) $request->query('filter', ''), $request->query('category'), (string) $request->query('q', ''))
             ->orderBy('name')
-            ->paginate(min((int) $request->query('per_page', 25), 100));
+            ->paginate(min(max((int) $request->query('per_page', 25), 1), 100));
 
-        return ApiResponse::paginated($items, StockItemResource::collection($items->items()));
+        return ApiResponse::paginated($items, StockItemResource::collection($items->items()), [
+            'shelf' => StockItem::shelf(),
+            'expiry_horizon_days' => StockItem::EXPIRY_HORIZON_DAYS,
+            'categories' => \App\Models\StockCategory::where('is_active', true)->orderBy('name')->get(['id', 'name'])->toArray(),
+        ]);
     }
 
     public function show(StockItem $stock): JsonResponse

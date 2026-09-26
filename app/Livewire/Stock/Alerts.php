@@ -57,7 +57,7 @@ class Alerts extends Component
     use AuthorizesRequests, MovesStock, PeeksStockItems;
 
     /** Days ahead counted as "expiring soon". */
-    public const EXPIRY_HORIZON_DAYS = 90;
+    public const EXPIRY_HORIZON_DAYS = StockItem::EXPIRY_HORIZON_DAYS;
 
     /** …and the urgent end of it, where a plan has to become an action. */
     public const EXPIRY_URGENT_DAYS = 30;

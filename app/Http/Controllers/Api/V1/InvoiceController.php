@@ -18,6 +18,7 @@ class InvoiceController extends Controller
 
         $invoices = Invoice::with('patient')
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->query('status')))
+            ->matching((string) $request->query('q', ''))
             ->latest()
             ->paginate(min((int) $request->query('per_page', 20), 100));
 
@@ -28,6 +29,6 @@ class InvoiceController extends Controller
     {
         $this->authorize('view', $invoice);
 
-        return ApiResponse::success(new InvoiceResource($invoice->load(['patient', 'items'])));
+        return ApiResponse::success(new InvoiceResource($invoice->load(['patient', 'items', 'payments.receivedBy'])));
     }
 }

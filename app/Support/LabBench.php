@@ -79,6 +79,6 @@ final class LabBench
         return $query
             ->when(($status ?? '') !== '', fn (Builder $q) => $q->where('status', $status))
             ->when($outstanding, fn (Builder $q) => $q->whereIn('status', self::outstandingStatuses()))
-            ->when($search !== '', fn (Builder $q) => $q->whereHas('patient', fn (Builder $p) => $p->search($search)));
+            ->when($search !== '', fn (Builder $q) => $q->whereHas('patient', fn ($p) => $p->search($search)));
     }
 }

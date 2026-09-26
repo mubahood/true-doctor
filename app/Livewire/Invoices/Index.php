@@ -102,15 +102,7 @@ class Index extends Component
 
         $invoices = Invoice::with(['patient'])
             ->when($this->status !== '', fn (Builder $q) => $q->where('status', $this->status))
-            ->when($this->search !== '', function (Builder $query) {
-                $term = $this->search;
-                $query->where(function (Builder $qq) use ($term) {
-                    $qq->where('invoice_no', 'like', "%{$term}%")
-                        ->orWhereHas('patient', fn (Builder $p) => $p->where('first_name', 'like', "%{$term}%")
-                            ->orWhere('last_name', 'like', "%{$term}%")
-                            ->orWhere('patient_no', 'like', "%{$term}%"));
-                });
-            })
+            ->matching($this->search)
             ->latest()
             ->paginate($this->perPage);
 

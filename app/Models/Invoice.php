@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\InvoiceStatus;
 use App\Models\Concerns\BelongsToHospital;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -60,6 +61,22 @@ class Invoice extends Model
     public function items(): HasMany
     {
         return $this->hasMany(InvoiceItem::class);
+    }
+
+    /**
+     * Invoice number, or the patient's name or number — the ledger's search,
+     * shared by the web and the API.
+     *
+     * @param  Builder<Invoice>  $query
+     * @return Builder<Invoice>
+     */
+    public function scopeMatching(Builder $query, ?string $term): Builder
+    {
+        $term = trim((string) $term);
+
+        return $term === '' ? $query : $query->where(fn (Builder $q) => $q
+            ->where('invoice_no', 'like', "%{$term}%")
+            ->orWhereHas('patient', fn ($p) => $p->search($term)));
     }
 
     /** @return HasMany<Payment, $this> */
