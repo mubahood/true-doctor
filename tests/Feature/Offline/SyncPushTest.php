@@ -116,7 +116,6 @@ class SyncPushTest extends TestCase
         $this->assertSame('accepted', $result['status']);
         $this->assertNotNull($result['server_id']);
 
-        dump(['want' => $uuid, 'rows' => \Illuminate\Support\Facades\DB::table('patients')->get(['id', 'uuid', 'hospital_id'])->toArray(), 'ch' => app(CurrentHospital::class)->id()]);
         $patient = Patient::where('uuid', $uuid)->firstOrFail();
 
         // The device's id survived; the number came from the server's Sequence

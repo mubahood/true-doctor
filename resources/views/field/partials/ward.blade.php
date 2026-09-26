@@ -264,10 +264,11 @@
               <label class="tb-label tb-required" for="wm-status">Was it given?</label>
               <select id="wm-status" name="status" class="tb-select" @change="clear('status')">
                 <option value="">— choose —</option>
+                {{-- The server's own values (MedicationAdminStatus), the same
+                     three the web medication record offers. --}}
                 <option value="given">Given</option>
+                <option value="withheld">Withheld</option>
                 <option value="refused">Refused by the patient</option>
-                <option value="held">Held</option>
-                <option value="missed">Missed</option>
               </select>
               <template x-if="errors.status">
                 <div class="tb-field-error" role="alert" x-text="errors.status"></div>

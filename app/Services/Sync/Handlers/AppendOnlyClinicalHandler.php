@@ -2,6 +2,7 @@
 
 namespace App\Services\Sync\Handlers;
 
+use App\Http\Requests\MedicationAdministrationRequest;
 use App\Models\Admission;
 use App\Models\MedicationAdministration;
 use App\Models\NursingNote;
@@ -155,7 +156,10 @@ class AppendOnlyClinicalHandler extends EntityHandler
                 'drug_name' => ['required', 'string', 'max:150'],
                 'dose' => ['nullable', 'string', 'max:60'],
                 'route' => ['nullable', 'string', 'max:40'],
-                'status' => ['required', 'string', 'max:30'],
+                // The web form's own rule (MedicationAdministrationRequest). It
+                // used to be "any string", so a value outside the enum reached
+                // the model cast and threw — a crash where a refusal belonged.
+                'status' => MedicationAdministrationRequest::rulesFor()['status'],
                 'note' => ['nullable', 'string', 'max:2000'],
             ],
         };

@@ -20,6 +20,15 @@ Artisan::command('inspire', function () {
 
 \Illuminate\Support\Facades\Schedule::command('subscriptions:trial-reminders')->dailyAt('08:00');
 
+// Offline sync ledger. A claim left `processing` by a process that died is
+// marked retryable, so the device's next attempt runs instead of waiting; and
+// results older than the replay window (90 days) are dropped. Both existed and
+// were never called.
+\Illuminate\Support\Facades\Schedule::call(fn () => app(\App\Services\Sync\OperationLedger::class)->reclaimStale())
+    ->everyFifteenMinutes()->name('sync:reclaim-stale')->withoutOverlapping();
+\Illuminate\Support\Facades\Schedule::call(fn () => app(\App\Services\Sync\OperationLedger::class)->prune())
+    ->dailyAt('03:40')->name('sync:prune-ledger')->withoutOverlapping();
+
 // Traffic retention: crawler rows after 90 days, unconverted visitors after
 // 400. A visit that became a hospital is never pruned — see TrafficSession.
 \Illuminate\Support\Facades\Schedule::command('model:prune', [

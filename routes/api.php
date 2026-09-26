@@ -49,6 +49,7 @@ Route::prefix('v1')->group(function () {
             Route::post('ack', [SyncController::class, 'ack'])->name('ack');
             Route::get('reference', [SyncController::class, 'reference'])->name('reference');
             Route::get('operations', [SyncController::class, 'operations'])->name('operations');
+            Route::post('resolve', [SyncController::class, 'resolve'])->name('resolve');
         });
 
         Route::apiResource('patients', PatientController::class);

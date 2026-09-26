@@ -170,7 +170,7 @@ export class Workflows {
             drug_name: ['required', 'max:150'],
             dose: ['max:60'],
             route: ['max:40'],
-            status: ['required', 'in:given,refused,held,missed'],
+            status: ['required', 'in:given,withheld,refused'],
             note: ['max:2000'],
         });
 

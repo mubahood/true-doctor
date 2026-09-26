@@ -39,6 +39,21 @@ class OperationLedger
     /** A claim older than this was abandoned by a dead process. */
     public const STALE_CLAIM_MINUTES = 10;
 
+    /**
+     * Settled answers that are NOT final: nothing was applied, and the reason
+     * can go away on its own. A retry of the same operation id runs the work
+     * again instead of being handed the old answer for ever.
+     *
+     *  - `server_error` — the work threw; its transaction rolled back.
+     *  - `abandoned`    — the process died; reclaimStale() marked it.
+     *  - `parent_missing` — the record it hangs off had not arrived yet.
+     *
+     * Everything else — accepted, conflict, a validation or permission
+     * refusal — is an answer about the data, and a replay gets it verbatim
+     * (invariant I-2).
+     */
+    public const RETRYABLE = ['server_error', 'abandoned', 'parent_missing'];
+
     /** How long a result is replayable. Past it, a replay is refused rather
      *  than applied blind — the client's backoff caps well inside this. */
     public const RETENTION_DAYS = 90;
@@ -195,11 +210,19 @@ class OperationLedger
             }
 
             // A process died holding this claim. Take it over rather than
-            // leaving the operation stuck for ever — the work itself is still
-            // guarded by the row locks the domain Services take.
-            $existing->update(['status' => 'processing', 'message' => 'Reclaimed from an abandoned attempt.']);
+            // leaving the operation stuck for ever — atomically: two replays
+            // arriving together both see an old claim, and only the one whose
+            // UPDATE moves it on may run the work. Restamping created_at makes
+            // the claim warm again, so the loser matches nothing.
+            $won = SyncOperation::withoutGlobalScopes()
+                ->whereKey($existing->getKey())
+                ->where('status', 'processing')
+                ->where('created_at', '<', now()->subMinutes(self::STALE_CLAIM_MINUTES))
+                ->update(['created_at' => now(), 'message' => 'Reclaimed from an abandoned attempt.']);
 
-            return ['replayed' => false, 'row' => $existing];
+            return $won === 1
+                ? ['replayed' => false, 'row' => $existing->refresh()]
+                : $this->inFlight($operationId);
         }
 
         // A settled operation. Hand back the original answer verbatim — this
@@ -214,7 +237,41 @@ class OperationLedger
 
         $stored['status'] = $stored['status'] ?? $existing->status;
 
+        // An answer that was not final — nothing was applied — is tried again
+        // under the SAME id, so the device need not mint a new one and the
+        // gate keeps working. Claimed atomically, as above: only the replay
+        // whose UPDATE moves the row from its settled state runs the work.
+        if (! isset($stored['payload_mismatch']) && in_array($existing->reason_code, self::RETRYABLE, true)) {
+            $won = SyncOperation::withoutGlobalScopes()
+                ->whereKey($existing->getKey())
+                ->where('status', $existing->status)
+                ->where('reason_code', $existing->reason_code)
+                ->update([
+                    'status' => 'processing',
+                    'reason_code' => null,
+                    'message' => 'Retrying: the earlier attempt did not complete.',
+                    'created_at' => now(),
+                ]);
+
+            return $won === 1
+                ? ['replayed' => false, 'row' => $existing->refresh()]
+                : $this->inFlight($operationId);
+        }
+
         return ['replayed' => true, 'result' => $this->decorate($operationId, $stored)];
+    }
+
+    /** @return array{replayed: bool, result: array<string,mixed>} */
+    private function inFlight(string $operationId): array
+    {
+        return [
+            'replayed' => true,
+            'result' => $this->decorate($operationId, [
+                'status' => 'failed',
+                'reason_code' => 'in_flight',
+                'message' => 'This operation is already being processed. It will be retried.',
+            ]),
+        ];
     }
 
     /** @param array<string,mixed> $outcome */

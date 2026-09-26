@@ -47,7 +47,7 @@ arrive claiming to describe it.
 | `Authorization: Bearer …` | for a non-browser client | Sanctum. The hospital comes from the authenticated user and **never from the payload**. |
 | the session cookie | for a browser on this origin | Field Mode sends no token. `credentials: 'same-origin'` on every request; the API routes see the session because of `$middleware->statefulApi()`. |
 | `X-XSRF-TOKEN: …` | for a browser, on every write | Read from the `XSRF-TOKEN` cookie **at request time**. Without it a stateful `POST` is `419`. |
-| `X-Device-Id: <uuid>` | yes, except `register` and `status` | An unregistered id is `403`; a revoked one is `403 device_revoked`. |
+| `X-Device-Id: <uuid>` | yes, except `register`, `status` and `reference` — **enforced** on `push`, `pull`, `ack`, `resolve` and `operations` (push and operations used to accept a missing header) | An unregistered id is `403`; a revoked one is `403 device_revoked`. |
 | `Accept: application/json` | yes | |
 
 **`401` and `419` mean the same thing to a device:** the session has ended. Both
@@ -178,16 +178,27 @@ operation at a time.
 | `validation_failed` | The payload did not pass the same rules the online form uses |
 | `forbidden` | The user's permissions no longer allow this |
 | `not_found` | The record has gone |
-| `parent_missing` | The visit or admission has not arrived yet — **an ordering problem, retry** |
+| `parent_missing` | The visit or admission has not arrived yet — **an ordering problem; retry under the same `operation_id`** |
 | `parent_closed` | The stay is discharged, or the lab order is closed; nothing more can be recorded on it |
 | `already_reported` | A result is already recorded for this test. Correcting one is done where both values can be seen |
 | `append_only` | This record cannot be changed, only superseded |
 | `unknown_entity` | This server does not accept that entity |
 | `unsupported_operation` | That verb is not valid for that entity |
 | `refused` | A domain rule said no, with the rule's own words |
-| `server_error` | Something broke. Retryable |
-| `in_flight` | Another attempt at this operation is still running |
+| `server_error` | Something broke; nothing was applied. **Retry under the same `operation_id`** |
+| `abandoned` | The server stopped mid-operation (set by the 15-minute sweep); nothing was applied. Retry under the same id |
+| `in_flight` | Another attempt at this operation is still running. Retry later |
 | `missing_operation_id` | No id, so no way to make a retry safe |
+| `unknown_operation` | The id belongs to another hospital. Never retry; mint a new id |
+
+**Which answers are final.** `server_error`, `abandoned` and `parent_missing`
+mean nothing was applied and the cause can go away on its own: a retry of the
+**same** `operation_id` runs the work again (`OperationLedger::RETRYABLE`). Two
+retries arriving together are settled by an atomic claim — exactly one runs,
+the other gets `in_flight`. Every other answer is about the data (accepted,
+conflict, a validation or permission refusal) and a replay returns it verbatim.
+Before 2026-09-26 every stored answer was final, so one transient 500 poisoned
+an operation id for ever.
 
 ---
 
@@ -246,6 +257,21 @@ the device failed to commit.
 
 ---
 
+## 7a. `POST /sync/resolve`
+
+A conflict settled on the device. "Keep mine" needs nothing here — its new
+operation closes the conflict when the server accepts it (resolution
+`kept_mine`). "Keep the server's" sends no operation, so the device says so:
+
+```json
+{ "operation_id": "01M2…", "resolution": "kept_server" }   // or kept_mine | cancelled
+```
+
+Returns `{ "closed": 1 }`. A device can close only its own conflicts;
+`GET /sync/status` counts only this device's open ones when `X-Device-Id` is sent.
+
+---
+
 ## 8. `GET /sync/reference?since=…`
 
 Catalogues the device reads and never edits: wards, beds, services, lab tests,
@@ -263,7 +289,7 @@ a device showing a stale one would be telling a pharmacist something untrue.
 | `patients` | create · update · delete | Three-way field merge; `dob`, `sex`, `blood_type`, `allergies`, `chronic_conditions` are never auto-merged | `patient_no` is server-allocated and returned in `assigned` |
 | `vitals` | create | none — append-only | Needs `admission_uuid`. `VitalRound` is an **inpatient** record |
 | `nursing_notes` | create | none — append-only | Needs `admission_uuid` |
-| `med_administrations` | create | none — append-only | Needs `admission_uuid` |
+| `med_administrations` | create | none — append-only | Needs `admission_uuid`. `status` is one of `given`, `withheld`, `refused` (`MedicationAdminStatus`, validated with the web form's own rule) — anything else is `rejected: validation_failed` |
 | `visits` | update | Three-way field merge, but **every field is never-auto-merged** | The clinical narrative only — `complaints`, `diagnosis`, `doctor_remarks`. Anything else in the payload is dropped, not refused. A visit is never **created** from a device (`visit_no` is server-allocated and opening one bills a consultation), and one past the `ongoing` stage is `parent_closed`. The narrative is pulled only to an actor with `visits.diagnose` |
 | `lab_items` | update | **Manual, always.** No merge under any circumstances | The strictest entity here. A stale device overwriting a result is a patient-safety event, so a mismatched `base_version` is refused and raised. A result that already exists is refused even when versions agree. Never created from a device |
 

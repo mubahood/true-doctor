@@ -65,7 +65,11 @@ class SyncController extends Controller
             'device' => $device === null ? null : $this->deviceSummary($device),
             'accepts' => $this->engine->acceptedEntities(),
             'current_revision' => SyncRevision::current(),
-            'open_conflicts' => SyncConflict::whereNull('resolved_at')->count(),
+            // This device's, when it says which it is: the hospital-wide count
+            // is an administrator's question (/admin/offline-devices).
+            'open_conflicts' => SyncConflict::whereNull('resolved_at')
+                ->when($device instanceof Device, fn ($q) => $q->where('device_id', $device->id))
+                ->count(),
         ]);
     }
 
@@ -159,6 +163,13 @@ class SyncController extends Controller
             return $device;
         }
 
+        // Required, as the protocol says (§2) and as pull and ack already
+        // were. Without it a revoked device could keep writing by leaving the
+        // header off — revocation would stop only the honest ones.
+        if ($device === null) {
+            return ApiResponse::error(ApiErrorCode::Forbidden, 'Sending work needs a registered device.', 403);
+        }
+
         $outcome = $this->engine->push(
             $request->validated('operations'),
             Auth::user(),
@@ -228,6 +239,34 @@ class SyncController extends Controller
             'pull_cursor' => $device->pull_cursor,
             'server_time' => now()->toIso8601String(),
         ]);
+    }
+
+    /**
+     * The device settled a conflict without sending anything — "keep the
+     * server's" changes nothing on the server, so without this the conflict
+     * stayed open for ever. ("Keep mine" closes itself when its new operation
+     * is accepted.)
+     */
+    public function resolve(Request $request): JsonResponse
+    {
+        $device = $this->resolveDevice($request);
+
+        if ($device instanceof JsonResponse) {
+            return $device;
+        }
+
+        if ($device === null) {
+            return ApiResponse::error(ApiErrorCode::Forbidden, 'Resolving needs a registered device.', 403);
+        }
+
+        $data = $request->validate([
+            'operation_id' => ['required', 'string', 'max:40'],
+            'resolution' => ['required', 'in:kept_server,kept_mine,cancelled'],
+        ]);
+
+        $closed = $this->engine->closeConflicts($device, '', $data['resolution'], Auth::user(), $data['operation_id']);
+
+        return ApiResponse::success(['closed' => $closed]);
     }
 
     /** Catalogues the device reads and never edits. */
@@ -309,10 +348,16 @@ class SyncController extends Controller
             return $device;
         }
 
+        // A device's own history, never the whole hospital's: without a device
+        // this used to return every operation any device had sent.
+        if ($device === null) {
+            return ApiResponse::error(ApiErrorCode::Forbidden, 'Reading sent work needs a registered device.', 403);
+        }
+
         $since = $request->date('since') ?? now()->subDays(7);
 
         $rows = SyncOperation::query()
-            ->when($device !== null, fn ($q) => $q->where('device_id', $device->id))
+            ->where('device_id', $device->id)
             ->where('created_at', '>=', $since)
             ->orderByDesc('id')
             ->limit(500)

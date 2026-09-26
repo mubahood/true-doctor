@@ -95,8 +95,18 @@ class SyncEngine
                 $tally[$result['status'] ?? 'rejected'] = ($tally[$result['status'] ?? 'rejected'] ?? 0) + 1;
             }
 
-            if (($result['status'] ?? null) === 'conflict') {
+            // Only on the attempt that produced it: a replay hands back the
+            // stored conflict, and recording it again filled the table with
+            // copies of one disagreement.
+            if (! $outcome['replayed'] && ($result['status'] ?? null) === 'conflict') {
                 $this->recordConflict($operation, $result, $actor, $device);
+            }
+
+            // "Keep mine" is a new operation on the same record; once the
+            // server accepts it, this device's disagreement about that record
+            // is over.
+            if (! $outcome['replayed'] && ($result['status'] ?? null) === 'accepted' && $device !== null) {
+                $this->closeConflicts($device, (string) ($operation['entity_uuid'] ?? ''), 'kept_mine', $actor);
             }
 
             $results[] = $result;
@@ -179,6 +189,25 @@ class SyncEngine
             'contested_fields' => $conflict['contested'] ?? [],
             'merged_fields' => $conflict['merged'] ?? [],
         ]);
+    }
+
+    /**
+     * Close this device's open conflicts on one record.
+     *
+     * @return int how many were closed
+     */
+    public function closeConflicts(Device $device, string $entityUuid, string $resolution, User $actor, ?string $operationId = null): int
+    {
+        if ($entityUuid === '' && $operationId === null) {
+            return 0;
+        }
+
+        return SyncConflict::query()
+            ->where('device_id', $device->id)
+            ->whereNull('resolved_at')
+            ->when($operationId !== null, fn ($q) => $q->where('operation_id', $operationId))
+            ->when($operationId === null, fn ($q) => $q->where('entity_uuid', $entityUuid))
+            ->update(['resolution' => $resolution, 'resolved_at' => now(), 'resolved_by' => $actor->id]);
     }
 
     private function handlerFor(string $entity): ?EntityHandler
