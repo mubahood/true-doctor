@@ -9,6 +9,12 @@
     <span class="tb-demo-cta-text">Create your own hospital</span>
   </button>
 
+  {{-- Teleported to <body>. The button lives in the top bar, and the top bar
+       has a backdrop-filter — which makes it the containing block for every
+       position:fixed descendant, so a dialog left in place is laid out inside
+       the 60px header instead of over the page. @teleport keeps the wire:
+       bindings attached to this component while it renders elsewhere. --}}
+  @teleport('body')
   <x-ui.modal show="show" title="Ready to start your own?" size="md" :autosaves="true">
     <div class="tb-modal-body">
 
@@ -56,14 +62,18 @@
 
       {{-- A POST, because it signs somebody out. One route, so there is no
            redirect target to smuggle anything into. --}}
-      <form method="POST" action="{{ route('demo.leave') }}" class="tb-demo-go">
+      {{-- A plain form, not wire:loading: disabled on submit by Alpine so a
+           double-click cannot post twice. --}}
+      <form method="POST" action="{{ route('demo.leave') }}" class="tb-demo-go"
+            x-data="{ busy: false }" @submit="busy = true">
         @csrf
-        <button type="submit" class="btn-tb btn-tb-primary">
+        <button type="submit" class="btn-tb btn-tb-primary" :disabled="busy">
           <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i>
           Sign out and create my hospital
         </button>
       </form>
     </div>
   </x-ui.modal>
+  @endteleport
 @endif
 </div>

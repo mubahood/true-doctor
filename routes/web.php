@@ -7,11 +7,26 @@ use Illuminate\Support\Facades\Route;
 | Public — marketing
 |--------------------------------------------------------------------------
 */
-Route::view('/', 'marketing.home')->name('home');
-Route::view('/features', 'marketing.features')->name('features');
-Route::get('/pricing', [\App\Http\Controllers\MarketingController::class, 'pricing'])->name('pricing');
-Route::view('/security', 'marketing.security')->name('security');
-Route::get('/contact', [\App\Http\Controllers\MarketingController::class, 'contact'])->name('contact');
+/*
+ * Public pages carry the landing-traffic middleware: it records where every
+ * arrival came from and sends an ad click on to the page its sitelink named.
+ * See App\Http\Middleware\HandleLandingTraffic.
+ */
+Route::middleware('landing')->group(function () {
+    Route::view('/', 'marketing.home')->name('home');
+    Route::view('/features', 'marketing.features')->name('features');
+
+    // `/product` is the address used in the ad campaign; `/features` is the
+    // one the site has always used and the one in the sitemap. An alias
+    // rather than a rename, so no existing link breaks — and a redirect
+    // rather than a second page, so there is one canonical address.
+    Route::redirect('/product', '/features', 302)->name('product');
+
+    Route::get('/pricing', [\App\Http\Controllers\MarketingController::class, 'pricing'])->name('pricing');
+    Route::view('/security', 'marketing.security')->name('security');
+});
+Route::get('/contact', [\App\Http\Controllers\MarketingController::class, 'contact'])
+    ->middleware('landing')->name('contact');
 Route::post('/contact', [\App\Http\Controllers\MarketingController::class, 'enquire'])->name('contact.send');
 
 // Quote me in the other currency. A POST because it sets a cookie, and a
@@ -19,8 +34,8 @@ Route::post('/contact', [\App\Http\Controllers\MarketingController::class, 'enqu
 Route::post('/currency', [\App\Http\Controllers\MarketingController::class, 'currency'])->name('currency');
 
 Route::get('/sitemap.xml', [\App\Http\Controllers\MarketingController::class, 'sitemap'])->name('sitemap');
-Route::view('/privacy', 'marketing.privacy')->name('privacy');
-Route::view('/terms', 'marketing.terms')->name('terms');
+Route::view('/privacy', 'marketing.privacy')->middleware('landing')->name('privacy');
+Route::view('/terms', 'marketing.terms')->middleware('landing')->name('terms');
 
 /*
 |--------------------------------------------------------------------------
@@ -35,10 +50,14 @@ Route::middleware('guest')->group(function () {
     Route::get('/admin/login', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'create'])->name('admin.login');
 
     // The demonstration door. 404s outside local/demo — see the controller.
-    Route::get('/test-login', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'createTest'])->name('test-login');
+    // Recorded: it is where the "See a Live Demo" sitelink lands, and a 404
+    // here on a live site is exactly what the traffic screen should show.
+    Route::get('/test-login', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'createTest'])
+        ->middleware('landing')->name('test-login');
 
     // Public hospital self-registration (starts a trial)
-    Route::get('/register', [\App\Http\Controllers\Auth\RegistrationController::class, 'show'])->name('register');
+    Route::get('/register', [\App\Http\Controllers\Auth\RegistrationController::class, 'show'])
+        ->middleware('landing')->name('register');
 });
 
 Route::post('/admin/login', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'store']);
@@ -225,6 +244,11 @@ Route::prefix('super')->middleware(['auth', 'super', 'no-store'])->name('super.'
     Route::get('hospitals', \App\Livewire\Super\Hospitals\Index::class)->name('hospitals.index');
     Route::get('plans', \App\Livewire\Super\Plans\Index::class)->name('plans.index');
     Route::get('subscriptions', \App\Livewire\Super\Subscriptions\Index::class)->name('subscriptions.index');
+
+    // Where the people arriving at the public site came from, and which of
+    // them became a hospital. Platform data, so it lives here rather than in
+    // a tenant's own reports.
+    Route::get('traffic', \App\Livewire\Super\Traffic\Index::class)->name('traffic.index');
 });
 
 /*

@@ -26,8 +26,14 @@ class RegistrationController extends Controller
         // selling. This URL is shared and edited by hand, and a stale id used
         // to leave every radio unchecked — a form that looks fine and then
         // refuses to submit, complaining about a field the person never saw.
-        $wanted = $request->integer('plan') ?: null;
-        $selected = $plans->firstWhere('id', $wanted)?->id;
+        // `plan` arrives two ways: as an id from a pricing-page button, and
+        // as a slug from a Google Ads price asset (`?plan=professional`).
+        // Both have to work, and both have to survive being wrong.
+        $wanted = $request->query('plan');
+
+        $selected = is_numeric($wanted)
+            ? $plans->firstWhere('id', (int) $wanted)?->id
+            : $plans->firstWhere('slug', is_string($wanted) ? strtolower(trim($wanted)) : '')?->id;
 
         return view('auth.register', [
             'plans' => $plans,

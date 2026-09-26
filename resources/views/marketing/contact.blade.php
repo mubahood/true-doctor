@@ -18,7 +18,9 @@
 
 <section style="padding-top:44px;">
   <div class="wrap">
-    <div class="formcard">
+    {{-- The anchor an ad's "Contact Sales" sitelink opens at, so the form is
+         what a visitor sees rather than the top of the page. --}}
+    <div class="formcard" id="enquiry">
 
       @if(session('sent'))
         <div class="notice ok" role="status">

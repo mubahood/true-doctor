@@ -191,6 +191,10 @@ class MarketingController extends Controller
 
         RateLimiter::hit($this->enquiryKey($request), 3600);
 
+        // On the trail of the visit that sent it, so an enquiry from a
+        // "Contact Sales" click counts for that sitelink.
+        app(\App\Services\TrafficRecorder::class)->action($request, 'enquiry');
+
         return redirect()
             ->route('contact')
             ->with('sent', 'Thank you — your message is with us. We reply within one business day.');

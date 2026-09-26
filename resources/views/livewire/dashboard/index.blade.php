@@ -12,7 +12,7 @@
         <span>Sample data, shared with everyone else trying the system, and wiped regularly. Change anything you like.</span>
       </div>
       <button type="button" class="btn-tb btn-tb-primary btn-tb-sm tb-demo-banner-cta"
-              onclick="window.Livewire.dispatch('open-demo-invite')" aria-haspopup="dialog">
+              wire:click="$dispatch('open-demo-invite')" aria-haspopup="dialog">
         Create your own hospital <i class="fas fa-arrow-right" aria-hidden="true"></i>
       </button>
     </div>

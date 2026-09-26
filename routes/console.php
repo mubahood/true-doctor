@@ -20,6 +20,12 @@ Artisan::command('inspire', function () {
 
 \Illuminate\Support\Facades\Schedule::command('subscriptions:trial-reminders')->dailyAt('08:00');
 
+// Traffic retention: crawler rows after 90 days, unconverted visitors after
+// 400. A visit that became a hospital is never pruned — see TrafficSession.
+\Illuminate\Support\Facades\Schedule::command('model:prune', [
+    '--model' => [\App\Models\TrafficEvent::class, \App\Models\TrafficSession::class],
+])->dailyAt('03:30')->withoutOverlapping();
+
 // Last night, onto every open stay's bill. Just after midnight, so a night is
 // billed the moment it is complete and a ward round in the morning already
 // sees it. Idempotent — see App\Console\Commands\AccrueBedCharges.

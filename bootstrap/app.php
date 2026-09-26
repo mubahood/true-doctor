@@ -87,6 +87,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'subscribed' => \App\Http\Middleware\EnsureSubscribed::class,
             'onboarding' => \App\Http\Middleware\RequireOnboarding::class,
             'no-store' => \App\Http\Middleware\NoStoreResponses::class,
+            // Records where a visitor came from and routes an ad click to
+            // the page its sitelink named. Public pages only.
+            'landing' => \App\Http\Middleware\HandleLandingTraffic::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

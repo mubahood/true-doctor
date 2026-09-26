@@ -66,6 +66,7 @@
               ['label' => 'Hospitals', 'icon' => 'fa-hospital', 'route' => 'super.hospitals.index', 'match' => ['super.hospitals.*']],
               ['label' => 'Plans', 'icon' => 'fa-layer-group', 'route' => 'super.plans.index', 'match' => ['super.plans.*']],
               ['label' => 'Subscriptions', 'icon' => 'fa-file-invoice-dollar', 'route' => 'super.subscriptions.index', 'match' => ['super.subscriptions.*']],
+              ['label' => 'Traffic & campaigns', 'icon' => 'fa-chart-line', 'route' => 'super.traffic.index', 'match' => ['super.traffic.*']],
               // Platform-global config (site name, contacts) — a SaaS page, not a tenant one.
               ['label' => 'Site settings', 'icon' => 'fa-sliders', 'route' => 'admin.settings.index', 'match' => ['admin.settings.index']],
           ]],

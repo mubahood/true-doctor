@@ -54,6 +54,7 @@ class SpaNavigationHtmlTest extends TestCase
     private const ALLOWED_POST_FORM_ROUTES = [
         'admin.invoices.flutterwave',      // hosted payment page hand-off
         'admin.subscription.checkout',     // hosted payment page hand-off
+        'demo.leave',                      // signs out: invalidates the session and CSRF token, so it must be a full page load
     ];
 
     /**

@@ -205,6 +205,21 @@ h3{font-weight:600;}
 .price.feat{border-color:var(--pri);box-shadow:0 14px 40px -24px rgba(10,110,189,.5);}
 .price .flag{position:absolute;top:-1px;right:-1px;background:var(--pri);color:#fff;font-size:9.5px;
   font-weight:600;letter-spacing:.09em;text-transform:uppercase;padding:4px 10px;}
+
+/* The card an advertisement's price asset named. Marked clearly, because
+   somebody who clicked "Professional, $13.16/mo" should land looking at the
+   Professional card and not have to find it again. */
+.price.is-picked{border-color:var(--pri);border-width:2px;
+  box-shadow:0 18px 44px -26px rgba(10,110,189,.55);}
+.price .flag.picked{background:var(--ok);}
+@media(prefers-reduced-motion:no-preference){
+  .price.is-picked{animation:price-picked 1.6s ease-out 1;}
+}
+@keyframes price-picked{
+  0%{box-shadow:0 0 0 0 rgba(10,110,189,.45);}
+  70%{box-shadow:0 0 0 12px rgba(10,110,189,0);}
+  100%{box-shadow:0 18px 44px -26px rgba(10,110,189,.55);}
+}
 .price .tag{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--pri);}
 .price .amt{font-size:34px;font-weight:200;margin:10px 0 2px;letter-spacing:-.025em;line-height:1.05;}
 .price .amt small{font-size:13px;color:var(--tx3);font-weight:400;letter-spacing:0;}

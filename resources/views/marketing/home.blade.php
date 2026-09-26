@@ -10,12 +10,13 @@
      texture it sits on. --}}
 <section class="hero">
   <div class="wrap">
-    <div class="eyebrow">Hospital Management System</div>
-    <h1>Run your hospital on <b>one system</b>,<br>not a stack of paper registers.</h1>
+    <div class="eyebrow">Cloud HMS for clinics and hospitals</div>
+    <h1>The <b>hospital management system</b><br>that replaces your paper registers.</h1>
     <p class="lead">
-      Patients, appointments, visits, pharmacy, lab, inpatient care and billing —
-      one subscription, one login, per hospital. Built for clinics and hospitals in
-      East Africa that want their whole operation in a single, reliable place.
+      Clinic management software that carries a patient from the front desk to the
+      cashier: EMR and patient records, appointments, pharmacy, lab and radiology,
+      inpatient wards and billing. One subscription, one login, per hospital — and
+      it keeps working when the network does not.
     </p>
     <div class="ctas">
       @auth
@@ -33,7 +34,7 @@
     <div class="trust-row">
       <span><i class="fas fa-shield-halved" aria-hidden="true"></i> Per-hospital data isolation</span>
       <span><i class="fas fa-lock" aria-hidden="true"></i> Encrypted sensitive records</span>
-      <span><i class="fas fa-list-check" aria-hidden="true"></i> Every view and change logged</span>
+      <span><i class="fas fa-list-check" aria-hidden="true"></i> Every change logged</span>
     </div>
 
     <x-site.product-shot />

@@ -57,6 +57,11 @@ class RegistrationService
 
             $owner->notify(new \App\Notifications\WelcomeToTrial($subscription));
 
+            // Which advertisement brought them. Inside the transaction so a
+            // hospital is never created without the answer, and wrapped in
+            // the recorder so a reporting failure can never lose a sign-up.
+            app(TrafficRecorder::class)->convert($hospital, request());
+
             return $owner;
         });
     }

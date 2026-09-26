@@ -77,7 +77,11 @@
       </div>
       <div class="grid two">
         @foreach($group['cards'] as [$icon, $title, $body, $points])
-          <div class="card">
+          {{-- The id an ad sitelink opens at: /?section=modules&module=pharmacy
+               becomes /features#pharmacy, which the browser scrolls to with
+               no JavaScript at all. The highlight is decoration on top. --}}
+          @php($anchor = \App\Support\LandingIntent::anchorFor($title))
+          <div class="card" @if($anchor) id="{{ $anchor }}" @endif>
             <div class="ic" aria-hidden="true"><i class="fas {{ $icon }}"></i></div>
             <h3>{!! $title !!}</h3>
             <p>{!! $body !!}</p>

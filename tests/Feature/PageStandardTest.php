@@ -27,6 +27,7 @@ class PageStandardTest extends TestCase
         'Onboarding/Index.php' => 'a setup checklist',
         'Reports/Index.php' => 'a set of charts over a date range',
         'Subscription/Index.php' => 'one subscription, not a list of them',
+        'Super/Traffic/Index.php' => 'campaign reports over a date range; its one list is capped',
         'Patients/Form.php' => 'a form',
         'Settings/Billing.php' => 'a settings form',
         'Settings/Hospital.php' => 'a settings form',
@@ -282,7 +283,9 @@ class PageStandardTest extends TestCase
             preg_match_all('/<button\b[^>]*type="submit"[^>]*>/s', $blade, $matches);
 
             foreach ($matches[0] as $button) {
-                if (Str::contains($button, 'wire:loading.attr="disabled"')) {
+                // A Livewire action disables with wire:loading; a plain form
+                // (a sign-out, which must leave the SPA) with Alpine.
+                if (Str::contains($button, ['wire:loading.attr="disabled"', ':disabled="busy"'])) {
                     continue;
                 }
 

@@ -38,8 +38,14 @@
       @foreach($plans as $i => $plan)
         @php($m = $copy[$plan->slug] ?? ['who' => '', 'feats' => []])
         @php($price = \App\Support\PlatformPrice::make($plan->price, $region->currency()))
-        <div class="price {{ $plan->is_featured ? 'feat' : '' }}">
-          @if($plan->is_featured)<span class="flag">Most chosen</span>@endif
+        @php($picked = request()->query('plan') === $plan->slug)
+        <div class="price {{ $plan->is_featured ? 'feat' : '' }} {{ $picked ? 'is-picked' : '' }}"
+             @if($picked) id="plan-{{ $plan->slug }}" @endif>
+          @if($picked)
+            <span class="flag picked">The plan you clicked</span>
+          @elseif($plan->is_featured)
+            <span class="flag">Most chosen</span>
+          @endif
           <div class="tag">{{ $plan->name }}</div>
           <div class="amt">{{ $plan->priceLabel($region->currency()) }}<small>/month</small></div>
           <div class="alt">{{ $price->yearly() }} a year · billed monthly</div>

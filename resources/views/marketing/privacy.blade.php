@@ -69,19 +69,35 @@
 
     <h2 id="visitors">Visitors to this website</h2>
     <p>
-      These public pages set no advertising or analytics cookies. Two cookies may be
-      set, both strictly functional:
+      These public pages set no third-party advertising or analytics cookies, and load
+      no tracking scripts. Three cookies of our own may be set:
     </p>
     <ul>
       <li>A session cookie, needed to protect forms against cross-site request forgery.</li>
       <li>A currency preference, if you use the switch in the footer, so the site remembers how you want prices shown.</li>
+      <li>
+        A visitor cookie, kept for 30 days, holding a random identifier. It lets us see
+        which advertisement or link brought a visitor, which of our pages they opened,
+        and whether they went on to start a trial — so we know which of our adverts are
+        worth paying for.
+      </li>
     </ul>
+    <p>
+      With that identifier we record, on our own servers: the pages opened and when;
+      the campaign details and click identifier in the link you followed (for example
+      from a Google advert); the website that referred you; the type of device, browser
+      and operating system; and the country your connection appears to be in. We do not
+      store your IP address — only a one-way keyed fingerprint of it that cannot be
+      turned back into the address. None of this is shared with anybody, except that
+      when a visit leads to a sign-up or a payment, the advert&rsquo;s click identifier is
+      reported back to Google so it can tell which advert worked. Records of visits
+      that did not lead to a sign-up are deleted after about thirteen months.
+    </p>
     <p>
       To decide which currency to quote in before you have chosen, the site looks at
       the country your network connection appears to be in — from a header your
       network provider or our content delivery network supplies, and otherwise from
-      your browser&rsquo;s language setting. That guess is used for one thing: which of two
-      currencies to print. It is not stored against you, and you can override it.
+      your browser&rsquo;s language setting. You can override it with the switch in the footer.
     </p>
     <p>
       Our servers keep ordinary web logs — IP address, page, time — for security and
