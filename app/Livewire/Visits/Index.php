@@ -2,15 +2,12 @@
 
 namespace App\Livewire\Visits;
 
-use App\Enums\AppointmentStatus;
 use App\Enums\DiscountType;
 use App\Enums\InvoiceStatus;
 use App\Enums\OrderItemStatus;
 use App\Enums\OrderStatus;
 use App\Enums\PatientSex;
-use App\Enums\VisitOutcome;
 use App\Enums\VisitStage;
-use App\Enums\VisitStatus;
 use App\Exceptions\PlanLimitExceededException;
 use App\Http\Requests\VisitIntakeRequest;
 use App\Http\Requests\VisitRequest;
@@ -23,11 +20,11 @@ use App\Models\Visit;
 use App\Services\BillingService;
 use App\Services\VisitService;
 use App\Support\HospitalSettings;
+use App\Support\PatientBrief;
 use App\Support\SampleCatalogue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Carbon;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
@@ -261,13 +258,11 @@ class Index extends Component
     // ── What we already know ─────────────────────────────────────────────
 
     /**
-     * Everything the desk should see the moment a patient is chosen.
+     * Everything the desk should see the moment a patient is chosen — an open
+     * visit, today's booking, money owed (App\Support\PatientBrief, which the
+     * app's dialog shows too).
      *
-     * All of it is the kind of thing that is discovered too late otherwise: a
-     * visit already open (so this one would split the bill in two), an
-     * appointment today this visit ought to fulfil, money still owed.
-     *
-     * @return array{}|array{name:string,patient_no:string,meta:string,open_visit:?array{uuid:string,visit_no:string,status:string},appointment:?array{id:int,at:string,doctor:?string,reason:?string},owed:string}
+     * @return array{}|array<string,mixed>
      */
     #[Computed]
     public function patientBrief(): array
@@ -278,74 +273,8 @@ class Index extends Component
 
         /** @var Patient|null $patient */
         $patient = Patient::whereKey($this->patient_id)->first();
-        if ($patient === null) {
-            return [];
-        }
 
-        $open = Visit::where('patient_id', $patient->id)
-            ->where('status', '!=', VisitStatus::Completed->value)
-            ->latest('id')
-            ->first();
-
-        // Today's booking, still to be attended, and not already turned into a
-        // visit — one appointment becomes one visit and no more.
-        $appointment = Appointment::where('patient_id', $patient->id)
-            ->whereIn('status', [AppointmentStatus::Scheduled->value, AppointmentStatus::Confirmed->value, AppointmentStatus::CheckedIn->value])
-            ->whereDate('scheduled_at', Carbon::today())
-            ->whereNotExists(fn ($q) => $q->selectRaw('1')->from('visits')
-                ->whereColumn('visits.appointment_id', 'appointments.id')
-                ->whereNull('visits.deleted_at'))
-            ->with('doctor')
-            ->orderBy('scheduled_at')
-            ->first();
-
-        $owed = Invoice::where('patient_id', $patient->id)
-            ->whereIn('status', [InvoiceStatus::Issued->value, InvoiceStatus::PartiallyPaid->value])
-            ->sum('balance');
-
-        $age = $this->ageOf($patient);
-
-        return [
-            'name' => trim($patient->first_name.' '.$patient->last_name),
-            'patient_no' => (string) $patient->patient_no,
-            'meta' => implode(' · ', array_filter([$age, $patient->sex?->label(), $patient->phone_1])),
-            'open_visit' => $open === null ? null : [
-                'uuid' => (string) $open->uuid,
-                'visit_no' => (string) $open->visit_no,
-                'status' => $open->status->label(),
-            ],
-            'appointment' => $appointment === null ? null : [
-                'id' => (int) $appointment->id,
-                'at' => $appointment->scheduled_at->format('H:i'),
-                'doctor' => $appointment->doctor?->name,
-                'reason' => $appointment->reason,
-            ],
-            'owed' => HospitalSettings::decimal($owed, 2),
-        ];
-    }
-
-    /**
-     * Age as a clinician says it.
-     *
-     * "0 yrs" is how a computer describes a baby. Under two, the months are
-     * the whole point — a six-week-old and a twenty-month-old are not the same
-     * patient — and after that years are enough.
-     */
-    private function ageOf(Patient $patient): ?string
-    {
-        $dob = $patient->dob;
-        if ($dob === null) {
-            return null;
-        }
-
-        $born = Carbon::parse($dob);
-        $months = (int) $born->diffInMonths(Carbon::today());
-
-        if ($months < 1) {
-            return max(0, (int) $born->diffInDays(Carbon::today())).' days';
-        }
-
-        return $months < 24 ? $months.' mo' : intdiv($months, 12).' yrs';
+        return $patient === null ? [] : PatientBrief::for($patient);
     }
 
     /**
@@ -477,24 +406,9 @@ class Index extends Component
 
         $rules = array_diff_key(VisitRequest::rulesFor(), array_flip(self::NOT_ASKED_HERE));
 
-        // The dialog only ever offers an appointment that belongs to the chosen
-        // patient and has no visit yet, but the property is public and the
-        // browser is not trusted, so the server checks both itself. The unique
-        // index behind it is the last word (one_visit_per_appointment).
-        $rules['appointment_id'][] = function (string $attribute, mixed $value, callable $fail): void {
-            if ($value === null || $value === '') {
-                return;
-            }
-
-            $ok = Appointment::whereKey($value)
-                ->where('patient_id', $this->patient_id)
-                ->whereDoesntHave('visit')
-                ->exists();
-
-            if (! $ok) {
-                $fail('That appointment is not this patient\'s, or already has a visit.');
-            }
-        };
+        // The dialog only ever offers this patient's own appointments, but the
+        // property is public and the browser is not trusted.
+        $rules['appointment_id'][] = VisitRequest::appointmentIsTheirs($this->patient_id);
 
         return $rules;
     }
@@ -573,17 +487,10 @@ class Index extends Component
         $this->finish($visit->visit_no, $visit, 'New patient registered and visit opened');
     }
 
-    /**
-     * The vitals taken at the desk, and whether anybody is seeing them yet.
-     *
-     * Both go through VisitService rather than being written here: `recordVitals`
-     * is the one place that works out the BMI and stamps when the readings were
-     * taken, and `start` is the ONLY thing that moves a visit to Ongoing — so
-     * the history records the move instead of the visit appearing mid-flight.
-     */
+    /** The vitals taken at the desk, and whether anybody is seeing them yet — VisitService decides both. */
     private function recordWhatWasTaken(Visit $visit, VisitService $service): Visit
     {
-        $vitals = array_filter([
+        return $service->recordWhatWasTaken($visit, [
             'temperature' => $this->temperature,
             'blood_pressure' => $this->blood_pressure,
             'pulse' => $this->pulse,
@@ -591,13 +498,8 @@ class Index extends Component
             'spo2' => $this->spo2,
             'weight' => $this->weight,
             'height' => $this->height,
-        ], fn ($v) => $v !== null && trim((string) $v) !== '');
-
-        if ($vitals !== []) {
-            $visit = $service->recordVitals($visit, $vitals);
-        }
-
-        return $this->start_now ? $service->start($visit, auth()->id()) : $visit;
+            'start_now' => $this->start_now,
+        ], auth()->id());
     }
 
     /**
@@ -680,12 +582,7 @@ class Index extends Component
     #[Computed]
     public function statuses(): array
     {
-        return [
-            VisitStatus::Pending->value => VisitStatus::Pending->label(),
-            VisitStatus::Ongoing->value => VisitStatus::Ongoing->label(),
-            VisitOutcome::Closed->value => VisitOutcome::Closed->label(),
-            VisitOutcome::Cancelled->value => VisitOutcome::Cancelled->label(),
-        ];
+        return Visit::stateOptions();
     }
 
     /** And what is being done to it right now. @return array<string, string> */
@@ -693,19 +590,6 @@ class Index extends Component
     public function stages(): array
     {
         return VisitStage::options();
-    }
-
-    private function applyStatus(Builder $query): Builder
-    {
-        return match ($this->status) {
-            VisitStatus::Pending->value => $query->where('status', VisitStatus::Pending->value),
-            VisitStatus::Ongoing->value => $query->where('status', VisitStatus::Ongoing->value),
-            VisitOutcome::Closed->value => $query->where('status', VisitStatus::Completed->value)
-                ->where('outcome', VisitOutcome::Closed->value),
-            VisitOutcome::Cancelled->value => $query->where('status', VisitStatus::Completed->value)
-                ->where('outcome', VisitOutcome::Cancelled->value),
-            default => $query,
-        };
     }
 
     /**
@@ -788,17 +672,9 @@ class Index extends Component
             ->withSum(['invoices as invoiced_balance' => fn (Builder $q) => $q->where(
                 'status', '!=', InvoiceStatus::Void->value,
             )], 'balance')
-            ->when($this->status !== '', fn (Builder $q) => $this->applyStatus($q))
+            ->inState($this->status)
             ->when($this->stage !== '', fn (Builder $q) => $q->where('stage', $this->stage))
-            ->when($this->search !== '', function (Builder $query) {
-                $term = $this->search;
-                $query->where(function (Builder $qq) use ($term) {
-                    $qq->where('visit_no', 'like', "%{$term}%")
-                        ->orWhereHas('patient', fn (Builder $p) => $p->where('first_name', 'like', "%{$term}%")
-                            ->orWhere('last_name', 'like', "%{$term}%")
-                            ->orWhere('patient_no', 'like', "%{$term}%"));
-                });
-            })
+            ->matching($this->search)
             ->tap(fn (Builder $q) => $this->applySort($q, fn (Builder $qq) => $qq->latest('id')));
 
         /** @var LengthAwarePaginator<int,Visit> $rows */

@@ -186,7 +186,7 @@ class MetaController extends Controller
     }
 
     /** A badge class (`badge-info`) or a bare tone (`active`) as a client tone. */
-    private static function tone(string $badge): string
+    public static function tone(string $badge): string
     {
         $class = str_starts_with($badge, 'badge-') ? $badge : 'badge-'.$badge;
 

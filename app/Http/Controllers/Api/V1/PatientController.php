@@ -53,6 +53,19 @@ class PatientController extends Controller
         return ApiResponse::success(new PatientResource($patient));
     }
 
+    /**
+     * What the desk should know before opening a visit for this patient — an
+     * open visit, today's booking, money owed. The web dialog's brief.
+     */
+    public function brief(Patient $patient): JsonResponse
+    {
+        $this->authorize('view', $patient);
+
+        $brief = \App\Support\PatientBrief::for($patient);
+
+        return ApiResponse::success($brief + ['owed_label' => \App\Support\HospitalSettings::money($brief['owed'])]);
+    }
+
     public function update(PatientRequest $request, Patient $patient): JsonResponse
     {
         $this->authorize('update', $patient);

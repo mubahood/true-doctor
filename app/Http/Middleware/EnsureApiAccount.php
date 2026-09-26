@@ -44,11 +44,9 @@ class EnsureApiAccount
         // is a model that never loaded the attribute — an active account, not
         // a disabled one. Every real request loads the user from the database.
         if ($user->is_active === false) {
-            $token = $user->currentAccessToken();
-
-            if ($token instanceof PersonalAccessToken) {
-                $token->delete();
-            }
+            // The token this request presented, if it presented one — a
+            // session-cookie request has none to revoke.
+            PersonalAccessToken::findToken((string) $request->bearerToken())?->delete();
 
             return ApiResponse::error(
                 ApiErrorCode::AccountDisabled,

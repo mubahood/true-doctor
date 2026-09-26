@@ -55,6 +55,7 @@ Route::prefix('v1')->group(function () {
             Route::post('resolve', [SyncController::class, 'resolve'])->name('resolve');
         });
 
+        Route::get('patients/{patient}/brief', [PatientController::class, 'brief'])->name('api.patients.brief');
         Route::apiResource('patients', PatientController::class);
 
         Route::post('appointments/{appointment}/transition', [AppointmentController::class, 'transition'])->name('api.appointments.transition');
@@ -66,6 +67,8 @@ Route::prefix('v1')->group(function () {
         Route::post('visits/{visit}/vitals', [VisitController::class, 'vitals'])->name('api.visits.vitals');
         Route::post('visits/{visit}/clinical', [VisitController::class, 'clinical'])->name('api.visits.clinical');
         Route::post('visits/{visit}/transition', [VisitController::class, 'transition'])->name('api.visits.transition');
+        Route::post('visits/{visit}/cancel', [VisitController::class, 'cancel'])->name('api.visits.cancel');
+        Route::post('visits/intake', [VisitController::class, 'intake'])->name('api.visits.intake');
         Route::apiResource('visits', VisitController::class)->only(['index', 'store', 'show']);
 
         // Read-only resources for integration/mobile clients

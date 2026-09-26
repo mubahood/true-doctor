@@ -34,6 +34,8 @@ use Livewire\Component;
  * "The subscription" of a hospital means its LATEST one, by start date then
  * id — the same rule for the badge on a row, the filter, and the counts at
  * the top, so the three can never disagree.
+ *
+ * @property-read array<string,string> $statuses the #[Computed] statuses()
  */
 #[Layout('layouts.admin')]
 class Index extends Component
@@ -115,6 +117,7 @@ class Index extends Component
         return ['name', 'created_at', 'last_active_at', 'patients_count', 'visits_count'];
     }
 
+    /** @return array<string,string> */
     #[Computed]
     public function statuses(): array
     {

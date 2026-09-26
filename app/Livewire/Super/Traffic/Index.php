@@ -36,6 +36,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * number of them is visible. A count with the noise silently removed is a
  * count nobody can check. The one exception is landing-URL health, which is
  * about whether a URL answers — and Google's own checker is a crawler.
+ *
+ * @property-read array<string,int|float> $totals the #[Computed] totals()
  */
 #[Layout('layouts.admin')]
 class Index extends Component
@@ -120,7 +122,7 @@ class Index extends Component
         }
     }
 
-    /** @return array<string,string> */
+    /** @return array<int|string,string> keyed by day count, or 'today' (PHP keeps '7' as the int 7) */
     public function presets(): array
     {
         return ['today' => 'Today', '7' => 'Last 7 days', '30' => 'Last 30 days', '90' => 'Last 90 days'];
@@ -474,7 +476,7 @@ class Index extends Component
             $people = $this->people()
                 ->selectRaw('date(s.first_seen_at) as day, count(*) as n')
                 ->groupByRaw('date(s.first_seen_at)')
-                ->toBase()->get()->pluck('n', 'day');
+                ->toBase()->get()->mapWithKeys(fn ($r) => [$r->day => $r->n]);
 
             $out = [];
             $cursor = $this->start()->copy();

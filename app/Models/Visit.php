@@ -7,6 +7,7 @@ use App\Enums\VisitOutcome;
 use App\Enums\VisitStage;
 use App\Enums\VisitStatus;
 use App\Models\Concerns\BelongsToHospital;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -37,10 +38,12 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property VisitStatus $status
  * @property VisitStage $stage
  * @property VisitOutcome|null $outcome
- *                                      Hung on a row by Visits\Index only, from sums the listing query fetched —
- *                                      what the visit comes to, and what is still owed once an invoice carries it.
- *                                      `bill_balance` is null while there is no invoice, which is not the same as
- *                                      nothing owing.
+ * @property \Illuminate\Support\Carbon|null $vitals_recorded_at
+ * @property \Illuminate\Support\Carbon|null $completed_at
+ *                                                         Hung on a row by Visits\Index only, from sums the listing query fetched —
+ *                                                         what the visit comes to, and what is still owed once an invoice carries it.
+ *                                                         `bill_balance` is null while there is no invoice, which is not the same as
+ *                                                         nothing owing.
  * @property numeric-string|null $bill_total
  * @property numeric-string|null $bill_balance
  * @property numeric-string $discount_value
@@ -264,6 +267,61 @@ class Visit extends Model
             // never something a menu offers.
             VisitStage::Payment, VisitStage::Completed => false,
         };
+    }
+
+    /**
+     * The state filter, flattened to what a reader means by it — Pending,
+     * Ongoing, and the two ways a visit ends — because "completed" and
+     * "cancelled" are the words people search by, not "completed with outcome
+     * cancelled". Shared by the web list and the API.
+     *
+     * @param  Builder<Visit>  $query
+     * @return Builder<Visit>
+     */
+    public function scopeInState(Builder $query, ?string $state): Builder
+    {
+        return match ($state) {
+            VisitStatus::Pending->value => $query->where('status', VisitStatus::Pending->value),
+            VisitStatus::Ongoing->value => $query->where('status', VisitStatus::Ongoing->value),
+            VisitOutcome::Closed->value => $query->where('status', VisitStatus::Completed->value)
+                ->where('outcome', VisitOutcome::Closed->value),
+            VisitOutcome::Cancelled->value => $query->where('status', VisitStatus::Completed->value)
+                ->where('outcome', VisitOutcome::Cancelled->value),
+            default => $query,
+        };
+    }
+
+    /** @return array<string,string> the state filter's choices, in the web list's order */
+    public static function stateOptions(): array
+    {
+        return [
+            VisitStatus::Pending->value => VisitStatus::Pending->label(),
+            VisitStatus::Ongoing->value => VisitStatus::Ongoing->label(),
+            VisitOutcome::Closed->value => VisitOutcome::Closed->label(),
+            VisitOutcome::Cancelled->value => VisitOutcome::Cancelled->label(),
+        ];
+    }
+
+    /**
+     * Visit number, or the patient's name or number.
+     *
+     * @param  Builder<Visit>  $query
+     * @return Builder<Visit>
+     */
+    public function scopeMatching(Builder $query, ?string $term): Builder
+    {
+        $term = trim((string) $term);
+
+        if ($term === '') {
+            return $query;
+        }
+
+        return $query->where(function (Builder $qq) use ($term) {
+            $qq->where('visit_no', 'like', "%{$term}%")
+                ->orWhereHas('patient', fn (Builder $p) => $p->where('first_name', 'like', "%{$term}%")
+                    ->orWhere('last_name', 'like', "%{$term}%")
+                    ->orWhere('patient_no', 'like', "%{$term}%"));
+        });
     }
 
     /** Still being dealt with — not finished, however it would end. */

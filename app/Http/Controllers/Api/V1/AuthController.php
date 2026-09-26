@@ -79,10 +79,10 @@ class AuthController extends Controller
             'password_change_required' => false,
         ])->save();
 
-        $current = $user->currentAccessToken();
-        $user->tokens()
-            ->when($current instanceof \Laravel\Sanctum\PersonalAccessToken, fn ($q) => $q->whereKeyNot($current->getKey()))
-            ->delete();
+        // Every other device is signed out; this one stays in. (A session-cookie
+        // request has no stored token of its own, so it signs out all of them.)
+        $current = \Laravel\Sanctum\PersonalAccessToken::findToken((string) $request->bearerToken());
+        $user->tokens()->whereKeyNot($current === null ? [] : [$current->getKey()])->delete();
 
         return ApiResponse::success(['password_change_required' => false], 'Your password is set.');
     }

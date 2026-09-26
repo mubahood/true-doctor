@@ -16,7 +16,34 @@ class VisitRequest extends FormRequest
 
     public function rules(): array
     {
-        return self::rulesFor();
+        $rules = self::rulesFor();
+        $rules['appointment_id'][] = self::appointmentIsTheirs($this->input('patient_id'));
+
+        return $rules;
+    }
+
+    /**
+     * The appointment a visit fulfils must be this patient's, and must not
+     * have a visit already. A client only ever offers those, but no client is
+     * trusted to; the unique index behind it (one_visit_per_appointment) is
+     * the last word.
+     */
+    public static function appointmentIsTheirs(mixed $patientId): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail) use ($patientId): void {
+            if ($value === null || $value === '') {
+                return;
+            }
+
+            $ok = \App\Models\Appointment::whereKey($value)
+                ->where('patient_id', $patientId)
+                ->whereDoesntHave('visit')
+                ->exists();
+
+            if (! $ok) {
+                $fail('That appointment is not this patient\'s, or already has a visit.');
+            }
+        };
     }
 
     /**

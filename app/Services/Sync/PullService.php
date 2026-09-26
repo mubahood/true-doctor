@@ -231,7 +231,7 @@ class PullService
                     ->where(fn (Builder $q) => $q
                         ->where('status', '!=', VisitStatus::Completed)
                         ->orWhere('updated_at', '>=', now()->subDays($this->visitDays())))
-                    ->with('patient:id,uuid'),
+                    ->with(['patient:id,uuid', 'doctor:id,name']),
                 'shape' => fn (Visit $v) => [
                     'uuid' => $v->uuid,
                     'server_id' => $v->id,
@@ -240,6 +240,10 @@ class PullService
                     'patient_uuid' => $v->patient?->uuid,
                     'status' => $v->status->value,
                     'stage' => $v->stage->value,
+                    'outcome' => $v->outcome?->value,
+                    // Enough to recognise the visit on a list with no signal.
+                    'reason' => $v->reason,
+                    'doctor' => $v->doctor?->name,
                     ...($narrative ? [
                         'complaints' => $v->complaints,
                         'diagnosis' => $v->diagnosis,

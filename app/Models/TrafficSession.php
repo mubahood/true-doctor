@@ -19,6 +19,8 @@ use Illuminate\Support\Carbon;
  * @property string $visitor_key
  * @property ?string $gclid
  * @property bool $is_bot
+ * @property \Illuminate\Support\Carbon|null $first_seen_at
+ * @property \Illuminate\Support\Carbon|null $last_seen_at
  */
 class TrafficSession extends Model
 {

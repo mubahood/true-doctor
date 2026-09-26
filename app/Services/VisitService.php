@@ -81,6 +81,32 @@ class VisitService
         });
     }
 
+    /**
+     * What was taken at the desk while the visit was being opened.
+     *
+     * The web dialog and the API both open visits with vitals and a "being
+     * seen now?" answer attached, and both come through here: `recordVitals`
+     * is the one place that works out the BMI and stamps when the readings
+     * were taken, and `start` is the ONLY thing that moves a visit to Ongoing
+     * — so the history records the move instead of the visit appearing
+     * mid-flight.
+     *
+     * @param  array<string,mixed>  $data  any of the VisitVitalsRequest keys, and `start_now`
+     */
+    public function recordWhatWasTaken(Visit $visit, array $data, ?int $by = null): Visit
+    {
+        $vitals = array_filter(
+            array_intersect_key($data, \App\Http\Requests\VisitVitalsRequest::rulesFor()),
+            fn ($v) => $v !== null && trim((string) $v) !== '',
+        );
+
+        if ($vitals !== []) {
+            $visit = $this->recordVitals($visit, $vitals);
+        }
+
+        return ! empty($data['start_now']) ? $this->start($visit, $by) : $visit;
+    }
+
     private function createWithNumber(array $data, ?int $openedBy, int $attempt = 0): Visit
     {
         $now = Carbon::now();
@@ -100,6 +126,10 @@ class VisitService
                     'department_id' => $data['department_id'] ?? null,
                     'reason' => $data['reason'] ?? null,
                     'complaints' => $data['complaints'] ?? null,
+                    // Rare at the desk but not wrong — a walk-in seen on the
+                    // spot. The dialog has always asked for it; it was being
+                    // dropped here.
+                    'diagnosis' => $data['diagnosis'] ?? null,
                     // Opened, not started: a visit becomes Ongoing when the
                     // first piece of work lands on it, not when it is booked.
                     'status' => VisitStatus::Pending,

@@ -73,19 +73,27 @@ class OpenApiController extends Controller
                     'delete' => ['summary' => 'Archive a patient', 'tags' => ['Patients'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '403' => $ok]],
                 ],
 
+                '/patients/{uuid}/brief' => ['get' => ['summary' => 'Before opening a visit: open visit, booking today, money owed', 'tags' => ['Patients'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '404' => $ok]]],
+
                 '/appointments' => [
                     'get' => ['summary' => 'List appointments', 'tags' => ['Appointments'], 'security' => $secured, 'parameters' => [$this->q('date'), $this->q('status'), $this->q('doctor')], 'responses' => ['200' => $ok]],
                     'post' => ['summary' => 'Book an appointment', 'tags' => ['Appointments'], 'security' => $secured, 'responses' => ['201' => $ok, '422' => $ok]],
                 ],
                 '/appointments/{uuid}/transition' => ['post' => ['summary' => 'Advance appointment status', 'tags' => ['Appointments'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '422' => $ok]]],
+                '/appointments/{uuid}/outcome' => ['post' => ['summary' => 'Record what was done and complete the appointment', 'tags' => ['Appointments'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '422' => $ok]]],
+                '/queue' => ['get' => ['summary' => "Today's check-in queue: lanes, clocks and tally", 'tags' => ['Appointments'], 'security' => $secured, 'responses' => ['200' => $ok, '403' => $ok]]],
+                '/dashboard' => ['get' => ['summary' => 'The dashboard stat cards for this user', 'tags' => ['App'], 'security' => $secured, 'responses' => ['200' => $ok]]],
 
                 '/visits' => [
-                    'get' => ['summary' => 'List visits', 'tags' => ['Visits'], 'security' => $secured, 'parameters' => [$this->q('status')], 'responses' => ['200' => $ok]],
-                    'post' => ['summary' => 'Open a visit', 'tags' => ['Visits'], 'security' => $secured, 'responses' => ['201' => $ok, '403' => $ok]],
+                    'get' => ['summary' => 'List visits', 'tags' => ['Visits'], 'security' => $secured, 'parameters' => [$this->q('q'), $this->q('status'), $this->q('stage'), $this->q('patient'), $this->q('open'), $this->q('per_page')], 'responses' => ['200' => $ok]],
+                    'post' => ['summary' => 'Open a visit (with desk vitals and start_now)', 'tags' => ['Visits'], 'security' => $secured, 'responses' => ['201' => $ok, '403' => $ok, '422' => $ok]],
                 ],
+                '/visits/intake' => ['post' => ['summary' => 'Register a new patient and open their visit', 'tags' => ['Visits'], 'security' => $secured, 'responses' => ['201' => $ok, '403' => $ok, '422' => $ok]]],
+                '/visits/{uuid}' => ['get' => ['summary' => 'Get a visit, with its gate and history', 'tags' => ['Visits'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '404' => $ok]]],
+                '/visits/{uuid}/cancel' => ['post' => ['summary' => 'Cancel a visit (reason required)', 'tags' => ['Visits'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '422' => $ok]]],
                 '/visits/{uuid}/vitals' => ['post' => ['summary' => 'Record vitals (BMI computed)', 'tags' => ['Visits'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '403' => $ok]]],
                 '/visits/{uuid}/clinical' => ['post' => ['summary' => 'Save clinical notes / diagnosis', 'tags' => ['Visits'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '403' => $ok]]],
-                '/visits/{uuid}/transition' => ['post' => ['summary' => 'Advance visit status', 'tags' => ['Visits'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '422' => $ok]]],
+                '/visits/{uuid}/transition' => ['post' => ['summary' => 'Move the visit to its next stage, if its gate is open', 'tags' => ['Visits'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '422' => $ok]]],
 
                 '/stock-items' => ['get' => ['summary' => 'List stock items', 'tags' => ['Inventory'], 'security' => $secured, 'parameters' => [$this->q('filter'), $this->q('q')], 'responses' => ['200' => $ok, '403' => $ok]]],
                 '/lab-orders' => ['get' => ['summary' => 'List lab orders', 'tags' => ['Lab'], 'security' => $secured, 'parameters' => [$this->q('status')], 'responses' => ['200' => $ok, '403' => $ok]]],
