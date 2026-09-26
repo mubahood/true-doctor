@@ -106,6 +106,9 @@ Route::prefix('v1')->group(function () {
         Route::put('radiology-orders/{radiologyOrder}/report', [\App\Http\Controllers\Api\V1\RadiologyOrderController::class, 'report'])->name('api.radiology-orders.report');
         Route::post('lab-orders/{labOrder}/transition', [LabOrderController::class, 'transition'])->name('api.lab-orders.transition');
         Route::apiResource('lab-orders', LabOrderController::class)->only(['index', 'show'])->parameters(['lab-orders' => 'labOrder']);
+        Route::get('notifications', [\App\Http\Controllers\Api\V1\NotificationController::class, 'index'])->name('api.notifications.index');
+        Route::post('notifications/read-all', [\App\Http\Controllers\Api\V1\NotificationController::class, 'readAll'])->name('api.notifications.read-all');
+        Route::post('notifications/{id}/read', [\App\Http\Controllers\Api\V1\NotificationController::class, 'read'])->name('api.notifications.read');
         Route::get('reports', [\App\Http\Controllers\Api\V1\ReportController::class, 'index'])->name('api.reports.index');
         Route::get('reports/pdf', [\App\Http\Controllers\Admin\ReportController::class, 'pdf'])->name('api.reports.pdf');
         Route::get('beds', [\App\Http\Controllers\Api\V1\AdmissionController::class, 'beds'])->name('api.beds.index');
