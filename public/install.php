@@ -6,7 +6,14 @@
  * takes over after the environment file has been written and verified.
  */
 
-$candidates = [dirname(__DIR__), dirname(__DIR__).'/true_doctor_app'];
+// Beside the web root, or beside a folder above it (a nested cPanel addon
+// domain root such as public_html/hms.example.com) — the same search as the
+// front controller in deploy/docroot-index.php.
+$candidates = [dirname(__DIR__)];
+for ($dir = __DIR__, $i = 0; $i < 4 && dirname($dir) !== $dir; $i++) {
+    $dir = dirname($dir);
+    $candidates[] = $dir.'/true_doctor_app';
+}
 $root = null;
 foreach ($candidates as $candidate) {
     if (is_file($candidate.'/vendor/autoload.php') && is_file($candidate.'/bootstrap/app.php')) {
@@ -141,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ! $installed) {
                 header('Location: /install.php?step=1', true, 303);
                 exit;
             } catch (\Throwable $exception) {
-                error_log('True-Doctor installation step failed: '.get_class($exception));
+                error_log('True-Doctor installation step failed: '.get_class($exception).': '.$exception->getMessage());
                 $errors[] = 'This setup step stopped. You can retry it; if it fails again, check the private application log or contact support before changing the database.';
             }
         }
@@ -179,8 +186,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ! $installed) {
     } else {
         try {
             $licence = json_decode((string) file_get_contents($upload['tmp_name']), true, 32, JSON_THROW_ON_ERROR);
-            $editionConfig = require $root.'/config/edition.php';
-            $verifier = new \App\Support\Licensing\Verifier($editionConfig['public_keys'] ?? []);
+            // Laravel is not running yet, so the keys this release trusts are
+            // read from the file the release carries. The edition config file
+            // asks the application for its storage folder, and there is no
+            // application yet — every buyer's licence was once refused here.
+            $trusted = is_file($root.'/RELEASE_KEYS.json')
+                ? json_decode((string) file_get_contents($root.'/RELEASE_KEYS.json'), true)
+                : null;
+            if (! is_array($trusted) || $trusted === []) {
+                throw new \RuntimeException('This package has no RELEASE_KEYS.json. Download the release again from your buyer portal.');
+            }
+            $verifier = new \App\Support\Licensing\Verifier($trusted);
             (new \App\Services\Releases\StandaloneArchive)->verifyExtracted($root, __DIR__, $verifier);
             if (! is_array($licence) || ! $verifier->verifiesDocument($licence)
                 || ($licence['licence']['product'] ?? null) !== 'standalone-hospital'
@@ -195,7 +211,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ! $installed) {
             }
         } catch (\RuntimeException $exception) {
             $errors[] = $exception->getMessage();
-        } catch (\Throwable) {
+        } catch (\Throwable $exception) {
+            error_log('True-Doctor installer could not read the licence: '.get_class($exception).': '.$exception->getMessage());
             $errors[] = 'The uploaded licence is not a valid True-Doctor licence file.';
         }
     }
@@ -281,7 +298,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ! $installed) {
             if (! is_file($environmentFile)) {
                 @unlink($draftPath);
             }
-            error_log('True-Doctor installation failed: '.get_class($e));
+            error_log('True-Doctor installation failed: '.get_class($e).': '.$e->getMessage());
             $errors[] = 'Setup could not begin. Check the application log or contact support before changing the database.';
         }
     }

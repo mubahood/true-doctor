@@ -63,4 +63,22 @@ class StandaloneBrowserInstallTest extends TestCase
             @unlink($marker);
         }
     }
+
+    /**
+     * install.php runs BEFORE Laravel: nothing above the point where it boots
+     * the application may need the container. It once loaded
+     * config/edition.php, which calls storage_path(), and every real buyer's
+     * licence was then reported invalid — while this suite, which runs with
+     * Laravel already booted, passed.
+     */
+    public function test_the_installer_needs_nothing_from_laravel_before_it_boots_it(): void
+    {
+        // The whole file, not just the lines above the boot: the licence check
+        // runs in a branch that never boots Laravel at all.
+        $source = (string) file_get_contents(public_path('install.php'));
+
+        foreach (['/config/', 'storage_path(', 'base_path(', ' config(', ' app(', ' env('] as $needsLaravel) {
+            $this->assertStringNotContainsString($needsLaravel, $source, "install.php uses {$needsLaravel}, which needs a running Laravel application");
+        }
+    }
 }

@@ -23,7 +23,17 @@ use Illuminate\Http\Request;
 define('LARAVEL_START', microtime(true));
 
 /** The application root, beside the document root rather than inside it. */
+// The application sits beside the web root, or beside a folder above it: a
+// cPanel addon domain's root is often nested (public_html/hms.example.com),
+// and the guide only asks for true_doctor_app to be in the home folder.
 $app_base = dirname(__DIR__).'/true_doctor_app';
+for ($dir = __DIR__, $i = 0; $i < 4 && dirname($dir) !== $dir; $i++) {
+    $dir = dirname($dir);
+    if (is_file($dir.'/true_doctor_app/vendor/autoload.php')) {
+        $app_base = $dir.'/true_doctor_app';
+        break;
+    }
+}
 
 // A clear failure beats a white page: if the path is wrong, say which path.
 if (! is_file($app_base.'/vendor/autoload.php')) {
