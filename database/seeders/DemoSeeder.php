@@ -38,6 +38,10 @@ class DemoSeeder extends Seeder
 
     public function run(): void
     {
+        if (\App\Support\Edition::isStandalone()) {
+            throw new \DomainException('The demonstration seeder cannot run on a standalone installation.');
+        }
+
         // Two ways in. A developer's machine, or a deliberate DEMO_MODE on a
         // real deployment that wants a public demonstration.
         if (! app()->environment(['local', 'demo']) && ! config('demo.enabled')) {
@@ -107,17 +111,17 @@ class DemoSeeder extends Seeder
             }
         }
 
-        // A second tenant for isolation testing.
+        $this->seedHospitalData($a, $doctorA);
+
+        // A second tenant for isolation testing, when there is one. It gets the
+        // setup it needs to be usable (otherwise its admin is held in the
+        // onboarding wizard) but not a second clinical trail — one is enough
+        // to demonstrate the modules, and seeding stays fast.
         if ($b !== null) {
             $this->user($b, 'Hospital Admin B', 'admin.b@test.com', 'hospital_admin');
+            $doctorB = $this->user($b, 'Dr. Bob (Doctor)', 'doctor.b@test.com', 'doctor');
+            $this->seedHospitalData($b, $doctorB, withTrail: false);
         }
-        $doctorB = $this->user($b, 'Dr. Bob (Doctor)', 'doctor.b@test.com', 'doctor');
-
-        $this->seedHospitalData($a, $doctorA);
-        // B gets the setup it needs to be usable (otherwise its admin is held in
-        // the onboarding wizard) but not a second clinical trail — one is enough
-        // to demonstrate the modules, and seeding stays fast.
-        $this->seedHospitalData($b, $doctorB, withTrail: false);
 
         $this->command->warn('DemoSeeder: demo accounts seeded — password for all: '.self::PASSWORD);
     }

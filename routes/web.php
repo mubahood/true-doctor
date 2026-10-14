@@ -12,8 +12,9 @@ use Illuminate\Support\Facades\Route;
  * arrival came from and sends an ad click on to the page its sitelink named.
  * See App\Http\Middleware\HandleLandingTraffic.
  */
-Route::middleware('landing')->group(function () {
-    Route::view('/', 'marketing.home')->name('home');
+Route::get('/', \App\Http\Controllers\EditionHomeController::class)->middleware('landing')->name('home');
+
+Route::middleware(['edition:saas', 'landing'])->group(function () {
     Route::view('/features', 'marketing.features')->name('features');
 
     // `/product` is the address used in the ad campaign; `/features` is the
@@ -26,24 +27,56 @@ Route::middleware('landing')->group(function () {
     Route::view('/security', 'marketing.security')->name('security');
 });
 Route::get('/contact', [\App\Http\Controllers\MarketingController::class, 'contact'])
-    ->middleware('landing')->name('contact');
-Route::post('/contact', [\App\Http\Controllers\MarketingController::class, 'enquire'])->name('contact.send');
+    ->middleware(['edition:saas', 'landing'])->name('contact');
+Route::post('/contact', [\App\Http\Controllers\MarketingController::class, 'enquire'])->middleware('edition:saas')->name('contact.send');
 
 // Quote me in the other currency. A POST because it sets a cookie, and a
 // GET that changes state is a GET a crawler will change state with.
-Route::post('/currency', [\App\Http\Controllers\MarketingController::class, 'currency'])->name('currency');
+Route::post('/currency', [\App\Http\Controllers\MarketingController::class, 'currency'])->middleware('edition:saas')->name('currency');
 
 // The picture check on the public forms (App\Support\HumanCheck). Throttled:
 // a script fetching pictures to learn from them gets very few.
-Route::middleware('throttle:40,1')->group(function () {
+Route::middleware(['edition:saas', 'throttle:40,1'])->group(function () {
     Route::get('/human-check/new', [\App\Http\Controllers\HumanCheckController::class, 'fresh'])->name('human-check.new');
     Route::get('/human-check/{id}.png', [\App\Http\Controllers\HumanCheckController::class, 'image'])
         ->where('id', '[A-Za-z0-9]{32}')->name('human-check.image');
 });
 
-Route::get('/sitemap.xml', [\App\Http\Controllers\MarketingController::class, 'sitemap'])->name('sitemap');
-Route::view('/privacy', 'marketing.privacy')->middleware('landing')->name('privacy');
-Route::view('/terms', 'marketing.terms')->middleware('landing')->name('terms');
+Route::get('/sitemap.xml', [\App\Http\Controllers\MarketingController::class, 'sitemap'])->middleware('edition:saas')->name('sitemap');
+Route::view('/privacy', 'marketing.privacy')->middleware(['edition:saas', 'landing'])->name('privacy');
+Route::view('/terms', 'marketing.terms')->middleware(['edition:saas', 'landing'])->name('terms');
+
+// One-off product sales and a separate buyer portal; neither exists in a
+// customer installation. Payment status is verified against Pesapal, not the
+// browser redirect query string.
+Route::middleware('edition:saas')->group(function () {
+    Route::get('/standalone', [\App\Http\Controllers\StandalonePurchaseController::class, 'products'])->name('standalone.products');
+    Route::post('/standalone/checkout/{product}', [\App\Http\Controllers\StandalonePurchaseController::class, 'checkout'])
+        ->middleware('throttle:8,60')->name('standalone.checkout');
+    Route::get('/standalone/payment/return', [\App\Http\Controllers\StandalonePurchaseController::class, 'callback'])
+        ->name('standalone.checkout.callback');
+    Route::get('/my-licence', [\App\Http\Controllers\StandalonePurchaseController::class, 'portal'])->name('standalone.portal');
+    Route::post('/my-licence/link', [\App\Http\Controllers\StandalonePurchaseController::class, 'requestLink'])
+        ->middleware('throttle:4,60')->name('standalone.portal.link');
+    Route::get('/my-licence/claim/{licence}', [\App\Http\Controllers\StandalonePurchaseController::class, 'claim'])
+        ->middleware(['signed', 'throttle:20,1'])->name('standalone.portal.claim');
+    Route::get('/my-licence/licence.json', [\App\Http\Controllers\StandalonePurchaseController::class, 'downloadLicence'])->name('standalone.portal.licence');
+    Route::get('/my-licence/INSTALL.md', [\App\Http\Controllers\StandalonePurchaseController::class, 'downloadGuide'])->name('standalone.portal.guide');
+    Route::get('/my-licence/guide', [\App\Http\Controllers\StandalonePurchaseController::class, 'guide'])->name('standalone.portal.guide.page');
+    Route::post('/my-licence/renew', [\App\Http\Controllers\StandalonePurchaseController::class, 'renew'])
+        ->middleware('throttle:8,60')->name('standalone.portal.renew');
+    Route::post('/my-licence/domain', [\App\Http\Controllers\StandalonePurchaseController::class, 'changeDomain'])
+        ->middleware('throttle:6,60')->name('standalone.portal.domain');
+    Route::get('/my-licence/releases/{release}', [\App\Http\Controllers\StandalonePurchaseController::class, 'downloadRelease'])->name('standalone.portal.release');
+
+    // What an installed copy asks for: the newest release its licence may
+    // install, and the file. The licence id is the credential (a random UUID
+    // only the licence file and the portal carry); the download is signed.
+    Route::get('/standalone/updates', [\App\Http\Controllers\StandaloneUpdateFeedController::class, 'latest'])
+        ->middleware('throttle:30,1')->name('standalone.updates.latest');
+    Route::get('/standalone/updates/{release}/download', [\App\Http\Controllers\StandaloneUpdateFeedController::class, 'download'])
+        ->middleware(['signed', 'throttle:10,1'])->name('standalone.updates.download');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -61,11 +94,11 @@ Route::middleware('guest')->group(function () {
     // Recorded: it is where the "See a Live Demo" sitelink lands, and a 404
     // here on a live site is exactly what the traffic screen should show.
     Route::get('/test-login', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'createTest'])
-        ->middleware('landing')->name('test-login');
+        ->middleware(['edition:saas', 'landing'])->name('test-login');
 
     // Public hospital self-registration (starts a trial)
     Route::get('/register', [\App\Http\Controllers\Auth\RegistrationController::class, 'show'])
-        ->middleware('landing')->name('register');
+        ->middleware(['edition:saas', 'landing'])->name('register');
 });
 
 Route::post('/admin/login', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'store']);
@@ -74,12 +107,12 @@ Route::post('/admin/logout', [\App\Http\Controllers\Auth\AuthenticatedSessionCon
 // Leave the demonstration and go and create a real hospital. A fixed
 // destination rather than a redirect parameter on logout — see the controller.
 Route::post('/demo/leave', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'leaveDemo'])
-    ->middleware('auth')
+    ->middleware(['edition:saas', 'auth'])
     ->name('demo.leave');
 Route::redirect('/login', '/admin/login')->name('login');
 // Ten tries an hour from one connection: plenty for a person correcting a
 // typo, a wall for a script creating hospitals.
-Route::post('/register', [\App\Http\Controllers\Auth\RegistrationController::class, 'store'])->middleware('throttle:10,60');
+Route::post('/register', [\App\Http\Controllers\Auth\RegistrationController::class, 'store'])->middleware(['edition:saas', 'throttle:10,60']);
 
 /*
 |--------------------------------------------------------------------------
@@ -230,14 +263,23 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'subscribed', 'onboarding',
     Route::get('reports/pdf', [\App\Http\Controllers\Admin\ReportController::class, 'pdf'])->name('reports.pdf');
 
     // ── Subscription / plan checkout (Step 21) ────────────────
-    Route::get('subscription', \App\Livewire\Subscription\Index::class)->name('subscription.index');
-    Route::post('subscription/{plan}/checkout', [\App\Http\Controllers\Admin\SubscriptionCheckoutController::class, 'checkout'])->name('subscription.checkout');
+    Route::get('subscription', \App\Livewire\Subscription\Index::class)->middleware('edition:saas')->name('subscription.index');
+    Route::post('subscription/{plan}/checkout', [\App\Http\Controllers\Admin\SubscriptionCheckoutController::class, 'checkout'])->middleware('edition:saas')->name('subscription.checkout');
 
     // ── Configuration ─────────────────────────────────────────
     Route::get('settings/hospital', \App\Livewire\Settings\Hospital::class)->name('settings.hospital');
     Route::get('settings/billing', \App\Livewire\Settings\Billing::class)->name('settings.billing');
     Route::get('settings/practice', \App\Livewire\Settings\Practice::class)->name('settings.practice');
-    Route::get('settings', \App\Livewire\Settings\Site::class)->name('settings.index');
+    Route::get('settings', \App\Livewire\Settings\Site::class)->middleware('edition:saas')->name('settings.index');
+
+    // A standalone owner's own server: release, licence, updates, backups.
+    Route::middleware('edition:standalone')->group(function () {
+        Route::get('system', \App\Livewire\System\Index::class)->name('system.index');
+        // A release is larger than Livewire's temporary uploads allow.
+        Route::post('system/update', [\App\Http\Controllers\Admin\SystemUpdateController::class, 'upload'])->name('system.upload');
+        Route::get('system/backups/{name}', [\App\Http\Controllers\Admin\SystemUpdateController::class, 'backup'])
+            ->where('name', 'true-doctor-backup-\d{8}-\d{6}\.zip')->name('system.backup');
+    });
 
     // Staff/user management (tenant-scoped — see App\Services\StaffService)
     Route::get('users', \App\Livewire\Users\Index::class)->middleware('permission:manage-users')->name('users.index');
@@ -261,11 +303,15 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'subscribed', 'onboarding',
 | Super Admin (SaaS central — HMS_PLAN.md §10 convention)
 |--------------------------------------------------------------------------
 */
-Route::prefix('super')->middleware(['auth', 'super', 'no-store'])->name('super.')->group(function () {
+Route::prefix('super')->middleware(['edition:saas', 'auth', 'super', 'no-store'])->name('super.')->group(function () {
     Route::redirect('/', '/super/hospitals');
 
     Route::get('hospitals', \App\Livewire\Super\Hospitals\Index::class)->name('hospitals.index');
     Route::get('plans', \App\Livewire\Super\Plans\Index::class)->name('plans.index');
+    Route::get('releases', \App\Livewire\Super\Releases\Index::class)->name('releases.index');
+    Route::get('releases/{release}/download', \App\Http\Controllers\Super\StandaloneReleaseDownloadController::class)->name('releases.download');
+    Route::get('products', \App\Livewire\Super\Products\Index::class)->name('products.index');
+    Route::get('licences', \App\Livewire\Super\Licences\Index::class)->name('licences.index');
     Route::get('subscriptions', \App\Livewire\Super\Subscriptions\Index::class)->name('subscriptions.index');
 
     // Where the people arriving at the public site came from, and which of
@@ -285,7 +331,7 @@ Route::post('gateway/flutterwave/webhook', [\App\Http\Controllers\Admin\GatewayP
 // Pesapal — subscription checkout. Both GET: the callback is a browser
 // redirect, and the IPN URL is registered with ipn_notification_type "GET"
 // (PesapalGateway::ipnId) so it needs no CSRF exemption.
-Route::get('gateway/pesapal/callback', [\App\Http\Controllers\Admin\PesapalPaymentController::class, 'callback'])->name('gateway.pesapal.callback');
-Route::get('gateway/pesapal/ipn', [\App\Http\Controllers\Admin\PesapalPaymentController::class, 'ipn'])->name('gateway.pesapal.ipn');
+Route::get('gateway/pesapal/callback', [\App\Http\Controllers\Admin\PesapalPaymentController::class, 'callback'])->middleware('edition:saas')->name('gateway.pesapal.callback');
+Route::get('gateway/pesapal/ipn', [\App\Http\Controllers\Admin\PesapalPaymentController::class, 'ipn'])->middleware('edition:saas')->name('gateway.pesapal.ipn');
 
 require __DIR__.'/auth.php';

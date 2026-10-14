@@ -43,6 +43,8 @@ class SmokeRoutesTest extends TestCase
         // The same private store, reached through the lab and radiology benches.
         'admin.lab-orders.attachments.download',
         'admin.radiology-orders.attachments.download',
+        // A standalone installation's backup file.
+        'admin.system.backup',
     ];
 
     /** @var array<string, class-string> route parameter => model */
@@ -75,7 +77,7 @@ class SmokeRoutesTest extends TestCase
         'subscription' => Subscription::class,
     ];
 
-    private Hospital $hospital;
+    protected Hospital $hospital;
 
     protected function setUp(): void
     {
@@ -93,7 +95,7 @@ class SmokeRoutesTest extends TestCase
     }
 
     /** @return list<RouteInstance> */
-    private function pageRoutes(string $prefix): array
+    protected function pageRoutes(string $prefix): array
     {
         return collect(Route::getRoutes()->getRoutes())
             ->filter(fn (RouteInstance $r) => in_array('GET', $r->methods(), true))
@@ -104,7 +106,7 @@ class SmokeRoutesTest extends TestCase
     }
 
     /** Bind every route parameter to a seeded record, or return null. */
-    private function parametersFor(RouteInstance $route): ?array
+    protected function parametersFor(RouteInstance $route): ?array
     {
         $values = [];
 
@@ -140,6 +142,15 @@ class SmokeRoutesTest extends TestCase
             }
 
             $status = $this->get(route($route->getName(), $parameters))->getStatusCode();
+
+            // A standalone installation's own pages do not exist online.
+            if (in_array('edition:standalone', $route->gatherMiddleware(), true)) {
+                if ($status !== 404) {
+                    $failures[] = $route->getName().' => '.$status.' (standalone only, should be absent)';
+                }
+
+                continue;
+            }
 
             // 403 is legitimate (a permission this role lacks). 5xx never is, and
             // 404 on a record that exists means a broken route-model binding.

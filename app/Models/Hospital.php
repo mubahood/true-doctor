@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\HospitalStatus;
+use App\Support\Edition;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -47,6 +48,15 @@ class Hospital extends Model
     protected static function booted(): void
     {
         static::creating(function (self $hospital) {
+            if (Edition::isStandalone()) {
+                if (self::withTrashed()->exists()) {
+                    throw new \DomainException('This installation can contain only one organisation.');
+                }
+
+                // Database unique constraint also refuses concurrent creates.
+                $hospital->standalone_slot = 1;
+            }
+
             $hospital->uuid ??= (string) Str::uuid();
             $hospital->slug ??= self::uniqueSlug($hospital->name);
         });

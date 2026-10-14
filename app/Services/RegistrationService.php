@@ -24,6 +24,10 @@ class RegistrationService
     /** @param array{hospital_name:string,name:string,email:string,password:string,plan_id:int} $data */
     public function register(array $data): User
     {
+        if (\App\Support\Edition::isStandalone()) {
+            throw new \DomainException('Public hospital registration is unavailable in the standalone edition.');
+        }
+
         return DB::transaction(function () use ($data) {
             $plan = Plan::findOrFail($data['plan_id']);
 

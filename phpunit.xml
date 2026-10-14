@@ -20,6 +20,7 @@
     <php>
         <ini name="memory_limit" value="512M"/>
         <env name="APP_ENV" value="testing"/>
+        <env name="APP_EDITION" value="saas"/>
         <env name="ONBOARDING_GATE" value="false"/>
         <env name="SUBSCRIPTION_GATE" value="false"/>
         <env name="APP_URL" value="http://localhost"/>

@@ -54,13 +54,24 @@ class PlanLimit
         if ($hospitalId === null) {
             return null;
         }
+
+        [$limitKey] = self::RESOURCES[$resource];
+        if (Edition::isStandalone()) {
+            // A licence may meter nonclinical seats, never the ability to add
+            // a patient or bed during care. S3 holds even for a valid licence.
+            if ($resource !== 'staff') {
+                return null;
+            }
+
+            return app(\App\Support\Licensing\InstalledLicence::class)->limit($limitKey);
+        }
+
         $hospital = Hospital::find($hospitalId);
         $plan = $hospital?->activeSubscription()?->plan;
         if ($plan === null) {
             return null;
         }
 
-        [$limitKey] = self::RESOURCES[$resource];
         $value = $plan->limit($limitKey);
 
         return is_numeric($value) ? (int) $value : null;

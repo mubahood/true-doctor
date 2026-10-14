@@ -57,8 +57,8 @@ final class VisitPhrases
         $curated = SampleCatalogue::clinicalPhrases();
 
         return [
-            'complaints' => $curated['complaints'] ?? [],
-            'diagnosis' => $curated['diagnosis'] ?? [],
+            'complaints' => $curated['complaints'],
+            'diagnosis' => $curated['diagnosis'],
         ];
     }
 
@@ -104,7 +104,7 @@ final class VisitPhrases
                 $add($value, 'hospital');
             }
 
-            foreach ($curated[$field] ?? [] as $value) {
+            foreach ($curated[$field] as $value) {
                 $add($value, 'curated');
             }
 

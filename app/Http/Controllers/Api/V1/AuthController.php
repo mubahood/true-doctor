@@ -44,6 +44,9 @@ class AuthController extends Controller
         if (! $user->is_active) {
             return ApiResponse::error(ApiErrorCode::Forbidden, 'This account is disabled.', 403);
         }
+        if (! $user->canAccessAdmin()) {
+            return ApiResponse::error(ApiErrorCode::Forbidden, 'This account cannot access this installation.', 403);
+        }
 
         $token = $user->createToken($request->validated('device_name') ?: 'api')->plainTextToken;
         $user->loadMissing('hospital');

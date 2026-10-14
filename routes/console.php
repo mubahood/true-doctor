@@ -18,7 +18,25 @@ Artisan::command('inspire', function () {
 
 \Illuminate\Support\Facades\Schedule::command('appointments:remind')->dailyAt('07:00');
 
-\Illuminate\Support\Facades\Schedule::command('subscriptions:trial-reminders')->dailyAt('08:00');
+\Illuminate\Support\Facades\Schedule::call(function (): void {
+    \Illuminate\Support\Facades\Cache::put('standalone:scheduler-heartbeat', now()->toIso8601String(), now()->addMinutes(5));
+})->everyMinute()->name('standalone-scheduler-heartbeat')
+    ->when(fn () => \App\Support\Edition::isStandalone());
+
+// A standalone installation looks after itself: whatever the Licence &
+// updates page asked for, a nightly backup, and a daily look for updates.
+\Illuminate\Support\Facades\Schedule::command('standalone:system-requests')
+    ->everyMinute()->name('standalone-system-requests')->withoutOverlapping(60)->runInBackground()
+    ->when(fn () => \App\Support\Edition::isStandalone());
+\Illuminate\Support\Facades\Schedule::command('standalone:backup')->dailyAt('02:15')
+    ->name('standalone-backup')->withoutOverlapping(120)
+    ->when(fn () => \App\Support\Edition::isStandalone());
+\Illuminate\Support\Facades\Schedule::command('standalone:update --check')->dailyAt('06:10')
+    ->name('standalone-update-check')
+    ->when(fn () => \App\Support\Edition::isStandalone() && filled(config('edition.update_server')));
+
+\Illuminate\Support\Facades\Schedule::command('subscriptions:trial-reminders')->dailyAt('08:00')
+    ->when(fn () => \App\Support\Edition::isSaas());
 
 // Offline sync ledger. A claim left `processing` by a process that died is
 // marked retryable, so the device's next attempt runs instead of waiting; and
@@ -67,6 +85,20 @@ Artisan::command('inspire', function () {
     'queue:work --stop-when-empty --max-time=55 --tries=3 --backoff=30 --quiet'
 )->everyMinute()->withoutOverlapping();
 
+// Release builds are deliberately separate from the short notification queue:
+// they can take up to 30 minutes and need a longer database lease. The worker
+// is still launched by cPanel's existing once-per-minute scheduler cron.
+\Illuminate\Support\Facades\Schedule::command(
+    'queue:work release-builds --queue=releases --stop-when-empty --max-time=1850 --timeout=1800 --tries=1 --quiet'
+)->everyMinute()->name('standalone-release-worker')->withoutOverlapping(35)->runInBackground()
+    ->when(fn () => \App\Support\Edition::isSaas());
+
+\Illuminate\Support\Facades\Schedule::call(function (): void {
+    \App\Models\StandaloneRelease::where('status', 'building')
+        ->where('updated_at', '<', now()->subMinutes(40))
+        ->update(['status' => 'failed', 'progress' => 'Release worker stopped unexpectedly', 'failure' => 'The build worker did not finish. Review its logs, then stage a new version.']);
+})->everyTenMinutes()->name('standalone-release-stale-check')->when(fn () => \App\Support\Edition::isSaas());
+
 // A job that has failed three times is kept for a week so somebody can look
 // at it, then cleared so the table does not grow without limit.
 \Illuminate\Support\Facades\Schedule::command('queue:prune-failed --hours=168')
@@ -88,7 +120,7 @@ Artisan::command('inspire', function () {
 | itself start something that deletes rows on a schedule. The command has its
 | own guards besides — see App\Console\Commands\ResetDemoHospital.
 */
-if (config('demo.enabled') && config('demo.reset.enabled')) {
+if (\App\Support\Edition::isSaas() && config('demo.enabled') && config('demo.reset.enabled')) {
     \Illuminate\Support\Facades\Schedule::command('demo:reset --force')
         ->dailyAt((string) config('demo.reset.at', '03:30'))
         ->withoutOverlapping();

@@ -74,6 +74,10 @@ class AuthenticatedSessionController extends Controller
      */
     public static function demoAvailable(): bool
     {
+        if (\App\Support\Edition::isStandalone()) {
+            return false;
+        }
+
         if (! config('demo.enabled') && ! app()->environment(['local', 'demo'])) {
             return false;
         }

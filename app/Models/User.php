@@ -190,6 +190,13 @@ class User extends Authenticatable implements MustVerifyEmailContract
 
     protected static function booted(): void
     {
+        static::saving(function (User $user): void {
+            if (\App\Support\Edition::isStandalone()
+                && ($user->hospital_id === null || in_array($user->role, ['super_admin', 'admin'], true))) {
+                throw new \DomainException('Standalone accounts must belong to the one organisation.');
+            }
+        });
+
         // Keep the Spatie role in sync with the `role` column so permission
         // checks work everywhere without a separate workflow.
         static::saved(function (User $user) {
@@ -219,6 +226,10 @@ class User extends Authenticatable implements MustVerifyEmailContract
 
     public function canAccessAdmin(): bool
     {
+        if (\App\Support\Edition::isStandalone() && $this->hospital_id === null) {
+            return false;
+        }
+
         return in_array($this->role, self::STAFF_ROLES, true) || $this->is_admin;
     }
 

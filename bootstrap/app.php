@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
-return Application::configure(basePath: dirname(__DIR__))
+$application = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
@@ -50,12 +50,14 @@ return Application::configure(basePath: dirname(__DIR__))
         // AppServiceProvider::boot() (config is not bound yet at this point).
 
         $middleware->web(append: [
+            \App\Http\Middleware\EnsureInstalled::class,
             \App\Http\Middleware\SecurityHeaders::class,
             \App\Http\Middleware\SetLocale::class,
             \App\Http\Middleware\ResolveHospital::class,
             \App\Http\Middleware\RequirePasswordChange::class,
         ]);
         $middleware->api(append: [
+            \App\Http\Middleware\EnsureInstalled::class,
             \App\Http\Middleware\SetLocale::class,
             \App\Http\Middleware\ResolveHospital::class,
         ]);
@@ -72,6 +74,8 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Session\Middleware\StartSession::class,
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+            \App\Http\Middleware\EnsureInstalled::class,
+            \App\Http\Middleware\RequireEdition::class,
             \Illuminate\Auth\Middleware\Authenticate::class,
             \App\Http\Middleware\ResolveHospital::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
@@ -85,6 +89,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'subscribed' => \App\Http\Middleware\EnsureSubscribed::class,
+            'edition' => \App\Http\Middleware\RequireEdition::class,
             // A disabled account or a temporary password, on the API.
             'api.account' => \App\Http\Middleware\EnsureApiAccount::class,
             'api.app-version' => \App\Http\Middleware\EnsureAppVersion::class,
@@ -170,3 +175,19 @@ return Application::configure(basePath: dirname(__DIR__))
             return ApiResponse::error(ApiErrorCode::ServerError, $message, 500);
         });
     })->create();
+
+// A cPanel domain can have a fixed document root beside true_doctor_app.
+// The pre-Laravel installer records that path in its private .env. Set it
+// before the filesystem config is loaded, so storage:link and public_path()
+// target the actual web root, not an absent app/public directory.
+$environmentFile = $application->basePath('.env');
+if (is_file($environmentFile)) {
+    $settings = \Dotenv\Dotenv::parse((string) file_get_contents($environmentFile));
+    if (($settings['APP_EDITION'] ?? 'saas') === 'standalone'
+        && is_string($settings['APP_PUBLIC_PATH'] ?? null)
+        && is_dir($settings['APP_PUBLIC_PATH'])) {
+        $application->usePublicPath(realpath($settings['APP_PUBLIC_PATH']));
+    }
+}
+
+return $application;

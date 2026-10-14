@@ -22,6 +22,7 @@ class AppServiceProvider extends ServiceProvider
         // Per-hospital billing config (currency/tax/fees) — resolved once per
         // request over CurrentHospital; nothing about money is hardcoded.
         $this->app->singleton(\App\Support\HospitalSettings::class);
+        $this->app->scoped(\App\Support\Licensing\InstalledLicence::class);
 
         // The chart of accounts remembers each hospital's system accounts once
         // it has looked them up — per request or job, so a long-running worker
@@ -70,7 +71,7 @@ class AppServiceProvider extends ServiceProvider
         // Telescope is a dev-only dependency — register its providers only when
         // the package is actually installed (local), so production --no-dev
         // installs work without it.
-        if ($this->app->environment('local') && class_exists(\Laravel\Telescope\TelescopeServiceProvider::class)) {
+        if (\App\Support\Edition::isSaas() && $this->app->environment('local') && class_exists(\Laravel\Telescope\TelescopeServiceProvider::class)) {
             $this->app->register(\Laravel\Telescope\TelescopeServiceProvider::class);
             $this->app->register(\App\Providers\TelescopeServiceProvider::class);
         }

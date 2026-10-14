@@ -65,6 +65,10 @@ class GatewayPaymentService
             return 'not_successful';
         }
 
+        if (str_starts_with($v->reference, 'TDL-')) {
+            return app(\App\Services\StandaloneSalesService::class)->settleVerified($v);
+        }
+
         return DB::transaction(function () use ($v) {
             /** @var GatewayLog|null $log */
             $log = GatewayLog::withoutGlobalScopes()->where('tx_ref', $v->reference)->lockForUpdate()->first();

@@ -22,6 +22,10 @@ class AdminUserSeeder extends Seeder
 {
     public function run(): void
     {
+        if (\App\Support\Edition::isStandalone()) {
+            throw new \DomainException('A standalone installation has no central super administrator.');
+        }
+
         $user = User::where('email', 'admin@gmail.com')->first();
 
         if ($user !== null) {

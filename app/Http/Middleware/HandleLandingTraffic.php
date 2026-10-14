@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Services\TrafficRecorder;
+use App\Support\Edition;
 use App\Support\LandingIntent;
 use Closure;
 use Illuminate\Http\Request;
@@ -36,6 +37,10 @@ class HandleLandingTraffic
 
     public function handle(Request $request, Closure $next): Response
     {
+        if (Edition::isStandalone()) {
+            return $next($request);
+        }
+
         $started = hrtime(true);
         $intent = LandingIntent::fromRequest($request);
 

@@ -48,7 +48,6 @@ class Index extends Component
         openAdmit as create;
         admit as save;
     }
-
     use AuthorizesRequests, PeeksRecords, WithTable;
     use MovesPatientsBetweenBeds {
         openTransfer as private openTransferDialog;

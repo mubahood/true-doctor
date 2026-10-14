@@ -8,6 +8,9 @@ class PlanLimitExceededException extends RuntimeException
 {
     public static function make(string $resource, int $limit): self
     {
-        return new self("Your plan's limit for {$resource} ({$limit}) has been reached. Upgrade to add more.");
+        $subject = \App\Support\Edition::isStandalone() ? 'licence' : 'plan';
+        $action = \App\Support\Edition::isStandalone() ? 'Contact True-Doctor about changing the limit.' : 'Upgrade to add more.';
+
+        return new self("Your {$subject}'s limit for {$resource} ({$limit}) has been reached. {$action}");
     }
 }

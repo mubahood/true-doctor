@@ -80,7 +80,7 @@
       <img src="{{ asset('images/logo-icon.png') }}" alt=""> True-Doctor
     </a>
     <nav class="nav" aria-label="Main">
-      @foreach(['features' => 'Product', 'pricing' => 'Pricing', 'security' => 'Security', 'contact' => 'Contact'] as $route => $label)
+      @foreach(['features' => 'Product', 'pricing' => 'Pricing', 'standalone.products' => 'Self-hosted', 'security' => 'Security', 'contact' => 'Contact'] as $route => $label)
         <a href="{{ route($route) }}" class="{{ $r($route) ? 'on' : '' }}"
            @if($r($route)) aria-current="page" @endif>{{ $label }}</a>
       @endforeach

@@ -75,10 +75,13 @@ final class Navigation
     {
         return [
             // ── The SaaS operator's own desk. First, because for them it is the job. ──
-            ['key' => 'saas', 'label' => 'Platform', 'gate' => 'super', 'entries' => [
+            ['key' => 'saas', 'label' => 'Platform', 'gate' => 'super', 'edition' => 'saas', 'entries' => [
                 ['key' => 'platform', 'label' => 'SaaS central', 'icon' => 'fa-shield-halved', 'items' => [
                     ['label' => 'Hospitals', 'icon' => 'fa-hospital', 'route' => 'super.hospitals.index', 'match' => ['super.hospitals.*']],
                     ['label' => 'Plans', 'icon' => 'fa-layer-group', 'route' => 'super.plans.index', 'match' => ['super.plans.*']],
+                    ['label' => 'Standalone releases', 'icon' => 'fa-box-archive', 'route' => 'super.releases.index', 'match' => ['super.releases.*']],
+                    ['label' => 'Standalone products', 'icon' => 'fa-tag', 'route' => 'super.products.index', 'match' => ['super.products.*']],
+                    ['label' => 'Standalone licences', 'icon' => 'fa-certificate', 'route' => 'super.licences.index', 'match' => ['super.licences.*']],
                     ['label' => 'Subscriptions', 'icon' => 'fa-file-invoice-dollar', 'route' => 'super.subscriptions.index', 'match' => ['super.subscriptions.*']],
                     ['label' => 'Traffic & campaigns', 'icon' => 'fa-chart-line', 'route' => 'super.traffic.index', 'match' => ['super.traffic.*']],
                     // Platform-global config (site name, contacts) — a SaaS page, not a tenant one.
@@ -193,7 +196,9 @@ final class Navigation
                     // What every printed document carries at the top of it.
                     ['label' => 'Hospital letterhead', 'icon' => 'fa-stamp', 'route' => 'admin.settings.hospital', 'match' => ['admin.settings.hospital']],
                     ['label' => 'Billing settings', 'icon' => 'fa-coins', 'route' => 'admin.settings.billing', 'match' => ['admin.settings.billing*']],
-                    ['label' => 'Subscription', 'icon' => 'fa-star', 'route' => 'admin.subscription.index', 'match' => ['admin.subscription.*']],
+                    ['label' => 'Subscription', 'icon' => 'fa-star', 'route' => 'admin.subscription.index', 'match' => ['admin.subscription.*'], 'edition' => 'saas'],
+                    // A standalone owner's own server: the release, the licence, updates and backups.
+                    ['label' => 'Licence & updates', 'icon' => 'fa-cloud-arrow-down', 'route' => 'admin.system.index', 'match' => ['admin.system.*'], 'edition' => 'standalone'],
                 ]],
             ]],
         ];
@@ -212,7 +217,8 @@ final class Navigation
         $isActive ??= fn (array $match) => false;
         $allow = fn ($gate) => self::allows($user, $gate);
         $practice = Practice::of($user->isSuperAdmin() ? null : $user->hospital);
-        $inUse = fn (array $it) => (! isset($it['module']) || $practice->uses($it['module']))
+        $inUse = fn (array $it) => (! isset($it['edition']) || $it['edition'] === Edition::name())
+            && (! isset($it['module']) || $practice->uses($it['module']))
             && (! ($it['tenant'] ?? false) || $user->hospital_id !== null);
 
         $rendered = [];
@@ -230,7 +236,7 @@ final class Navigation
         };
 
         foreach (self::sections() as $s) {
-            if (isset($s['gate']) && ! $allow($s['gate'])) {
+            if ((isset($s['gate']) && ! $allow($s['gate'])) || ! $inUse($s)) {
                 continue;
             }
 

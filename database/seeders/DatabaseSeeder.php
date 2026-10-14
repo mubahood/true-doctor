@@ -14,6 +14,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        if (\App\Support\Edition::isStandalone()) {
+            $this->call(StandaloneReferenceSeeder::class);
+
+            return;
+        }
+
         $this->call([
             RbacSeeder::class,        // baseline role + permission matrix (Step 5 seeds the full HMS matrix)
             AdminUserSeeder::class,   // Super Admin

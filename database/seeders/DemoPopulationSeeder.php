@@ -100,6 +100,10 @@ class DemoPopulationSeeder extends Seeder
 
     public function run(): void
     {
+        if (\App\Support\Edition::isStandalone()) {
+            throw new \DomainException('The demonstration population cannot run on a standalone installation.');
+        }
+
         if (! app()->environment(['local', 'demo']) && ! config('demo.enabled')) {
             $this->command->info('DemoPopulationSeeder: skipped (not local, and DEMO_MODE is off).');
 

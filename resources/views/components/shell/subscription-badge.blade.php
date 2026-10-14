@@ -8,7 +8,7 @@
      * @persist-ed shell, so it re-renders on every wire:navigate anyway.
      */
     $user = Auth::user();
-    $badge = $user?->can('manage-settings')
+    $badge = \App\Support\Edition::isSaas() && $user?->can('manage-settings')
         ? app(\App\Support\SubscriptionState::class)->badge(app(\App\Support\HospitalSettings::class)->hospital())
         : null;
 @endphp

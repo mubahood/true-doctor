@@ -32,6 +32,9 @@ class PageStandardTest extends TestCase
         'Settings/Billing.php' => 'a settings form',
         'Settings/Hospital.php' => 'a settings form',
         'Settings/Site.php' => 'a settings form',
+        'Super/Products/Index.php' => 'a product editor over a handful of products',
+        'Super/Releases/Index.php' => 'a build form over the newest releases, capped',
+        'System/Index.php' => 'one installation\'s status page',
     ];
 
     /**

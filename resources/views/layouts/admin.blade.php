@@ -112,6 +112,31 @@
     </header>
 
     <main class="tb-content">
+      @if(\App\Support\Edition::isStandalone() && $u->can('manage-settings'))
+        @if(! \Illuminate\Support\Facades\Cache::has('standalone:scheduler-heartbeat'))
+          <div class="tb-alert tb-alert-warning" role="status">
+            <i class="fas fa-clock" aria-hidden="true"></i>
+            <span>The scheduler has not checked in recently. Add or inspect the cPanel cron job so reminders, queued mail and overnight billing run.</span>
+          </div>
+        @endif
+        @php($installedLicence = app(\App\Support\Licensing\InstalledLicence::class))
+        @if(! $installedLicence->isValid())
+          <div class="tb-alert tb-alert-warning" role="status">
+            <i class="fas fa-certificate" aria-hidden="true"></i>
+            <span>The installation licence is missing or invalid. Patient care remains available; contact True-Doctor to restore update access.</span>
+          </div>
+        @elseif(! $installedLicence->matchesHost(request()->getHost()))
+          <div class="tb-alert tb-alert-warning" role="status">
+            <i class="fas fa-globe" aria-hidden="true"></i>
+            <span>This server address is different from the address on the licence. Patient care remains available; update your licensed address when convenient.</span>
+          </div>
+        @elseif($installedLicence->updatesUntil()?->endOfDay()->isPast())
+          <div class="tb-alert tb-alert-warning" role="status">
+            <i class="fas fa-calendar-xmark" aria-hidden="true"></i>
+            <span>New-release entitlement has ended. Patient care remains available; renew update access in your buyer portal when convenient.</span>
+          </div>
+        @endif
+      @endif
       @include('partials.flash-bridge')
       {{-- Dual-mode: traditional Blade pages fill @yield('content'); Livewire
            full-page components fill {{ $slot }}. Exactly one is ever populated. --}}

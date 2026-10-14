@@ -68,11 +68,15 @@
   </button>
 </form>
 
-<div class="a-alt">New here? <a href="{{ route('register') }}">Create your hospital</a> — 14-day free trial.</div>
+@if(\App\Support\Edition::isSaas())
+  <div class="a-alt">New here? <a href="{{ route('register') }}">Create your hospital</a> — 14-day free trial.</div>
+@endif
 @if(\App\Http\Controllers\Auth\AuthenticatedSessionController::demoAvailable())
   <div class="a-alt">Just looking? <a href="{{ route('test-login') }}">Open the demonstration</a> — sample hospital, no sign-up.</div>
 @endif
-<div class="a-alt"><a href="{{ route('home') }}" class="a-back"><i class="fas fa-arrow-left" aria-hidden="true"></i> Back to home</a></div>
+@if(\App\Support\Edition::isSaas())
+  <div class="a-alt"><a href="{{ route('home') }}" class="a-back"><i class="fas fa-arrow-left" aria-hidden="true"></i> Back to home</a></div>
+@endif
 
 <div class="a-secure">
   <span><i class="fas fa-shield-halved" aria-hidden="true"></i> Encrypted</span>

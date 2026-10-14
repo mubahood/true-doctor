@@ -22,6 +22,9 @@ class SpaNavigationHtmlTest extends TestCase
         'admin.logout', 'gateway.callback', 'gateway.webhook',
         // A spreadsheet of the books: a file to save, not a page to read.
         'admin.finance.export',
+        // A standalone installation's backup: a file to keep elsewhere.
+        'admin.system.backup',
+        'super.releases.download',
         // Field Mode is a SEPARATE application, not a Livewire page. A
         // `wire:navigate` to it would try to swap a client-rendered shell
         // into the Livewire SPA and leave neither working.
@@ -57,6 +60,7 @@ class SpaNavigationHtmlTest extends TestCase
         'admin.invoices.flutterwave',      // hosted payment page hand-off
         'admin.subscription.checkout',     // hosted payment page hand-off
         'demo.leave',                      // signs out: invalidates the session and CSRF token, so it must be a full page load
+        'admin.system.upload',             // a release is larger than Livewire's temporary uploads accept
     ];
 
     /**

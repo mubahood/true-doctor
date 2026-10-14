@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\Hospital;
 use App\Support\CurrentHospital;
+use App\Support\Edition;
 use App\Support\SubscriptionState;
 use Closure;
 use Illuminate\Http\Request;
@@ -34,7 +35,7 @@ class EnsureSubscribed
 
     public function handle(Request $request, Closure $next): Response
     {
-        if (! config('tenancy.enforce_subscription', true)) {
+        if (Edition::isStandalone() || ! config('tenancy.enforce_subscription', true)) {
             return $next($request);
         }
 

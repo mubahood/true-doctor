@@ -92,6 +92,12 @@ class ResetDemoHospital extends Command
 
     public function handle(): int
     {
+        if (\App\Support\Edition::isStandalone()) {
+            $this->error('The demonstration reset is unavailable in the standalone edition.');
+
+            return self::FAILURE;
+        }
+
         if (! config('demo.enabled')) {
             $this->error('demo:reset refused — DEMO_MODE is off, so there is no demonstration to reset.');
 

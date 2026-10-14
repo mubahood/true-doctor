@@ -7,6 +7,7 @@ use App\Http\Resources\UserResource;
 use App\Models\Hospital;
 use App\Support\ApiResponse;
 use App\Support\CurrentHospital;
+use App\Support\Edition;
 use App\Support\HospitalSettings;
 use App\Support\Navigation;
 use App\Support\OnboardingStatus;
@@ -52,6 +53,8 @@ class MetaController extends Controller
 
         return ApiResponse::success([
             'api_version' => self::API_VERSION,
+            'edition' => Edition::name(),
+            'version' => Edition::version(),
             'sync_protocol' => SyncController::PROTOCOL_VERSION,
             'server_time' => now()->toIso8601String(),
             'web_url' => url('/'),
@@ -67,7 +70,7 @@ class MetaController extends Controller
                 'password_change_required' => (bool) $user->password_change_required,
             ],
             'hospital' => $hospital ? $this->hospital($hospital, $settings) : null,
-            'subscription' => $hospital ? $this->subscription($hospital, $subscriptions) : null,
+            'subscription' => Edition::isSaas() && $hospital ? $this->subscription($hospital, $subscriptions) : null,
             'setup_required' => $inSetup,
             'navigation' => $this->navigation(Navigation::for($user, $inSetup)['sections']),
             'enums' => $this->enums(),

@@ -30,7 +30,7 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
         Gate::define('viewHorizon', function ($user = null) {
             // Queue payloads carry cross-tenant PHI (lab results, reminders):
             // only the SaaS super-admin may inspect them.
-            return $user && $user->isSuperAdmin();
+            return \App\Support\Edition::isSaas() && $user && $user->isSuperAdmin();
         });
     }
 }

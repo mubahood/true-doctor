@@ -44,6 +44,17 @@ return [
             'after_commit' => false,
         ],
 
+        // Long browser-initiated release builds use their own queue lease so
+        // a second short-lived worker cannot pick the same 30-minute build.
+        'release-builds' => [
+            'driver' => 'database',
+            'connection' => env('DB_QUEUE_CONNECTION'),
+            'table' => env('DB_QUEUE_TABLE', 'jobs'),
+            'queue' => 'releases',
+            'retry_after' => 2100,
+            'after_commit' => true,
+        ],
+
         'beanstalkd' => [
             'driver' => 'beanstalkd',
             'host' => env('BEANSTALKD_QUEUE_HOST', 'localhost'),

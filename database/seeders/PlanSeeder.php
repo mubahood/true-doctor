@@ -15,6 +15,10 @@ class PlanSeeder extends Seeder
 {
     public function run(): void
     {
+        if (\App\Support\Edition::isStandalone()) {
+            throw new \DomainException('SaaS subscription plans are not used by the standalone edition.');
+        }
+
         $plans = [
             [
                 'name' => 'Starter', 'slug' => 'starter', 'price' => '10000.00',

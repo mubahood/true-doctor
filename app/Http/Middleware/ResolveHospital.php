@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Support\CurrentHospital;
+use App\Support\Edition;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,10 +24,16 @@ class ResolveHospital
         $user = $request->user();
         $hospitalId = $user?->hospital_id;
 
+        // A central SaaS account has no tenant filter. It must never acquire
+        // unscoped access on a standalone server, even via an old API token.
+        if (Edition::isStandalone() && $user !== null && $hospitalId === null) {
+            abort(403, 'This account does not belong to this organisation.');
+        }
+
         // Super-admin (null hospital_id) may switch into a hospital via the
         // panel, tracked in the session. Guard on hasSession(): the stateless
         // API group has no session, and reading it there would 500.
-        if ($user !== null && $hospitalId === null && $request->hasSession()) {
+        if (Edition::isSaas() && $user !== null && $hospitalId === null && $request->hasSession()) {
             $hospitalId = $request->session()->get('viewing_hospital_id');
         }
 

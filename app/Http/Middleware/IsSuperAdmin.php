@@ -14,6 +14,8 @@ class IsSuperAdmin
 {
     public function handle(Request $request, Closure $next): Response
     {
+        abort_unless(\App\Support\Edition::isSaas(), 404);
+
         if (! $request->user()?->isSuperAdmin()) {
             abort(403, 'Super Admin access required.');
         }

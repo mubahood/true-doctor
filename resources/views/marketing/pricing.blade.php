@@ -76,6 +76,8 @@
   </div>
 </section>
 
+<section class="band-surface band"><div class="wrap"><div class="sec-head"><h2>Prefer to run it on your own server?</h2></div><p>The standalone edition has the same hospital features, one organisation per installation, and a guided cPanel setup. Pay once; your download and licence are available after payment is verified.</p><a href="{{ route('standalone.products') }}" class="btn ghost">Explore the self-hosted edition <i class="fas fa-arrow-right" aria-hidden="true"></i></a></div></section>
+
 {{-- ── What is in which plan ──────────────────────────────────────────
      The card list says what each plan adds; this says, in one place, what a
      hospital gets and does not. A pricing page without it makes somebody

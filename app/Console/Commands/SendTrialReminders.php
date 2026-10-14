@@ -22,6 +22,12 @@ class SendTrialReminders extends Command
 
     public function handle(): int
     {
+        if (\App\Support\Edition::isStandalone()) {
+            $this->error('Trial reminders are unavailable in the standalone edition.');
+
+            return self::FAILURE;
+        }
+
         $days = (int) $this->option('days');
         $now = now();
         $windowEnd = $now->copy()->addDays($days);

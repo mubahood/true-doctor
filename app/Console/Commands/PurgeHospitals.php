@@ -46,6 +46,12 @@ class PurgeHospitals extends Command
 
     public function handle(): int
     {
+        if (\App\Support\Edition::isStandalone()) {
+            $this->error('Hospital purge is unavailable in the standalone edition.');
+
+            return self::FAILURE;
+        }
+
         $hospitals = [];
         foreach ((array) $this->argument('slugs') as $slug) {
             $hospital = Hospital::withoutGlobalScopes()->withTrashed()->where('slug', $slug)->first();
