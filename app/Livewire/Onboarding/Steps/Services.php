@@ -119,6 +119,7 @@ class Services extends Component
         $this->authorizeSetup();
 
         $created = 0;
+        $chart = app(\App\Services\Finance\ChartOfAccounts::class);
         foreach ($this->suggestions() as $row) {
             $price = $this->starterPrices[$row['name']] ?? $row['price'] ?? 0;
             if (! is_numeric($price) || (float) $price < 0) {
@@ -127,9 +128,15 @@ class Services extends Component
                 return;
             }
 
+            $key = $row['income_key'] ?? null;
             Service::firstOrCreate(
                 ['name' => $row['name']],
-                ['price' => (string) $price, 'is_active' => true, 'tax_exempt' => (bool) ($row['tax_exempt'] ?? false)],
+                [
+                    'price' => (string) $price, 'is_active' => true, 'tax_exempt' => (bool) ($row['tax_exempt'] ?? false),
+                    // Its specialty, and the income it earns into (docs/practice.md).
+                    'category' => $row['category'] ?? null,
+                    'ledger_account_id' => filled($key) && $chart->has($key) ? $chart->key($key)->id : null,
+                ],
             );
             $created++;
         }

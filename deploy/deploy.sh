@@ -91,6 +91,12 @@ for seeder in RbacSeeder DistrictSeeder PlanSeeder; do
         || die "$seeder failed — the application will not work without it."
 done
 
+# Idempotent: posts whatever is not yet in each hospital's books, and finds
+# nothing on every run after the first. A failure here is reported, not fatal —
+# the finance pages offer the same catch-up, and patients must still be seen.
+say "Books"
+"$PHP" artisan finance:backfill --no-interaction || echo "  finance:backfill did not finish — run it by hand, or use 'Bring them in' on the finance overview."
+
 say "Storage link"
 [ -L "public/storage" ] || "$PHP" artisan storage:link --force >/dev/null 2>&1 || true
 

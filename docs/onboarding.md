@@ -9,6 +9,7 @@ unassignable work rather than a usable product.
 
 | Step | Passes when | Why the system needs it |
 |---|---|---|
+| Your kind of practice | A sector is chosen (`docs/practice.md`) | Every later step's suggestions — and the menu — follow from it |
 | Hospital details | An address, plus a phone number or email | Printed on every invoice, receipt, lab report and ID card |
 | Currency and billing | A currency code and an invoice prefix | Every price and payment is stored in this currency; changing it later does not convert existing records |
 | Departments | At least one active department | Appointments, visits and staff are organised by department |
@@ -16,7 +17,10 @@ unassignable work rather than a usable product.
 | Your team | At least one active colleague besides the owner | Each person signs in as themselves; work is attributed to whoever did it |
 
 Three further steps are **recommended** and never block: consultation rooms,
-wards and beds, and the lab/pharmacy catalogues.
+wards and beds, and the lab/pharmacy catalogues. A recommended step for a module
+the practice does not use is not shown — a dental practice is not asked about
+wards. Hospitals that existed before the practice step were recorded as general
+hospitals by migration, so none was pulled back into setup.
 
 Paying for the subscription is deliberately not a step. A hospital on its free
 trial is fully operational; lapsed subscriptions are enforced separately by
@@ -78,6 +82,7 @@ use, so there is no parallel implementation and nothing to keep in sync:
 
 | Step component | Writes through |
 |---|---|
+| `Steps\Practice` | `PracticeService::choose()` / `apply()` — one click sets up everything below from the practice's template |
 | `Steps\Profile` | `HospitalProfileRequest::rulesFor()` → the hospital record |
 | `Steps\Billing` | `BillingSettingRequest::rulesFor()` (currency subset) → `settings.billing` |
 | `Steps\Departments` | `DepartmentRequest::rulesFor()`; one click adds the common set |

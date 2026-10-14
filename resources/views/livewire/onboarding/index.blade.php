@@ -85,6 +85,7 @@
 
             @if($this->canConfigure)
               @switch($step->key)
+                @case('practice')    <livewire:onboarding.steps.practice :key="'wz-form-practice'" /> @break
                 @case('profile')     <livewire:onboarding.steps.profile :key="'wz-form-profile'" /> @break
                 @case('billing')     <livewire:onboarding.steps.billing :key="'wz-form-billing'" /> @break
                 @case('departments') <livewire:onboarding.steps.departments :key="'wz-form-departments'" /> @break

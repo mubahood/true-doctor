@@ -27,4 +27,28 @@ class CurrentHospital
     {
         $this->id = $hospitalId;
     }
+
+    /**
+     * Run something as one hospital, then put the context back.
+     *
+     * For work that belongs to a record rather than to the request: the books
+     * an invoice posts into are its hospital's, whether it was raised at a
+     * counter, by a queued job or by a seeder with no tenant resolved at all.
+     *
+     * @template T
+     *
+     * @param  \Closure(): T  $work
+     * @return T
+     */
+    public function within(int $hospitalId, \Closure $work): mixed
+    {
+        $previous = $this->id;
+        $this->id = $hospitalId;
+
+        try {
+            return $work();
+        } finally {
+            $this->id = $previous;
+        }
+    }
 }

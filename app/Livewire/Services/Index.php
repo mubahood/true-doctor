@@ -38,6 +38,11 @@ class Index extends Component
 
     public ?string $code = null;
 
+    public ?string $category = null;
+
+    /** The income account it earns into; blank earns by the kind of order. */
+    public ?string $ledger_account_id = null;
+
     public string $price = '';
 
     public bool $tax_exempt = false;
@@ -57,7 +62,7 @@ class Index extends Component
 
     protected function formFields(): array
     {
-        return ['name', 'code', 'price', 'tax_exempt', 'is_active'];
+        return ['name', 'code', 'category', 'ledger_account_id', 'price', 'tax_exempt', 'is_active'];
     }
 
     protected function nounLabel(): string
@@ -67,7 +72,25 @@ class Index extends Component
 
     protected function nullableFields(): array
     {
-        return ['code'];
+        return ['code', 'category', 'ledger_account_id'];
+    }
+
+    /** Income accounts a service can earn into — only while the form is open. @return \Illuminate\Support\Collection<int, \App\Models\LedgerAccount> */
+    #[Computed]
+    public function incomeAccounts()
+    {
+        app(\App\Services\Finance\ChartOfAccounts::class)->ensure();
+
+        return \App\Models\LedgerAccount::query()->active()->where('type', 'income')
+            ->where(fn ($q) => $q->whereNull('subtype')->orWhere('subtype', '!=', 'contra_income'))
+            ->ordered()->get();
+    }
+
+    /** The specialties already in use, offered as the category is typed. @return list<string> */
+    #[Computed]
+    public function categories(): array
+    {
+        return Service::query()->whereNotNull('category')->distinct()->orderBy('category')->pluck('category')->all();
     }
 
     protected function defaults(): array
@@ -93,9 +116,20 @@ class Index extends Component
 
     protected function persistSample(array $row): void
     {
+        // Filed under its specialty, earning into the specialty's own income
+        // account where the practice has one (docs/practice.md).
+        $chart = app(\App\Services\Finance\ChartOfAccounts::class);
+        $key = $row['income_key'] ?? null;
+
         Service::firstOrCreate(
             ['name' => $row['name']],
-            ['price' => max(0, (float) ($row['price'] ?? 0)), 'tax_exempt' => (bool) ($row['tax_exempt'] ?? false), 'is_active' => true],
+            [
+                'price' => max(0, (float) ($row['price'] ?? 0)),
+                'tax_exempt' => (bool) ($row['tax_exempt'] ?? false),
+                'is_active' => true,
+                'category' => $row['category'] ?? null,
+                'ledger_account_id' => filled($key) && $chart->has($key) ? $chart->key($key)->id : null,
+            ],
         );
     }
 

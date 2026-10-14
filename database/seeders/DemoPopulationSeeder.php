@@ -137,6 +137,7 @@ class DemoPopulationSeeder extends Seeder
             $this->history($roster);
             $this->appointments($roster);
             $this->standingArrangements($roster);
+            $this->books();
         });
 
         $this->command->info(sprintf(
@@ -1076,6 +1077,106 @@ class DemoPopulationSeeder extends Seeder
         }
     }
 
+    /**
+     * The money that never went through a patient's bill (docs/finance.md).
+     *
+     * Everything the history above did is already in the books — invoices,
+     * payments, cards, stock. What a real hospital also has is rent, salaries,
+     * a power bill, takings banked, a donation, and the balances it started
+     * with; without them the income statement is all income and the cash
+     * book only ever goes up. Written once: a run that finds anything
+     * recorded by hand leaves the books alone.
+     */
+    private function books(): void
+    {
+        if (\App\Models\JournalEntry::where('kind', '!=', \App\Enums\JournalKind::System->value)->exists()) {
+            return;
+        }
+
+        $chart = app(\App\Services\Finance\ChartOfAccounts::class);
+        $cashbook = app(\App\Services\Finance\CashbookService::class);
+        $by = $this->actor($this->cashier);
+        $named = fn (string $name) => \App\Models\LedgerAccount::where('name', $name)->first();
+        $start = Carbon::today()->subDays(self::DAYS_OF_HISTORY + 1);
+
+        $try = function (\Closure $write): void {
+            try {
+                $write();
+            } catch (\DomainException|\App\Exceptions\ClosedPeriodException) {
+                // A closed period or a chart somebody changed: leave that one out.
+            }
+        };
+
+        $chart->ensure();
+
+        $try(fn () => $cashbook->openingBalances($start->toDateString(), array_filter([
+            $chart->key('book.cash')->id => $this->money(1500000),
+            $chart->key('book.bank')->id => $this->money(18000000),
+            $chart->key('book.mobile_money')->id => $this->money(600000),
+            $named('Medical equipment')?->id => $this->money(45000000),
+            $named('Furniture & fittings')?->id => $this->money(6000000),
+            $named('Loans')?->id => $this->money(12000000),
+            $chart->key('capital')->id => $this->money(30000000),
+        ], fn ($v, $k) => $k !== '' && $k !== 0, ARRAY_FILTER_USE_BOTH), $by));
+
+        $bills = [
+            // name, account, book, amount, payee, day of month
+            ['Rent', 'Rent', 'book.bank', 3500000, 'Kampala Road Properties', 1],
+            ['Staff salaries', 'Salaries & wages', 'book.bank', 14000000, null, 28],
+            ['Electricity and water', 'Electricity & water', 'book.mobile_money', 900000, 'UMEME / NWSC', 12],
+            ['Internet and airtime', 'Internet & telephone', 'book.mobile_money', 250000, 'MTN Uganda', 5],
+            ['Generator and ambulance fuel', 'Fuel & transport', 'book.cash', 400000, 'Shell Kampala Road', 18],
+            ['Cleaning contract', 'Cleaning & sanitation', 'book.cash', 300000, 'Spotless Services', 20],
+            ['Medical waste collection', 'Medical waste disposal', 'book.cash', 150000, 'Green Label Services', 25],
+        ];
+
+        for ($month = $start->copy()->startOfMonth(); $month->lte(Carbon::today()); $month->addMonthNoOverflow()) {
+            foreach ($bills as [$memo, $account, $book, $amount, $payee, $day]) {
+                $date = $month->copy()->day(min($day, $month->daysInMonth));
+                $category = $named($account);
+                if ($category === null || $date->lt($start) || $date->gt(Carbon::today())) {
+                    continue;
+                }
+
+                $try(fn () => $cashbook->moneyOut([
+                    'date' => $date->toDateString(), 'book_id' => $chart->key($book)->id, 'account_id' => $category->id,
+                    'amount' => $this->money($amount), 'memo' => $memo.', '.$date->format('F'), 'party' => $payee,
+                ], $by));
+            }
+
+            // The month's takings banked, as a cashier does.
+            $banked = $month->copy()->endOfMonth()->min(Carbon::today());
+            if ($banked->gte($start)) {
+                $try(fn () => $cashbook->transfer([
+                    'date' => $banked->toDateString(), 'from_book_id' => $chart->key('book.cash')->id,
+                    'to_book_id' => $chart->key('book.bank')->id, 'amount' => $this->money(2500000),
+                    'memo' => 'Takings banked, '.$banked->format('F'),
+                ], $by));
+            }
+
+            // And the equipment wearing out: a tenth a year.
+            $depreciation = $named('Depreciation');
+            $accumulated = $named('Accumulated depreciation');
+            if ($depreciation && $accumulated && $month->copy()->endOfMonth()->lte(Carbon::today())) {
+                $try(fn () => $cashbook->journal([
+                    'date' => $month->copy()->endOfMonth()->toDateString(),
+                    'memo' => 'Depreciation of equipment, '.$month->format('F'),
+                ], [
+                    ['account_id' => $depreciation->id, 'debit' => $this->money(375000)],
+                    ['account_id' => $accumulated->id, 'credit' => $this->money(375000)],
+                ], $by));
+            }
+        }
+
+        if ($grant = $named('Grants & donations')) {
+            $try(fn () => $cashbook->moneyIn([
+                'date' => $start->copy()->addDays(40)->toDateString(), 'book_id' => $chart->key('book.bank')->id,
+                'account_id' => $grant->id, 'amount' => $this->money(5000000),
+                'memo' => 'Donation towards the maternity ward', 'party' => 'Rotary Club of Kampala',
+            ], $by));
+        }
+    }
+
     private function voidIt(\App\Models\Invoice $invoice): void
     {
         // Raised against the wrong visit and cancelled — the state a billing
@@ -1084,6 +1185,9 @@ class DemoPopulationSeeder extends Seeder
             'status' => \App\Enums\InvoiceStatus::Void,
             'notes' => 'Raised in error against the wrong visit. Replaced by a corrected invoice.',
         ])->save();
+
+        // And out of the books it was booked into.
+        app(\App\Services\Finance\Bookkeeper::class)->invoiceVoided($invoice);
     }
 
     private function claim(Patient $patient, \App\Models\Invoice $invoice): void

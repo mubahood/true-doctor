@@ -14,6 +14,15 @@
       <x-ui.link :href="route('admin.financial-years.index')" class="btn-tb">
         <i class="fas fa-arrow-left" aria-hidden="true"></i> All periods
       </x-ui.link>
+      {{-- The year's own statements, read off the books (docs/finance.md). --}}
+      @can('finance.view')
+        <x-ui.link :href="route('admin.finance.statements', ['report' => 'income', 'from' => $year->starts_on->toDateString(), 'to' => $year->ends_on->toDateString()])" class="btn-tb">
+          <i class="fas fa-chart-line" aria-hidden="true"></i> Income statement
+        </x-ui.link>
+        <x-ui.link :href="route('admin.finance.statements', ['report' => 'balance', 'from' => $year->starts_on->toDateString(), 'to' => $year->ends_on->toDateString()])" class="btn-tb">
+          <i class="fas fa-scale-balanced" aria-hidden="true"></i> Balance sheet
+        </x-ui.link>
+      @endcan
       @can('manage', \App\Models\FinancialYear::class)
         @if($year->isOpen())
           <button type="button" class="btn-tb btn-tb-primary" wire:click="close({{ $year->id }})"

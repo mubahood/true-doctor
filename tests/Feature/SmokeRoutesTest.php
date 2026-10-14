@@ -51,6 +51,7 @@ class SmokeRoutesTest extends TestCase
         'visit' => \App\Models\Visit::class,
         'appointment' => \App\Models\Appointment::class,
         'invoice' => \App\Models\Invoice::class,
+        'account' => \App\Models\LedgerAccount::class,
         'stock' => \App\Models\StockItem::class,
         'admission' => \App\Models\Admission::class,
         'insuranceClaim' => \App\Models\InsuranceClaim::class,

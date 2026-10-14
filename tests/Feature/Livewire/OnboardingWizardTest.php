@@ -49,8 +49,9 @@ class OnboardingWizardTest extends TestCase
     {
         $component = Livewire::test(Wizard::class)->assertOk();
 
-        $component->assertSet('open', 'profile');
-        $this->assertSame(['done' => 0, 'total' => 5, 'percent' => 0], $component->instance()->progress());
+        // What kind of practice comes first: every later step's suggestions follow from it.
+        $component->assertSet('open', 'practice');
+        $this->assertSame(['done' => 0, 'total' => 6, 'percent' => 0], $component->instance()->progress());
     }
 
     public function test_it_lists_what_is_still_blocking_access(): void
@@ -742,6 +743,7 @@ class OnboardingWizardTest extends TestCase
         // Blocked to begin with.
         $this->get(route('admin.patients.index'))->assertRedirect(route('admin.onboarding'));
 
+        Livewire::test(\App\Livewire\Onboarding\Steps\Practice::class)->call('pickSector', 'medical_clinic')->call('save');
         $this->completeProfile();
         Livewire::test(Billing::class)->call('save');
         Livewire::test(Departments::class)->call('addCommon');

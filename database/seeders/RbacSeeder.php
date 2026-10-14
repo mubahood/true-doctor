@@ -84,8 +84,9 @@ class RbacSeeder extends Seeder
         'insurance.view',
         'insurance.manage', // providers, patient coverage, claims lifecycle
         // Finance / accounting periods (Phase 4 Step 18) — seeded with the module it gates.
-        'finance.view',
-        'finance.manage', // create / close / reopen financial years
+        'finance.view',   // the books: overview, transactions, journal, accounts, statements
+        'finance.record', // record money in, money out and transfers between books
+        'finance.manage', // financial years, the chart of accounts, journals, reversals, finance settings
         // Reports & dashboards (Phase 4 Step 20) — seeded with the module it gates.
         'reports.view',
     ];
@@ -93,14 +94,14 @@ class RbacSeeder extends Seeder
     /** @var array<string, '*'|list<string>> */
     public const MATRIX = [
         'super_admin' => '*',
-        'hospital_admin' => ['access-admin', 'manage-users', 'manage-settings', 'patients.view', 'patients.create', 'patients.update', 'patients.delete', 'patients.card.manage', 'departments.manage', 'rooms.manage', 'staff.manage', 'schedules.manage', 'appointments.view', 'appointments.manage', 'visits.view', 'visits.create', 'visits.vitals', 'visits.diagnose', 'visits.manage', 'visits.override', 'prescriptions.prescribe', 'prescriptions.administer', 'services.manage', 'billing.manage', 'billing.view', 'pharmacy.view', 'pharmacy.manage', 'pharmacy.dispense', 'lab.view', 'lab.manage', 'lab.order', 'lab.process', 'radiology.view', 'radiology.manage', 'radiology.order', 'radiology.report', 'treatments.view', 'treatments.manage', 'wards.manage', 'ipd.view', 'ipd.manage', 'insurance.view', 'insurance.manage', 'finance.view', 'finance.manage', 'reports.view'],
+        'hospital_admin' => ['access-admin', 'manage-users', 'manage-settings', 'patients.view', 'patients.create', 'patients.update', 'patients.delete', 'patients.card.manage', 'departments.manage', 'rooms.manage', 'staff.manage', 'schedules.manage', 'appointments.view', 'appointments.manage', 'visits.view', 'visits.create', 'visits.vitals', 'visits.diagnose', 'visits.manage', 'visits.override', 'prescriptions.prescribe', 'prescriptions.administer', 'services.manage', 'billing.manage', 'billing.view', 'pharmacy.view', 'pharmacy.manage', 'pharmacy.dispense', 'lab.view', 'lab.manage', 'lab.order', 'lab.process', 'radiology.view', 'radiology.manage', 'radiology.order', 'radiology.report', 'treatments.view', 'treatments.manage', 'wards.manage', 'ipd.view', 'ipd.manage', 'insurance.view', 'insurance.manage', 'finance.view', 'finance.record', 'finance.manage', 'reports.view'],
         'doctor' => ['access-admin', 'patients.view', 'patients.update', 'appointments.view', 'appointments.manage', 'visits.view', 'visits.diagnose', 'visits.manage', 'prescriptions.prescribe', 'billing.manage', 'billing.view', 'lab.view', 'lab.order', 'radiology.view', 'radiology.order', 'treatments.view', 'treatments.manage', 'ipd.view', 'ipd.manage'],
         'nurse' => ['access-admin', 'patients.view', 'patients.update', 'appointments.view', 'visits.view', 'visits.vitals', 'prescriptions.administer', 'treatments.view', 'treatments.manage', 'ipd.view', 'ipd.manage'],
         'receptionist' => ['access-admin', 'patients.view', 'patients.create', 'patients.update', 'patients.card.manage', 'appointments.view', 'appointments.manage', 'visits.view', 'visits.create', 'visits.manage', 'billing.manage', 'billing.view', 'insurance.view'],
         'pharmacist' => ['access-admin', 'patients.view', 'visits.view', 'pharmacy.view', 'pharmacy.manage', 'pharmacy.dispense'],
         'lab_technician' => ['access-admin', 'patients.view', 'visits.view', 'lab.view', 'lab.manage', 'lab.process'],
         'radiologist' => ['access-admin', 'patients.view', 'visits.view', 'radiology.view', 'radiology.manage', 'radiology.report'],
-        'accountant' => ['access-admin', 'patients.view', 'patients.card.manage', 'services.manage', 'billing.manage', 'billing.view', 'insurance.view', 'insurance.manage', 'finance.view', 'finance.manage', 'reports.view'],
+        'accountant' => ['access-admin', 'patients.view', 'patients.card.manage', 'services.manage', 'billing.manage', 'billing.view', 'insurance.view', 'insurance.manage', 'finance.view', 'finance.record', 'finance.manage', 'reports.view'],
         'records_officer' => ['access-admin', 'patients.view', 'patients.create', 'patients.update', 'patients.delete'],
     ];
 

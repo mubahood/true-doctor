@@ -1,4 +1,6 @@
 <div>
+  {{-- Each half only for a practice that uses its module (docs/practice.md). --}}
+  @if($usesLab)
   {{-- ── Lab tests ─────────────────────────────────────────────────────── --}}
   <span class="tb-label">Lab tests</span>
 
@@ -72,9 +74,11 @@
       </button>
     </div>
   </form>
+  @endif
 
-  <div class="wz-divider" role="separator"></div>
+  @if($usesLab && $usesStock)<div class="wz-divider" role="separator"></div>@endif
 
+  @if($usesStock)
   {{-- ── Stock categories ──────────────────────────────────────────────── --}}
   <span class="tb-label">Stock categories</span>
 
@@ -143,6 +147,7 @@
       </button>
     </div>
   </form>
+  @endif
 
   <x-ui.modal show="showEditLabTest" title="Edit test" size="sm">
     @if($showEditLabTest)

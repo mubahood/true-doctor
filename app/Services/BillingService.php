@@ -428,6 +428,10 @@ class BillingService
                 ]);
             }
 
+            // Into the books in the same transaction: an invoice that exists
+            // without its income would be revenue nobody can see.
+            app(\App\Services\Finance\Bookkeeper::class)->invoiceIssued($invoice);
+
             return $invoice;
         });
     }
@@ -482,7 +486,9 @@ class BillingService
                     $amount,
                     "Invoice {$locked->invoice_no}",
                     $by,
-                    ['for' => $locked->patient_id, 'reference' => $locked->invoice_no],
+                    // The payment below is what the books record; the card
+                    // debit is the same money, and posting both would count it twice.
+                    ['for' => $locked->patient_id, 'reference' => $locked->invoice_no, 'books' => false],
                 );
                 $cardId = $card->id;
                 $cardRecordId = $record->id;
@@ -507,6 +513,8 @@ class BillingService
                 'received_by' => $by,
                 'created_at' => Carbon::now(),
             ]);
+
+            app(\App\Services\Finance\Bookkeeper::class)->paymentReceived($payment);
 
             // Paid in full: the visit closes itself. Completing a settled
             // visit is nobody's decision, and leaving it sitting at Payment is

@@ -36,6 +36,12 @@ class ServiceRequest extends FormRequest
                     ->ignore($ignoreId),
             ],
             'code' => ['nullable', 'string', 'max:32'],
+            // The specialty it is listed under, and the income it earns into
+            // (docs/finance.md) — this hospital's own income accounts only.
+            'category' => ['nullable', 'string', 'max:60'],
+            'ledger_account_id' => ['nullable', 'integer',
+                Rule::exists('ledger_accounts', 'id')->where(fn ($q) => $q->where('hospital_id', $hospitalId)->where('type', 'income')),
+            ],
             'price' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
             'tax_exempt' => ['sometimes', 'boolean'],
             'is_active' => ['sometimes', 'boolean'],

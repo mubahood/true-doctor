@@ -221,10 +221,13 @@ class Index extends Component
             'is_active' => true,
         ]);
 
+        // OPENING stock, not a delivery: the hospital already owned it, so in
+        // the books it is the hospital's own equity rather than a debt to a
+        // supplier (docs/finance.md). The item carries its cost already.
         $opening = (string) ($row['quantity'] ?? 0);
         if (bccomp($opening, '0', 2) > 0) {
-            app(\App\Services\StockService::class)->receive(
-                $item, $opening, (string) ($row['cost_price'] ?? 0), auth()->id(), 'Opening stock',
+            app(\App\Services\StockService::class)->adjust(
+                $item, \App\Enums\StockMovementReason::OpeningStock, $opening, auth()->id(), 'Opening stock',
             );
         }
     }

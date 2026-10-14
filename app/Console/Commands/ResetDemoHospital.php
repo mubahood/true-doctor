@@ -66,6 +66,9 @@ class ResetDemoHospital extends Command
         'dispensation_items', 'dispensations',
         'treatment_record_items', 'treatment_records',
         'order_attachments', 'order_items', 'orders',
+        // The books, first: every entry in them was posted from the money and
+        // stock below, and the demo rebuild posts them again.
+        'journal_lines', 'journal_entries',
         // Money
         'insurance_transactions', 'insurance_claims',
         'card_records', 'card_holders', 'patient_cards',
@@ -83,6 +86,8 @@ class ResetDemoHospital extends Command
         'beds', 'wards', 'rooms', 'doctor_schedules', 'staff_profiles',
         'services', 'lab_tests', 'radiology_studies',
         'insurance_providers', 'financial_years', 'departments',
+        // After the services that name them as their income account.
+        'ledger_accounts',
     ];
 
     public function handle(): int
@@ -210,6 +215,8 @@ class ResetDemoHospital extends Command
             }
         } finally {
             Schema::enableForeignKeyConstraints();
+            // The chart of accounts it remembered has just been deleted.
+            app(\App\Services\Finance\ChartOfAccounts::class)->forget();
         }
     }
 

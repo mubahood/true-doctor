@@ -307,6 +307,12 @@ class Catalogues extends Component
     {
         $this->authorizeSetup();
 
-        return view('livewire.onboarding.steps.catalogues', ['currency' => $this->currency()]);
+        $practice = \App\Support\Practice\Practice::current();
+
+        return view('livewire.onboarding.steps.catalogues', [
+            'currency' => $this->currency(),
+            'usesLab' => $practice->uses('laboratory'),
+            'usesStock' => $practice->uses('pharmacy'),
+        ]);
     }
 }

@@ -38,6 +38,7 @@ class OnboardingGateTest extends TestCase
             'settings' => [
                 'contact' => ['phone' => '+256700000000', 'email' => 'info@example.test'],
                 'billing' => ['currency_code' => 'UGX', 'invoice_prefix' => 'INV'],
+                'practice' => ['sector' => 'general_hospital'],
             ],
         ]);
         app(CurrentHospital::class)->set($h->id);
@@ -185,7 +186,7 @@ class OnboardingGateTest extends TestCase
         }
 
         // And the admin is told why the menu is short, with how far they are.
-        $this->assertStringContainsString('0 of 5 complete', $sidebar);
+        $this->assertStringContainsString('0 of 6 complete', $sidebar);
     }
 
     public function test_every_link_the_sidebar_offers_during_setup_actually_opens(): void

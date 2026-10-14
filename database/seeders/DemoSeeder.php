@@ -136,6 +136,8 @@ class DemoSeeder extends Seeder
             'settings' => [
                 'billing' => $billing,
                 'contact' => ['phone' => '+256 700 000 000', 'email' => Str::slug($name).'@example.test'],
+                // A general hospital shows every module and every specialty.
+                'practice' => ['sector' => 'general_hospital', 'packs' => [], 'modules' => null, 'chosen_at' => null],
             ],
             'status' => 'active',
         ];

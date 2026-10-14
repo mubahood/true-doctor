@@ -110,15 +110,16 @@ class SubscriptionOnboardingTest extends TestCase
             'settings' => [
                 'contact' => ['phone' => '+256700000000'],
                 'billing' => ['currency_code' => 'UGX', 'invoice_prefix' => 'INV'],
+                'practice' => ['sector' => 'general_hospital'],
             ],
         ]);
         $this->staff('hospital_admin', $h);
         Service::factory()->create(['hospital_id' => $h->id, 'is_active' => true]);
 
-        // Profile, billing and the price list are done; departments and staff are not.
+        // Practice, profile, billing and the price list are done; departments and staff are not.
         Livewire::test(\App\Livewire\Onboarding\Index::class)
             ->assertOk()
-            ->assertSee('3 of 5')
+            ->assertSee('4 of 6')
             ->assertSee('Departments')
             ->assertSee('Your team')
             ->assertSee('Still needed');
@@ -163,6 +164,7 @@ class SubscriptionOnboardingTest extends TestCase
             'settings' => [
                 'contact' => ['phone' => '+256700000000'],
                 'billing' => ['currency_code' => 'UGX', 'invoice_prefix' => 'INV'],
+                'practice' => ['sector' => 'general_hospital'],
             ],
         ]);
         $this->staff('hospital_admin', $h);
@@ -171,7 +173,7 @@ class SubscriptionOnboardingTest extends TestCase
         User::factory()->create(['hospital_id' => $h->id, 'role' => 'nurse', 'is_active' => true]);
 
         Livewire::test(\App\Livewire\Onboarding\Index::class)
-            ->assertSee('5 of 5')
+            ->assertSee('6 of 6')
             ->assertSee('Your hospital is ready')
             ->call('finish')
             ->assertRedirect(route('admin.dashboard'));

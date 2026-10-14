@@ -52,6 +52,9 @@ class Show extends Component
     #[Locked]
     public string $txnType = 'credit';
 
+    /** How a top-up was paid — which book the money lands in. */
+    public string $paidBy = 'cash';
+
     public ?string $amount = null;
 
     public ?string $description = null;
@@ -141,7 +144,7 @@ class Show extends Component
     {
         $this->authorize('update', $this->card);
         $this->txnType = $type === 'debit' ? 'debit' : 'credit';
-        $this->reset(['amount', 'description']);
+        $this->reset(['amount', 'description', 'paidBy']);
         $this->resetErrorBag();
         $this->showTxn = true;
     }
@@ -149,13 +152,16 @@ class Show extends Component
     public function postTxn(CardService $cards): void
     {
         $this->authorize('update', $this->card);
-        $data = $this->validate(CardTransactionRequest::rulesFor());
+        $data = $this->validate(CardTransactionRequest::rulesFor() + [
+            'paidBy' => ['required', \Illuminate\Validation\Rule::in(\App\Enums\PaymentMethod::forTopUp())],
+        ]);
+        $opts = ['method' => \App\Enums\PaymentMethod::from($data['paidBy'])];
         $amount = CardTransactionRequest::normalise($data['amount']);
 
         try {
             $this->txnType === 'debit'
                 ? $cards->debit($this->card, $amount, $data['description'] ?? null, Auth::id())
-                : $cards->credit($this->card, $amount, $data['description'] ?? null, Auth::id());
+                : $cards->credit($this->card, $amount, $data['description'] ?? null, Auth::id(), $opts);
         } catch (RuntimeException $e) {
             $this->addError('amount', $e->getMessage());
 

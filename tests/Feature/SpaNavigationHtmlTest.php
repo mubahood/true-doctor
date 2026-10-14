@@ -20,6 +20,8 @@ class SpaNavigationHtmlTest extends TestCase
     private const ALLOWED_PLAIN_ROUTES = [
         'admin.patients.documents.download', 'admin.orders.attachments.download',
         'admin.logout', 'gateway.callback', 'gateway.webhook',
+        // A spreadsheet of the books: a file to save, not a page to read.
+        'admin.finance.export',
         // Field Mode is a SEPARATE application, not a Livewire page. A
         // `wire:navigate` to it would try to swap a client-rendered shell
         // into the Livewire SPA and leave neither working.
@@ -43,7 +45,7 @@ class SpaNavigationHtmlTest extends TestCase
         'admin.invoices.pdf', 'admin.payments.receipt', 'admin.patients.id-card',
         'admin.lab-orders.pdf', 'admin.radiology-orders.pdf', 'admin.admissions.summary',
         'admin.insurance-providers.usage', 'admin.visits.report',
-        'admin.reports.pdf',
+        'admin.reports.pdf', 'admin.finance.statement-pdf',
     ];
 
     /**

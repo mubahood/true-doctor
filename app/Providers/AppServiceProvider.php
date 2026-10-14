@@ -23,6 +23,11 @@ class AppServiceProvider extends ServiceProvider
         // request over CurrentHospital; nothing about money is hardcoded.
         $this->app->singleton(\App\Support\HospitalSettings::class);
 
+        // The chart of accounts remembers each hospital's system accounts once
+        // it has looked them up — per request or job, so a long-running worker
+        // never posts into an account it read yesterday.
+        $this->app->scoped(\App\Services\Finance\ChartOfAccounts::class);
+
         // Which currency to quote a public visitor in.
         //
         // Deliberately NOT scoped or singleton. It takes the Request in its
@@ -95,6 +100,16 @@ class AppServiceProvider extends ServiceProvider
         // Cap indexed string columns at 191 chars so utf8mb4 indexes stay within
         // the 1000-byte key limit on older MySQL/MariaDB builds.
         Schema::defaultStringLength(191);
+
+        // The chart of accounts remembers the accounts it looked up — but a
+        // chart first created inside a transaction that then rolled back (a
+        // dispense that failed on its second item) no longer exists, and
+        // posting to the ids it remembered would fail on every later attempt.
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Database\Events\TransactionRolledBack::class, function (): void {
+            if ($this->app->resolved(\App\Services\Finance\ChartOfAccounts::class)) {
+                $this->app->make(\App\Services\Finance\ChartOfAccounts::class)->forget();
+            }
+        });
 
         // Offline sync: every write to a pullable table gets a revision, so a
         // device can ask "what has changed since?" and get an answer that

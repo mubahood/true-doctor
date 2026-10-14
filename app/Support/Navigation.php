@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Http\Middleware\RequireOnboarding;
 use App\Models\User;
+use App\Support\Practice\Practice;
 use Illuminate\Support\Str;
 
 /**
@@ -46,12 +47,22 @@ use Illuminate\Support\Str;
  *
  * Gates: null = always; 'super' = super-admin; string = permission;
  * array = "any of these permissions".
+ *
+ * `module` is the third filter: a part of the system the hospital's kind of
+ * practice does not use (App\Support\Practice\Practice::uses) is left out of
+ * its menu — a dental practice has no wards to manage. That is a preference
+ * about the menu, not a permission: the pages themselves stay reachable, and
+ * switching the module back on brings the entries straight back.
+ *
+ * `tenant` marks a page that only exists inside a hospital — its books — and
+ * is left out for a super-admin, who belongs to none.
  */
 final class Navigation
 {
     /** The wizard's pages, in the order it asks for them (setup mode). */
     private const SETUP_ORDER = [
         'admin.onboarding',                                                     // the wizard itself
+        'admin.settings.practice',                                              // its first step, on its own page
         'admin.settings.billing', 'admin.departments.index',                    // required steps
         'admin.services.index', 'admin.users.index', 'admin.offline-devices.index',
         'admin.rooms.index', 'admin.wards.index', 'admin.beds.index',           // recommended steps
@@ -89,17 +100,17 @@ final class Navigation
                 ]],
 
                 ['key' => 'diagnostics', 'label' => 'Diagnostics', 'icon' => 'fa-microscope', 'items' => [
-                    ['label' => 'Lab orders', 'icon' => 'fa-flask', 'route' => 'admin.lab-orders.index', 'match' => ['admin.lab-orders.*'], 'can' => 'lab.view'],
-                    ['label' => 'Radiology orders', 'icon' => 'fa-x-ray', 'route' => 'admin.radiology-orders.index', 'match' => ['admin.radiology-orders.*'], 'can' => 'radiology.view'],
+                    ['label' => 'Lab orders', 'icon' => 'fa-flask', 'route' => 'admin.lab-orders.index', 'match' => ['admin.lab-orders.*'], 'can' => 'lab.view', 'module' => 'laboratory'],
+                    ['label' => 'Radiology orders', 'icon' => 'fa-x-ray', 'route' => 'admin.radiology-orders.index', 'match' => ['admin.radiology-orders.*'], 'can' => 'radiology.view', 'module' => 'radiology'],
                 ]],
 
-                ['key' => 'pharmacy', 'label' => 'Pharmacy', 'icon' => 'fa-prescription-bottle-medical', 'gate' => 'pharmacy.view', 'items' => [
+                ['key' => 'pharmacy', 'label' => 'Pharmacy', 'icon' => 'fa-prescription-bottle-medical', 'gate' => 'pharmacy.view', 'module' => 'pharmacy', 'items' => [
                     ['label' => 'Stock items', 'icon' => 'fa-boxes-stacked', 'route' => 'admin.stock.index', 'match' => ['admin.stock.index', 'admin.stock.show']],
                     ['label' => 'Stock alerts', 'icon' => 'fa-triangle-exclamation', 'route' => 'admin.stock.alerts', 'match' => ['admin.stock.alerts']],
                     ['label' => 'Stock ledger', 'icon' => 'fa-book', 'route' => 'admin.stock.movements', 'match' => ['admin.stock.movements']],
                 ]],
 
-                ['key' => 'ipd', 'label' => 'Inpatient', 'icon' => 'fa-hospital-user', 'gate' => 'ipd.view', 'items' => [
+                ['key' => 'ipd', 'label' => 'Inpatient', 'icon' => 'fa-hospital-user', 'gate' => 'ipd.view', 'module' => 'inpatient', 'items' => [
                     ['label' => 'Occupancy board', 'icon' => 'fa-table-cells-large', 'route' => 'admin.admissions.board', 'match' => ['admin.admissions.board']],
                     ['label' => 'Admissions', 'icon' => 'fa-bed', 'route' => 'admin.admissions.index', 'match' => ['admin.admissions.index', 'admin.admissions.show']],
                 ]],
@@ -114,20 +125,29 @@ final class Navigation
             ['key' => 'money', 'label' => 'Billing & finance', 'entries' => [
                 ['key' => 'billing', 'label' => 'Billing', 'icon' => 'fa-file-invoice-dollar', 'items' => [
                     ['label' => 'Invoices', 'icon' => 'fa-file-invoice-dollar', 'route' => 'admin.invoices.index', 'match' => ['admin.invoices.*'], 'can' => 'billing.view'],
-                    ['label' => 'Insurance claims', 'icon' => 'fa-file-medical', 'route' => 'admin.insurance-claims.index', 'match' => ['admin.insurance-claims.*'], 'can' => 'insurance.view'],
+                    ['label' => 'Insurance claims', 'icon' => 'fa-file-medical', 'route' => 'admin.insurance-claims.index', 'match' => ['admin.insurance-claims.*'], 'can' => 'insurance.view', 'module' => 'insurance'],
                 ]],
                 // Cards are money work, not a patient detail: a card desk looks
                 // things up by card, not by remembering whose it is. The panel on
                 // the patient page stays — it is the same rows, filtered to one
                 // person (docs/cards.md).
-                ['key' => 'cards', 'label' => 'Cards', 'icon' => 'fa-wallet', 'gate' => 'patients.card.manage', 'items' => [
+                ['key' => 'cards', 'label' => 'Cards', 'icon' => 'fa-wallet', 'gate' => 'patients.card.manage', 'module' => 'cards', 'items' => [
                     ['label' => 'Cards', 'icon' => 'fa-credit-card', 'route' => 'admin.cards.index', 'match' => ['admin.cards.*']],
                     ['label' => 'Card records', 'icon' => 'fa-receipt', 'route' => 'admin.card-records.index', 'match' => ['admin.card-records.*']],
                 ]],
 
-                ['key' => 'finance', 'label' => 'Finance', 'icon' => 'fa-chart-line', 'items' => [
+                // The books (docs/finance.md): where the money is, what came in
+                // and went out beyond the bills, and the statements an owner,
+                // a bank or the tax office asks for.
+                ['key' => 'finance', 'label' => 'Finance', 'icon' => 'fa-scale-balanced', 'items' => [
+                    ['label' => 'Finance overview', 'icon' => 'fa-gauge-high', 'route' => 'admin.finance.index', 'match' => ['admin.finance.index'], 'can' => 'finance.view', 'tenant' => true],
+                    ['label' => 'Transactions', 'icon' => 'fa-money-bill-transfer', 'route' => 'admin.finance.transactions', 'match' => ['admin.finance.transactions'], 'can' => 'finance.view', 'tenant' => true],
+                    ['label' => 'Financial statements', 'icon' => 'fa-file-lines', 'route' => 'admin.finance.statements', 'match' => ['admin.finance.statements'], 'can' => 'finance.view', 'tenant' => true],
+                    ['label' => 'Journal', 'icon' => 'fa-book', 'route' => 'admin.finance.journal', 'match' => ['admin.finance.journal'], 'can' => 'finance.view', 'tenant' => true],
+                    ['label' => 'Chart of accounts', 'icon' => 'fa-list-ol', 'route' => 'admin.finance.accounts', 'match' => ['admin.finance.accounts', 'admin.finance.accounts.*'], 'can' => 'finance.view', 'tenant' => true],
                     ['label' => 'Reports', 'icon' => 'fa-chart-line', 'route' => 'admin.reports.index', 'match' => ['admin.reports.*'], 'can' => 'reports.view'],
                     ['label' => 'Financial years', 'icon' => 'fa-calendar-alt', 'route' => 'admin.financial-years.index', 'match' => ['admin.financial-years.*'], 'can' => 'finance.view'],
+                    ['label' => 'Finance settings', 'icon' => 'fa-sliders', 'route' => 'admin.finance.settings', 'match' => ['admin.finance.settings'], 'can' => 'finance.manage', 'tenant' => true],
                 ]],
             ]],
 
@@ -136,8 +156,8 @@ final class Navigation
                 ['key' => 'org', 'label' => 'Hospital', 'icon' => 'fa-sitemap', 'items' => [
                     ['label' => 'Departments', 'icon' => 'fa-sitemap', 'route' => 'admin.departments.index', 'match' => ['admin.departments.*'], 'can' => 'access-admin'],
                     ['label' => 'Rooms', 'icon' => 'fa-door-open', 'route' => 'admin.rooms.index', 'match' => ['admin.rooms.*'], 'can' => 'access-admin'],
-                    ['label' => 'Wards', 'icon' => 'fa-hospital', 'route' => 'admin.wards.index', 'match' => ['admin.wards.*'], 'can' => 'ipd.view'],
-                    ['label' => 'Beds', 'icon' => 'fa-bed-pulse', 'route' => 'admin.beds.index', 'match' => ['admin.beds.*'], 'can' => 'ipd.view'],
+                    ['label' => 'Wards', 'icon' => 'fa-hospital', 'route' => 'admin.wards.index', 'match' => ['admin.wards.*'], 'can' => 'ipd.view', 'module' => 'inpatient'],
+                    ['label' => 'Beds', 'icon' => 'fa-bed-pulse', 'route' => 'admin.beds.index', 'match' => ['admin.beds.*'], 'can' => 'ipd.view', 'module' => 'inpatient'],
                     // Two different things with two different names, side by side so
                     // the difference is visible: the person's clinical profile, and
                     // the account they sign in with.
@@ -157,10 +177,10 @@ final class Navigation
 
                 ['key' => 'catalogues', 'label' => 'Catalogues', 'icon' => 'fa-book-medical', 'items' => [
                     ['label' => 'Price list', 'icon' => 'fa-tags', 'route' => 'admin.services.index', 'match' => ['admin.services.*'], 'can' => 'access-admin'],
-                    ['label' => 'Lab tests', 'icon' => 'fa-vial', 'route' => 'admin.lab-tests.index', 'match' => ['admin.lab-tests.*'], 'can' => 'lab.view'],
-                    ['label' => 'Radiology studies', 'icon' => 'fa-radiation', 'route' => 'admin.radiology-studies.index', 'match' => ['admin.radiology-studies.*'], 'can' => 'radiology.view'],
-                    ['label' => 'Stock categories', 'icon' => 'fa-layer-group', 'route' => 'admin.stock-categories.index', 'match' => ['admin.stock-categories.*'], 'can' => 'pharmacy.view'],
-                    ['label' => 'Insurance providers', 'icon' => 'fa-shield-heart', 'route' => 'admin.insurance-providers.index', 'match' => ['admin.insurance-providers.*'], 'can' => 'insurance.view'],
+                    ['label' => 'Lab tests', 'icon' => 'fa-vial', 'route' => 'admin.lab-tests.index', 'match' => ['admin.lab-tests.*'], 'can' => 'lab.view', 'module' => 'laboratory'],
+                    ['label' => 'Radiology studies', 'icon' => 'fa-radiation', 'route' => 'admin.radiology-studies.index', 'match' => ['admin.radiology-studies.*'], 'can' => 'radiology.view', 'module' => 'radiology'],
+                    ['label' => 'Stock categories', 'icon' => 'fa-layer-group', 'route' => 'admin.stock-categories.index', 'match' => ['admin.stock-categories.*'], 'can' => 'pharmacy.view', 'module' => 'pharmacy'],
+                    ['label' => 'Insurance providers', 'icon' => 'fa-shield-heart', 'route' => 'admin.insurance-providers.index', 'match' => ['admin.insurance-providers.*'], 'can' => 'insurance.view', 'module' => 'insurance'],
                 ]],
 
                 // Gated on manage-settings rather than on the pages' own looser
@@ -168,6 +188,8 @@ final class Navigation
                 // and advertising an admin chore to a pharmacist is noise.
                 ['key' => 'config', 'label' => 'Settings', 'icon' => 'fa-gear', 'gate' => 'manage-settings', 'items' => [
                     ['label' => 'Set up your hospital', 'icon' => 'fa-list-check', 'route' => 'admin.onboarding', 'match' => ['admin.onboarding']],
+                    // What kind of practice this is — what everything suggests, and what this menu shows.
+                    ['label' => 'Your practice', 'icon' => 'fa-shapes', 'route' => 'admin.settings.practice', 'match' => ['admin.settings.practice'], 'tenant' => true],
                     // What every printed document carries at the top of it.
                     ['label' => 'Hospital letterhead', 'icon' => 'fa-stamp', 'route' => 'admin.settings.hospital', 'match' => ['admin.settings.hospital']],
                     ['label' => 'Billing settings', 'icon' => 'fa-coins', 'route' => 'admin.settings.billing', 'match' => ['admin.settings.billing*']],
@@ -182,20 +204,23 @@ final class Navigation
      * their hospital is still in setup — collapsed to the one section that works.
      *
      * @param  \Closure(array<string>): bool|null  $isActive  whether a `match`
-     *         list covers the current page; null outside a web request (the API)
+     *                                                        list covers the current page; null outside a web request (the API)
      * @return array{sections: list<array<string,mixed>>, activeGroup: string}
      */
     public static function for(User $user, bool $inSetup, ?\Closure $isActive = null): array
     {
         $isActive ??= fn (array $match) => false;
         $allow = fn ($gate) => self::allows($user, $gate);
+        $practice = Practice::of($user->isSuperAdmin() ? null : $user->hospital);
+        $inUse = fn (array $it) => (! isset($it['module']) || $practice->uses($it['module']))
+            && (! ($it['tenant'] ?? false) || $user->hospital_id !== null);
 
         $rendered = [];
         $byRoute = [];          // every visible destination, for setup mode below
         $activeGroup = '';
 
-        $resolve = function (array $it) use ($allow, $isActive, &$byRoute) {
-            if (isset($it['can']) && ! $allow($it['can'])) {
+        $resolve = function (array $it) use ($allow, $inUse, $isActive, &$byRoute) {
+            if ((isset($it['can']) && ! $allow($it['can'])) || ! $inUse($it)) {
                 return null;
             }
             $it['active'] = $isActive($it['match']);
@@ -221,7 +246,7 @@ final class Navigation
                 }
 
                 // A group: drop it whole if its gate fails, then filter its children.
-                if (isset($e['gate']) && ! $allow($e['gate'])) {
+                if ((isset($e['gate']) && ! $allow($e['gate'])) || ! $inUse($e)) {
                     continue;
                 }
 

@@ -12,6 +12,7 @@ use App\Models\StockCategory;
 use App\Models\User;
 use App\Models\Ward;
 use App\Support\Onboarding\Step;
+use App\Support\Practice\Practice;
 use Illuminate\Support\Collection;
 
 /**
@@ -21,12 +22,16 @@ use Illuminate\Support\Collection;
  * the system enforces can never drift apart.
  *
  * REQUIRED steps are the minimum a hospital needs before it can treat and bill
- * a patient: an identifiable hospital, money configured, somewhere to work, a
- * price list, and someone besides the owner to do the work. Until all of them
+ * a patient: what kind of practice it is (which decides everything the later
+ * steps suggest — docs/practice.md), an identifiable hospital, money
+ * configured, somewhere to work, a price list, and someone besides the owner
+ * to do the work. Until all of them
  * pass, the gate keeps the owner in the wizard — there is no skip.
  *
  * RECOMMENDED steps (rooms, wards, catalogues) shape the modules a hospital
- * chooses to use; they are surfaced but never block.
+ * chooses to use; they are surfaced but never block, and a step for a module
+ * the practice does not use is not shown at all — a dental practice is not
+ * asked about wards.
  *
  * Paying for the subscription is deliberately NOT a step: a hospital on its
  * free trial is fully operational and must never be trapped behind a paywall
@@ -35,9 +40,15 @@ use Illuminate\Support\Collection;
 class OnboardingStatus
 {
     /** Steps whose absence blocks access to the rest of the system. */
-    public const REQUIRED = ['profile', 'billing', 'departments', 'services', 'staff'];
+    public const REQUIRED = ['practice', 'profile', 'billing', 'departments', 'services', 'staff'];
 
     // ── Individual checks (kept small so each reads as a sentence) ─────────
+
+    /** The hospital has said what kind of practice it is. */
+    public function practiceChosen(Hospital $hospital): bool
+    {
+        return Practice::of($hospital)->chosen;
+    }
 
     /** The hospital can identify itself on an invoice: address plus a way to reach it. */
     public function profileConfigured(Hospital $hospital): bool
@@ -78,7 +89,8 @@ class OnboardingStatus
             return true; // No hospital context (e.g. super-admin) — nothing to gate.
         }
 
-        return $this->profileConfigured($hospital)
+        return $this->practiceChosen($hospital)
+            && $this->profileConfigured($hospital)
             && $this->billingConfigured($hospital)
             && $this->hasDepartments($hospital)
             && $this->hasServices($hospital)
@@ -127,8 +139,24 @@ class OnboardingStatus
         $beds = $this->scoped(Bed::class, $hospital)->count();
         $labTests = $this->scoped(LabTest::class, $hospital)->count();
         $stockCategories = $this->scoped(StockCategory::class, $hospital)->count();
+        $practice = Practice::of($hospital);
+        $catalogueNames = array_filter([
+            $practice->uses('laboratory') ? 'lab tests' : null,
+            $practice->uses('pharmacy') ? 'stock categories' : null,
+        ]);
 
         return collect([
+            new Step(
+                key: 'practice',
+                title: 'Your kind of practice',
+                summary: 'Dental clinic, eye clinic, maternity home, general hospital…',
+                why: 'Everything the next steps suggest — departments, the price list, rooms, wards, lab tests, stock, even the words offered when a clinician types a diagnosis — is drawn from what your kind of practice actually does. It also decides which parts of the system appear in your menu. You can change it later without losing anything.',
+                icon: 'fa-shapes',
+                required: true,
+                done: $practice->chosen,
+                detail: $practice->chosen ? $this->practiceDetail($practice) : 'Not chosen yet',
+                route: route('admin.settings.practice'),
+            ),
             new Step(
                 key: 'profile',
                 title: 'Hospital details',
@@ -205,7 +233,7 @@ class OnboardingStatus
                 detail: $rooms > 0 ? $this->plural($rooms, 'room') : 'None yet',
                 route: route('admin.rooms.index'),
             ),
-            new Step(
+            $practice->uses('inpatient') ? new Step(
                 key: 'wards',
                 title: 'Wards and beds',
                 summary: 'Only if you admit inpatients.',
@@ -216,11 +244,12 @@ class OnboardingStatus
                 detail: $wards > 0 ? $this->plural($wards, 'ward').', '.$this->plural($beds, 'bed') : 'None yet',
                 issues: $wards > 0 && $beds === 0 ? ['You have wards but no beds — a patient cannot be admitted yet.'] : [],
                 route: route('admin.wards.index'),
-            ),
-            new Step(
+            ) : null,
+            $catalogueNames === [] ? null : new Step(
                 key: 'catalogues',
-                title: 'Lab and pharmacy catalogues',
-                summary: 'Tests you run and the categories your stock falls into.',
+                title: $practice->uses('laboratory') && $practice->uses('pharmacy') ? 'Lab and pharmacy catalogues'
+                    : ($practice->uses('laboratory') ? 'Lab test catalogue' : 'Stock categories'),
+                summary: ucfirst(implode(' and ', $catalogueNames)).' for the work you do.',
                 why: 'Lab orders are placed against the test catalogue, and stock items need a category before they can be received or dispensed.',
                 icon: 'fa-flask',
                 required: false,
@@ -230,7 +259,7 @@ class OnboardingStatus
                     : 'None yet',
                 route: route('admin.lab-tests.index'),
             ),
-        ]);
+        ])->filter()->values();
     }
 
     /** @return Collection<int, Step> */
@@ -345,6 +374,16 @@ class OnboardingStatus
         }
 
         return $issues;
+    }
+
+    private function practiceDetail(Practice $practice): string
+    {
+        $extra = array_filter(array_map(
+            fn (string $k) => Practice::pack($k)::label(),
+            $practice->extraPacks,
+        ));
+
+        return $practice->sector->label.($extra !== [] ? ' · also '.implode(', ', $extra) : '');
     }
 
     private function plural(int $count, string $noun): string

@@ -218,7 +218,11 @@ class CardService
     }
 
     /**
-     * @param  array{for?:Patient|int|null,reference?:string|null,insurance_transaction_id?:int|null}  $opts
+     * `books` false leaves the movement out of the general ledger, for the one
+     * caller that posts the same money itself (a payment by card). `method`
+     * is how a top-up was paid, which decides the book it lands in.
+     *
+     * @param  array{for?:Patient|int|null,reference?:string|null,insurance_transaction_id?:int|null,books?:bool,method?:\App\Enums\PaymentMethod|null}  $opts
      */
     private function post(PatientCard $card, CardEntryType $type, string $amount, ?string $description, ?int $by, array $opts = []): CardRecord
     {
@@ -258,7 +262,7 @@ class CardService
 
             $locked->update(['balance' => $newBalance]);
 
-            return CardRecord::create([
+            $record = CardRecord::create([
                 'uuid' => (string) Str::uuid(),
                 'patient_card_id' => $locked->id,
                 'patient_id' => $forId,
@@ -271,6 +275,12 @@ class CardService
                 'created_by' => $by,
                 'created_at' => now(),
             ]);
+
+            if ($opts['books'] ?? true) {
+                app(\App\Services\Finance\Bookkeeper::class)->cardMoved($record, $opts['method'] ?? null);
+            }
+
+            return $record;
         });
     }
 

@@ -41,6 +41,17 @@ enum PaymentMethod: string
         return array_values(array_filter(self::cases(), fn (self $m) => ! $m->isGateway()));
     }
 
+    /**
+     * How money is handed over at a card desk for a top-up — each lands in
+     * its own book (docs/finance.md).
+     *
+     * @return list<string>
+     */
+    public static function forTopUp(): array
+    {
+        return [self::Cash->value, self::MobileMoney->value, self::Bank->value];
+    }
+
     public function isGateway(): bool
     {
         return $this === self::Flutterwave;

@@ -211,6 +211,9 @@ class StockService
                 'created_at' => Carbon::now(),
             ]);
 
+            // The shelf's value moves in the books with the shelf.
+            app(\App\Services\Finance\Bookkeeper::class)->stockMoved($movement);
+
             // Alert once, only when this movement crosses into low-stock territory.
             $reorder = (string) $locked->reorder_level;
             if (! $reason->isIncoming()

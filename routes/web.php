@@ -206,6 +206,18 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'subscribed', 'onboarding',
     Route::get('financial-years', \App\Livewire\FinancialYears\Index::class)->name('financial-years.index');
     Route::get('financial-years/{financialYear}', \App\Livewire\FinancialYears\Show::class)->name('financial-years.show');
 
+    // ── The books (docs/finance.md) ───────────────────────────
+    Route::get('finance', \App\Livewire\Finance\Overview::class)->name('finance.index');
+    Route::get('finance/transactions', \App\Livewire\Finance\Transactions::class)->name('finance.transactions');
+    Route::get('finance/journal', \App\Livewire\Finance\Journal::class)->name('finance.journal');
+    Route::get('finance/accounts', \App\Livewire\Finance\Accounts::class)->name('finance.accounts');
+    Route::get('finance/accounts/{account}', \App\Livewire\Finance\AccountShow::class)->name('finance.accounts.show');
+    Route::get('finance/statements', \App\Livewire\Finance\Statements::class)->name('finance.statements');
+    Route::get('finance/settings', \App\Livewire\Finance\Settings::class)->name('finance.settings');
+    // Taken away: a statement on the letterhead, or any of it as a spreadsheet.
+    Route::get('finance/statements/pdf', [\App\Http\Controllers\Admin\FinanceExportController::class, 'pdf'])->name('finance.statement-pdf');
+    Route::get('finance/export', [\App\Http\Controllers\Admin\FinanceExportController::class, 'csv'])->name('finance.export');
+
     // ── Notifications (Phase 4 Step 19) ───────────────────────
     Route::get('notifications', \App\Livewire\Notifications\Index::class)->name('notifications.index');
     Route::post('device-tokens', [\App\Http\Controllers\Admin\DeviceTokenController::class, 'store'])->name('device-tokens.store');
@@ -224,6 +236,7 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'subscribed', 'onboarding',
     // ── Configuration ─────────────────────────────────────────
     Route::get('settings/hospital', \App\Livewire\Settings\Hospital::class)->name('settings.hospital');
     Route::get('settings/billing', \App\Livewire\Settings\Billing::class)->name('settings.billing');
+    Route::get('settings/practice', \App\Livewire\Settings\Practice::class)->name('settings.practice');
     Route::get('settings', \App\Livewire\Settings\Site::class)->name('settings.index');
 
     // Staff/user management (tenant-scoped — see App\Services\StaffService)

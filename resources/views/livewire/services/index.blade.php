@@ -26,6 +26,7 @@
           <td class="tb-fw-500">
             <button type="button" class="tb-rowbtn" wire:click="peek({{ $r->id }})"
                     title="See this service">{{ $r->name }}</button>
+            @if($r->category)<div class="muted tb-xs">{{ $r->category }}</div>@endif
           </td>
           <td class="mono muted">{{ $r->code ?? '—' }}</td>
           <td class="mono tb-text-right">{{ \App\Support\HospitalSettings::money($r->price) }}</td>
@@ -52,9 +53,23 @@
         <x-ui.field label="Name" for="svc-name" name="name" required>
           <input id="svc-name" type="text" wire:model="name" class="tb-input" required>
         </x-ui.field>
-        <x-ui.field label="Code" for="svc-code" name="code">
-          <input id="svc-code" type="text" wire:model="code" class="tb-input">
-        </x-ui.field>
+        <div class="tb-form-grid">
+          <x-ui.field label="Code" for="svc-code" name="code">
+            <input id="svc-code" type="text" wire:model="code" class="tb-input">
+          </x-ui.field>
+          <x-ui.field label="Specialty" for="svc-cat" name="category" hint="Groups the price list, e.g. Dental">
+            <input id="svc-cat" type="text" wire:model="category" class="tb-input" list="svc-cat-list" maxlength="60">
+            <datalist id="svc-cat-list">@foreach($this->categories as $c)<option value="{{ $c }}"></option>@endforeach</datalist>
+          </x-ui.field>
+        </div>
+        @can('finance.view')
+          <x-ui.field label="Earns into" for="svc-acct" name="ledger_account_id" hint="The income account this service is booked to. Left on automatic, it follows the kind of work — consultation, lab, imaging, procedure.">
+            <select id="svc-acct" wire:model="ledger_account_id" class="tb-select">
+              <option value="">Automatic — by the kind of work</option>
+              @foreach($this->incomeAccounts as $a)<option value="{{ $a->id }}">{{ $a->label() }}</option>@endforeach
+            </select>
+          </x-ui.field>
+        @endcan
         <x-ui.field label="Price" for="svc-price" name="price" required>
           <input id="svc-price" type="number" step="any" wire:model="price" class="tb-input" required>
         </x-ui.field>

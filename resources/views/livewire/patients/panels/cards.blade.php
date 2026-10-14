@@ -164,6 +164,14 @@
           <x-ui.field label="Amount" for="txn-amount" name="amount" required>
             <input id="txn-amount" type="number" step="0.01" min="0.01" wire:model="amount" class="tb-input" required>
           </x-ui.field>
+          @if($txnType === 'credit')
+            {{-- How it was paid decides which book the money lands in (docs/finance.md). --}}
+            <x-ui.field label="Paid by" for="txn-paidby" name="paidBy">
+              <select id="txn-paidby" wire:model="paidBy" class="tb-select">
+                @foreach(\App\Enums\PaymentMethod::forTopUp() as $m)<option value="{{ $m }}">{{ \App\Enums\PaymentMethod::from($m)->label() }}</option>@endforeach
+              </select>
+            </x-ui.field>
+          @endif
           <x-ui.field label="Note" for="txn-note" name="description">
             <input id="txn-note" type="text" wire:model="description" class="tb-input" maxlength="255">
           </x-ui.field>

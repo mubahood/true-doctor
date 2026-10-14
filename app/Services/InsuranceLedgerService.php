@@ -351,7 +351,7 @@ class InsuranceLedgerService
     ): InsuranceTransaction {
         $provider->forceFill(['float_balance' => $after])->save();
 
-        return InsuranceTransaction::create([
+        $entry = InsuranceTransaction::create([
             'uuid' => (string) Str::uuid(),
             'insurance_provider_id' => $provider->id,
             'type' => $type,
@@ -363,6 +363,12 @@ class InsuranceLedgerService
             'created_by' => $by,
             'created_at' => now(),
         ]);
+
+        // The float and the books move together (a settlement's card credit
+        // is this same money, and is left out of the books for that reason).
+        app(\App\Services\Finance\Bookkeeper::class)->insuranceMoved($entry);
+
+        return $entry;
     }
 
     private function lock(InsuranceProvider $provider): InsuranceProvider
