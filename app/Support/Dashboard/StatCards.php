@@ -29,7 +29,9 @@ final class StatCards
     {
         $money = app(HospitalSettings::class);
         $n = fn (mixed $v) => number_format((int) ($v ?? 0));
-        $can = fn (string $permission) => $user->can($permission);
+        // Allowed AND part of this practice: no bed count for a dental clinic.
+        $practice = \App\Support\Practice\Practice::current();
+        $can = fn (string $permission) => $user->can($permission) && $practice->allows($permission);
 
         $cards = match ($roleView) {
             // The five figures a day is read from. It used to open on the size
@@ -106,7 +108,7 @@ final class StatCards
                     $money->format($d['outstanding']['total'] ?? '0'), 'Outstanding', 'fa-file-invoice-dollar',
                     ($d['outstanding']['count'] ?? 0) ? 'warn' : '', ($d['outstanding']['count'] ?? 0).' unpaid', 'admin.invoices.index',
                 ),
-                self::card($n($d['claims']['count'] ?? 0), 'Pending claims', 'fa-shield-heart', '', $money->format($d['claims']['total'] ?? '0'), 'admin.insurance-claims.index'),
+                $can('insurance.view') ? self::card($n($d['claims']['count'] ?? 0), 'Pending claims', 'fa-shield-heart', '', $money->format($d['claims']['total'] ?? '0'), 'admin.insurance-claims.index') : null,
             ],
 
             'records' => [

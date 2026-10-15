@@ -41,6 +41,13 @@ if (! is_file($app_base.'/vendor/autoload.php')) {
     exit('Application not found at '.$app_base.' — check deploy/docroot-index.php.');
 }
 
+// A standalone copy that has not been installed yet has no .env: send the
+// visitor to the installer rather than to a server error.
+if (! is_file($app_base.'/.env') && is_file(__DIR__.'/install.php')) {
+    header('Location: /install.php', true, 302);
+    exit;
+}
+
 // Laravel's own maintenance-mode short circuit, before anything is booted.
 if (file_exists($maintenance = $app_base.'/storage/framework/maintenance.php')) {
     require $maintenance;

@@ -231,6 +231,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ! $installed) {
             if ($pdo->query('SHOW TABLES')->fetch() !== false) {
                 throw new \DomainException('This database already has tables. Create an empty database for this installation.');
             }
+            // Every table is created as InnoDB (config/database.php), whatever the server default.
+            $innodb = $pdo->query("SELECT SUPPORT FROM information_schema.ENGINES WHERE ENGINE = 'InnoDB'")->fetchColumn();
+            if (! in_array(strtoupper((string) $innodb), ['YES', 'DEFAULT'], true)) {
+                throw new \DomainException('This MySQL server has the InnoDB storage engine switched off. Ask your host to enable InnoDB, then try again.');
+            }
         } catch (\DomainException $e) {
             $errors[] = $e->getMessage();
         } catch (\Throwable) {
@@ -254,6 +259,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ! $installed) {
             $settings = [
                 'APP_NAME' => 'True-Doctor', 'APP_ENV' => 'production', 'APP_EDITION' => 'standalone',
                 'APP_DEBUG' => 'false', 'APP_URL' => $values['app_url'],
+                // The organisation's own clock, for every time the system shows or schedules.
+                'APP_TIMEZONE' => $values['timezone'],
                 'APP_PUBLIC_PATH' => __DIR__,
                 'APP_KEY' => 'base64:'.base64_encode(random_bytes(32)),
                 'DB_CONNECTION' => 'mysql', 'DB_HOST' => $values['db_host'],
@@ -266,6 +273,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ! $installed) {
                 'ONBOARDING_GATE' => 'true', 'SUBSCRIPTION_GATE' => 'false',
                 'TELESCOPE_ENABLED' => 'false', 'DEMO_MODE' => 'false',
                 'APP_UPDATE_SERVER' => 'https://true-doctor.online',
+                // The sender's name on every email; Laravel's own default is "Example".
+                'MAIL_FROM_NAME' => $values['hospital_name'],
             ];
             if ($values['mail_host'] !== '') {
                 $settings += [

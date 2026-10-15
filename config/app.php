@@ -65,7 +65,11 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    // UTC unless APP_TIMEZONE says otherwise. The online service runs in UTC;
+    // a standalone installation runs on its own clock, the zone the installer
+    // asked for — otherwise a Kampala clinic sees every time three hours early
+    // and its midnight jobs run at three in the morning.
+    'timezone' => env('APP_TIMEZONE', 'UTC'),
 
     /*
     |--------------------------------------------------------------------------

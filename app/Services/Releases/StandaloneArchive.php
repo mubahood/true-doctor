@@ -13,6 +13,18 @@ use ZipArchive;
 /** A signed, deliberately narrow archive layout for shared hosting. */
 final class StandaloneArchive
 {
+    /**
+     * What entries extract as. Every file is 0644: a string added from memory
+     * (PACKAGE.json, the signed file list) otherwise extracts 0666, writable by
+     * anybody. The directories added here are exactly the ones PHP must write
+     * (storage/…, bootstrap/cache), and the package cannot know which user PHP
+     * runs as on a buyer's server — so they stay 0777, as they always were,
+     * and the installer's writable check covers the rest.
+     */
+    private const DIRECTORY_MODE = 040777;
+
+    private const FILE_MODE = 0100644;
+
     private const APP_DIRECTORIES = ['app', 'bootstrap', 'config', 'database', 'resources', 'routes', 'vendor'];
 
     private const APP_FILES = ['artisan', 'composer.json', 'composer.lock', 'RELEASE.json', 'RELEASE_KEYS.json', 'INSTALL.md'];
@@ -70,15 +82,18 @@ final class StandaloneArchive
                     throw new \RuntimeException("Could not add {$directory} to the release.");
                 }
                 $zip->setMtimeName($directory, 315532800);
+                $zip->setExternalAttributesName($directory, ZipArchive::OPSYS_UNIX, self::DIRECTORY_MODE << 16);
             }
             foreach ($files as $path => $source) {
                 if (! $zip->addFile($source, $path)) {
                     throw new \RuntimeException("Could not add {$path} to the release.");
                 }
                 $zip->setMtimeName($path, 315532800);
+                $zip->setExternalAttributesName($path, ZipArchive::OPSYS_UNIX, self::FILE_MODE << 16);
             }
             $zip->addFromString('PACKAGE.json', Canonical::json($signed)."\n");
             $zip->setMtimeName('PACKAGE.json', 315532800);
+            $zip->setExternalAttributesName('PACKAGE.json', ZipArchive::OPSYS_UNIX, self::FILE_MODE << 16);
         } finally {
             $zip->close();
         }

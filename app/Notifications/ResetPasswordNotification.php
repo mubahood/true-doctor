@@ -31,10 +31,11 @@ class ResetPasswordNotification extends Base implements ShouldQueue
         ], false));
 
         $minutes = (int) config('auth.passwords.users.expire', 60);
-        $expiresIn = $minutes % 60 === 0 ? ($minutes / 60).' hours' : $minutes.' minutes';
+        $expiresIn = $minutes % 60 === 0 ? ($minutes / 60).' hour'.($minutes === 60 ? '' : 's') : $minutes.' minutes';
 
         return (new MailMessage)
-            ->subject('Reset Your True-Doctor Password')
+            // In the name of the hospital the account belongs to, when it has one.
+            ->subject('Reset your password — '.(\App\Support\HospitalBrand::forUser($notifiable)->name() ?? 'True-Doctor'))
             ->view('emails.reset-password', [
                 'user' => $notifiable,
                 'resetUrl' => $url,

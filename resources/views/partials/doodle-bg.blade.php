@@ -1,8 +1,11 @@
-{{-- Faded health-themed doodle background, tiled across the whole page. --}}
-<svg class="bgdoodle" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+{{-- Faded health-themed doodle background, tiled across the whole page.
+     $doodleStroke recolours it (white on a hospital's brand panel) and
+     $doodleClass places it; both default to the page background. --}}
+@php($doodleStroke = $doodleStroke ?? '#cbd4df')
+<svg class="{{ $doodleClass ?? 'bgdoodle' }}" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <pattern id="tdDoodles" width="300" height="300" patternUnits="userSpaceOnUse">
-      <g fill="none" stroke="#cbd4df" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+      <g fill="none" stroke="{{ $doodleStroke }}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
 
         {{-- medical cross (rounded plus) --}}
         <path d="M26 34 a4 4 0 0 1 4-4 h6 a4 4 0 0 1 4 4 v6 h6 a4 4 0 0 1 4 4 v6 a4 4 0 0 1-4 4 h-6 v6 a4 4 0 0 1-4 4 h-6 a4 4 0 0 1-4-4 v-6 h-6 a4 4 0 0 1-4-4 v-6 a4 4 0 0 1 4-4 h6 z"/>
@@ -53,7 +56,7 @@
         {{-- thermometer --}}
         <g transform="translate(244,214)">
           <path d="M4 2 a4 4 0 0 1 8 0 v24 a7 7 0 1 1 -8 0 z"/>
-          <circle cx="8" cy="33" r="3.5" fill="#cbd4df" stroke="none"/>
+          <circle cx="8" cy="33" r="3.5" fill="{{ $doodleStroke }}" stroke="none"/>
           <path d="M4 9 h3 M4 15 h3 M4 21 h3"/>
         </g>
 

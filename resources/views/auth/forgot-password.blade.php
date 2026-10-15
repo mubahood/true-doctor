@@ -20,7 +20,7 @@
     <div class="a-inwrap">
       <i class="fas fa-envelope" aria-hidden="true"></i>
       <input class="a-input @error('email') is-bad @enderror" id="email" type="email" name="email"
-             value="{{ old('email') }}" placeholder="you@hospital.org" required autofocus
+             value="{{ old('email') }}" placeholder="{{ \App\Support\HospitalBrand::forSignIn()->emailPlaceholder() }}" required autofocus
              autocomplete="username" inputmode="email" autocapitalize="off" spellcheck="false"
              @error('email') aria-invalid="true" aria-describedby="email-error" @enderror>
     </div>

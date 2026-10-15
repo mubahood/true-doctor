@@ -98,6 +98,12 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // @canuse('ipd.view') … @endcanuse: allowed to, and part of this
+        // practice — a dental clinic has the permission matrix of every
+        // hospital but no beds to show. (Practice::allows)
+        \Illuminate\Support\Facades\Blade::if('canuse', fn (string $permission): bool => auth()->user()?->can($permission) === true
+            && \App\Support\Practice\Practice::current()->allows($permission));
+
         // Cap indexed string columns at 191 chars so utf8mb4 indexes stay within
         // the 1000-byte key limit on older MySQL/MariaDB builds.
         Schema::defaultStringLength(191);

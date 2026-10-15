@@ -148,7 +148,12 @@ class OperationLedger
                 'status' => 'processing',
                 'base_version' => $operation['base_version'] ?? null,
                 'payload_hash' => $payloadHash,
-                'client_created_at' => $operation['client_created_at'] ?? null,
+                // A device sends UTC ("…Z"); stored on the installation's own
+                // clock like every other time, or it reads hours out wherever
+                // APP_TIMEZONE is not UTC.
+                'client_created_at' => isset($operation['client_created_at'])
+                    ? \Illuminate\Support\Carbon::parse((string) $operation['client_created_at'])->setTimezone(config('app.timezone'))
+                    : null,
             ]));
 
             return ['replayed' => false, 'row' => $row];

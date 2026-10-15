@@ -12,7 +12,7 @@
 
 <div class="dash-grid cols-2">
   @can('finance.view')<livewire:dashboard.section widget="admin.money-trend" lazy />@endcan
-  @can('ipd.view')<livewire:dashboard.section widget="admin.occupancy" lazy />@endcan
+  @canuse('ipd.view')<livewire:dashboard.section widget="admin.occupancy" lazy />@endcanuse
 </div>
 
 <div class="dash-grid cols-2">
@@ -21,12 +21,12 @@
 </div>
 
 <div class="dash-grid cols-2">
-  @can('patients.card.manage')<livewire:dashboard.section widget="admin.cards" lazy />@endcan
+  @canuse('patients.card.manage')<livewire:dashboard.section widget="admin.cards" lazy />@endcanuse
   @can('appointments.view')<livewire:dashboard.section widget="admin.appointments-by-status" lazy />@endcan
 </div>
 
 <div class="dash-grid cols-2">
-  @can('pharmacy.view')<livewire:dashboard.section widget="admin.low-stock" lazy />@endcan
+  @canuse('pharmacy.view')<livewire:dashboard.section widget="admin.low-stock" lazy />@endcanuse
   <livewire:dashboard.section widget="admin.side-stats" lazy />
 </div>
 
@@ -38,8 +38,8 @@
     @can('visits.create')<x-dash.quick :href="route('admin.visits.index')" icon="fa-stethoscope" label="Open a visit" />@endcan
     @can('appointments.manage')<x-dash.quick :href="route('admin.appointments.index')" icon="fa-calendar-plus" label="Book appointment" />@endcan
     @can('billing.view')<x-dash.quick :href="route('admin.invoices.index')" icon="fa-file-invoice" label="Invoices" />@endcan
-    @can('patients.card.manage')<x-dash.quick :href="route('admin.cards.index')" icon="fa-wallet" label="Cards" />@endcan
-    @can('ipd.view')<x-dash.quick :href="route('admin.admissions.board')" icon="fa-hospital-user" label="Occupancy board" />@endcan
+    @canuse('patients.card.manage')<x-dash.quick :href="route('admin.cards.index')" icon="fa-wallet" label="Cards" />@endcanuse
+    @canuse('ipd.view')<x-dash.quick :href="route('admin.admissions.board')" icon="fa-hospital-user" label="Occupancy board" />@endcanuse
     @can('reports.view')<x-dash.quick :href="route('admin.reports.index')" icon="fa-chart-pie" label="Reports" />@endcan
   </div>
 </div>

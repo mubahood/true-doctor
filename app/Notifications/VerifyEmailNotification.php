@@ -5,6 +5,7 @@ namespace App\Notifications;
 use Illuminate\Auth\Notifications\VerifyEmail as Base;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
 
 /**
  * The "confirm your email address" message, queued.
@@ -19,8 +20,9 @@ use Illuminate\Contracts\Queue\ShouldQueue;
  * and a genuine failure lands in `failed_jobs` where Horizon shows it to
  * somebody who can do something about it.
  *
- * The message itself is Laravel's — the signed URL, the expiry and the wording
- * are all framework behaviour and there is no reason to restate them.
+ * The signed URL and its expiry are Laravel's; the email itself is the same
+ * shell as every other one staff receive (emails/_header), in their
+ * hospital's name and colour when it has set them.
  */
 class VerifyEmailNotification extends Base implements ShouldQueue
 {
@@ -39,5 +41,20 @@ class VerifyEmailNotification extends Base implements ShouldQueue
     public function backoff(): array
     {
         return [10, 60];
+    }
+
+    /** The hospital's own email, like every other one staff receive (emails/_header). */
+    public function toMail($notifiable): MailMessage
+    {
+        $minutes = (int) config('auth.verification.expire', 60);
+
+        return (new MailMessage)
+            ->subject('Confirm your email address — '.(\App\Support\HospitalBrand::forUser($notifiable)->name() ?? 'True-Doctor'))
+            ->view('emails.verify-email', [
+                'user' => $notifiable,
+                // The base class's signed URL: its expiry and any createUrlUsing callback hold.
+                'verifyUrl' => $this->verificationUrl($notifiable),
+                'expiresIn' => $minutes % 60 === 0 ? ($minutes / 60).' hour'.($minutes === 60 ? '' : 's') : $minutes.' minutes',
+            ]);
     }
 }

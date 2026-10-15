@@ -200,6 +200,35 @@ final class Practice
         return array_values(array_intersect(array_keys(self::MODULES), $on));
     }
 
+    /**
+     * Which module a permission belongs to, by its prefix. A permission that
+     * belongs to none is never switched off by the practice.
+     */
+    private const PERMISSION_MODULES = [
+        'ipd.' => 'inpatient', 'wards.' => 'inpatient',
+        'lab.' => 'laboratory',
+        'radiology.' => 'radiology',
+        'pharmacy.' => 'pharmacy',
+        'insurance.' => 'insurance',
+        'patients.card.' => 'cards',
+    ];
+
+    /**
+     * Whether this practice does the work a permission is for — so a dental
+     * clinic's dashboard does not count beds it does not have. The menu hides
+     * the same modules (Navigation's `module` key).
+     */
+    public function allows(string $permission): bool
+    {
+        foreach (self::PERMISSION_MODULES as $prefix => $module) {
+            if (str_starts_with($permission, $prefix)) {
+                return $this->uses($module);
+            }
+        }
+
+        return true;
+    }
+
     public function uses(string $module): bool
     {
         // Something that is not a switchable module is always on.

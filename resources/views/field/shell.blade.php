@@ -3,7 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Field Mode · True-Doctor</title>
+  {{-- The hospital's own colour and mark, as on every other screen. Baked in
+       when the page is fetched, so the offline copy keeps them. --}}
+  @php $fieldBrand = \App\Support\HospitalBrand::current(); @endphp
+  <title>Field Mode · {{ \App\Support\Edition::isStandalone() && $fieldBrand->isSet() ? $fieldBrand->name() : 'True-Doctor' }}</title>
+  @if($fieldBrand->markUrl())<link rel="icon" href="{{ $fieldBrand->markUrl() }}">@endif
+  <meta name="theme-color" content="{{ $fieldBrand->colour() ?? '#ffffff' }}">
 
   {{-- No CSRF token and no session-dependent markup: this page has to render
        from the service-worker cache with no server involved at all, and a
@@ -18,6 +23,7 @@
 
   @vite(['resources/css/field.css', 'resources/js/field.js'])
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  @if($fieldBrand->adminCss() !== '')<style>{!! $fieldBrand->adminCss() !!}</style>@endif
 </head>
 <body x-data x-init="$store.offline.boot({{ $hospitalId }}, {{ $userId }})">
 

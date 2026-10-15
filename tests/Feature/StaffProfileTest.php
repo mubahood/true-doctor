@@ -92,4 +92,23 @@ class StaffProfileTest extends TestCase
             $this->assertSame($userB->id, StaffProfile::withoutGlobalScopes()->find($profileB->id)->user_id);
         }
     }
+
+    /**
+     * Opening a profile shows the days they are bookable and how many patients
+     * are booked with them. Both queried columns that do not exist
+     * (`doctor_id`), so opening any profile failed.
+     */
+    public function test_opening_a_profile_shows_their_rota_and_bookings(): void
+    {
+        $h = Hospital::factory()->create();
+        $this->admin($h);
+        $doctor = User::factory()->create(['hospital_id' => $h->id, 'role' => 'doctor']);
+        $profile = StaffProfile::factory()->create(['hospital_id' => $h->id, 'user_id' => $doctor->id]);
+        \App\Models\DoctorSchedule::factory()->create(['hospital_id' => $h->id, 'user_id' => $doctor->id]);
+
+        $page = Livewire::test(Index::class)->call('peek', $profile->id)->assertOk();
+
+        $this->assertCount(1, $page->instance()->peekedWindows);
+        $this->assertSame(0, $page->instance()->peekedUpcoming);
+    }
 }

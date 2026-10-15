@@ -69,7 +69,12 @@ function bridgeFlash() {
 
 // ── Title mirror (server renders <title>; the topbar mirrors it) ──────────
 function pageTitle() {
-    return (document.title || '').replace(/\s·\sTrue-Doctor$/, '').trim() || 'Dashboard';
+    // Whatever the layout appends — True-Doctor, or the hospital's own name.
+    const suffix = document.querySelector('meta[name="td-title-suffix"]')?.content || 'True-Doctor';
+    const title = document.title || '';
+    const tail = ' · ' + suffix;
+
+    return (title.endsWith(tail) ? title.slice(0, -tail.length) : title).trim() || 'Dashboard';
 }
 
 // ── Promise-based confirm (used by the dirty-guard; components use wire:confirm)

@@ -1,70 +1,59 @@
-@php $subject = 'Welcome to True-Doctor — Your Account'; @endphp
+@php
+  $brand = \App\Support\HospitalBrand::forUser($user);
+  $accent = $brand->colour() ?? '#0A6EBD';
+  $org = $brand->name();
+  $subject = $org ? 'Your '.$org.' staff account' : 'Your True-Doctor staff account';
+@endphp
 @include('emails._header')
 
-  {{-- Greeting --}}
-  <p style="font-size:15px;color:#1A0F07;font-weight:700;margin:0 0 6px;">Hello, {{ $user->name }},</p>
-  <p style="font-size:14px;color:#5A4A3A;line-height:1.7;margin:0 0 24px;">
-    Your account on the <strong>True-Doctor</strong> trading simulator platform has been created.
-    Use the credentials below to sign in for the first time.
+  <p style="font-size:16px;color:#111C2E;font-weight:600;margin:0 0 8px;">Welcome, {{ $user->name }}</p>
+  <p style="font-size:14px;color:#5A6B80;line-height:1.7;margin:0 0 24px;">
+    An account has been made for you on {{ $org ? $org.'’s' : 'your hospital’s' }} True-Doctor system,
+    where patients, appointments, visits and billing are kept. Sign in with these details:
   </p>
 
-  {{-- Credentials box --}}
-  <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
-         style="background:#FDF9F5;border:1.5px solid #E8DDD4;border-radius:8px;margin-bottom:24px;">
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border:1px solid #E2E8F0;margin-bottom:24px;">
     <tr>
-      <td style="padding:24px 28px;">
-        <p style="font-size:10px;font-weight:800;color:#C4956A;letter-spacing:0.18em;text-transform:uppercase;margin:0 0 16px;">
-          Your Login Credentials
-        </p>
-
-        <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-          <tr>
-            <td style="padding-bottom:12px;">
-              <p style="font-size:11px;font-weight:700;color:#9A8A7A;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 3px;">Email Address</p>
-              <p style="font-size:15px;font-weight:600;color:#1A0F07;margin:0;font-family:'Courier New',monospace;">{{ $user->email }}</p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding-bottom:12px;border-top:1px solid #E8DDD4;padding-top:12px;">
-              <p style="font-size:11px;font-weight:700;color:#9A8A7A;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 3px;">Temporary Password</p>
-              <p style="font-size:15px;font-weight:600;color:#1A0F07;margin:0;font-family:'Courier New',monospace;letter-spacing:0.08em;">{{ $plainPassword }}</p>
-            </td>
-          </tr>
-          <tr>
-            <td style="border-top:1px solid #E8DDD4;padding-top:12px;">
-              <p style="font-size:11px;font-weight:700;color:#9A8A7A;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 3px;">Role</p>
-              <p style="font-size:14px;font-weight:600;color:#5D3A1A;margin:0;">{{ $user->role_label }}</p>
-            </td>
-          </tr>
-        </table>
+      <td style="padding:16px 20px;border-bottom:1px solid #EEF2F7;">
+        <p style="font-size:10.5px;font-weight:600;color:#93A1B3;text-transform:uppercase;letter-spacing:.12em;margin:0 0 4px;">Email</p>
+        <p style="font-size:15px;color:#111C2E;margin:0;font-family:Menlo,Consolas,'Courier New',monospace;">{{ $user->email }}</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:16px 20px;border-bottom:1px solid #EEF2F7;">
+        <p style="font-size:10.5px;font-weight:600;color:#93A1B3;text-transform:uppercase;letter-spacing:.12em;margin:0 0 4px;">Temporary password</p>
+        <p style="font-size:15px;color:#111C2E;margin:0;font-family:Menlo,Consolas,'Courier New',monospace;letter-spacing:.06em;">{{ $plainPassword }}</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:16px 20px;">
+        <p style="font-size:10.5px;font-weight:600;color:#93A1B3;text-transform:uppercase;letter-spacing:.12em;margin:0 0 4px;">Your role</p>
+        <p style="font-size:14px;color:{{ $accent }};font-weight:600;margin:0;">{{ $user->role_label }}</p>
       </td>
     </tr>
   </table>
 
-  {{-- CTA Button --}}
   <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:24px;">
     <tr>
       <td align="center">
         <a href="{{ route('admin.login') }}"
-           style="display:inline-block;background:#5D3A1A;color:#ffffff;font-size:14px;font-weight:700;
-                  letter-spacing:0.04em;padding:13px 36px;border-radius:7px;text-decoration:none;">
-          Sign In to True-Doctor
+           style="display:inline-block;background:{{ $accent }};color:#FFFFFF;font-size:14px;font-weight:600;
+                  padding:13px 34px;text-decoration:none;border:1px solid {{ $accent }};">
+          Sign in{{ $org ? ' to '.$org : '' }}
         </a>
+        <p style="font-size:11.5px;color:#93A1B3;margin:12px 0 0;">{{ preg_replace('#^https?://#', '', rtrim(route('admin.login'), '/')) }}</p>
       </td>
     </tr>
   </table>
 
-  {{-- Security warning --}}
-  <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
-         style="background:#FFF8F0;border:1.5px solid #F0D8B8;border-radius:7px;margin-bottom:8px;">
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-left:3px solid {{ $accent }};background:#F5F7FA;margin-bottom:8px;">
     <tr>
-      <td style="padding:16px 20px;">
-        <p style="font-size:12px;font-weight:700;color:#8B4513;margin:0 0 6px;">&#9888; Important Security Notice</p>
-        <ul style="font-size:12px;color:#7A5A3A;line-height:1.8;margin:0;padding-left:18px;">
-          <li>Please <strong>change your password immediately</strong> after your first login.</li>
-          <li>Never share your login credentials with anyone.</li>
-          <li>If you did not expect this email, contact your administrator immediately.</li>
-        </ul>
+      <td style="padding:12px 16px;">
+        <p style="font-size:12px;font-weight:600;color:#111C2E;margin:0 0 4px;">Keep it yours</p>
+        <p style="font-size:12px;color:#5A6B80;line-height:1.6;margin:0;">
+          You will be asked to choose your own password the first time you sign in. Never share it — every action
+          in the system is recorded under your name.
+        </p>
       </td>
     </tr>
   </table>

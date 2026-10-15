@@ -232,3 +232,58 @@ strong,b{font-weight:600;}
   display:flex;align-items:center;justify-content:center;color:var(--pri);font-size:1.35rem;margin-bottom:20px;}
 .a-link{color:var(--pri);font-weight:500;}
 .a-linkbtn{background:none;border:none;cursor:pointer;font-family:var(--font);padding:0;}
+
+/* ── A hospital's own sign-in page (standalone, brand set) ──────────────
+   A panel in the hospital's colour — its name, its line, how to reach it —
+   beside the form. The colour arrives as --pri / --pri-d (HospitalBrand). */
+body.is-org{display:block;padding:0;min-height:100vh;
+  background:linear-gradient(180deg,var(--pri-soft) 0%,var(--bg) 46%);}
+.org-shell{min-height:100vh;display:grid;grid-template-columns:minmax(360px,42%) 1fr;}
+.org-panel{position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;
+  gap:28px;padding:56px clamp(32px,4.5vw,64px) 30px;color:#fff;
+  background:linear-gradient(155deg,var(--pri) 0%,var(--pri-d) 72%);}
+/* A soft light from the top corner, so the colour has depth rather than flatness. */
+.org-panel::before{content:"";position:absolute;inset:-30% -30% auto auto;width:80%;aspect-ratio:1;
+  background:radial-gradient(closest-side,rgba(255,255,255,.16),transparent);pointer-events:none;}
+.org-doodle{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+.org-panel-in{position:relative;margin:auto 0;max-width:460px;}
+.org-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;font-size:10.5px;font-weight:600;
+  letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.9);border:1px solid rgba(255,255,255,.3);
+  background:rgba(255,255,255,.06);}
+.org-name{margin:22px 0 0;font-size:clamp(28px,3vw,40px);font-weight:200;letter-spacing:-.02em;line-height:1.08;}
+.org-tagline{margin-top:12px;font-size:16px;font-weight:300;font-style:italic;color:rgba(255,255,255,.86);}
+.org-tagline::before{content:"\201C";}
+.org-tagline::after{content:"\201D";}
+.org-contact{list-style:none;margin:36px 0 0;padding:20px 0 0;display:grid;gap:11px;font-size:13px;line-height:1.45;
+  color:rgba(255,255,255,.88);border-top:1px solid rgba(255,255,255,.18);}
+.org-contact li{display:flex;align-items:flex-start;gap:12px;}
+.org-contact i{width:14px;margin-top:3px;text-align:center;color:rgba(255,255,255,.62);}
+.org-powered{position:relative;display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.03em;
+  color:rgba(255,255,255,.66);}
+.org-powered img{width:16px;height:16px;object-fit:contain;padding:2px;background:#fff;}
+.org-side{display:flex;align-items:center;justify-content:center;padding:48px 24px;min-width:0;}
+.org-side .auth-shell{margin:auto;}
+/* The card wears the colour too: a line along its top edge. */
+body.is-org .card{border-top:3px solid var(--pri);}
+
+/* An installation's own organisation: its logo heads the card. */
+.a-org{display:flex;align-items:center;justify-content:center;gap:12px;padding-bottom:22px;margin-bottom:24px;
+  border-bottom:1px solid var(--line);}
+.a-org .wm{display:block;max-width:min(300px,100%);max-height:110px;width:auto;height:auto;object-fit:contain;}
+.a-org .mk{width:48px;height:48px;object-fit:contain;display:block;flex-shrink:0;}
+.a-org b{font-weight:600;font-size:17px;letter-spacing:.01em;}
+
+@media (max-width:900px){
+  /* Rows as tall as their content: the band stays a band on a short page. */
+  .org-shell{grid-template-columns:1fr;align-content:start;}
+  .org-side .auth-shell{margin:0 auto;}
+  /* On a phone the panel is a band: the name and the line, no address book. */
+  .org-panel{padding:18px 20px 16px;gap:6px;}
+  .org-panel-in{margin:0;}
+  .org-eyebrow{padding:4px 9px;font-size:9.5px;}
+  .org-name{margin-top:10px;font-size:22px;}
+  .org-tagline{margin-top:4px;font-size:13px;}
+  .org-contact{display:none;}
+  .org-powered{display:none;}
+  .org-side{padding:18px 14px 32px;align-items:flex-start;}
+}

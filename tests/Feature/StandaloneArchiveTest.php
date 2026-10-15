@@ -66,6 +66,27 @@ class StandaloneArchiveTest extends TestCase
         $this->assertSame('1.2.3', $builder->verifyExtracted($extracted.'/true_doctor_app', $extracted.'/web_root_files', new Verifier($keys))['version']);
     }
 
+    /**
+     * No file extracts world-writable — an in-memory entry defaults to 0666,
+     * which made the signed file list writable by anybody on a shared host.
+     * Only the directories PHP itself must write are left open.
+     */
+    public function test_no_file_extracts_world_writable(): void
+    {
+        (new StandaloneArchive)->build($this->staged, $this->archive, '1.2.3', str_repeat('a', 40), new Signer);
+
+        $zip = new ZipArchive;
+        $zip->open($this->archive, ZipArchive::RDONLY);
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $zip->getExternalAttributesIndex($i, $system, $attributes);
+            $name = (string) $zip->getNameIndex($i);
+            $mode = ($attributes >> 16) & 0777;
+            $this->assertSame(ZipArchive::OPSYS_UNIX, $system, $name);
+            $this->assertSame(str_ends_with($name, '/') ? 0777 : 0644, $mode, sprintf('%s extracts as %o', $name, $mode));
+        }
+        $zip->close();
+    }
+
     public function test_secret_file_is_rejected_before_packaging(): void
     {
         file_put_contents($this->staged.'/app/.env', 'DB_PASSWORD=must-never-ship');

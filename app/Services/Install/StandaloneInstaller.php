@@ -120,7 +120,12 @@ final class StandaloneInstaller
                 'status' => 'active',
             ]);
 
-            return User::create([
+            // forceFill: email_verified_at is not mass-assignable, and create()
+            // dropped it without a word — the owner then met "verify your
+            // email" at the door of Field Mode. Whoever installed the system
+            // typed this address; there is nothing to verify.
+            $owner = new User;
+            $owner->forceFill([
                 'hospital_id' => $hospital->id,
                 'name' => $details['owner_name'],
                 'email' => mb_strtolower($details['owner_email']),
@@ -129,7 +134,9 @@ final class StandaloneInstaller
                 'is_active' => true,
                 'email_verified_at' => now(),
                 'password_change_required' => false,
-            ]);
+            ])->save();
+
+            return $owner;
         });
 
         // The common chart is available on day one. Specialty accounts are

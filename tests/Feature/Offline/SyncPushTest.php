@@ -241,6 +241,33 @@ class SyncPushTest extends TestCase
         $this->assertTrue($round->created_at->gt($round->client_created_at));
     }
 
+    /**
+     * Devices send their clock in UTC ("…Z"). An installation on its own time
+     * zone (APP_TIMEZONE, standalone) must keep the same instant — stored as
+     * the device's UTC wall time it read three hours early in Kampala.
+     */
+    public function test_a_devices_utc_clock_keeps_its_instant_on_a_local_time_installation(): void
+    {
+        config()->set('app.timezone', 'Africa/Kampala');
+        date_default_timezone_set('Africa/Kampala');
+
+        try {
+            $admission = $this->admission();
+            $this->push([
+                $this->op('vitals', 'create', [
+                    'uuid' => (string) Str::uuid(), 'admission_uuid' => $admission->uuid, 'pulse' => 80,
+                ], ['client_created_at' => '2026-10-15T09:00:00Z']),
+            ])->assertOk();
+
+            $round = VitalRound::firstOrFail();
+            $this->assertSame('2026-10-15 12:00:00', $round->client_created_at->format('Y-m-d H:i:s'));
+            $this->assertSame('2026-10-15T09:00:00Z', $round->client_created_at->copy()->utc()->format('Y-m-d\\TH:i:s\\Z'));
+        } finally {
+            config()->set('app.timezone', 'UTC');
+            date_default_timezone_set('UTC');
+        }
+    }
+
     public function test_two_devices_recording_two_rounds_recorded_two_rounds(): void
     {
         $admission = $this->admission();

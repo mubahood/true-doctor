@@ -42,7 +42,7 @@ cd "$APP_DIR"
 # and database have stopped agreeing with each other. `|| true` because an
 # app that is already down must not abort the deploy that is fixing it.
 say "Maintenance mode on"
-"$PHP" artisan down --render="errors::503" --retry=30 2>/dev/null || true
+"$PHP" artisan down --render="errors::503" --retry=30 --refresh=30 2>/dev/null || true
 restore() { "$PHP" artisan up >/dev/null 2>&1 || true; }
 trap restore EXIT
 

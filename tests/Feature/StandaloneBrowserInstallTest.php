@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Services\Install\StandaloneInstaller;
 use App\Services\Licensing\Signer;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 class StandaloneBrowserInstallTest extends TestCase
@@ -53,6 +54,8 @@ class StandaloneBrowserInstallTest extends TestCase
             $this->assertSame($state['total'], DB::table('migrations')->count());
             $this->assertSame(1, DB::table('hospitals')->count());
             $this->assertSame(1, DB::table('users')->count());
+            // The owner is not asked to verify the address they installed with.
+            $this->assertNotNull(DB::table('users')->value('email_verified_at'));
             $this->assertGreaterThan(0, DB::table('ledger_accounts')->count());
             $this->assertFileExists($marker);
         } finally {
@@ -80,5 +83,45 @@ class StandaloneBrowserInstallTest extends TestCase
         foreach (['/config/', 'storage_path(', 'base_path(', ' config(', ' app(', ' env('] as $needsLaravel) {
             $this->assertStringNotContainsString($needsLaravel, $source, "install.php uses {$needsLaravel}, which needs a running Laravel application");
         }
+    }
+
+    /** Before setup there is no .env: the site sends visitors to the installer, never to a server error. */
+    public function test_the_front_controller_sends_an_uninstalled_copy_to_the_installer(): void
+    {
+        $root = storage_path('framework/testing/docroot-'.bin2hex(random_bytes(5)));
+        File::ensureDirectoryExists($root.'/true_doctor_app/vendor');
+        File::ensureDirectoryExists($root.'/app');
+        file_put_contents($root.'/true_doctor_app/vendor/autoload.php', '<?php echo "BOOTED"; exit;');
+        copy(base_path('deploy/docroot-index.php'), $root.'/app/index.php');
+        file_put_contents($root.'/app/install.php', '<?php');
+        $run = fn (): string => (string) shell_exec(escapeshellarg(PHP_BINARY).' '.escapeshellarg($root.'/app/index.php').' 2>&1');
+
+        try {
+            $this->assertStringNotContainsString('BOOTED', $run());
+
+            file_put_contents($root.'/true_doctor_app/.env', 'APP_KEY=');
+            $this->assertStringContainsString('BOOTED', $run());
+        } finally {
+            File::deleteDirectory($root);
+        }
+    }
+
+    /** Laravel's own default sender name is "Example"; an installed copy signs mail as the organisation. */
+    public function test_the_installer_names_the_mail_sender_after_the_organisation(): void
+    {
+        $this->assertStringContainsString(
+            "'MAIL_FROM_NAME' => \$values['hospital_name']",
+            (string) file_get_contents(public_path('install.php')),
+        );
+    }
+
+    /** The zone the installer asks for is the one the installation runs on. */
+    public function test_the_installation_runs_on_the_time_zone_it_was_given(): void
+    {
+        $this->assertStringContainsString(
+            "'APP_TIMEZONE' => \$values['timezone']",
+            (string) file_get_contents(public_path('install.php')),
+        );
+        $this->assertStringContainsString("env('APP_TIMEZONE', 'UTC')", (string) file_get_contents(config_path('app.php')));
     }
 }

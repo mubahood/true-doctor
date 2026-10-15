@@ -11,7 +11,7 @@
     @can('visits.create')<x-dash.quick :href="route('admin.visits.index')" icon="fa-notes-medical" label="Visits" />@endcan
     @can('appointments.view')<x-dash.quick :href="route('admin.appointments.index')" icon="fa-calendar-check" label="My appointments" />@endcan
     @can('patients.view')<x-dash.quick :href="route('admin.patients.index')" icon="fa-user-injured" label="Patients" />@endcan
-    @can('lab.order')<x-dash.quick :href="route('admin.lab-orders.index')" icon="fa-flask" label="Lab orders" />@endcan
-    @can('radiology.order')<x-dash.quick :href="route('admin.radiology-orders.index')" icon="fa-x-ray" label="Radiology" />@endcan
+    @canuse('lab.order')<x-dash.quick :href="route('admin.lab-orders.index')" icon="fa-flask" label="Lab orders" />@endcanuse
+    @canuse('radiology.order')<x-dash.quick :href="route('admin.radiology-orders.index')" icon="fa-x-ray" label="Radiology" />@endcanuse
   </div>
 </div>

@@ -75,7 +75,9 @@ Open `https://your-address/install.php` in your browser.
    **owner's** name, email and a password of at least 12 characters.
 5. **Email** settings can be added now or later. Without them, invitations and
    password resets cannot be sent. Your host's email settings (cPanel → Email
-   Accounts → *Connect Devices*) give the SMTP server and port.
+   Accounts → *Connect Devices*) give the SMTP server and port: use the
+   **Secure SSL/TLS** outgoing server it shows — often the server's own name,
+   such as `server123.yourhost.com`, rather than `mail.yourdomain` — and port 465.
 
 Press **Install True-Doctor** and keep the tab open. The database is prepared in
 short steps and the page moves on by itself.

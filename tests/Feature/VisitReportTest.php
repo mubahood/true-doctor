@@ -129,6 +129,21 @@ class VisitReportTest extends TestCase
      * "None recorded" and a blank space are different claims, and only one of
      * them is safe to act on.
      */
+    /**
+     * The patient form stores allergies as a LIST (the model casts them to an
+     * array). Echoing that list straight into the page threw, so the report of
+     * every patient with a recorded allergy failed to print.
+     */
+    public function test_allergies_and_conditions_entered_as_lists_print_as_one_line(): void
+    {
+        $this->patient->forceFill(['allergies' => ['Penicillin', 'Latex'], 'chronic_conditions' => ['Hypertension', 'Asthma']])->save();
+
+        $sheet = $this->sheet();
+
+        $this->assertStringContainsString('Penicillin, Latex', $sheet);
+        $this->assertStringContainsString('Hypertension, Asthma', $sheet);
+    }
+
     public function test_a_patient_with_no_allergies_says_so_rather_than_leaving_a_gap(): void
     {
         $this->patient->forceFill(['allergies' => null, 'chronic_conditions' => null])->save();

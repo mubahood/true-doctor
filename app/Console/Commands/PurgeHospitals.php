@@ -209,6 +209,9 @@ class PurgeHospitals extends Command
         if (filled($hospital->logo)) {
             $files[] = ['public', (string) $hospital->logo];
         }
+        if ($wordmark = (new \App\Support\HospitalBrand($hospital))->wordmarkPath()) {
+            $files[] = ['public', $wordmark];
+        }
 
         return $files;
     }

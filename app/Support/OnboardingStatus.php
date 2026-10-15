@@ -354,7 +354,10 @@ class OnboardingStatus
         // Not a reason to hold setup up — a hospital without a logo is still a
         // hospital — but worth saying, because the alternative is finding out
         // from the first invoice a patient carries home.
-        if (blank($hospital->logo)) {
+        // Either logo puts the hospital on its documents (the wide one heads
+        // the letterhead when there is one).
+        $brand = new HospitalBrand($hospital);
+        if ($brand->logoPath() === null && $brand->wordmarkPath() === null) {
             $issues[] = 'No logo yet — documents will print with your name only.';
         }
 
@@ -388,6 +391,7 @@ class OnboardingStatus
 
     private function plural(int $count, string $noun): string
     {
-        return $count.' '.$noun.($count === 1 ? '' : 's');
+        // "6 stock categories", not "categorys".
+        return $count.' '.($count === 1 ? $noun : \Illuminate\Support\Str::plural($noun));
     }
 }

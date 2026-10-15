@@ -142,7 +142,7 @@ class Index extends Component
         return $userId === null
             ? new Collection
             : DoctorSchedule::with('room')
-                ->where('doctor_id', $userId)
+                ->where('user_id', $userId)
                 ->orderBy('weekday')
                 ->orderBy('start_time')
                 ->get();
@@ -156,7 +156,7 @@ class Index extends Component
 
         return $userId === null
             ? 0
-            : Appointment::where('doctor_id', $userId)
+            : Appointment::where('doctor_user_id', $userId)
                 ->whereDate('scheduled_at', '>=', now()->toDateString())
                 ->count();
     }

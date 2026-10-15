@@ -47,7 +47,8 @@ class DocumentBrand
      *
      * @return array{
      *     name:string, address:?string, phone:?string, email:?string,
-     *     website:?string, registration:?string, footer:?string, logo:?string
+     *     website:?string, registration:?string, footer:?string, logo:?string,
+     *     wide:bool, icon:?string, accent:?string, tagline:?string
      * }
      */
     public function resolve(): array
@@ -72,7 +73,32 @@ class DocumentBrand
             // legal notice. It was already a billing setting; it belongs on
             // everything, not only on invoices.
             'footer' => $this->clean($this->settings->get('invoice_footer')),
-            'logo' => $this->logo($hospital),
+        ] + $this->mark($hospital);
+    }
+
+    /**
+     * The logos and the colour a document prints with.
+     *
+     * `logo` heads a letterhead: the wide logo when there is one — a page has
+     * the width for it — else the square one, and `wide` says which, because
+     * the two need different room. `icon` is for small marks such as the
+     * patient card, where a wide logo would shrink past reading: the square
+     * one first. `accent` is the hospital's own colour, when it has set one.
+     *
+     * @return array{logo:?string, wide:bool, icon:?string, accent:?string, tagline:?string}
+     */
+    private function mark(?Hospital $hospital): array
+    {
+        $brand = new HospitalBrand($hospital);
+        $wide = $this->embed($brand->wordmarkPath());
+        $square = $this->embed($brand->logoPath());
+
+        return [
+            'logo' => $wide ?? $square,
+            'wide' => $wide !== null,
+            'icon' => $square ?? $wide,
+            'accent' => $brand->colour(),
+            'tagline' => $brand->tagline(),
         ];
     }
 
@@ -111,15 +137,15 @@ class DocumentBrand
     }
 
     /**
-     * The logo as a data URI, or null when there is none to draw.
+     * A stored logo as a data URI, or null when there is none to draw.
      *
      * Silent on every failure — a document must still print for a hospital
      * whose logo file was deleted from under it, and an exception here would
      * take the invoice with it.
      */
-    private function logo(?Hospital $hospital): ?string
+    private function embed(?string $path): ?string
     {
-        $path = $this->clean($hospital?->logo);
+        $path = $this->clean($path);
 
         if ($path === null) {
             return null;

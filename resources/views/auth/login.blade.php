@@ -9,9 +9,15 @@
      exists. They now live at /test-login, which only exists where they do. --}}
 
 @section('form')
+{{-- On a hospital's own installation the page speaks for that hospital. --}}
+@php
+  $here = \App\Support\HospitalBrand::forSignIn();
+  $hereName = $here->isSet() ? $here->name() : null;
+  $emailHint = $here->emailPlaceholder();
+@endphp
 <div class="af-eyebrow">Staff access</div>
 <h1 class="af-title">Sign in</h1>
-<p class="af-sub">Hospital staff only — enter your work email and password.</p>
+<p class="af-sub">{{ $hereName ? $hereName.' staff only' : 'Hospital staff only' }} — enter your work email and password.</p>
 
 @if(session('status'))
   <div class="a-alert ok" role="status"><i class="fas fa-circle-check" aria-hidden="true"></i><span>{{ session('status') }}</span></div>
@@ -34,7 +40,7 @@
     <div class="a-inwrap">
       <i class="fas fa-envelope" aria-hidden="true"></i>
       <input class="a-input @error('email') is-bad @enderror" id="email" type="email" name="email"
-             value="{{ old('email') }}" placeholder="you@hospital.org" required autofocus
+             value="{{ old('email') }}" placeholder="{{ $emailHint }}" required autofocus
              autocomplete="username" inputmode="email" autocapitalize="off" spellcheck="false"
              @error('email') aria-invalid="true" aria-describedby="email-error" @enderror>
     </div>
@@ -81,6 +87,7 @@
 <div class="a-secure">
   <span><i class="fas fa-shield-halved" aria-hidden="true"></i> Encrypted</span>
   <span class="dot" aria-hidden="true">•</span><span>Every action logged</span>
-  <span class="dot" aria-hidden="true">•</span><span>Per-hospital isolation</span>
+  {{-- One organisation per standalone server: there is nothing to isolate it from. --}}
+  <span class="dot" aria-hidden="true">•</span><span>{{ \App\Support\Edition::isStandalone() ? 'Your own server' : 'Per-hospital isolation' }}</span>
 </div>
 @endsection

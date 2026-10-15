@@ -17,7 +17,9 @@ class ArtisanRunner
 {
     public function down(): void
     {
-        Artisan::call('down', ['--render' => 'errors::503', '--retry' => 30]);
+        // --refresh: the maintenance page reloads itself through a Refresh
+        // header — only maintenance responses carry it.
+        Artisan::call('down', ['--render' => 'errors::503', '--retry' => 30, '--refresh' => 30]);
     }
 
     public function up(): void

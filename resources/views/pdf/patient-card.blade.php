@@ -1,3 +1,5 @@
+@php($brand = app(\App\Support\DocumentBrand::class)->resolve())
+@php($accent = $brand['accent'] ?? '#0e6b63')
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,12 +11,12 @@
   .card { width: 297px; height: 210px; padding: 12px 14px; position: relative; }
   .head { width: 100%; border-collapse: collapse; }
   .head td { padding: 0; vertical-align: middle; border: none; }
-  .logo { height: 24px; width: auto; max-width: 68px; }
-  .brand { font-size: 11px; font-weight: bold; color: #0e6b63; letter-spacing: .3px; line-height: 1.15; }
+  .logo { width: auto; height: auto; max-height: 24px; max-width: 68px; }
+  .brand { font-size: 11px; font-weight: bold; color: {{ $accent }}; letter-spacing: .3px; line-height: 1.15; }
   .sub { font-size: 7px; color: #6b7a86; margin-top: 1px; text-transform: uppercase; letter-spacing: .6px; }
-  .rule { height: 2px; background: #0e6b63; margin: 7px 0 9px; }
+  .rule { height: 2px; background: {{ $accent }}; margin: 7px 0 9px; }
   .name { font-size: 15px; font-weight: bold; margin: 0 0 2px; }
-  .no { font-size: 10px; color: #0e6b63; font-weight: bold; letter-spacing: .5px;
+  .no { font-size: 10px; color: {{ $accent }}; font-weight: bold; letter-spacing: .5px;
         font-family: "DejaVu Sans Mono", monospace; }
   table.meta { width: 100%; font-size: 8px; margin-top: 8px; border-collapse: collapse; }
   table.meta td { padding: 2px 0; vertical-align: top; }
@@ -30,11 +32,10 @@
     {{-- The card is a physical object, not a sheet of A4, so it keeps its own
          layout — but it carries the same mark as everything else the hospital
          prints (docs/documents.md). --}}
-    @php($brand = app(\App\Support\DocumentBrand::class)->resolve())
     <table class="head">
       <tr>
-        @if($brand['logo'])
-          <td style="width:1%; padding-right:7px;"><img src="{{ $brand['logo'] }}" alt="" class="logo"></td>
+        @if($brand['icon'])
+          <td style="width:1%; padding-right:7px;"><img src="{{ $brand['icon'] }}" alt="" class="logo"></td>
         @endif
         <td>
           <div class="brand">{{ $brand['name'] }}</div>

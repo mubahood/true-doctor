@@ -35,3 +35,5 @@ ssh.txt
 
 # Local agent/tool state
 /.claude
+# A client folder: credentials and private notes, never committed.
+/divine-dental-info/

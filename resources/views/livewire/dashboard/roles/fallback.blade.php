@@ -9,8 +9,8 @@
     @can('appointments.view')<x-dash.quick :href="route('admin.appointments.index')" icon="fa-calendar-check" label="Appointments" />@endcan
     @can('visits.view')<x-dash.quick :href="route('admin.visits.index')" icon="fa-notes-medical" label="Visits" />@endcan
     @can('billing.view')<x-dash.quick :href="route('admin.invoices.index')" icon="fa-file-invoice" label="Invoices" />@endcan
-    @can('pharmacy.view')<x-dash.quick :href="route('admin.stock.index')" icon="fa-boxes-stacked" label="Stock" />@endcan
-    @can('lab.view')<x-dash.quick :href="route('admin.lab-orders.index')" icon="fa-flask" label="Lab" />@endcan
-    @can('radiology.view')<x-dash.quick :href="route('admin.radiology-orders.index')" icon="fa-x-ray" label="Radiology" />@endcan
+    @canuse('pharmacy.view')<x-dash.quick :href="route('admin.stock.index')" icon="fa-boxes-stacked" label="Stock" />@endcanuse
+    @canuse('lab.view')<x-dash.quick :href="route('admin.lab-orders.index')" icon="fa-flask" label="Lab" />@endcanuse
+    @canuse('radiology.view')<x-dash.quick :href="route('admin.radiology-orders.index')" icon="fa-x-ray" label="Radiology" />@endcanuse
   </div>
 </div>

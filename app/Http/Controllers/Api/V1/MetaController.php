@@ -95,6 +95,18 @@ class MetaController extends Controller
             'address' => $hospital->address,
             'timezone' => $hospital->timezone,
             'logo_url' => $this->logoUrl($hospital->logo),
+            // The hospital's own look (Settings → Hospital), so the app can wear
+            // it too. Every field is null when the hospital has set none.
+            'brand' => (function () use ($hospital): array {
+                $brand = new \App\Support\HospitalBrand($hospital);
+
+                return [
+                    'colour' => $brand->colour(),
+                    'mark_url' => $brand->markUrl(),
+                    'wordmark_url' => $brand->wordmarkUrl(),
+                    'tagline' => $brand->tagline(),
+                ];
+            })(),
             // Enough to write an amount exactly as HospitalSettings::format
             // does, without asking the server for every figure.
             'money' => [

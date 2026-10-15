@@ -12,7 +12,7 @@
     "name": "worker"
   },
   "resources/css/admin.css": {
-    "file": "assets/admin-BfuzlImg.css",
+    "file": "assets/admin-99h6EP52.css",
     "src": "resources/css/admin.css",
     "isEntry": true,
     "name": "admin",
@@ -21,7 +21,7 @@
     ]
   },
   "resources/css/auth.css": {
-    "file": "assets/auth-D6ErBEur.css",
+    "file": "assets/auth-_7DDuezk.css",
     "src": "resources/css/auth.css",
     "isEntry": true,
     "name": "auth",
@@ -30,7 +30,7 @@
     ]
   },
   "resources/css/field.css": {
-    "file": "assets/field-DiKjwWMm.css",
+    "file": "assets/field-4l5hCtIG.css",
     "src": "resources/css/field.css",
     "isEntry": true,
     "name": "field",
@@ -48,7 +48,7 @@
     ]
   },
   "resources/js/admin.js": {
-    "file": "assets/admin-ClsrvDlQ.js",
+    "file": "assets/admin-CqMlCrKa.js",
     "name": "admin",
     "src": "resources/js/admin.js",
     "isEntry": true,

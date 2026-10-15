@@ -1,18 +1,26 @@
       </td>
     </tr>
 
-    {{-- ── FOOTER ── --}}
+    {{-- ── Who sent it, and why ── --}}
     <tr>
-      <td style="background:#F0EAE2;border-radius:0 0 12px 12px;padding:22px 40px 26px;text-align:center;">
-        <p style="font-size:11px;color:#8A7A6A;margin:0;line-height:1.6;">
-          <strong style="color:#6A5A4A;">True-Doctor</strong> &nbsp;&bull;&nbsp; Trading Simulator
-        </p>
-        <p style="font-size:10px;color:#A89888;margin:6px 0 0;line-height:1.6;">
-          This is an automated message from the True-Doctor platform.<br>
-          All activity is monitored and recorded. &nbsp;&bull;&nbsp; Do not reply to this email.
-        </p>
-        <p style="font-size:10px;color:#C0B0A0;margin:10px 0 0;">
-          &copy; {{ date('Y') }} True-Doctor. All rights reserved.
+      <td style="background:#F5F7FA;border-top:1px solid #EEF2F7;padding:20px 36px 22px;text-align:center;">
+        @php
+          // An included view does not see what the header worked out.
+          $mailBrand = \App\Support\HospitalBrand::forUser($user ?? null);
+          $mailOrg = $mailBrand->name();
+          $mailContact = $mailBrand->contact();
+        @endphp
+        @if($mailOrg)
+          <p style="font-size:12px;color:#111C2E;font-weight:600;margin:0;">{{ $mailOrg }}</p>
+          @if(array_filter([$mailContact['address'], $mailContact['phone']]))
+            <p style="font-size:11px;color:#5A6B80;margin:4px 0 0;line-height:1.6;">
+              {{ implode('  ·  ', array_filter([$mailContact['address'], $mailContact['phone']])) }}
+            </p>
+          @endif
+        @endif
+        <p style="font-size:10.5px;color:#93A1B3;margin:10px 0 0;line-height:1.6;">
+          You are receiving this because you have a staff account{{ $mailOrg ? ' at '.$mailOrg : '' }}.<br>
+          Sent automatically by {{ $mailOrg ? $mailOrg.'’s' : 'the' }} True-Doctor system.
         </p>
       </td>
     </tr>

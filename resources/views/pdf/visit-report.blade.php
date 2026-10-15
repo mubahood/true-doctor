@@ -49,14 +49,15 @@
       <tr>
         <td style="width:22%;" class="muted">Allergies</td>
         <td @if(filled($patient?->allergies)) style="font-weight:bold; color:#b3261e;" @endif>
-          {{ filled($patient?->allergies) ? $patient->allergies : 'None recorded' }}
+          {{-- Cast to an array on the model: printed as one line, never echoed as an array. --}}
+          {{ filled($patient?->allergies) ? implode(', ', (array) $patient->allergies) : 'None recorded' }}
         </td>
         <td style="width:22%;" class="muted">Blood group</td>
         <td style="width:14%;" class="num">{{ $patient?->blood_type ?: '—' }}</td>
       </tr>
       <tr>
         <td class="muted">Ongoing conditions</td>
-        <td colspan="3">{{ filled($patient?->chronic_conditions) ? $patient->chronic_conditions : 'None recorded' }}</td>
+        <td colspan="3">{{ filled($patient?->chronic_conditions) ? implode(', ', (array) $patient->chronic_conditions) : 'None recorded' }}</td>
       </tr>
       <tr>
         <td class="muted">Contact</td>

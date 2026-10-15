@@ -21,10 +21,22 @@
     <meta name="td-user" content="{{ auth()->id() }}">
   @endauth
   {{-- Livewire full-page components pass $title as a variable; classic pages yield a section. --}}
-  <title>{{ $title ?? (trim($__env->yieldContent('title')) ?: 'Dashboard') }} · True-Doctor</title>
-  <link rel="icon" type="image/png" sizes="48x48" href="{{ asset('images/favicon.png') }}">
-  <link rel="apple-touch-icon" href="{{ asset('images/logo-192.png') }}">
-  <meta name="theme-color" content="#ffffff">
+  {{-- The hospital's own logo and colour, when it has set them (Settings →
+       Hospital); otherwise True-Doctor's. See App\Support\HospitalBrand. --}}
+  @php $hospitalBrand = \App\Support\HospitalBrand::current(); @endphp
+  {{-- On a hospital's own server the tab says whose system this is. --}}
+  @php $titleSuffix = \App\Support\Edition::isStandalone() && $hospitalBrand->isSet() ? $hospitalBrand->name() : 'True-Doctor'; @endphp
+  <title>{{ $title ?? (trim($__env->yieldContent('title')) ?: 'Dashboard') }} · {{ $titleSuffix }}</title>
+  {{-- The top bar shows the page title without this suffix (admin.js). --}}
+  <meta name="td-title-suffix" content="{{ $titleSuffix }}">
+  @if($hospitalBrand->markUrl())
+    <link rel="icon" href="{{ $hospitalBrand->markUrl() }}">
+    <link rel="apple-touch-icon" href="{{ $hospitalBrand->markUrl() }}">
+  @else
+    <link rel="icon" type="image/png" sizes="48x48" href="{{ asset('images/favicon.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/logo-192.png') }}">
+  @endif
+  <meta name="theme-color" content="{{ $hospitalBrand->colour() ?? '#ffffff' }}">
   <meta name="color-scheme" content="light">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,9 +45,12 @@
   <style>[x-cloak]{display:none!important}</style>
   @vite(['resources/css/admin.css', 'resources/js/admin.js'])
   @livewireStyles
+  {{-- After the stylesheet, so the hospital's colour wins the cascade. Only
+       ever `#RRGGBB` values (BrandColour::normalise), never raw input. --}}
+  @if($hospitalBrand->adminCss() !== '')<style>{!! $hospitalBrand->adminCss() !!}</style>@endif
   @stack('styles')
 </head>
-<body>
+<body @class(['has-brand' => $hospitalBrand->colour() !== null])>
 @php
   /** @var \App\Models\User $u */
   $u = Auth::user();
@@ -58,11 +73,20 @@
            the wizard, so the brand points there instead. --}}
       <a wire:navigate.hover href="{{ route($inSetup ? 'admin.onboarding' : 'admin.dashboard') }}" class="tb-flex" style="gap:11px;min-width:0;flex:1;"
          aria-label="{{ $inSetup ? 'Set up your hospital' : 'Dashboard' }}" title="{{ $inSetup ? 'Set up your hospital' : 'Dashboard' }}">
-        <img src="{{ asset('images/logo-icon.png') }}" class="bk" alt="">
-        <span class="btext">
-          <span class="bt">True-Doctor</span>
-          <span class="bs" title="{{ $orgName }}">{{ $orgName }}</span>
-        </span>
+        @if(! $u->isSuperAdmin() && $hospitalBrand->markUrl())
+          {{-- A hospital with its own (square) logo sees itself at the top of the menu. --}}
+          <img src="{{ $hospitalBrand->markUrl() }}" class="bk" alt="">
+          <span class="btext">
+            <span class="bt" title="{{ $orgName }}">{{ $orgName }}</span>
+            <span class="bs">True-Doctor</span>
+          </span>
+        @else
+          <img src="{{ asset('images/logo-icon.png') }}" class="bk" alt="">
+          <span class="btext">
+            <span class="bt">True-Doctor</span>
+            <span class="bs" title="{{ $orgName }}">{{ $orgName }}</span>
+          </span>
+        @endif
       </a>
       <button class="tb-sidebar-close" type="button" @click="open=false" aria-label="Close menu"><i class="fas fa-xmark" aria-hidden="true"></i></button>
     </div>
@@ -146,7 +170,15 @@
 
     @persist('footer')
     <footer class="tb-footer">
-      <div class="tb-footer-brand"><i class="fas fa-hospital" aria-hidden="true"></i> {{ $orgName }}</div>
+      <div class="tb-footer-brand">
+        @if(! $u->isSuperAdmin() && $hospitalBrand->markUrl())
+          <img src="{{ $hospitalBrand->markUrl() }}" class="tb-footer-mark" alt="">
+        @else
+          <i class="fas fa-hospital" aria-hidden="true"></i>
+        @endif
+        <span class="tb-footer-name">{{ $orgName }}</span>
+        @if(! $u->isSuperAdmin() && $hospitalBrand->tagline())<span class="tb-footer-tagline">— {{ $hospitalBrand->tagline() }}</span>@endif
+      </div>
       <div class="tb-footer-meta">
         <span class="tb-foot-sm-hide"><i class="fas fa-user-shield" aria-hidden="true"></i> {{ $u->name }} · {{ $u->role_label }}</span>
         <span class="sep tb-foot-sm-hide">·</span>

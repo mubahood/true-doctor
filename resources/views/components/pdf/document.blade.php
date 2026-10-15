@@ -2,9 +2,10 @@
     'title',                 // what this document is: INVOICE, LAB REPORT…
     'reference' => null,     // its number, if it has one
     'meta' => [],            // label => value, printed under the reference
-    'accent' => '#0e6b63',   // the one colour the document uses
+    'accent' => null,        // the one colour the document uses: the hospital's own, else teal
 ])
 @php($brand = app(\App\Support\DocumentBrand::class)->resolve())
+@php($accent = $accent ?? $brand['accent'] ?? '#0e6b63')
 {{--
   Every PDF this system prints, from the outside in.
 
@@ -60,7 +61,11 @@
     .head-grid { width: 100%; border-collapse: collapse; }
     .head-grid td { vertical-align: top; padding: 0; border: none; }
 
-    .logo { height: 46px; width: auto; max-width: 150px; }
+    /* Both sides auto with limits: the logo keeps its proportions whatever its
+       shape (a fixed height with a max-width squashes a long logo). */
+    .logo { width: auto; height: auto; max-height: 46px; max-width: 150px; }
+    /* A wide logo carries the name in it, so it gets the room to be read. */
+    .logo.wide { max-height: 54px; max-width: 210px; }
 
     .org-name {
       font-size: 15px;
@@ -69,6 +74,8 @@
       color: {{ $accent }};
       line-height: 1.2;
     }
+
+    .org-tagline { font-size: 8px; font-style: italic; color: {{ $accent }}; margin-top: 1px; }
 
     .org-lines {
       font-size: 7.8px;
@@ -216,11 +223,12 @@
           <tr>
             @if($brand['logo'])
               <td style="width:1%; padding-right:12px;">
-                <img src="{{ $brand['logo'] }}" alt="" class="logo">
+                <img src="{{ $brand['logo'] }}" alt="" @class(['logo', 'wide' => $brand['wide']])>
               </td>
             @endif
             <td>
               <div class="org-name">{{ $brand['name'] }}</div>
+              @if($brand['tagline'])<div class="org-tagline">{{ $brand['tagline'] }}</div>@endif
               <div class="org-lines">
                 @if($brand['address']){{ $brand['address'] }}<br>@endif
                 @php($contact = array_filter([$brand['phone'], $brand['email'], $brand['website']]))

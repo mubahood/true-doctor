@@ -20,8 +20,10 @@ class WelcomeCredentials extends Mailable
 
     public function envelope(): Envelope
     {
+        $hospital = \App\Support\HospitalBrand::forUser($this->user)->name();
+
         return new Envelope(
-            subject: 'Welcome to True-Doctor — Your Account Credentials',
+            subject: $hospital !== null ? "Your {$hospital} staff account" : 'Your True-Doctor staff account',
         );
     }
 
