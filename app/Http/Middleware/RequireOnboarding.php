@@ -40,6 +40,9 @@ class RequireOnboarding
         'admin.lab-tests.*', 'admin.radiology-studies.*', 'admin.stock-categories.*',
         // Always reachable.
         'admin.subscription.*', 'admin.notifications.*', 'admin.logout',
+        // A standalone owner's own server: licence, updates and backups are
+        // never held behind setup.
+        'admin.system.*',
     ];
 
     public function __construct(private readonly OnboardingStatus $status) {}

@@ -74,8 +74,14 @@ an edition fork, a copied application, or an edition branch.
 
 - [x] Full suite, PHPStan (app/), Pint, empty-file and secrets scans green.
 - [x] Decisions recorded in `docs/decisions.md`.
-- [ ] Live: deploy, signing key, proof database, scheduler cron, stage and publish
-  the first release, and a clean-install + update drill from the real ZIP.
+- [x] Live: deployed; signing key `2026-a` in the live `.env` (offline copy in
+  `~/.true-doctor-signing/`); dedicated proof database `schooics_tdproof`; releases
+  built by the queued worker on the live host in ~20 s each.
+- [x] Clean-room drill with the real ZIP from live: web installer over HTTP from a
+  nested cPanel-style web root into empty MySQL (103 migrations, 21 steps), sign-in,
+  setup wizard, one-organisation triggers, online pages absent; a real-key-signed
+  update 1.0.1 → 1.0.2 through `standalone:update` with data intact; backups restored
+  both by the app and by the plain `mysql` client.
 
 ## Progress log
 
@@ -99,3 +105,8 @@ an edition fork, a copied application, or an edition branch.
   rewritten guide, the standalone smoke walk, and fixed a pre-existing DemoSeeder
   crash when the second demo tenant is off. Full suite: 2189 passed before the
   final style fixes, which were re-verified file by file.
+- 2026-10-15 (second agent, live): 1.0.0 built on live, then withdrawn unpublished —
+  the clean-room drill found its installer refused every licence (it loaded
+  config/edition.php before Laravel existed). Fixed with a regression guard; the
+  drill also led to the app being found from nested web roots and Licence & updates
+  being reachable during setup. 1.0.1 published from abc6e39 and drilled end to end.

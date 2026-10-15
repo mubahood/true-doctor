@@ -68,6 +68,7 @@ final class Navigation
         'admin.rooms.index', 'admin.wards.index', 'admin.beds.index',           // recommended steps
         'admin.lab-tests.index', 'admin.radiology-studies.index', 'admin.stock-categories.index',
         'admin.subscription.index',                                             // always reachable
+        'admin.system.index',                                                   // standalone: licence & updates
     ];
 
     /** @return list<array<string,mixed>> the whole menu, before anybody's permissions */

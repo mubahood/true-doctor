@@ -311,6 +311,16 @@ class StandaloneOperationsTest extends TestCase
         }
     }
 
+    public function test_the_owner_reaches_it_while_setup_is_still_outstanding(): void
+    {
+        config()->set('onboarding.gate_enabled', true);
+        $this->asInstalledStandalone();
+        $this->actingAsRole('hospital_admin', Hospital::factory()->create());
+
+        $this->get('/admin/visits')->assertRedirect(route('admin.onboarding'));
+        $this->get('/admin/system')->assertOk();
+    }
+
     public function test_staff_without_settings_access_cannot_open_it_and_saas_has_no_such_page(): void
     {
         $hospital = Hospital::factory()->create();
