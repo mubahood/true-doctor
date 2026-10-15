@@ -124,4 +124,21 @@ class StandaloneSmokeRoutesTest extends SmokeRoutesTest
         $this->assertSame('standalone', $meta['edition']);
         $this->assertNull($meta['subscription']);
     }
+
+    /**
+     * The forgot-password page always asks for the picture check, and the
+     * sign-in page does after wrong passwords. Its routes were online-only, so
+     * on every standalone installation the picture 404'd and nobody could
+     * reset a password.
+     */
+    public function test_the_picture_check_loads_on_a_standalone_installation(): void
+    {
+        $page = $this->get(route('password.request'))->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('#/human-check/([A-Za-z0-9]{32})\.png#', (string) $page);
+        preg_match('#/human-check/([A-Za-z0-9]{32})\.png#', (string) $page, $match);
+
+        $this->get(route('human-check.image', $match[1]))->assertOk()->assertHeader('Content-Type', 'image/png');
+        $this->getJson(route('human-check.new', ['form' => 'forgot-password']))->assertOk()->assertJsonStructure(['id', 'src']);
+    }
 }

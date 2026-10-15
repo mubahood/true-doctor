@@ -35,8 +35,10 @@ Route::post('/contact', [\App\Http\Controllers\MarketingController::class, 'enqu
 Route::post('/currency', [\App\Http\Controllers\MarketingController::class, 'currency'])->middleware('edition:saas')->name('currency');
 
 // The picture check on the public forms (App\Support\HumanCheck). Throttled:
-// a script fetching pictures to learn from them gets very few.
-Route::middleware(['edition:saas', 'throttle:40,1'])->group(function () {
+// a script fetching pictures to learn from them gets very few. Both editions:
+// a standalone installation's forgot-password and sign-in pages ask for it
+// too — online-only, the picture never loaded and nobody could reset a password.
+Route::middleware(['throttle:40,1'])->group(function () {
     Route::get('/human-check/new', [\App\Http\Controllers\HumanCheckController::class, 'fresh'])->name('human-check.new');
     Route::get('/human-check/{id}.png', [\App\Http\Controllers\HumanCheckController::class, 'image'])
         ->where('id', '[A-Za-z0-9]{32}')->name('human-check.image');
