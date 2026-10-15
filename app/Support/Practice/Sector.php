@@ -17,6 +17,9 @@ final readonly class Sector
      * @param  list<string>  $packs
      * @param  list<string>  $suggested
      * @param  list<string>  $modules
+     * @param  array<string,string>  $names  what this kind of practice calls a module, where
+     *                                       it differs (a dental clinic keeps a drugs inventory,
+     *                                       not a pharmacy)
      */
     public function __construct(
         public string $key,
@@ -26,5 +29,6 @@ final readonly class Sector
         public array $packs,
         public array $suggested = [],
         public array $modules = [],
+        public array $names = [],
     ) {}
 }

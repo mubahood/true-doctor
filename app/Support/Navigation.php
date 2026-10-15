@@ -256,6 +256,10 @@ final class Navigation
                 if ((isset($e['gate']) && ! $allow($e['gate'])) || ! $inUse($e)) {
                     continue;
                 }
+                // In this practice's own words ("Drugs inventory" at a dental clinic).
+                if (isset($e['module'])) {
+                    $e['label'] = $practice->moduleName($e['module'], $e['label']);
+                }
 
                 $items = [];
                 $groupActive = false;

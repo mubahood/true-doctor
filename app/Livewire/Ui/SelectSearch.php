@@ -157,7 +157,7 @@ class SelectSearch extends Component
         }
 
         return $this->emptyScope ??= ! User::currentHospital()
-            ->where('role', 'doctor')
+            ->clinicians()
             ->whereHas('staffProfile', fn ($p) => $p->where('department_id', $this->scope))
             ->exists();
     }
@@ -243,7 +243,7 @@ class SelectSearch extends Component
 
         $others = User::currentHospital()
             ->where('is_active', true)
-            ->when($this->resource === 'doctors', fn ($q) => $q->where('role', 'doctor'))
+            ->when($this->resource === 'doctors', fn ($q) => $q->clinicians())
             ->when($this->scope !== null, fn ($q) => $q->whereHas('staffProfile',
                 fn ($p) => $p->where('department_id', $this->scope)))
             ->when($me !== null, fn ($q) => $q->whereKeyNot($me))
@@ -351,7 +351,7 @@ class SelectSearch extends Component
             // doctors in it; otherwise the whole hospital is offered and the
             // list says why (`scopeIsEmpty`).
             'doctors' => User::currentHospital()
-                ->where('role', 'doctor')
+                ->clinicians()
                 ->when($this->scope !== null && ! $this->scopeIsEmpty(), fn ($q) => $q->whereHas('staffProfile',
                     fn ($p) => $p->where('department_id', $this->scope)))
                 ->when($pinned, fn ($q) => $q->whereKey($onlyId))
@@ -486,11 +486,11 @@ class SelectSearch extends Component
                     ->where('name', 'like', $like)->orWhere('code', 'like', $like)))
                 ->orderBy('name')
                 ->limit($limit)
-                ->get(['id', 'name', 'code', 'price'])
+                ->get(['id', 'name', 'code', 'price', 'max_price'])
                 ->map(fn (Service $s) => [
                     'id' => (int) $s->id,
                     'label' => (string) $s->name,
-                    'meta' => trim(($s->code ? $s->code.' · ' : '').HospitalSettings::money($s->price)),
+                    'meta' => trim(($s->code ? $s->code.' · ' : '').$s->priceLabel()),
                 ])
                 ->values()->all(),
 

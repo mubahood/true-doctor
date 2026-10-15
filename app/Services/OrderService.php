@@ -194,7 +194,7 @@ class OrderService
      * A service is sold and nothing else happens: no shelf is touched, so the
      * line is the whole story.
      */
-    public function addServiceItem(Order $order, Service $service, string $quantity = '1', ?int $by = null): OrderItem
+    public function addServiceItem(Order $order, Service $service, string $quantity = '1', ?int $by = null, ?string $unitPrice = null): OrderItem
     {
         $this->assertItemsEditable($order);
         $qty = $this->assertQuantity($quantity);
@@ -202,7 +202,7 @@ class OrderService
         return $this->billing->addItem($order, [
             'service_id' => $service->id,
             'name' => $service->name,
-            'unit_price' => (string) $service->price,
+            'unit_price' => $service->chargePrice($unitPrice),
             'quantity' => $qty,
             'tax_exempt' => $service->tax_exempt,
         ], $by);

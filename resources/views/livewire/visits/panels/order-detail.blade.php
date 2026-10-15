@@ -306,6 +306,15 @@
                     @endif
                   </x-ui.field>
 
+                  @if($this->pickedRange)
+                    <x-ui.field label="Price" for="oi-price" name="itemPrice"
+                                :hint="'Between '.\App\Support\HospitalSettings::money($this->pickedRange['from']).' and '.\App\Support\HospitalSettings::money($this->pickedRange['to']).'.'">
+                      <input id="oi-price" type="number" step="any" class="tb-input"
+                             min="{{ $this->pickedRange['from'] }}" max="{{ $this->pickedRange['to'] }}"
+                             wire:model.live.debounce.300ms="itemPrice">
+                    </x-ui.field>
+                  @endif
+
                   <x-ui.field label="Qty" for="oi-qty" name="qty">
                     <input id="oi-qty" type="number" step="any" min="0.01" class="tb-input"
                            wire:model.live.debounce.300ms="qty">

@@ -32,7 +32,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
     protected $fillable = [
         'name', 'username', 'email', 'password', 'role', 'hospital_id',
         'phone', 'bio', 'avatar', 'is_active', 'is_admin', 'last_active_at',
-        'password_change_required',
+        'password_change_required', 'sees_patients',
     ];
 
     /**
@@ -56,6 +56,21 @@ class User extends Authenticatable implements MustVerifyEmailContract
      * @param  \Illuminate\Database\Eloquent\Builder<User>  $query
      * @return \Illuminate\Database\Eloquent\Builder<User>
      */
+    /**
+     * Who can be booked and given clinic hours: every doctor, and anybody else
+     * marked as also seeing patients — the dentist who runs the clinic keeps
+     * her administrator's role and is still on the roster.
+     */
+    public function scopeClinicians(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->where(fn ($q) => $q->where('role', 'doctor')->orWhere('sees_patients', true));
+    }
+
+    public function seesPatients(): bool
+    {
+        return $this->role === 'doctor' || (bool) $this->sees_patients;
+    }
+
     public function scopeManageableBy(\Illuminate\Database\Eloquent\Builder $query, User $actor): \Illuminate\Database\Eloquent\Builder
     {
         return $actor->isSuperAdmin() ? $query : $query->where('hospital_id', $actor->hospital_id);
@@ -74,6 +89,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
             'is_admin' => 'boolean',
             'last_active_at' => 'datetime',
             'password_change_required' => 'boolean',
+            'sees_patients' => 'boolean',
         ];
     }
 

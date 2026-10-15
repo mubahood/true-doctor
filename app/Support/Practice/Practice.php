@@ -79,7 +79,9 @@ final class Practice
             new Sector('dental_clinic', 'Dental clinic', 'fa-tooth',
                 'Chairs, fillings, extractions, root canals, crowns, dentures, braces and dental materials.',
                 ['dental'],
-                ['pharmacy', 'imaging'], ['insurance', 'cards']),
+                ['pharmacy', 'imaging'], ['insurance', 'cards'],
+                // It keeps the drugs it gives and uses; it does not run a pharmacy.
+                ['pharmacy' => 'Drugs inventory']),
             new Sector('eye_clinic', 'Eye clinic & optical', 'fa-eye',
                 'Eye tests, refraction, eye surgery, and an optical shop selling frames and lenses.',
                 ['eye'],
@@ -227,6 +229,12 @@ final class Practice
         }
 
         return true;
+    }
+
+    /** What this practice calls a module in its menu — usually the module's own name. */
+    public function moduleName(string $module, string $default): string
+    {
+        return $this->sector->names[$module] ?? $default;
     }
 
     public function uses(string $module): bool

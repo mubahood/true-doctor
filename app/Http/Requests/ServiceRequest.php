@@ -43,6 +43,8 @@ class ServiceRequest extends FormRequest
                 Rule::exists('ledger_accounts', 'id')->where(fn ($q) => $q->where('hospital_id', $hospitalId)->where('type', 'income')),
             ],
             'price' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
+            // The top of a price range ("50,000 – 80,000"); empty for a fixed price.
+            'max_price' => ['nullable', 'numeric', 'gt:price', 'max:99999999.99'],
             'tax_exempt' => ['sometimes', 'boolean'],
             'is_active' => ['sometimes', 'boolean'],
         ];

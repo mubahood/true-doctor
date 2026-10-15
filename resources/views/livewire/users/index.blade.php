@@ -40,6 +40,7 @@
           <td>
             @php($roleTone = in_array($u->role, ['super_admin','hospital_admin']) ? 'info' : (in_array($u->role, ['doctor','nurse']) ? 'active' : ($u->role === 'accountant' ? 'warn' : 'neutral')))
             <x-ui.badge :tone="$roleTone">{{ $u->role_label }}</x-ui.badge>
+            @if($u->sees_patients && $u->role !== 'doctor')<x-ui.badge tone="active">Sees patients</x-ui.badge>@endif
           </td>
           <td class="muted">{{ $u->phone ?? '—' }}</td>
           <td><x-ui.badge :tone="$u->is_active ? 'active' : 'danger'">{{ $u->is_active ? 'Active' : 'Inactive' }}</x-ui.badge></td>
@@ -109,6 +110,12 @@
         @else
           <p class="muted tb-small"><i class="fas fa-circle-info" aria-hidden="true"></i> A temporary password is generated and emailed to the user; they set their own at first login.</p>
         @endif
+        {{-- A doctor sees patients by role; anybody else — the dentist who also
+             runs the clinic — can be put on the roster without losing their role. --}}
+        <div class="tb-form-group" x-show="$wire.role && $wire.role !== 'doctor'" x-cloak>
+          <label class="tb-check-group"><input type="checkbox" wire:model="sees_patients"> Also sees patients</label>
+          <div class="tb-field-hint">Can be booked for appointments and given clinic hours, like a doctor, while keeping this role.</div>
+        </div>
         <div class="tb-form-group">
           <label class="tb-check-group"><input type="checkbox" wire:model="is_active"> Active</label>
         </div>

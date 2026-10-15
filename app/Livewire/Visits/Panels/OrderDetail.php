@@ -61,6 +61,9 @@ class OrderDetail extends Component
 
     public string $qty = '1';
 
+    /** For a service priced as a range: where in the range this line falls. */
+    public ?string $itemPrice = null;
+
     /** Why this line is on the order, in the words of whoever put it there. */
     public ?string $itemNote = null;
 
@@ -202,8 +205,35 @@ class OrderDetail extends Component
         }
 
         $service = $this->service_id === null ? null : Service::find($this->service_id);
+        if ($service === null) {
+            return null;
+        }
 
-        return $service === null ? null : (string) $service->price;
+        try {
+            return $service->hasRange() && is_numeric($this->itemPrice) ? $service->chargePrice($this->itemPrice) : (string) $service->price;
+        } catch (\RuntimeException) {
+            return (string) $service->price;
+        }
+    }
+
+    /**
+     * The range the picked service is priced in, or null for a fixed price.
+     *
+     * @return array{from:string,to:string}|null
+     */
+    #[Computed]
+    public function pickedRange(): ?array
+    {
+        $service = $this->itemKind === 'service' && $this->service_id !== null ? Service::find($this->service_id) : null;
+
+        return $service !== null && $service->hasRange()
+            ? ['from' => (string) $service->price, 'to' => (string) $service->max_price]
+            : null;
+    }
+
+    public function updatedItemPrice(): void
+    {
+        unset($this->pickedPrice, $this->lineTotal);
     }
 
     /** How much is left on the shelf, so nobody promises what is not there. */
@@ -241,9 +271,10 @@ class OrderDetail extends Component
     {
         $this->service_id = null;
         $this->stock_item_id = null;
+        $this->itemPrice = null;
         $this->nonce++;
         $this->resetErrorBag();
-        unset($this->pickedPrice, $this->stockOnHand, $this->lineTotal);
+        unset($this->pickedPrice, $this->stockOnHand, $this->lineTotal, $this->pickedRange);
     }
 
     /** How a <livewire:ui.select-search> child hands its pick back. */
@@ -255,7 +286,9 @@ class OrderDetail extends Component
         }
 
         $this->{$name} = $id;
-        unset($this->pickedPrice, $this->stockOnHand, $this->lineTotal);
+        unset($this->pickedPrice, $this->stockOnHand, $this->lineTotal, $this->pickedRange);
+        // A ranged service starts at the bottom of its range.
+        $this->itemPrice = $name === 'service_id' ? ($this->pickedRange['from'] ?? null) : null;
     }
 
     #[On('select-search:cleared')]
@@ -266,7 +299,8 @@ class OrderDetail extends Component
         }
 
         $this->{$name} = null;
-        unset($this->pickedPrice, $this->stockOnHand, $this->lineTotal);
+        $this->itemPrice = null;
+        unset($this->pickedPrice, $this->stockOnHand, $this->lineTotal, $this->pickedRange);
     }
 
     public function addItem(OrderService $orders): void
@@ -295,7 +329,7 @@ class OrderDetail extends Component
             } else {
                 /** @var Service $service */
                 $service = Service::findOrFail($this->service_id);
-                $line = $orders->addServiceItem($order, $service, $this->qty, Auth::id());
+                $line = $orders->addServiceItem($order, $service, $this->qty, Auth::id(), $service->hasRange() ? (string) $this->itemPrice : null);
             }
 
             if (($this->itemNote ?? '') !== '') {
@@ -561,10 +595,10 @@ class OrderDetail extends Component
 
     private function resetForm(): void
     {
-        $this->reset(['itemKind', 'service_id', 'stock_item_id', 'qty', 'itemNote']);
+        $this->reset(['itemKind', 'service_id', 'stock_item_id', 'qty', 'itemNote', 'itemPrice']);
         $this->nonce++;
         $this->resetErrorBag();
-        unset($this->pickedPrice, $this->stockOnHand, $this->lineTotal);
+        unset($this->pickedPrice, $this->stockOnHand, $this->lineTotal, $this->pickedRange);
     }
 
     private function canWrite(): bool

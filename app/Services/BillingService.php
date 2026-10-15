@@ -76,12 +76,13 @@ class BillingService
     }
 
     /** Add a priced catalogue service to an order, snapshotting name + price. */
-    public function addServiceLine(Order $order, Service $service, string|int $quantity = 1, ?int $by = null): OrderItem
+    public function addServiceLine(Order $order, Service $service, string|int $quantity = 1, ?int $by = null, ?string $unitPrice = null): OrderItem
     {
         return $this->addItem($order, [
             'service_id' => $service->id,
             'name' => $service->name,
-            'unit_price' => (string) $service->price,
+            // The catalogue's price, or — for a price range — the amount chosen within it.
+            'unit_price' => $service->chargePrice($unitPrice),
             'quantity' => $quantity,
             'tax_exempt' => $service->tax_exempt,
         ], $by);
@@ -93,14 +94,16 @@ class BillingService
      * Resolution runs through the tenant global scope, so another hospital's
      * service id simply does not exist here.
      */
-    public function orderService(Visit $visit, int $serviceId, string|int $quantity = 1, ?int $by = null): OrderItem
+    public function orderService(Visit $visit, int $serviceId, string|int $quantity = 1, ?int $by = null, ?string $unitPrice = null): OrderItem
     {
         /** @var Service $service */
         $service = Service::whereKey($serviceId)->firstOrFail();
+        // Refused before anything is written: a price outside the range.
+        $service->chargePrice($unitPrice);
 
         // One transaction: an order that exists without the charge it was
         // raised for would be a completed piece of work with nothing on it.
-        return DB::transaction(function () use ($visit, $service, $quantity, $by) {
+        return DB::transaction(function () use ($visit, $service, $quantity, $by, $unitPrice) {
             $order = app(OrderService::class)->place(
                 $visit,
                 OrderType::Consultation,
@@ -109,7 +112,7 @@ class BillingService
                 $by,
             );
 
-            return $this->addServiceLine($order, $service, $quantity, $by);
+            return $this->addServiceLine($order, $service, $quantity, $by, $unitPrice);
         });
     }
 

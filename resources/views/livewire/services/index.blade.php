@@ -29,7 +29,7 @@
             @if($r->category)<div class="muted tb-xs">{{ $r->category }}</div>@endif
           </td>
           <td class="mono muted">{{ $r->code ?? '—' }}</td>
-          <td class="mono tb-text-right">{{ \App\Support\HospitalSettings::money($r->price) }}</td>
+          <td class="mono tb-text-right tb-nowrap">{{ $r->priceLabel() }}</td>
           <td class="muted">{{ $r->tax_exempt ? 'Exempt' : 'Taxable' }}</td>
           <td><x-ui.badge :tone="$r->is_active ? 'active' : 'danger'">{{ $r->is_active ? 'Active' : 'Inactive' }}</x-ui.badge></td>
           <td class="tb-text-right tb-nowrap">
@@ -70,9 +70,15 @@
             </select>
           </x-ui.field>
         @endcan
-        <x-ui.field label="Price" for="svc-price" name="price" required>
-          <input id="svc-price" type="number" step="any" wire:model="price" class="tb-input" required>
-        </x-ui.field>
+        <div class="tb-form-grid">
+          <x-ui.field label="Price" for="svc-price" name="price" required>
+            <input id="svc-price" type="number" step="any" wire:model="price" class="tb-input" required>
+          </x-ui.field>
+          <x-ui.field label="Up to (optional)" for="svc-max" name="max_price"
+                      hint="For a price range, e.g. 50,000 – 80,000: the counter charges anything in between.">
+            <input id="svc-max" type="number" step="any" wire:model="max_price" class="tb-input">
+          </x-ui.field>
+        </div>
         <div class="tb-form-group">
           <label class="tb-check-group"><input type="checkbox" wire:model="tax_exempt"> Tax exempt</label>
         </div>

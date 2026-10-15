@@ -45,6 +45,9 @@ class Index extends Component
 
     public string $price = '';
 
+    /** The top of a price range; blank for a fixed price. */
+    public ?string $max_price = null;
+
     public bool $tax_exempt = false;
 
     public bool $is_active = true;
@@ -62,7 +65,7 @@ class Index extends Component
 
     protected function formFields(): array
     {
-        return ['name', 'code', 'category', 'ledger_account_id', 'price', 'tax_exempt', 'is_active'];
+        return ['name', 'code', 'category', 'ledger_account_id', 'price', 'max_price', 'tax_exempt', 'is_active'];
     }
 
     protected function nounLabel(): string
@@ -72,7 +75,7 @@ class Index extends Component
 
     protected function nullableFields(): array
     {
-        return ['code', 'category', 'ledger_account_id'];
+        return ['code', 'category', 'ledger_account_id', 'max_price'];
     }
 
     /** Income accounts a service can earn into — only while the form is open. @return \Illuminate\Support\Collection<int, \App\Models\LedgerAccount> */
@@ -101,6 +104,12 @@ class Index extends Component
     protected function rules(): array
     {
         return ServiceRequest::rulesFor($this->editingId);
+    }
+
+    /** @return array<string,string> */
+    protected function validationAttributes(): array
+    {
+        return ['max_price' => 'top of the price range'];
     }
 
     // ── Starter data import ────────────────────────────────────

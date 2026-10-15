@@ -509,7 +509,7 @@ class Index extends Component
         }
 
         return User::currentHospital()
-            ->where('role', 'doctor')
+            ->clinicians()
             ->whereHas('staffProfile', fn ($q) => $q->where('department_id', $this->department_id))
             ->exists();
     }

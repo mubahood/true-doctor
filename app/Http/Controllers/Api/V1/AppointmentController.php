@@ -56,7 +56,7 @@ class AppointmentController extends Controller
         $this->authorize('create', Appointment::class);
         $q = trim((string) $request->query('q', ''));
 
-        return ApiResponse::success(\App\Models\User::currentHospital()->where('role', 'doctor')
+        return ApiResponse::success(\App\Models\User::currentHospital()->clinicians()
             ->when($q !== '', fn ($x) => $x->where('name', 'like', "%{$q}%"))
             ->orderBy('name')->limit(50)->get(['id', 'name'])
             ->map(fn ($u) => ['id' => $u->id, 'name' => $u->name])->values());

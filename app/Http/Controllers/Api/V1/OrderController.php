@@ -142,6 +142,8 @@ class OrderController extends Controller
             'service_id' => ['required_if:kind,service', 'nullable', 'integer'],
             'stock_item_id' => ['required_if:kind,product', 'nullable', 'integer'],
             'quantity' => ['required', 'numeric', 'gt:0'],
+            // For a service priced as a range; checked against it, ignored otherwise.
+            'unit_price' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:255'],
         ], [
             'service_id.required_if' => 'Choose a service.',
@@ -153,7 +155,8 @@ class OrderController extends Controller
             $this->orders->assertItemsEditable($order);
             $line = $data['kind'] === 'product'
                 ? $this->orders->addProductItem($order, StockItem::findOrFail($data['stock_item_id']), (string) $data['quantity'], $request->user()->id)
-                : $this->orders->addServiceItem($order, Service::findOrFail($data['service_id']), (string) $data['quantity'], $request->user()->id);
+                : $this->orders->addServiceItem($order, Service::findOrFail($data['service_id']), (string) $data['quantity'], $request->user()->id,
+                    isset($data['unit_price']) ? (string) $data['unit_price'] : null);
             if (($data['notes'] ?? '') !== '') {
                 $line->update(['notes' => trim((string) $data['notes'])]);
             }

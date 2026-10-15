@@ -58,6 +58,9 @@ class Index extends Component
 
     public bool $is_active = true;
 
+    /** A non-doctor who also sees patients: bookable and rostered like a doctor. */
+    public bool $sees_patients = false;
+
     public ?string $password = null;
 
     public ?string $password_confirmation = null;
@@ -116,6 +119,7 @@ class Index extends Component
         $this->phone = $user->phone;
         $this->bio = $user->bio;
         $this->is_active = (bool) $user->is_active;
+        $this->sees_patients = (bool) $user->sees_patients;
         $this->password = null;
         $this->password_confirmation = null;
         $this->avatar = null;
@@ -133,6 +137,7 @@ class Index extends Component
             'phone' => ['nullable', 'string', 'max:20'],
             'bio' => ['nullable', 'string'],
             'is_active' => ['boolean'],
+            'sees_patients' => ['boolean'],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
             'password' => $this->editingId
                 ? ['nullable', 'string', Password::defaults(), 'confirmed']
@@ -153,6 +158,8 @@ class Index extends Component
         $data['phone'] = filled($this->phone) ? $this->phone : null;
         $data['bio'] = filled($this->bio) ? $this->bio : null;
         $data['is_active'] = $this->is_active;
+        // A doctor sees patients by being one; the flag is for everybody else.
+        $data['sees_patients'] = $this->role !== 'doctor' && $this->sees_patients;
 
         if ($user === null) {
             try {
@@ -198,6 +205,7 @@ class Index extends Component
     {
         $this->reset(['editingId', 'name', 'email', 'role', 'phone', 'bio', 'password', 'password_confirmation', 'avatar', 'remove_avatar']);
         $this->is_active = true;
+        $this->sees_patients = false;
         $this->resetErrorBag();
     }
 

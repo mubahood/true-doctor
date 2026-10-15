@@ -249,6 +249,16 @@
             @endif
           </x-ui.field>
 
+          {{-- A service priced as a range: the counter says where in it this patient falls. --}}
+          @if($this->pickedRange)
+            <x-ui.field label="Price" for="ch-price" name="unit_price" required
+                        :hint="'Between '.\App\Support\HospitalSettings::money($this->pickedRange['from']).' and '.\App\Support\HospitalSettings::money($this->pickedRange['to']).'.'">
+              <input id="ch-price" type="number" step="any" class="tb-input"
+                     min="{{ $this->pickedRange['from'] }}" max="{{ $this->pickedRange['to'] }}"
+                     wire:model.live.debounce.300ms="unit_price">
+            </x-ui.field>
+          @endif
+
           <div class="tb-ordm-add-row">
             <x-ui.field label="Quantity" for="ch-qty" name="quantity" required>
               <input id="ch-qty" type="number" step="any" min="0.01" class="tb-input"

@@ -180,7 +180,7 @@ class Index extends Component
     {
         $this->create();
 
-        if (User::currentHospital()->where('role', 'doctor')->whereKey($doctorId)->exists()) {
+        if (User::currentHospital()->clinicians()->whereKey($doctorId)->exists()) {
             $this->user_id = $doctorId;
         }
         if (in_array($weekday, array_column(Weekday::cases(), 'value'), true)) {
@@ -384,7 +384,7 @@ class Index extends Component
     #[Computed]
     public function facts(): array
     {
-        $doctors = User::currentHospital()->where('role', 'doctor')->count();
+        $doctors = User::currentHospital()->clinicians()->count();
 
         $windows = DoctorSchedule::query()
             ->orderBy('user_id')->orderBy('weekday')->orderBy('start_time')
@@ -552,7 +552,7 @@ class Index extends Component
     private function rosterRows(): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
         return User::currentHospital()
-            ->where('role', 'doctor')
+            ->clinicians()
             ->when($this->search !== '', fn (Builder $q) => $q->where('name', 'like', "%{$this->search}%"))
             ->when($this->unrostered, fn (Builder $q) => $q->whereDoesntHave('schedules'))
             ->with(['schedules' => fn ($q) => $this->filterWindows($q)

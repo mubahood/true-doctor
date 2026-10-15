@@ -69,6 +69,9 @@ class Charges extends Component
 
     public string $quantity = '1';
 
+    /** For a service priced as a range: where in the range this patient falls. */
+    public ?string $unit_price = null;
+
     /** Why this charge is on the bill, in the words of whoever put it there. */
     public ?string $note = null;
 
@@ -193,7 +196,9 @@ class Charges extends Component
     {
         if (in_array($name, ['service_id', 'stock_item_id'], true)) {
             $this->{$name} = $id;
-            unset($this->pickedPrice, $this->lineTotal);
+            // A ranged service starts at the bottom of its range; the counter moves it.
+            $this->unit_price = $name === 'service_id' ? $this->rangeOf($id)['from'] ?? null : null;
+            unset($this->pickedPrice, $this->lineTotal, $this->pickedRange);
         }
     }
 
@@ -202,8 +207,35 @@ class Charges extends Component
     {
         if (in_array($name, ['service_id', 'stock_item_id'], true)) {
             $this->{$name} = null;
-            unset($this->pickedPrice, $this->lineTotal);
+            $this->unit_price = null;
+            unset($this->pickedPrice, $this->lineTotal, $this->pickedRange);
         }
+    }
+
+    public function updatedUnitPrice(): void
+    {
+        unset($this->pickedPrice, $this->lineTotal);
+    }
+
+    /**
+     * The range a service is priced in, or null for a fixed price.
+     *
+     * @return array{from:string,to:string}|null
+     */
+    #[Computed]
+    public function pickedRange(): ?array
+    {
+        return $this->kind === 'service' && $this->service_id !== null ? $this->rangeOf($this->service_id) : null;
+    }
+
+    /** @return array{from:string,to:string}|null */
+    private function rangeOf(int $serviceId): ?array
+    {
+        $service = Service::find($serviceId);
+
+        return $service !== null && $service->hasRange()
+            ? ['from' => (string) $service->price, 'to' => (string) $service->max_price]
+            : null;
     }
 
     /** Switching between the price list and the shelf clears the other pick. */
@@ -211,9 +243,10 @@ class Charges extends Component
     {
         $this->service_id = null;
         $this->stock_item_id = null;
+        $this->unit_price = null;
         $this->formNonce++;
         $this->resetErrorBag();
-        unset($this->pickedPrice, $this->lineTotal, $this->stockOnHand);
+        unset($this->pickedPrice, $this->lineTotal, $this->stockOnHand, $this->pickedRange);
     }
 
     /** The catalogue price of whatever is currently picked. */
@@ -227,8 +260,17 @@ class Charges extends Component
         }
 
         $service = $this->service_id === null ? null : Service::find($this->service_id);
+        if ($service === null) {
+            return null;
+        }
 
-        return $service === null ? null : (string) $service->price;
+        // Within a range, what the counter has put; anything else shows the
+        // starting price and is refused on adding.
+        try {
+            return $service->hasRange() && is_numeric($this->unit_price) ? $service->chargePrice($this->unit_price) : (string) $service->price;
+        } catch (\RuntimeException) {
+            return (string) $service->price;
+        }
     }
 
     /** How much is left on the shelf, so nobody sells what is not there. */
@@ -312,10 +354,10 @@ class Charges extends Component
     public function openAdd(): void
     {
         $this->authorizeWrite();
-        $this->reset(['kind', 'service_id', 'stock_item_id', 'quantity', 'note']);
+        $this->reset(['kind', 'service_id', 'stock_item_id', 'quantity', 'note', 'unit_price']);
         $this->formNonce++;
         $this->resetErrorBag();
-        unset($this->pickedPrice, $this->lineTotal, $this->stockOnHand);
+        unset($this->pickedPrice, $this->lineTotal, $this->stockOnHand, $this->pickedRange);
         $this->showAdd = true;
     }
 
@@ -377,20 +419,26 @@ class Charges extends Component
         $this->authorize('view', $visit);
         $this->authorizeWrite();
 
+        $range = $this->kind === 'service' && $this->service_id !== null ? $this->rangeOf((int) $this->service_id) : null;
+
         $this->validate([
             'quantity' => ['required', 'numeric', 'gt:0'],
             'note' => ['nullable', 'string', 'max:255'],
             'service_id' => [$this->kind === 'service' ? 'required' : 'nullable', 'integer'],
             'stock_item_id' => [$this->kind === 'product' ? 'required' : 'nullable', 'integer'],
+            'unit_price' => $range === null ? ['nullable'] : ['required', 'numeric', 'between:'.$range['from'].','.$range['to']],
         ], [
             'service_id.required' => 'Choose a service.',
             'stock_item_id.required' => 'Choose a product.',
+            'unit_price.required' => 'Say what to charge within the range.',
+            'unit_price.between' => $range === null ? '' : sprintf('Charge between %s and %s.',
+                \App\Support\HospitalSettings::money($range['from']), \App\Support\HospitalSettings::money($range['to'])),
         ]);
 
         try {
             $line = $this->kind === 'product'
                 ? $this->sellProduct($visit)
-                : $billing->orderService($visit, (int) $this->service_id, $this->quantity, Auth::id());
+                : $billing->orderService($visit, (int) $this->service_id, $this->quantity, Auth::id(), $range === null ? null : (string) $this->unit_price);
         } catch (Throwable $e) {
             // "Not enough Amoxicillin in stock: 3 available, 10 requested" is
             // the reader's business; anything else is not.
@@ -404,7 +452,7 @@ class Charges extends Component
             $line->update(['notes' => trim((string) $this->note)]);
         }
 
-        $this->reset(['kind', 'service_id', 'stock_item_id', 'quantity', 'note']);
+        $this->reset(['kind', 'service_id', 'stock_item_id', 'quantity', 'note', 'unit_price']);
         $this->showAdd = false;
         $this->refreshCharges();
 
