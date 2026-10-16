@@ -104,36 +104,12 @@ class DemoController extends Controller
 
     private function hospital(): ?Hospital
     {
-        if (! Demo::enabled()) {
-            return null;
-        }
-
-        return Hospital::query()->where('slug', Demo::hospitalSlug())->first();
+        return \App\Support\DemoDoor::hospital();
     }
 
-    /**
-     * The one account per role the door can open, keyed by role.
-     *
-     * Same selection as the web rail (AuthenticatedSessionController::demoAccounts):
-     * seeded `@test.com` staff who belong to a hospital and are not platform
-     * accounts - narrowed here to the demonstration hospital, to roles the
-     * catalogue knows, to active accounts that can use the panel, and to the
-     * lowest id per role so the answer is the same every time.
-     *
-     * @return \Illuminate\Support\Collection<string, User>
-     */
+    /** @return \Illuminate\Support\Collection<string, User> */
     private function accounts(Hospital $hospital): \Illuminate\Support\Collection
     {
-        return User::query()
-            ->where('hospital_id', $hospital->id)
-            ->where('email', 'like', '%@test.com')
-            ->where('is_admin', false)
-            ->where('is_active', true)
-            ->whereIn('role', DemoPersonas::roles())
-            ->orderBy('id')
-            ->get()
-            ->filter(fn (User $u) => ! $u->isSuperAdmin() && $u->canAccessAdmin())
-            ->unique('role')
-            ->keyBy('role');
+        return \App\Support\DemoDoor::accounts($hospital);
     }
 }

@@ -11,7 +11,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>@yield('title', 'True-Doctor — Hospital management software')</title>
+  <title>@yield('title', 'True-Doctor: clinic and hospital management software')</title>
   <meta name="description" content="@yield('desc', 'Run your whole hospital on one system: patients, appointments, visits, pharmacy, lab, billing and reporting. One subscription, one login, per hospital.')">
   <link rel="canonical" href="{{ url()->current() }}">
   <meta name="theme-color" content="#0a6ebd">
@@ -19,11 +19,22 @@
   <link rel="apple-touch-icon" href="{{ asset('images/logo-192.png') }}">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="True-Doctor">
-  <meta property="og:title" content="@yield('title', 'True-Doctor — Hospital management software')">
+  <meta property="og:title" content="@yield('title', 'True-Doctor: clinic and hospital management software')">
   <meta property="og:description" content="@yield('desc', 'One system for patients, appointments, visits, pharmacy, lab, billing and reporting.')">
   <meta property="og:url" content="{{ url()->current() }}">
-  <meta property="og:image" content="{{ asset('images/og.png') }}">
+  @php
+    // A page's own picture (public/images/og/<name>.png, scripts/site-og.js), else the site's.
+    $ogName = trim($__env->yieldContent('og'));
+    $ogImage = $ogName !== '' && is_file(public_path("images/og/{$ogName}.png")) ? asset("images/og/{$ogName}.png") : asset('images/og.png');
+  @endphp
+  <meta property="og:image" content="{{ $ogImage }}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="@yield('title', 'True-Doctor: clinic and hospital management software')">
+  <meta name="twitter:description" content="@yield('desc', 'One system for patients, appointments, visits, pharmacy, lab, billing and reporting.')">
+  <meta name="twitter:image" content="{{ $ogImage }}">
+  @hasSection('noindex')<meta name="robots" content="noindex, nofollow">@endif
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
@@ -111,7 +122,7 @@
           <i class="fas fa-gauge-high" aria-hidden="true"></i> Go to dashboard
         </a>
       @else
-        @if($demo)<a href="{{ route('test-login') }}" class="btn ghost desk sm">Try the demo</a>@endif
+        @if($demo)<a href="{{ route('demo') }}" class="btn ghost desk sm">Try the demo</a>@endif
         <x-support.link context="site.general" class="btn plain desk sm wa">WhatsApp us</x-support.link>
         <a href="{{ route('admin.login') }}" class="btn ghost desk sm">Sign in</a>
         <a href="{{ route('register') }}" class="btn desk sm">Sign up</a>
@@ -136,7 +147,7 @@
       <button type="submit" class="btn ghost">Sign out</button>
     </form>
   @else
-    @if($demo)<a href="{{ route('test-login') }}" class="btn ghost">Try the demo</a>@endif
+    @if($demo)<a href="{{ route('demo') }}" class="btn ghost">Try the demo</a>@endif
     <a href="{{ route('admin.login') }}" class="btn ghost">Sign in</a>
     <a href="{{ route('register') }}" class="btn">Sign up</a>
   @endauth
@@ -167,17 +178,26 @@
     <div class="foot">
       <div>
         <a href="{{ route('home') }}" class="brand"><img src="{{ asset('images/logo-icon.png') }}" alt="" style="width:26px;height:26px;"> True-Doctor</a>
-        <p class="blurb">One system to run your whole hospital — patients, clinical care, pharmacy, lab and billing, on a single subscription.</p>
+        <p class="blurb">One system to run your clinic or hospital: patients, clinical care, pharmacy, lab and billing, on a single subscription.</p>
       </div>
       <div>
         <h4>Product</h4>
         <a href="{{ route('features') }}">Modules</a>
         <a href="{{ route('pricing') }}">Pricing</a>
         <a href="{{ route('security') }}">Security</a>
-        @if($demo)<a href="{{ route('test-login') }}">Try the demo</a>@endif
+        @if($demo)<a href="{{ route('demo') }}">Try the demo</a>@endif
+      </div>
+      <div>
+        <h4>Built for</h4>
+        @foreach(config('landing.practices') as $slug => $practice)
+          <a href="{{ route('for', $slug) }}">{{ ucfirst($practice['name']) }}</a>
+        @endforeach
+        <a href="{{ route('get-app') }}">The Android app</a>
       </div>
       <div>
         <h4>Company</h4>
+        <a href="{{ route('about') }}">About us</a>
+        <a href="{{ route('walkthrough') }}">Book a walkthrough</a>
         <a href="{{ route('contact') }}">Contact</a>
         <a href="{{ route('privacy') }}">Privacy</a>
         <a href="{{ route('terms') }}">Terms</a>

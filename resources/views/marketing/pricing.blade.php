@@ -135,7 +135,7 @@
     <p>Tell us how many staff you have and which departments you run, and we will tell you which plan to start on — including if that is the cheapest one.</p>
     <div class="ctas">
       <a href="{{ route('contact') }}" class="btn lg">Ask us <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
-      @if($demo)<a href="{{ route('test-login') }}" class="btn ghost lg">Look around the demo first</a>@endif
+      @if($demo)<a href="{{ route('demo') }}" class="btn ghost lg">Look around the demo first</a>@endif
     </div>
   </div>
 </section>

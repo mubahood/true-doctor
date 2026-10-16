@@ -2280,3 +2280,38 @@ body.has-brand::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z-i
 .clin-alerts .badge-tb{margin-right:3px;}
 .clin-none{display:flex;align-items:center;gap:6px;}
 .clin-none i{color:var(--ok);}
+
+/* ── Dental chart (FDI odontogram) ────────────────────────────────── */
+.odonto{display:flex;flex-direction:column;gap:10px;overflow-x:auto;padding-bottom:4px;}
+.odonto-row{display:flex;justify-content:center;gap:10px;min-width:max-content;}
+.odonto-row.upper{border-bottom:1px dashed var(--line);padding-bottom:10px;}
+.odonto-half{display:flex;gap:3px;}
+.odonto-half.right{border-right:1px solid var(--line-2);padding-right:10px;}
+.tooth{display:flex;flex-direction:column;align-items:center;gap:2px;width:38px;padding:4px 2px;background:var(--surface);border:1px solid var(--line);cursor:pointer;font:inherit;color:var(--tx);}
+.tooth:hover{border-color:var(--br);}
+.tooth.on{border-color:var(--br);box-shadow:0 0 0 2px var(--br-soft);}
+.tooth-n{font-size:10.5px;font-weight:600;font-variant-numeric:tabular-nums;}
+.tooth-s{position:relative;width:22px;height:22px;display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr 1fr;border:1px solid var(--line-2);}
+.tooth-s i{display:block;}
+.tooth-s .s-B{grid-area:1/2;}.tooth-s .s-M{grid-area:2/1;}.tooth-s .s-O,.tooth-s .s-I{grid-area:2/2;}.tooth-s .s-D{grid-area:2/3;}.tooth-s .s-L{grid-area:3/2;}
+.tooth-s i.sf-caries{background:var(--bad);}
+.tooth-s i.sf-filled{background:var(--br);}
+.tooth-s i.sf-fracture{background:var(--warn);}
+.tooth-f{font-size:8.5px;line-height:1.1;color:var(--mt);text-align:center;max-width:36px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tooth.f-missing{opacity:.45;background:var(--surface-2);}
+.tooth.f-missing .tooth-s{border-style:dashed;}
+.tooth.f-to_extract{border-color:var(--bad);}
+.tooth.f-crown .tooth-s,.tooth.f-implant .tooth-s,.tooth.f-bridge .tooth-s{background:var(--br-soft);border-color:var(--br);}
+.tooth.f-root_canal .tooth-s{border-color:var(--warn);}
+.tooth.f-mobility .tooth-n{color:var(--warn);}
+.odonto-key{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:8px;}
+.odonto-key .k{display:inline-block;width:10px;height:10px;border:1px solid var(--line-2);margin-right:-4px;}
+.odonto-key .k.f-caries{background:var(--bad);}.odonto-key .k.f-filled{background:var(--br);}
+.odonto-key .k.f-missing{border-style:dashed;}.odonto-key .k.f-to_extract{border-color:var(--bad);}
+.odonto-key .k.f-crown{background:var(--br-soft);border-color:var(--br);}
+.dental-form{display:flex;flex-direction:column;gap:8px;margin-top:8px;}
+.dental-surfaces{display:flex;flex-wrap:wrap;gap:6px;border:none;padding:0;margin:0;}
+.dental-surfaces legend{width:100%;margin-bottom:4px;}
+.tb-chip-check{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border:1px solid var(--line);font-size:12px;cursor:pointer;}
+.tb-chip-check input{margin:0;}
+.dental-recall{flex-wrap:wrap;}

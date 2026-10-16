@@ -107,6 +107,7 @@ class IdempotentRequests
      * dispensing. Required only when the request carries `X-App-Version`.
      */
     public const KEY_REQUIRED_ROUTES = [
+        'api.dental.status',
         'api.invoices.pay',
         'api.cards.transact',
         'api.cards.settle',

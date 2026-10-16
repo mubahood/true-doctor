@@ -1,6 +1,7 @@
 @extends('layouts.auth')
 @section('title', 'Create your hospital')
 @section('shell', 'is-wide')
+@section('description', 'Start your free 14-day trial of True-Doctor: your clinic or hospital set up in minutes. No card needed.')
 
 @section('form')
 <div class="af-eyebrow">Get started</div>

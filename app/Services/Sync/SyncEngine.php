@@ -219,6 +219,7 @@ class SyncEngine
             'med_administrations' => new AppendOnlyClinicalHandler('med_administrations'),
             'lab_items' => app(LabResultHandler::class),
             'visits' => app(VisitClinicalHandler::class),
+            'dental_chart_entries' => app(Handlers\DentalChartHandler::class),
         ];
 
         return $this->handlers[$entity] ?? null;

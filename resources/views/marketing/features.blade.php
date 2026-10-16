@@ -125,7 +125,7 @@
     <h2>See it with data in it</h2>
     <p>The demonstration hospital is a real, populated facility — a busy register, a full ward, open visits at every stage and three months of billing behind it.</p>
     <div class="ctas">
-      @if($demo)<a href="{{ route('test-login') }}" class="btn lg">Open the demo <i class="fas fa-arrow-right" aria-hidden="true"></i></a>@endif
+      @if($demo)<a href="{{ route('demo') }}" class="btn lg">Open the demo <i class="fas fa-arrow-right" aria-hidden="true"></i></a>@endif
       <a href="{{ route('pricing') }}" class="btn {{ $demo ? 'ghost' : '' }} lg">See pricing</a>
       <a href="{{ route('contact') }}" class="btn ghost lg">Talk to us</a>
     </div>

@@ -427,7 +427,9 @@ class PublicSiteTest extends TestCase
 
     public function test_the_sitemap_lists_every_public_page_and_nothing_private(): void
     {
-        $response = $this->get('/sitemap.xml')->assertOk();
+        // The index names the pages sitemap; the pages sitemap names the pages.
+        $this->get('/sitemap.xml')->assertOk()->assertSee(route('sitemap.pages'), false);
+        $response = $this->get('/sitemap-pages.xml')->assertOk();
 
         $this->assertStringStartsWith('application/xml', (string) $response->headers->get('content-type'));
 
@@ -448,7 +450,7 @@ class PublicSiteTest extends TestCase
 
     public function test_robots_keeps_crawlers_out_of_the_panel(): void
     {
-        $robots = (string) file_get_contents(public_path('robots.txt'));
+        $robots = (string) $this->get('/robots.txt')->assertOk()->getContent();
 
         foreach (['/admin', '/field', '/test-login'] as $path) {
             $this->assertStringContainsString('Disallow: '.$path, $robots);

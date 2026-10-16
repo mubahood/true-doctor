@@ -1,11 +1,12 @@
 @extends('layouts.marketing')
-@section('title', 'Own it — True-Doctor on your own server')
-@section('desc', 'The complete True-Doctor hospital system on your own server: pay once, download straight away, and follow a guided installer. One organisation per installation.')
+@section('title', config('landing.pages.own-your-copy.title'))
+@section('desc', config('landing.pages.own-your-copy.description'))
+@section('og', 'own-your-copy')
 @section('content')
 <section class="hero compact"><div class="wrap">
   <div class="eyebrow">Self-hosted edition</div>
   <h1>Your hospital. Your server.</h1>
-  <p class="lead">Everything True-Doctor does online — patients, visits, lab, imaging, pharmacy, wards, billing, the books, offline devices and the mobile app — on hosting you own. Pay once; download straight after payment, with a guided installer.</p>
+  <p class="lead">Everything True-Doctor does online (patients, visits, lab, imaging, pharmacy, wards, billing, the books, offline devices and the mobile app) on hosting you own. Pay once; download straight after payment, with a guided installer.</p>
   <div class="ctas"><a href="{{ route('standalone.portal') }}" class="btn ghost">Already bought it? Open your downloads</a></div>
 </div></section>
 
@@ -53,3 +54,7 @@
   @if($latest)<p class="own-latest">Latest release: <b>{{ $latest->version }}</b>, {{ $latest->published_at?->format('d M Y') }}.</p>@endif
 </div></section>
 @endsection
+
+@push('structured-data')
+  <x-site.breadcrumbs :trail="['Home' => route('home'), 'Your own copy' => null]" />
+@endpush

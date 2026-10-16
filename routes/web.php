@@ -25,7 +25,20 @@ Route::middleware(['edition:saas', 'landing'])->group(function () {
 
     Route::get('/pricing', [\App\Http\Controllers\MarketingController::class, 'pricing'])->name('pricing');
     Route::view('/security', 'marketing.security')->name('security');
+
+    // Pages that are content in config/landing.php (PublicPageController).
+    Route::get('/for/{practice}', [\App\Http\Controllers\PublicPageController::class, 'practice'])->where('practice', '[a-z-]+')->name('for');
+    Route::get('/walkthrough', [\App\Http\Controllers\PublicPageController::class, 'walkthrough'])->name('walkthrough');
+    Route::get('/get-app', [\App\Http\Controllers\PublicPageController::class, 'app'])->name('get-app');
+    Route::get('/about', [\App\Http\Controllers\PublicPageController::class, 'about'])->name('about');
+    Route::get('/demo', [\App\Http\Controllers\PublicPageController::class, 'demo'])->name('demo');
 });
+// Walk into the demo as a role: a form POST, never a link, so no crawler or
+// prefetch can sign anybody in; the account is the server's choice.
+Route::post('/demo/{role}', [\App\Http\Controllers\PublicPageController::class, 'enterDemo'])
+    ->middleware(['edition:saas', 'throttle:12,1'])->where('role', '(?!leave$)[a-z_]+')->name('demo.enter');
+
+Route::get('/robots.txt', [\App\Http\Controllers\MarketingController::class, 'robots'])->name('robots');
 // For an uptime monitor: overall status and each check's status (td:check has the details).
 Route::get('/health', \App\Http\Controllers\HealthController::class)->middleware('throttle:60,1')->name('health');
 
@@ -48,6 +61,7 @@ Route::middleware(['throttle:40,1'])->group(function () {
 });
 
 Route::get('/sitemap.xml', [\App\Http\Controllers\MarketingController::class, 'sitemap'])->middleware('edition:saas')->name('sitemap');
+Route::get('/sitemap-pages.xml', [\App\Http\Controllers\MarketingController::class, 'sitemapPages'])->middleware('edition:saas')->name('sitemap.pages');
 Route::view('/privacy', 'marketing.privacy')->middleware(['edition:saas', 'landing'])->name('privacy');
 Route::view('/terms', 'marketing.terms')->middleware(['edition:saas', 'landing'])->name('terms');
 
@@ -55,7 +69,9 @@ Route::view('/terms', 'marketing.terms')->middleware(['edition:saas', 'landing']
 // customer installation. Payment status is verified against Pesapal, not the
 // browser redirect query string.
 Route::middleware('edition:saas')->group(function () {
-    Route::get('/standalone', [\App\Http\Controllers\StandalonePurchaseController::class, 'products'])->name('standalone.products');
+    // Renamed for the reader: "your own copy" says what it is. The old address stays as a permanent redirect.
+    Route::get('/own-your-copy', [\App\Http\Controllers\StandalonePurchaseController::class, 'products'])->middleware('landing')->name('standalone.products');
+    Route::redirect('/standalone', '/own-your-copy', 301);
     Route::post('/standalone/checkout/{product}', [\App\Http\Controllers\StandalonePurchaseController::class, 'checkout'])
         ->middleware('throttle:8,60')->name('standalone.checkout');
     Route::get('/standalone/payment/return', [\App\Http\Controllers\StandalonePurchaseController::class, 'callback'])
@@ -160,6 +176,7 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'subscribed', 'onboarding',
     Route::get('patients/{patient}/statement', [\App\Http\Controllers\Admin\PatientController::class, 'statement'])->name('patients.statement');
     Route::get('patients/{patient}/id-card', [\App\Http\Controllers\Admin\PatientController::class, 'idCard'])->name('patients.id-card');
     Route::get('patients/{patient}', \App\Livewire\Patients\Show::class)->name('patients.show');
+    Route::get('patients/{patient}/dental-quote', \App\Http\Controllers\Admin\DentalQuoteController::class)->name('patients.dental-quote');
 
     // Documents (private disk — streamed download behind the Policy)
     Route::get('patients/{patient}/documents/{document}', [\App\Http\Controllers\Admin\PatientDocumentController::class, 'download'])->name('patients.documents.download');

@@ -29,6 +29,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property PatientStatus $status
  * @property array<int,string>|null $allergies
  * @property array<int,string>|null $chronic_conditions
+ * @property \Illuminate\Support\Carbon|null $next_recall_on
  * @property bool $consent_given
  * @property \Illuminate\Support\Carbon|null $consent_at
  * @property \Illuminate\Support\Carbon $created_at
@@ -66,6 +67,7 @@ class Patient extends Model
             'status' => PatientStatus::class,
             'allergies' => 'array',
             'chronic_conditions' => 'array',
+            'next_recall_on' => 'date',
             'bank_details' => 'encrypted',   // C12 — sensitive at rest
             'consent_given' => 'boolean',
             'consent_at' => 'datetime',

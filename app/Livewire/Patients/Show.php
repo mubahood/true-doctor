@@ -121,7 +121,16 @@ class Show extends Component
     {
         $needs = ['visits' => 'visits', 'billing' => 'money', 'clinical' => 'clinical', 'appointments' => 'appointments'];
 
-        return array_filter(self::TABS, fn (string $key) => ! isset($needs[$key]) || in_array($needs[$key], $this->sections, true), ARRAY_FILTER_USE_KEY);
+        $tabs = array_filter(self::TABS, fn (string $key) => ! isset($needs[$key]) || in_array($needs[$key], $this->sections, true), ARRAY_FILTER_USE_KEY);
+
+        // A dental clinic's chart, next to the clinical history (docs/dental.md).
+        $user = auth()->user();
+        if (\App\Services\DentalService::enabledFor(app(\App\Support\HospitalSettings::class)->hospital())
+            && ($user->can('treatments.view') || $user->can('visits.diagnose'))) {
+            $tabs = array_slice($tabs, 0, 4, true) + ['dental' => ['Dental', 'fa-tooth']] + array_slice($tabs, 4, null, true);
+        }
+
+        return $tabs;
     }
 
     /** @return array<string,mixed> */

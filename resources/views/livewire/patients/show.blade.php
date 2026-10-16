@@ -165,6 +165,9 @@
         @case('appointments')
           <livewire:patients.tabs.appointments :patient-id="$patient->id" :key="'t-appointments-'.$patient->id" />
           @break
+        @case('dental')
+          <livewire:patients.tabs.dental :patient-id="$patient->id" :key="'t-dental-'.$patient->id" />
+          @break
 
         {{-- Records: the working panels, unchanged in behaviour. --}}
         @case('records')

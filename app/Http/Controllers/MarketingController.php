@@ -140,21 +140,67 @@ class MarketingController extends Controller
      * disallows /admin, and a sitemap that advertises a sign-in page is a
      * sitemap working against itself.
      */
+    /** The sitemap index: one child per kind of page (guides and clinic pages join as they exist). */
     public function sitemap(): Response
     {
-        $pages = [
-            'home' => ['1.0', 'weekly'],
-            'features' => ['0.9', 'monthly'],
-            'pricing' => ['0.9', 'monthly'],
-            'security' => ['0.7', 'monthly'],
-            'contact' => ['0.6', 'yearly'],
-            'privacy' => ['0.3', 'yearly'],
-            'terms' => ['0.3', 'yearly'],
-        ];
-
-        $xml = view('marketing.sitemap', ['pages' => $pages])->render();
+        $xml = view('marketing.sitemap-index', ['maps' => [
+            ['loc' => route('sitemap.pages'), 'lastmod' => self::pagesLastModified()],
+        ]])->render();
 
         return response($xml, 200, ['Content-Type' => 'application/xml; charset=UTF-8']);
+    }
+
+    /** Every public page, with lastmod from config/landing.php where the page is content. */
+    public function sitemapPages(): Response
+    {
+        $fixed = (string) config('landing.site_updated', '2026-10-17');
+        $pages = [
+            ['loc' => route('home'), 'lastmod' => $fixed, 'priority' => '1.0', 'changefreq' => 'weekly'],
+            ['loc' => route('features'), 'lastmod' => $fixed, 'priority' => '0.9', 'changefreq' => 'monthly'],
+            ['loc' => route('pricing'), 'lastmod' => $fixed, 'priority' => '0.9', 'changefreq' => 'monthly'],
+        ];
+        foreach ((array) config('landing.practices') as $slug => $page) {
+            $pages[] = ['loc' => route('for', $slug), 'lastmod' => $page['updated'] ?? $fixed, 'priority' => '0.9', 'changefreq' => 'monthly'];
+        }
+        foreach (['walkthrough' => 'walkthrough', 'get-app' => 'get-app', 'about' => 'about'] as $key => $route) {
+            $pages[] = ['loc' => route($route), 'lastmod' => config("landing.pages.{$key}.updated", $fixed), 'priority' => '0.7', 'changefreq' => 'monthly'];
+        }
+        if (\App\Http\Controllers\Auth\AuthenticatedSessionController::demoAvailable()) {
+            $pages[] = ['loc' => route('demo'), 'lastmod' => config('landing.pages.demo.updated', $fixed), 'priority' => '0.8', 'changefreq' => 'monthly'];
+        }
+        foreach (['standalone.products' => '0.8', 'security' => '0.7', 'contact' => '0.6', 'privacy' => '0.3', 'terms' => '0.3'] as $route => $priority) {
+            $pages[] = ['loc' => route($route), 'lastmod' => $fixed, 'priority' => $priority, 'changefreq' => 'yearly'];
+        }
+
+        return response(view('marketing.sitemap', ['pages' => $pages])->render(), 200, ['Content-Type' => 'application/xml; charset=UTF-8']);
+    }
+
+    private static function pagesLastModified(): string
+    {
+        $dates = array_filter(array_merge(
+            [(string) config('landing.site_updated', '2026-10-17')],
+            array_column((array) config('landing.practices'), 'updated'),
+            array_column((array) config('landing.pages'), 'updated'),
+        ));
+        rsort($dates);
+
+        return $dates[0];
+    }
+
+    /**
+     * robots.txt with an absolute sitemap address. A hospital's own server
+     * (standalone) asks not to be indexed at all: its pages are its staff's.
+     */
+    public function robots(): Response
+    {
+        $lines = \App\Support\Edition::isStandalone()
+            ? ['User-agent: *', 'Disallow: /']
+            : ['User-agent: *', 'Allow: /',
+                'Disallow: /admin', 'Disallow: /super', 'Disallow: /account', 'Disallow: /my-licence', 'Disallow: /s/',
+                'Disallow: /field', 'Disallow: /test-login', 'Disallow: /install.php', 'Disallow: /two-factor',
+                '', 'Sitemap: '.route('sitemap')];
+
+        return response(implode("\n", $lines)."\n", 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
     }
 
     /**

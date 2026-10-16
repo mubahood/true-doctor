@@ -96,6 +96,13 @@
     <div class="tb-stack">
       <livewire:visits.panels.clinical :visit-id="$visit->id" :key="'clinical-'.$visit->id" />
 
+      {{-- A dental clinic charts the teeth and bills procedures on the visit (docs/dental.md). --}}
+      @if($visit->patient && \App\Services\DentalService::enabledFor(app(\App\Support\HospitalSettings::class)->hospital()))
+        @canany(['treatments.view', 'visits.diagnose'])
+          <livewire:patients.tabs.dental :patient-id="$visit->patient_id" :visit-id="$visit->id" :key="'dental-'.$visit->id" />
+        @endcanany
+      @endif
+
       @canany(['billing.view', 'billing.manage'])
         <livewire:visits.panels.charges :visit-id="$visit->id" :key="'charges-'.$visit->id" />
       @endcanany

@@ -25,7 +25,7 @@
       @else
         <a href="{{ route('register') }}" class="btn lg">Start a free trial <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
         @if($demo)
-          <a href="{{ route('test-login') }}" class="btn plain lg">Open the live demo</a>
+          <a href="{{ route('demo') }}" class="btn plain lg">Open the live demo</a>
         @else
           <a href="{{ route('features') }}" class="btn plain lg">See the modules</a>
         @endif

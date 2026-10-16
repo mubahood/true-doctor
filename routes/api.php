@@ -52,6 +52,14 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
         Route::post('auth/two-factor/confirm', [\App\Http\Controllers\Api\V1\AccountSecurityController::class, 'confirm'])->middleware('throttle:12,1')->name('api.auth.two-factor.confirm');
         Route::get('auth/devices', [\App\Http\Controllers\Api\V1\AccountSecurityController::class, 'devices'])->name('api.auth.devices');
         Route::delete('auth/devices/{device}', [\App\Http\Controllers\Api\V1\AccountSecurityController::class, 'revoke'])->whereNumber('device')->name('api.auth.devices.revoke');
+        // The dental chart and treatment plan (docs/api/dental.md).
+        Route::get('patients/{patient}/dental', [\App\Http\Controllers\Api\V1\DentalController::class, 'show'])->name('api.dental.show');
+        Route::post('patients/{patient}/dental/findings', [\App\Http\Controllers\Api\V1\DentalController::class, 'record'])->name('api.dental.findings');
+        Route::post('patients/{patient}/dental/plan', [\App\Http\Controllers\Api\V1\DentalController::class, 'plan'])->name('api.dental.plan');
+        Route::post('dental/plan/{item}/status', [\App\Http\Controllers\Api\V1\DentalController::class, 'status'])->name('api.dental.status');
+        Route::put('patients/{patient}/recall', [\App\Http\Controllers\Api\V1\DentalController::class, 'recall'])->name('api.dental.recall');
+        Route::get('dental/report', [\App\Http\Controllers\Api\V1\DentalController::class, 'report'])->name('api.dental.report');
+
         // Crashes the app recorded, for the error list (docs/api/security.md).
         Route::post('diagnostics/errors', \App\Http\Controllers\Api\V1\ErrorReportController::class)->middleware('throttle:10,1')->name('api.diagnostics.errors');
         Route::post('auth/sign-out-everywhere', [\App\Http\Controllers\Api\V1\AccountSecurityController::class, 'signOutEverywhere'])->name('api.auth.sign-out-everywhere');

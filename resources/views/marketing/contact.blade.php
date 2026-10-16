@@ -140,7 +140,7 @@
         <p>{{ $supportEmail }}<br><span style="color:var(--tx3);">Usually answered within one business day.</span></p>
       </a>
       @if($demo)
-        <a class="card" href="{{ route('test-login') }}">
+        <a class="card" href="{{ route('demo') }}">
           <div class="ic" aria-hidden="true"><i class="fas fa-flask"></i></div>
           <h3>Look around first</h3>
           <p>Open the demonstration hospital — a populated facility with real workflows in it. No sign-up, nothing to install.</p>
