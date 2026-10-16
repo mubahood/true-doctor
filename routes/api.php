@@ -132,7 +132,7 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
         Route::apiResource('invoices', InvoiceController::class)->only(['index', 'show']);
 
         // The rest of the back office, one file per area (docs/api.md).
-        foreach (['care', 'pharmacy', 'finance', 'admin', 'extras'] as $area) {
+        foreach (['care', 'pharmacy', 'finance', 'admin', 'extras', 'plane', 'notify'] as $area) {
             require __DIR__."/api/{$area}.php";
         }
     });
