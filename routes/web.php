@@ -80,6 +80,14 @@ Route::middleware('edition:saas')->group(function () {
         ->middleware(['signed', 'throttle:10,1'])->name('standalone.updates.download');
 });
 
+// A patient opens an invoice or receipt from a WhatsApp/SMS link, no login. Signed
+// (and expiring), revocable through the invoice's share nonce, no patient detail in
+// the URL (docs/api/journeys.md).
+Route::middleware(['signed', 'throttle:30,1'])->prefix('s')->group(function () {
+    Route::get('i/{uuid}/{nonce}', [\App\Http\Controllers\SharedDocumentController::class, 'invoice'])->name('share.invoice');
+    Route::get('r/{uuid}/{nonce}', [\App\Http\Controllers\SharedDocumentController::class, 'receipt'])->name('share.receipt');
+});
+
 /*
 |--------------------------------------------------------------------------
 | Staff authentication (single login for all back-office roles)

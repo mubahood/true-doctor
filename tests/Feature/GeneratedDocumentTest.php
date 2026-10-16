@@ -132,7 +132,20 @@ class GeneratedDocumentTest extends TestCase
 
         $insurer = InsuranceProvider::create(['name' => 'Jubilee Health', 'is_active' => true]);
 
+        $handover = app(\App\Services\HandoverService::class)->store($this->admin, $ward, 'morning', [[
+            'admission_uuid' => $admission->uuid,
+            'situation' => 'Severe dehydration, day 2.',
+            'background' => 'No known allergies recorded.',
+            'assessment' => 'Obs stable.',
+            'recommendation' => 'Continue IV fluids.',
+        ]]);
+        $shares = app(\App\Services\InvoiceShareService::class);
+
         return [
+            ['cashier day summary', route('api.cashier.day-summary.pdf', ['date' => now()->toDateString()])],
+            ['ward handover', route('api.ward.handover.pdf', $handover)],
+            ['shared invoice link', $shares->shareInvoice($invoice)['url']],
+            ['shared receipt link', $shares->sharePayment($payment)['url']],
             ['invoice', route('admin.invoices.pdf', $invoice)],
             ['receipt', route('admin.payments.receipt', $payment)],
             ['lab report', route('admin.lab-orders.pdf', $lab)],

@@ -61,7 +61,7 @@ class CapabilitiesApiTest extends TestCase
         $this->as('doctor');
 
         $this->assertSame(
-            ['search' => true, 'etag' => true, 'tombstones' => true, 'bootstrap' => true, 'agenda' => false, 'push' => false, 'attachments' => false, 'batch' => false],
+            ['search' => true, 'etag' => true, 'tombstones' => true, 'bootstrap' => true, 'agenda' => true, 'push' => false, 'attachments' => false, 'batch' => false],
             $this->getJson('/api/v1/meta')->json('data.capabilities.features'),
         );
     }

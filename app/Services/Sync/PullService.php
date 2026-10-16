@@ -573,13 +573,13 @@ class PullService
 
         return [
             'wards' => [
-                'any' => ['ipd.view', 'wards.manage'],
+                'any' => ['ipd.view', 'wards.manage', 'visits.view', 'patients.view'],
                 'rows' => fn () => Ward::query()->where('is_active', true)
                     ->get(['id', 'name'])->map(fn (Ward $w) => ['id' => $w->id, 'name' => $w->name])->all(),
                 'gone' => $gone(Ward::class),
             ],
             'beds' => [
-                'any' => ['ipd.view', 'wards.manage'],
+                'any' => ['ipd.view', 'wards.manage', 'visits.view', 'patients.view'],
                 'rows' => fn () => Bed::query()->where('is_active', true)
                     ->get(['id', 'ward_id', 'name', 'status'])
                     ->map(fn (Bed $b) => ['id' => $b->id, 'ward_id' => $b->ward_id, 'name' => $b->name, 'status' => $b->status->value])->all(),

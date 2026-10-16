@@ -75,7 +75,7 @@ final class Capabilities
             'etag' => true,         // ConditionalJson on GET
             'tombstones' => true,   // `removed` in pull and bootstrap
             'bootstrap' => true,    // GET /bootstrap
-            'agenda' => false,      // W2-B
+            'agenda' => true,       // GET /me/agenda (and /me/next-actions)
             // Real push needs a driver other than the logging `null` one and
             // its credentials; a standalone copy never has ours.
             'push' => config('push.driver', 'null') !== 'null',

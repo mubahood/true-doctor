@@ -128,7 +128,7 @@ treats an absent key (an older server) as "off".
   "modules": { "inpatient": true, "laboratory": true, "radiology": true, "pharmacy": true, "insurance": true, "cards": true },
   "permissions": [ "access-admin", "appointments.view", "billing.view", "patients.view", "visits.view" ],
   "features": { "search": true, "etag": true, "tombstones": true, "bootstrap": true,
-                "agenda": false, "push": false, "attachments": false, "batch": false },
+                "agenda": true, "push": false, "attachments": false, "batch": false },
   "limits": { "per_page_max": 100, "upload_max_kb": 8192, "rate_per_min": 240, "idle_timeout_minutes": 15 },
   "locales": [ "en", "lg", "sw" ],
   "server_time": "2026-10-16T16:36:27+00:00", "timezone": "Africa/Kampala",
@@ -138,7 +138,7 @@ treats an absent key (an older server) as "off".
 
 - `permissions`: the user's effective permission strings, the same ones every Policy checks.
 - `features.push` is `true` only when `config('push.driver')` is not `null` (the logging driver). A standalone copy never has our credentials.
-  `agenda`, `attachments`, `batch` are owned by later workstreams and flip to `true` in the change that ships them.
+  `attachments`, `batch` are owned by later workstreams and flip to `true` in the change that ships them.
 - `limits.upload_max_kb` is `min(post_max_size, upload_max_filesize)` in KB (PHP refuses a request at the lower one).
 - `licence` is `null` on SaaS; on a standalone copy: `{valid, id, customer, updates_until, updates_active, limits:{max_staff?, max_patients?, max_beds?}}`.
   An invalid licence never stops clinical work.

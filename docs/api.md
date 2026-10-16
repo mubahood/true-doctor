@@ -92,6 +92,8 @@ Notifications, devices, notification preferences and upcoming reminders: [`api/n
 The data plane - `GET /bootstrap`, `meta.capabilities`, `GET /search`, ETag/`304`, `?updated_since=`, tombstones (`removed`) and the
 extended error codes (`conflict`, `plan_limit`, `payload_too_large`, `device_revoked`, `licence_expired`, `maintenance`,
 `retryable`/`retry_after`): [`api/plane.md`](api/plane.md).
+The journeys (next actions, agenda, invoice/receipt share links, receipt as data, cashier day, debtors, dispense queue, last prescription,
+ward doses due and handover, duplicate check, and the Idempotency-Key rule on money endpoints): [`api/journeys.md`](api/journeys.md).
 
 ## OpenAPI
 

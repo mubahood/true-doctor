@@ -21,3 +21,10 @@ unique on user + key) and are pruned daily at 03:30. Limit: if the server dies b
 storing the answer, a retry runs again; that window is a few milliseconds.
 
 The app (`ApiClient`) reuses a key only for an identical write that follows a "no answer" failure.
+
+## Required on money endpoints (from the app)
+
+`POST /invoices/{invoice}/payments`, `POST /cards/{card}/transactions`, `POST /cards/{card}/settle`,
+`POST /stock-items/{stock}/receive|adjust|write-off` and `POST /visits/{visit}/dispensations` answer `422`
+(`validation_failed`, `errors.Idempotency-Key`) when the request has no `Idempotency-Key` **and** carries
+`X-App-Version`. The web and Field Mode send no `X-App-Version` and are unchanged. See [`journeys.md`](journeys.md).

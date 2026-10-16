@@ -29,6 +29,19 @@ class IdempotentRequests
     {
         $key = $request->header('Idempotency-Key');
 
+        // Money endpoints: an installed app must say which attempt this is, or a
+        // retry after a lost answer could charge twice. Web and Field Mode (no
+        // X-App-Version) are untouched. Runs after authentication, so a
+        // signed-out caller still gets 401.
+        if (($key === null || $key === '') && $request->user() !== null && $this->keyIsRequired($request)) {
+            return ApiResponse::error(
+                ApiErrorCode::ValidationFailed,
+                'This request moves money or stock, so it needs an Idempotency-Key header (a fresh UUID per attempt; reuse it when retrying).',
+                422,
+                ['Idempotency-Key' => ['The Idempotency-Key header is required.']],
+            );
+        }
+
         if ($key === null || $key === '' || ! in_array($request->method(), ['POST', 'PUT', 'PATCH', 'DELETE'], true)
             || $request->is('api/v1/sync/push', 'api/v1/auth/login')) {
             return $next($request);
@@ -86,6 +99,35 @@ class IdempotentRequests
         } finally {
             $lock->release();
         }
+    }
+
+    /**
+     * Routes whose writes move money or stock: taking a payment, a card's
+     * top-up / charge / settlement, receiving, adjusting or writing off stock,
+     * dispensing. Required only when the request carries `X-App-Version`.
+     */
+    public const KEY_REQUIRED_ROUTES = [
+        'api.invoices.pay',
+        'api.cards.transact',
+        'api.cards.settle',
+        'api.stock-items.receive',
+        'api.stock-items.adjust',
+        'api.stock-items.write-off',
+        'api.dispensations.store',
+        'api.finance.transactions.store',
+        'api.finance.journal.store',
+        'api.insurance-providers.deposit',
+        'api.insurance-providers.adjust',
+        'api.insurance-providers.settle',
+        'api.insurance-providers.cards.settle',
+        'api.patients.cards.store',
+        'api.cards.holders.store',
+    ];
+
+    private function keyIsRequired(Request $request): bool
+    {
+        return trim((string) $request->header('X-App-Version', '')) !== ''
+            && in_array($request->route()?->getName(), self::KEY_REQUIRED_ROUTES, true);
     }
 
     private function isFinal(Response $response): bool
