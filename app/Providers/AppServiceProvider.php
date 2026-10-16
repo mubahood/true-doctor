@@ -98,6 +98,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Printables resolve files from a folder that exists on every hosting layout.
+        self::pointPdfAtAFolderThatExists();
+
         // @canuse('ipd.view') … @endcanuse: allowed to, and part of this
         // practice — a dental clinic has the permission matrix of every
         // hospital but no beds to show. (Practice::allows)
@@ -248,5 +251,44 @@ class AppServiceProvider extends ServiceProvider
             fn ($handle) => \Illuminate\Support\Facades\Route::post($base.'/livewire/update', $handle)
                 ->middleware('web')
         );
+    }
+
+    /**
+     * Where DomPDF resolves relative files from, and how it embeds fonts.
+     *
+     * The package falls back to `base_path('public')`. On a standalone
+     * installation on cPanel the web root is a separate folder beside the
+     * application (`~/app` next to `~/true_doctor_app`, see APP_PUBLIC_PATH), so
+     * that folder does not exist, `realpath()` fails, and EVERY printable —
+     * invoice, receipt, lab report, patient card — answered 500 "Cannot resolve
+     * public path" (Divine Dental Clinic, 16 Oct 2026). `public_path()` is
+     * already right for both layouts (the bootstrap points it at the real web
+     * root), so say so once. Nothing printed relies on it for images (the logo is
+     * embedded as a data URI, see DocumentBrand): it only has to exist.
+     *
+     * A method here, not a class of its own: a hotfix of one file must not
+     * depend on an autoloader that was built before the new class existed.
+     */
+    public static function pointPdfAtAFolderThatExists(): void
+    {
+        // Embed only the letters a document uses: a one-page invoice was 1.1 MB
+        // (the whole of two DejaVu fonts each time) and is about 20 KB this way —
+        // the difference between a PDF that goes over WhatsApp on mobile data and
+        // one that does not.
+        config(['dompdf.options.enable_font_subsetting' => true]);
+
+        $exists = static fn (mixed $path): bool => is_string($path) && $path !== '' && realpath($path) !== false;
+
+        if ($exists(config('dompdf.public_path'))) {
+            return;
+        }
+
+        foreach ([public_path(), base_path('public'), storage_path('app/public'), base_path()] as $candidate) {
+            if ($exists($candidate)) {
+                config(['dompdf.public_path' => realpath($candidate)]);
+
+                return;
+            }
+        }
     }
 }

@@ -140,6 +140,8 @@ class GeneratedDocumentTest extends TestCase
             ['discharge summary', route('admin.admissions.summary', $admission)],
             ['patient ID card', route('admin.patients.id-card', $this->patient())],
             ['insurance statement', route('admin.insurance-providers.usage', $insurer)],
+            ['visit report', route('admin.visits.report', $visit)],
+            ['financial statement', route('admin.finance.statement-pdf', ['report' => 'income', 'preset' => 'this_month'])],
             ['period report', route('admin.reports.pdf', [
                 'from' => now()->startOfMonth()->toDateString(),
                 'to' => now()->endOfMonth()->toDateString(),
@@ -169,6 +171,60 @@ class GeneratedDocumentTest extends TestCase
             $this->assertStringStartsWith('inline', $disposition, "the {$label} downloads instead of opening");
             $this->assertStringContainsString('.pdf', $disposition, "the {$label} has no filename to save under");
         }
+    }
+
+    /**
+     * THE STANDALONE LAYOUT. On a cPanel installation the web root is a folder
+     * beside the application, so the package's own fallback (`base_path('public')`)
+     * is a folder that does not exist, and every printable answered 500
+     * "Cannot resolve public path" (Divine Dental Clinic, 16 Oct 2026). The
+     * system points DomPDF at the application's own public path instead.
+     */
+    public function test_every_document_prints_when_there_is_no_public_folder_beside_the_application(): void
+    {
+        $this->withLetterhead();
+        $webRoot = sys_get_temp_dir().'/td-webroot-'.bin2hex(random_bytes(4));
+        mkdir($webRoot);
+
+        try {
+            $this->app->usePublicPath($webRoot);
+            // What the package would have resolved: a folder that is not there.
+            config(['dompdf.public_path' => base_path('no-such-public-folder')]);
+            \App\Providers\AppServiceProvider::pointPdfAtAFolderThatExists();
+
+            $this->assertSame(realpath($webRoot), realpath((string) config('dompdf.public_path')), 'DomPDF follows the application\'s public path');
+
+            foreach ($this->documents() as [$label, $url]) {
+                $this->get($url)->assertOk();
+                $this->assertSame('application/pdf', $this->get($url)->headers->get('content-type'), "the {$label} did not print");
+            }
+        } finally {
+            rmdir($webRoot);
+        }
+    }
+
+    /** A one-page invoice was 1.1 MB, the whole of two fonts each time. */
+    public function test_a_document_embeds_only_the_letters_it_uses(): void
+    {
+        $this->withLetterhead();
+
+        foreach ($this->documents() as [$label, $url]) {
+            $bytes = strlen((string) $this->get($url)->baseResponse->getContent());
+
+            $this->assertLessThan(400_000, $bytes, "the {$label} is {$bytes} bytes — fonts are being embedded whole");
+        }
+    }
+
+    public function test_the_pdf_folder_falls_back_to_something_that_exists(): void
+    {
+        $this->assertNotNull(config('dompdf.public_path'), 'the application pointed DomPDF at a folder when it booted');
+
+        $this->app->usePublicPath(base_path('also-not-there'));
+        config(['dompdf.public_path' => null]);
+
+        \App\Providers\AppServiceProvider::pointPdfAtAFolderThatExists();
+
+        $this->assertNotFalse(realpath((string) config('dompdf.public_path')), 'whatever is chosen exists');
     }
 
     /** A filename still matters — "Save as" has to offer something readable. */

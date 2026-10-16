@@ -28,7 +28,10 @@
   <meta charset="utf-8">
   <title>{{ $reference ? $reference.' · '.$title : $title }}</title>
   <style>
-    @page { margin: 116px 40px 76px 40px; }
+    /* Room for a letterhead of up to four lines: a clinic with an address, two phone
+       numbers, an email and a website wraps to three, and the rule under it must
+       not land on the first row of the page. */
+    @page { margin: 134px 40px 76px 40px; }
 
     * { box-sizing: border-box; }
 
@@ -45,7 +48,7 @@
        identity on all three rather than only on the first. */
     header.sheet-head {
       position: fixed;
-      top: -92px; left: 0; right: 0; height: 78px;
+      top: -110px; left: 0; right: 0; height: 96px;
     }
 
     footer.sheet-foot {
