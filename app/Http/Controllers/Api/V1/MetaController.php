@@ -8,6 +8,7 @@ use App\Models\Hospital;
 use App\Support\ApiResponse;
 use App\Support\Capabilities;
 use App\Support\CurrentHospital;
+use App\Support\Demo;
 use App\Support\Edition;
 use App\Support\EnumCatalogue;
 use App\Support\HospitalSettings;
@@ -89,7 +90,13 @@ class MetaController extends Controller
             // What this server can do for this user: versions, edition,
             // permissions, features, limits (docs/api/plane.md).
             'capabilities' => Capabilities::for($user, $hospital),
-        ];
+        ] + (Demo::isDemoUser($user) ? ['demo' => [
+            'active' => true,
+            'role' => $user->role,
+            'role_label' => $user->role_label,
+            'hospital' => $hospital?->name,
+            'resets' => Demo::resets(),
+        ]] : []);
     }
 
     /** @return array<string, mixed> */

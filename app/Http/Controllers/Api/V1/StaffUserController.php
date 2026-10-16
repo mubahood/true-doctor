@@ -111,6 +111,10 @@ class StaffUserController extends Controller
         $account = $this->manageable($request, $user);
         $this->authorize('update', $account);
 
+        if ($this->changesDemoCredentials($request, $account)) {
+            return $this->demoRefusal();
+        }
+
         $input = $this->formInput($request, self::FIELDS, $account);
         $input['is_active'] = filter_var($input['is_active'], FILTER_VALIDATE_BOOLEAN);
         $input['sees_patients'] = filter_var($input['sees_patients'], FILTER_VALIDATE_BOOLEAN);
@@ -157,6 +161,10 @@ class StaffUserController extends Controller
         $account = $this->manageable($request, $user);
         $this->authorize('update', $account);
 
+        if (\App\Support\Demo::isDemoUser($request->user())) {
+            return $this->demoRefusal();
+        }
+
         $data = $request->validate(['password' => ['required', 'string', Password::defaults(), 'confirmed']]);
 
         $this->staff->update($account, [], null, false, $data['password']);
@@ -199,6 +207,27 @@ class StaffUserController extends Controller
     }
 
     /** A foreign tenant's row simply does not exist here (404). */
+    /**
+     * The demonstration's logins are public, so a visitor must not be able to
+     * change the password, email or role of any account in it (the next
+     * visitor would be locked out, or handed a different role).
+     */
+    private function changesDemoCredentials(Request $request, User $account): bool
+    {
+        if (! \App\Support\Demo::isDemoUser($request->user())) {
+            return false;
+        }
+
+        return $request->filled('password')
+            || ($request->filled('email') && strtolower((string) $request->input('email')) !== strtolower((string) $account->email))
+            || ($request->filled('role') && (string) $request->input('role') !== (string) $account->role);
+    }
+
+    private function demoRefusal(): JsonResponse
+    {
+        return ApiResponse::error(\App\Enums\ApiErrorCode::Forbidden, 'Demonstration accounts cannot change their password, email or role.', 403);
+    }
+
     private function manageable(Request $request, int $id): User
     {
         return $this->staff->manageableBy($request->user())->findOrFail($id);

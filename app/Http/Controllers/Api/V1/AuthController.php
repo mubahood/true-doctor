@@ -21,6 +21,8 @@ class AuthController extends Controller
     /** A real bcrypt hash of a random string — compared against when the account does not exist. */
     private const DUMMY_HASH = '$2y$04$H1bKcLwDbwSjqqB5xf9RwOG/2JtTJj4Uo7lMQQfQ1M0V4NeWzJ6Y6';
 
+    public const DEMO_PASSWORD_REFUSAL = 'Demonstration accounts cannot change their password.';
+
     public function login(LoginRequest $request): JsonResponse
     {
         $email = strtolower((string) $request->validated('email'));
@@ -76,6 +78,11 @@ class AuthController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
+
+        // The demonstration's passwords are public; changing one would lock out the next visitor.
+        if (\App\Support\Demo::isDemoUser($user)) {
+            return ApiResponse::error(ApiErrorCode::Forbidden, self::DEMO_PASSWORD_REFUSAL, 403);
+        }
 
         $user->forceFill([
             'password' => Hash::make($request->validated('password')),

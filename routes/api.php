@@ -32,6 +32,9 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
         Route::get('plans', [\App\Http\Controllers\Api\V1\PublicRegistrationController::class, 'plans'])->middleware('throttle:30,1')->name('plans');
         Route::get('human-check', [\App\Http\Controllers\Api\V1\PublicRegistrationController::class, 'humanCheck'])->middleware('throttle:30,1')->name('human-check');
         Route::post('register', [\App\Http\Controllers\Api\V1\PublicRegistrationController::class, 'register'])->middleware('throttle:6,60')->name('register');
+        // The app's "Try the demo" door: the server signs a visitor in as a demo role (docs/api/demo.md).
+        Route::get('demo', [\App\Http\Controllers\Api\V1\DemoController::class, 'show'])->middleware('throttle:30,1')->name('demo');
+        Route::post('demo/login', [\App\Http\Controllers\Api\V1\DemoController::class, 'login'])->middleware('throttle:12,1')->name('demo.login');
     });
 
     // Authenticated

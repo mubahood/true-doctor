@@ -79,3 +79,14 @@ construction rather than by being named.
 sign-in page was also a list of logins. `/test-login` 404s unless the environment is local/demo
 *and* the accounts exist, so a real deployment gives no hint that such a door can exist. Public
 pages link to it under "Try the demo", on the same condition.
+
+## The app's demo door
+
+The mobile app has its own "Try the demo", served by `GET /api/v1/public/demo` (what to offer) and
+`POST /api/v1/public/demo/login` (sign in as a role) - see [`api/demo.md`](api/demo.md). It uses the
+same accounts and the same on/off switch as `/test-login`, with three differences: the app never
+sees the password (the server signs the visitor in as a role it names), the token expires after
+24 hours, and it exists only on the SaaS edition. The roles shown, and the suggested missions for
+each, are `App\Support\DemoPersonas`; a role appears only when an active seeded account of that
+role exists in the demo hospital. Demo users cannot change the password, email or role of a demo
+account through the API (the web panel has no such guard yet).
