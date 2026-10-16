@@ -2,7 +2,6 @@
 
 namespace App\Livewire\Concerns;
 
-use App\Enums\AccountType;
 use App\Exceptions\ClosedPeriodException;
 use App\Http\Requests\CashEntryRequest;
 use App\Models\LedgerAccount;
@@ -146,35 +145,7 @@ trait RecordsMoney
     #[Computed]
     public function moneyCategories(): array
     {
-        $accounts = LedgerAccount::query()->active()->where('is_book', false)
-            ->where(fn ($q) => $q->whereNull('system_key')->orWhereNotIn('system_key', ['inventory', 'discounts', 'opening_equity']))
-            ->ordered()->get();
-
-        $order = $this->moneyKind === 'out'
-            ? [AccountType::Expense, AccountType::Liability, AccountType::Asset, AccountType::Equity, AccountType::Income]
-            : [AccountType::Income, AccountType::Asset, AccountType::Liability, AccountType::Equity, AccountType::Expense];
-
-        $heading = fn (AccountType $t) => match ([$this->moneyKind, $t]) {
-            ['in', AccountType::Income] => 'Income',
-            ['in', AccountType::Asset] => 'Money owed to you, collected',
-            ['in', AccountType::Liability] => 'Loans and deposits received',
-            ['in', AccountType::Equity] => 'Capital put in',
-            ['out', AccountType::Expense] => 'Expenses',
-            ['out', AccountType::Liability] => 'Paying what you owe',
-            ['out', AccountType::Asset] => 'Buying equipment and other assets',
-            ['out', AccountType::Equity] => 'Owner\'s drawings',
-            default => $t->plural().' (unusual here)',
-        };
-
-        $groups = [];
-        foreach ($order as $type) {
-            $rows = $accounts->where('type', $type);
-            if ($rows->isNotEmpty()) {
-                $groups[$heading($type)] = $rows->mapWithKeys(fn (LedgerAccount $a) => [$a->id => $a->label()])->all();
-            }
-        }
-
-        return $groups;
+        return app(CashbookService::class)->categories($this->moneyKind);
     }
 
     public function updatedMoneyKind(): void

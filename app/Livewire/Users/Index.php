@@ -12,8 +12,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
@@ -130,19 +128,7 @@ class Index extends Component
 
     protected function rules(): array
     {
-        return [
-            'name' => ['required', 'string', 'max:150'],
-            'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($this->editingId)],
-            'role' => ['required', Rule::in($this->staff()->assignableRoles($this->actor()))],
-            'phone' => ['nullable', 'string', 'max:20'],
-            'bio' => ['nullable', 'string'],
-            'is_active' => ['boolean'],
-            'sees_patients' => ['boolean'],
-            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
-            'password' => $this->editingId
-                ? ['nullable', 'string', Password::defaults(), 'confirmed']
-                : ['nullable'],
-        ];
+        return $this->staff()->rulesFor($this->actor(), $this->editingId);
     }
 
     public function save(): void
@@ -154,12 +140,7 @@ class Index extends Component
             : $this->authorize('create', User::class);
 
         $data = $this->validate();
-        unset($data['password'], $data['avatar']);
-        $data['phone'] = filled($this->phone) ? $this->phone : null;
-        $data['bio'] = filled($this->bio) ? $this->bio : null;
-        $data['is_active'] = $this->is_active;
-        // A doctor sees patients by being one; the flag is for everybody else.
-        $data['sees_patients'] = $this->role !== 'doctor' && $this->sees_patients;
+        $data = $this->staff()->attributes($data);
 
         if ($user === null) {
             try {
@@ -190,8 +171,10 @@ class Index extends Component
         $user = $this->manageable($id);
         $this->authorize('delete', $user);
 
-        if ($user->id === Auth::id()) {
-            $this->dispatch('toast', message: 'You cannot delete your own account.', type: 'error');
+        try {
+            $this->staff()->assertNotSelf($this->actor(), $user, 'delete');
+        } catch (\DomainException $e) {
+            $this->dispatch('toast', message: $e->getMessage(), type: 'error');
 
             return;
         }

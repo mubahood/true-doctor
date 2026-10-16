@@ -7,9 +7,9 @@ use App\Livewire\Concerns\MovesStock;
 use App\Livewire\Concerns\PeeksStockItems;
 use App\Models\StockCategory;
 use App\Models\StockItem;
+use App\Services\StockAlertBoard;
 use App\Services\StockService;
 use App\Support\HospitalSettings;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
@@ -18,7 +18,6 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
 use Livewire\Component;
-use RuntimeException;
 
 /**
  * Inventory alerts — sorted by how much trouble each thing is, and actionable.
@@ -57,10 +56,10 @@ class Alerts extends Component
     use AuthorizesRequests, MovesStock, PeeksStockItems;
 
     /** Days ahead counted as "expiring soon". */
-    public const EXPIRY_HORIZON_DAYS = StockItem::EXPIRY_HORIZON_DAYS;
+    public const EXPIRY_HORIZON_DAYS = StockAlertBoard::EXPIRY_HORIZON_DAYS;
 
     /** …and the urgent end of it, where a plan has to become an action. */
-    public const EXPIRY_URGENT_DAYS = 30;
+    public const EXPIRY_URGENT_DAYS = StockAlertBoard::EXPIRY_URGENT_DAYS;
 
     /** One shelf at a time, when a pharmacy runs several hundred lines. */
     #[Url(history: true, except: '')]
@@ -81,132 +80,70 @@ class Alerts extends Component
         $this->authorize('viewAny', StockItem::class);
     }
 
-    /**
-     * Everything this board looks at: stocked, and on the chosen shelf.
-     *
-     * @return Builder<StockItem>
-     */
-    private function onShelf(): Builder
+    private function board(): StockAlertBoard
     {
-        return StockItem::with('category')
-            ->where('is_active', true)
-            ->when($this->category !== '', fn (Builder $q) => $q->where('stock_category_id', (int) $this->category));
+        return $this->board ??= StockAlertBoard::forCategory($this->category);
     }
 
-    /**
-     * Nothing left at all — not a warning, a stoppage.
-     *
-     * @return Collection<int,StockItem>
-     */
+    private ?StockAlertBoard $board = null;
+
+    /** @return Collection<int,StockItem> */
     #[Computed]
     public function outOfStock(): Collection
     {
-        return $this->onShelf()->where('current_quantity', '<=', 0)->orderBy('name')->get();
+        return $this->board()->outOfStock();
     }
 
-    /**
-     * Below the reorder level, but not empty: there is still time to order.
-     *
-     * @return Collection<int,StockItem>
-     */
+    /** @return Collection<int,StockItem> */
     #[Computed]
     public function lowStock(): Collection
     {
-        $query = $this->onShelf()->where('current_quantity', '>', 0);
-
-        return StockItem::applyLowStock($query)->orderBy('name')->get();
+        return $this->board()->lowStock();
     }
 
-    /**
-     * Expiring soon, but NOT yet expired — stock there is still time to use.
-     *
-     * @return Collection<int,StockItem>
-     */
+    /** @return Collection<int,StockItem> */
     #[Computed]
     public function expiring(): Collection
     {
-        $query = $this->onShelf()
-            ->where('current_quantity', '>', 0)
-            ->whereDate('expiry_date', '>', now()->toDateString());
-
-        return StockItem::applyExpiringBefore($query, now()->addDays(self::EXPIRY_HORIZON_DAYS)->toDateString())
-            ->orderBy('expiry_date')
-            ->get();
+        return $this->board()->expiring();
     }
 
-    /**
-     * Already expired, and still on the books.
-     *
-     * @return Collection<int,StockItem>
-     */
+    /** @return Collection<int,StockItem> */
     #[Computed]
     public function expired(): Collection
     {
-        $query = $this->onShelf()->where('current_quantity', '>', 0);
-
-        return StockItem::applyExpiringBefore($query, now()->toDateString())
-            ->orderBy('expiry_date')
-            ->get();
+        return $this->board()->expired();
     }
 
-    /**
-     * What is at risk, and the two figures that make anybody act: what the
-     * expired stock is WORTH, and what it would cost to put the shortages
-     * right.
-     *
-     * @return array{out:int,low:int,expiring:int,expired:int,value:string,shortfall:string}
-     */
+    /** @return array{out:int,low:int,expiring:int,expired:int,value:string,shortfall:string} */
     #[Computed]
     public function atRisk(): array
     {
-        $shortfall = '0';
-
-        foreach ($this->outOfStock->concat($this->lowStock) as $item) {
-            $short = bcsub((string) $item->reorder_level, (string) $item->current_quantity, 2);
-
-            if (bccomp($short, '0', 2) > 0) {
-                $shortfall = bcadd($shortfall, bcmul($short, (string) $item->cost_price, 2), 2);
-            }
-        }
-
-        return [
-            'out' => $this->outOfStock->count(),
-            'low' => $this->lowStock->count(),
-            'expiring' => $this->expiring->count(),
-            'expired' => $this->expired->count(),
-            'value' => (string) $this->expired->sum(fn (StockItem $i) => (float) $i->current_stock_value),
-            'shortfall' => $shortfall,
-        ];
+        return $this->board()->atRisk();
     }
 
-    /** How many days until it goes off — negative once it has. */
+    /** How many days until it goes off - negative once it has. */
     public function daysLeft(StockItem $item): ?int
     {
-        return $item->expiry_date === null
-            ? null
-            : (int) now()->startOfDay()->diffInDays($item->expiry_date->startOfDay(), false);
+        return StockAlertBoard::daysLeft($item);
     }
 
-    /** '' or 'warn' — whether an expiry has stopped being a plan. */
+    /** '' or 'warn' - whether an expiry has stopped being a plan. */
     public function expiryTone(StockItem $item): string
     {
-        $days = $this->daysLeft($item);
-
-        return $days !== null && $days <= self::EXPIRY_URGENT_DAYS ? 'warn' : '';
+        return StockAlertBoard::expiryTone($item);
     }
 
     /** How much would bring this line back up to its reorder level. */
     public function shortBy(StockItem $item): string
     {
-        $short = bcsub((string) $item->reorder_level, (string) $item->current_quantity, 2);
-
-        return bccomp($short, '0', 2) > 0 ? $short : '0';
+        return StockAlertBoard::shortBy($item);
     }
 
     /** What it would cost to order that much. */
     public function shortfallValue(StockItem $item): string
     {
-        return bcmul($this->shortBy($item), (string) $item->cost_price, 2);
+        return StockAlertBoard::shortfallValue($item);
     }
 
     /** The shelves, for the filter. @return Collection<int,StockCategory> */
@@ -244,6 +181,7 @@ class Alerts extends Component
 
     private function forgetBoard(): void
     {
+        $this->board = null;
         unset($this->outOfStock, $this->lowStock, $this->expiring, $this->expired, $this->atRisk);
     }
 
@@ -320,27 +258,17 @@ class Alerts extends Component
         ], ['sweepReason' => 'reason', 'sweepNote' => 'reason in words']);
 
         $reason = StockMovementReason::from($data['sweepReason']);
-        $done = 0;
-        $refused = [];
 
-        foreach ($this->expired as $item) {
-            if (! in_array($item->id, $this->sweeping, true)) {
-                continue;
-            }
-
+        $picked = $this->expired->filter(fn (StockItem $item) => in_array($item->id, $this->sweeping, true));
+        foreach ($picked as $item) {
             $this->authorize('update', $item);
-
-            try {
-                // One movement per line, each with its own quantity and its own
-                // balance after. A single lumped row would be untraceable.
-                $stock->adjust($item, $reason, (string) $item->current_quantity, Auth::id(), $data['sweepNote']);
-                $done++;
-            } catch (RuntimeException) {
-                // Something moved underneath us — dispensed while the dialog
-                // was open. Say which, rather than failing all of them.
-                $refused[] = $item->name;
-            }
         }
+
+        // One movement per line, each with its own quantity and balance after;
+        // the ones that could not be written off are named.
+        $result = $this->board()->sweep($picked, $reason, $data['sweepNote'], Auth::id(), $stock);
+        $done = $result['done'];
+        $refused = $result['refused'];
 
         $value = $this->sweepValue();
 

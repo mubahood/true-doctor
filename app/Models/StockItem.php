@@ -151,6 +151,14 @@ class StockItem extends Model
         return self::applyExpiringBefore($q, $date);
     }
 
+    /** Why this item may not be deleted, or null: an item with movement history is audit evidence. */
+    public function deletionBlocker(): ?string
+    {
+        return $this->movements()->exists()
+            ? 'This item has stock movements and cannot be deleted — deactivate it instead.'
+            : null;
+    }
+
     public function getRouteKeyName(): string
     {
         return 'uuid';

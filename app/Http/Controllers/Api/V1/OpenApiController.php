@@ -41,7 +41,8 @@ class OpenApiController extends Controller
                 'version' => '1.0.0',
                 'description' => 'Sanctum-authenticated JSON API. Every response uses the standard envelope '
                     .'{success, code, message, data, errors}; lists add a `meta` block. RBAC mirrors the '
-                    .'admin panel (Policies); all data is scoped to the token user’s hospital.',
+                    .'admin panel (Policies); all data is scoped to the token user’s hospital. '
+                    .'The areas beyond the core resources (admin, care, pharmacy, finance, extras) are documented in docs/api/*.md.',
             ],
             'servers' => [['url' => url('/api/v1'), 'description' => 'v1']],
             'components' => [

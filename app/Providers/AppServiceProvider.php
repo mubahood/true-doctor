@@ -144,9 +144,11 @@ class AppServiceProvider extends ServiceProvider
 
         // The 'api' rate limiter — every /api/* route via $middleware->throttleApi()
         // in bootstrap/app.php (HMS_PLAN.md §3.C). Per authenticated user when
-        // signed in (Sanctum), else per IP.
+        // signed in (Sanctum), else per IP. 240 a minute: the app makes about
+        // thirty requests when it signs in and prepares for offline, and its
+        // sync shares the same budget — 60 would throttle a busy ward.
         RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute(240)->by($request->user()?->id ?: $request->ip());
         });
 
         // Force the root URL so url() / route() helpers generate correct

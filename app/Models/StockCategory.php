@@ -34,6 +34,42 @@ class StockCategory extends Model
         return ['is_active' => 'boolean'];
     }
 
+    /** Why this category may not be deleted, or null. */
+    public function deletionBlocker(): ?string
+    {
+        return $this->items()->exists() ? 'This category has stock items — reassign them first.' : null;
+    }
+
+    /**
+     * The categories page's aggregates: what is on the shelf, how much is
+     * running out or near expiry, and what it is worth.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<StockCategory>  $q
+     */
+    public function scopeWithShelfFigures($q, string $horizon)
+    {
+        return $q->withCount([
+            'items',
+            'items as active_count' => fn ($i) => $i->where('is_active', true),
+            'items as low_count' => fn ($i) => StockItem::applyLowStock($i->where('is_active', true)),
+            'items as expiring_count' => fn ($i) => StockItem::applyExpiringBefore($i->where('is_active', true), $horizon),
+        ])
+            ->withSum(['items as on_hand' => fn ($i) => $i->where('is_active', true)], 'current_quantity')
+            ->withSum(['items as stock_value' => fn ($i) => $i->where('is_active', true)], 'current_stock_value');
+    }
+
+    /**
+     * Only the shelves with something wrong on them: running out or near expiry.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<StockCategory>  $q
+     */
+    public function scopeNeedingAttention($q, string $horizon)
+    {
+        return $q->where(fn ($inner) => $inner
+            ->whereHas('items', fn ($i) => StockItem::applyLowStock($i->where('is_active', true)))
+            ->orWhereHas('items', fn ($i) => StockItem::applyExpiringBefore($i->where('is_active', true), $horizon)));
+    }
+
     /** @return HasMany<StockItem, $this> */
     public function items(): HasMany
     {

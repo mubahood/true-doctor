@@ -2,9 +2,8 @@
 
 namespace App\Livewire\Settings;
 
-use App\Http\Requests\BillingSettingRequest;
 use App\Models\Invoice;
-use App\Models\Payment;
+use App\Services\BillingSettingsService;
 use App\Support\HospitalSettings;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
@@ -81,20 +80,13 @@ class Billing extends Component
 
     protected function rules(): array
     {
-        return array_merge(BillingSettingRequest::rulesFor(), [
-            // "1.234.567.89" is not a number anybody can read, and nothing
-            // stopped it: both separators were validated, neither against the
-            // other, and the result would have gone onto every invoice.
-            'decimal_separator' => ['required', 'string', 'max:1', 'different:thousands_separator'],
-        ]);
+        return app(BillingSettingsService::class)->rules();
     }
 
     /** @return array<string,string> */
     protected function messages(): array
     {
-        return [
-            'decimal_separator.different' => 'The two separators have to differ, or an amount reads as "1.234.567.89".',
-        ];
+        return app(BillingSettingsService::class)->messages();
     }
 
     // ── What is already recorded in the current currency ─────────────────
@@ -113,24 +105,13 @@ class Billing extends Component
     #[Computed]
     public function recorded(): array
     {
-        $settings = app(HospitalSettings::class);
-        $hospital = $settings->hospital();
-
-        return [
-            'invoices' => $hospital === null ? 0 : Invoice::count(),
-            'payments' => $hospital === null ? 0 : Payment::count(),
-            'currency' => strtoupper((string) ($hospital?->currency ?: $settings->get('currency_code'))),
-        ];
+        return app(BillingSettingsService::class)->recorded();
     }
 
     /** Is the admin about to re-label money that already exists? */
     public function currencyIsChanging(): bool
     {
-        $recorded = $this->recorded;
-
-        return ($recorded['invoices'] > 0 || $recorded['payments'] > 0)
-            && $recorded['currency'] !== ''
-            && strtoupper(trim($this->currency_code)) !== $recorded['currency'];
+        return app(BillingSettingsService::class)->currencyIsChanging($this->currency_code);
     }
 
     // ── Live previews, for everything that shapes an invoice ─────────────
@@ -221,18 +202,7 @@ class Billing extends Component
         $hospital = $settings->hospital();
         abort_if($hospital === null, 404, 'No hospital in context.');
 
-        $stored = $hospital->settings ?? [];
-
-        $hospital->currency = $data['currency_code'];
-        // Merged, not replaced: the letterhead page writes the footer line into
-        // this same key, and a save here must not drop what it does not ask for.
-        $hospital->settings = array_merge($stored, [
-            'billing' => array_merge(
-                is_array($stored['billing'] ?? null) ? $stored['billing'] : [],
-                $data,
-            ),
-        ]);
-        $hospital->save();
+        app(BillingSettingsService::class)->save($hospital, $data);
 
         unset($this->preview, $this->recorded);
         $this->dispatch('toast', message: 'Billing settings saved.', type: 'success');

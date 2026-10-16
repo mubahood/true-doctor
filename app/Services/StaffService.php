@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 /**
@@ -58,6 +60,70 @@ class StaffService
     public function assignableRoles(?User $actor): array
     {
         return User::assignableRolesFor($actor);
+    }
+
+    /**
+     * The validation rules for a staff account, shared by the Users page and
+     * the API. A password is only ever set on an existing account (a new one
+     * is given a random temporary password and emailed).
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    public function rulesFor(User $actor, ?int $editingId = null): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:150'],
+            'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($editingId)],
+            'role' => ['required', Rule::in($this->assignableRoles($actor))],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'bio' => ['nullable', 'string'],
+            'is_active' => ['boolean'],
+            'sees_patients' => ['boolean'],
+            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+            'password' => $editingId
+                ? ['nullable', 'string', Password::defaults(), 'confirmed']
+                : ['nullable'],
+        ];
+    }
+
+    /**
+     * The validated form turned into the attributes that are stored: blanks
+     * become null and only a non-doctor can carry the "also sees patients"
+     * flag (a doctor sees patients by being one).
+     *
+     * @param  array<string,mixed>  $validated
+     * @return array<string,mixed>
+     */
+    public function attributes(array $validated): array
+    {
+        unset($validated['password'], $validated['password_confirmation'], $validated['avatar'], $validated['remove_avatar']);
+
+        $validated['phone'] = filled($validated['phone'] ?? null) ? $validated['phone'] : null;
+        $validated['bio'] = filled($validated['bio'] ?? null) ? $validated['bio'] : null;
+        $validated['is_active'] = (bool) ($validated['is_active'] ?? true);
+        $validated['sees_patients'] = ($validated['role'] ?? null) !== 'doctor' && (bool) ($validated['sees_patients'] ?? false);
+
+        return $validated;
+    }
+
+    /**
+     * Refuse removing or disabling the account the actor is signed in with.
+     *
+     * @throws \DomainException
+     */
+    public function assertNotSelf(User $actor, User $target, string $what): void
+    {
+        if ($actor->id === $target->id) {
+            throw new \DomainException("You cannot {$what} your own account.");
+        }
+    }
+
+    /** Switch an account on or off; nothing else about it changes. */
+    public function setActive(User $user, bool $active): User
+    {
+        $user->update(['is_active' => $active]);
+
+        return $user;
     }
 
     /**

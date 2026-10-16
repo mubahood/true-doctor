@@ -30,6 +30,39 @@ class FinancialStatements
 {
     public function __construct(private readonly ChartOfAccounts $chart) {}
 
+    // ── By name ──────────────────────────────────────────────────────────
+
+    /**
+     * The period a statement is compared against: `previous` is the period of
+     * the same length just before, `year` the same dates a year earlier.
+     *
+     * @return array{0:?Carbon,1:?Carbon}
+     */
+    public function comparisonRange(string $vs, Carbon $from, Carbon $to): array
+    {
+        return match ($vs) {
+            'previous' => [$from->copy()->subDays($from->diffInDays($to) + 1), $from->copy()->subDay()],
+            'year' => [$from->copy()->subYearNoOverflow(), $to->copy()->subYearNoOverflow()],
+            default => [null, null],
+        };
+    }
+
+    /**
+     * One of the four statements (income, balance, trial, cashflow) for a
+     * period — the balance sheet and trial balance are as at `$to`.
+     *
+     * @return array<string,mixed>
+     */
+    public function report(string $report, Carbon $from, Carbon $to, string $vs = 'none'): array
+    {
+        return match ($report) {
+            'balance' => $this->balanceSheet($to),
+            'trial' => $this->trialBalance($to),
+            'cashflow' => $this->cashFlow($from, $to),
+            default => $this->incomeStatement($from, $to, ...$this->comparisonRange($vs, $from, $to)),
+        };
+    }
+
     // ── Trial balance ────────────────────────────────────────────────────
 
     /**

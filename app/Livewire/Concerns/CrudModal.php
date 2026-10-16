@@ -172,7 +172,10 @@ trait CrudModal
             }
         }
 
-        foreach ($this->nullableFields() as $field) {
+        // '' persists as null (before beforeSave sees it); CatalogueStore then
+        // restores an archived twin rather than duplicating it.
+        $nullable = $this->nullableFields();
+        foreach ($nullable as $field) {
             if (array_key_exists($field, $data) && is_string($data[$field]) && trim($data[$field]) === '') {
                 $data[$field] = null;
             }
@@ -180,21 +183,9 @@ trait CrudModal
 
         $this->beforeSave($data, $model);
 
-        $restored = false;
-
-        if ($model) {
-            $model->update($data);
-            $created = false;
-        } elseif (($archived = $this->findArchivedTwin($data)) && method_exists($archived, 'restore')) {
-            $archived->restore();
-            $archived->update($data);
-            $model = $archived;
-            $created = false;
-            $restored = true;
-        } else {
-            $model = $this->modelClass()::create($data);
-            $created = true;
-        }
+        [$model, $state] = \App\Support\CatalogueStore::persist($this->modelClass(), $model, $data, $nullable, $this->uniqueKey());
+        $created = $state === 'created';
+        $restored = $state === 'restored';
 
         $this->afterSave($model, $created);
 
@@ -219,27 +210,6 @@ trait CrudModal
         $model->delete();
 
         $this->dispatch('toast', message: $this->nounLabel().' archived.', type: 'success');
-    }
-
-    /** A soft-deleted row with the same unique key, if the model soft-deletes. */
-    private function findArchivedTwin(array $data): ?Model
-    {
-        $class = $this->modelClass();
-        if (! in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive($class), true)) {
-            return null;
-        }
-
-        $query = $class::query()
-            ->withoutGlobalScope(\Illuminate\Database\Eloquent\SoftDeletingScope::class)
-            ->whereNotNull('deleted_at');
-        foreach ($this->uniqueKey() as $column) {
-            if (! array_key_exists($column, $data) || $data[$column] === null || $data[$column] === '') {
-                return null;
-            }
-            $query->where($column, $data[$column]);
-        }
-
-        return $query->first();
     }
 
     protected function resetForm(): void

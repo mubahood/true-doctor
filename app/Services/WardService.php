@@ -81,4 +81,27 @@ class WardService
             'occupied' => $beds->where('status', BedStatus::Occupied)->count(),
         ];
     }
+
+    /**
+     * Take a bed out of service, or put it back (the occupancy board's action).
+     *
+     * Occupied is never set by hand — it is what admitting a patient does — and
+     * a bed with a patient in it cannot be switched until they leave.
+     *
+     * @throws \RuntimeException
+     */
+    public function setBedStatus(Bed $bed, BedStatus $to): Bed
+    {
+        if ($to === BedStatus::Occupied) {
+            throw new \RuntimeException('A bed is only occupied by admitting somebody to it.');
+        }
+
+        if ($bed->status === BedStatus::Occupied) {
+            throw new \RuntimeException('Discharge or transfer the patient first.');
+        }
+
+        $bed->update(['status' => $to]);
+
+        return $bed;
+    }
 }

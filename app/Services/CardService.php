@@ -12,6 +12,7 @@ use App\Models\CardRecord;
 use App\Models\InsuranceProvider;
 use App\Models\Patient;
 use App\Models\PatientCard;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -64,6 +65,126 @@ class CardService
                 'issued_by' => $issuedBy,
             ]);
         });
+    }
+
+    // ── Finding ──────────────────────────────────────────────────────────
+
+    /**
+     * Cards matching a desk's filters — shared by the cards page and the API.
+     *
+     * @param  array{status?:?string,insurer?:?string,owing?:bool,q?:?string}  $f  insurer: '' any, 'insured', 'own' or an insurer id
+     * @return Builder<PatientCard>
+     */
+    public function search(array $f): Builder
+    {
+        $status = (string) ($f['status'] ?? '');
+        $insurer = (string) ($f['insurer'] ?? '');
+        $term = (string) ($f['q'] ?? '');
+
+        return PatientCard::query()
+            ->when($status !== '', fn (Builder $q) => $q->where('status', $status))
+            ->when(! empty($f['owing']), fn (Builder $q) => $q->where('balance', '<', 0))
+            ->when($insurer === 'insured', fn (Builder $q) => $q->whereNotNull('insurance_provider_id'))
+            ->when($insurer === 'own', fn (Builder $q) => $q->whereNull('insurance_provider_id'))
+            ->when(
+                $insurer !== '' && ! in_array($insurer, ['insured', 'own'], true),
+                fn (Builder $q) => $q->where('insurance_provider_id', (int) $insurer),
+            )
+            ->when($term !== '', function (Builder $query) use ($term) {
+                $query->where(function (Builder $q) use ($term) {
+                    $q->where('member_no', 'like', "%{$term}%")
+                        ->orWhereHas('patient', fn (Builder $p) => $p
+                            ->where('first_name', 'like', "%{$term}%")
+                            ->orWhere('last_name', 'like', "%{$term}%")
+                            ->orWhere('patient_no', 'like', "%{$term}%"));
+                });
+            });
+    }
+
+    /**
+     * What a filtered list of cards adds up to.
+     *
+     * @param  Builder<PatientCard>  $query
+     * @return array{cards:int,held:string,owed:string}
+     */
+    public function totals(Builder $query): array
+    {
+        $held = '0.00';
+        $owed = '0.00';
+        $rows = $query->get(['balance']);
+
+        foreach ($rows as $row) {
+            bccomp((string) $row->balance, '0', 2) < 0
+                ? $owed = bcsub($owed, (string) $row->balance, 2)
+                : $held = bcadd($held, (string) $row->balance, 2);
+        }
+
+        return ['cards' => $rows->count(), 'held' => $held, 'owed' => $owed];
+    }
+
+    /**
+     * The hospital-wide card ledger, filtered.
+     *
+     * @param  array{type?:?string,insurer?:?string,from?:?string,to?:?string,q?:?string}  $f
+     * @return Builder<CardRecord>
+     */
+    public function ledger(array $f): Builder
+    {
+        $type = (string) ($f['type'] ?? '');
+        $insurer = (string) ($f['insurer'] ?? '');
+        $from = (string) ($f['from'] ?? '');
+        $to = (string) ($f['to'] ?? '');
+        $term = (string) ($f['q'] ?? '');
+
+        return CardRecord::query()
+            ->when($type !== '', fn (Builder $q) => $q->where('type', $type))
+            ->when($insurer === 'insured', fn (Builder $q) => $q
+                ->whereHas('card', fn (Builder $c) => $c->whereNotNull('insurance_provider_id')))
+            ->when(
+                $insurer !== '' && $insurer !== 'insured',
+                fn (Builder $q) => $q->whereHas('card', fn (Builder $c) => $c
+                    ->where('insurance_provider_id', (int) $insurer)),
+            )
+            ->when($from !== '', fn (Builder $q) => $q->where('created_at', '>=', Carbon::parse($from)->startOfDay()))
+            ->when($to !== '', fn (Builder $q) => $q->where('created_at', '<=', Carbon::parse($to)->endOfDay()))
+            ->when($term !== '', function (Builder $query) use ($term) {
+                $query->where(function (Builder $q) use ($term) {
+                    $q->where('description', 'like', "%{$term}%")
+                        ->orWhere('reference', 'like', "%{$term}%")
+                        ->orWhereHas('patient', fn (Builder $p) => $p
+                            ->where('first_name', 'like', "%{$term}%")
+                            ->orWhere('last_name', 'like', "%{$term}%")
+                            ->orWhere('patient_no', 'like', "%{$term}%"));
+                });
+            });
+    }
+
+    /** What the filtered ledger adds up to — in and out, and the difference. @return array{in:string,out:string,net:string} */
+    public function ledgerTotals(Builder $query): array
+    {
+        $in = '0.00';
+        $out = '0.00';
+
+        foreach ($query->get(['type', 'amount']) as $row) {
+            $row->type === CardEntryType::Credit
+                ? $in = bcadd($in, (string) $row->amount, 2)
+                : $out = bcadd($out, (string) $row->amount, 2);
+        }
+
+        return ['in' => $in, 'out' => $out, 'net' => bcsub($in, $out, 2)];
+    }
+
+    /** The card with this full number, if this hospital issued it (the number is only ever hashed). */
+    public function findByNumber(string $number): ?PatientCard
+    {
+        $digits = preg_replace('/\D/', '', $number) ?? '';
+
+        return $digits === '' ? null : PatientCard::where('card_hash', $this->hash($digits))->first();
+    }
+
+    private function hash(string $number): string
+    {
+        return hash_hmac('sha256', $number, (string) (config('app.card_hash_key') ?: config('app.key')));
     }
 
     // ── Terms ────────────────────────────────────────────────────────────
@@ -329,7 +450,7 @@ class CardService
     {
         for ($i = 0; $i < 5; $i++) {
             $number = (string) random_int(1000_0000_0000_0000, 9999_9999_9999_9999);
-            $hash = hash_hmac('sha256', $number, (string) (config('app.card_hash_key') ?: config('app.key')));
+            $hash = $this->hash($number);
             if (! PatientCard::where('card_hash', $hash)->exists()) {
                 return [$number, $hash];
             }

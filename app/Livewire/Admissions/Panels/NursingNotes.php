@@ -6,7 +6,6 @@ use App\Http\Requests\NursingNoteRequest;
 use App\Models\NursingNote;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Lazy;
@@ -47,9 +46,7 @@ class NursingNotes extends Component
 
         $data = $this->validate(NursingNoteRequest::rulesFor());
 
-        $admission->nursingNotes()->create($data + [
-            'recorded_by' => Auth::id(), 'created_at' => Carbon::now(),
-        ]);
+        app(\App\Services\NursingChartService::class)->recordNote($admission, $data, Auth::id());
 
         $this->reset(['note']);
         unset($this->notes);

@@ -90,11 +90,9 @@ class Statements extends Component
     {
         [$from, $to] = $this->period();
 
-        return match ($this->compare) {
-            'previous' => [$from->copy()->subDays($from->diffInDays($to) + 1), $from->copy()->subDay()],
-            'year' => [$from->copy()->subYearNoOverflow(), $to->copy()->subYearNoOverflow()],
-            default => null,
-        };
+        $range = app(FinancialStatements::class)->comparisonRange($this->compare, $from, $to);
+
+        return $range[0] === null ? null : $range;
     }
 
     /** @return array<string,mixed> */
@@ -102,14 +100,8 @@ class Statements extends Component
     public function data(): array
     {
         [$from, $to] = $this->period();
-        $statements = app(FinancialStatements::class);
 
-        return match ($this->report) {
-            'balance' => $statements->balanceSheet($to),
-            'trial' => $statements->trialBalance($to),
-            'cashflow' => $statements->cashFlow($from, $to),
-            default => $statements->incomeStatement($from, $to, ...($this->comparison() ?? [null, null])),
-        };
+        return app(FinancialStatements::class)->report($this->report, $from, $to, $this->compare);
     }
 
     public function render()

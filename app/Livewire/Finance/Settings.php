@@ -2,14 +2,12 @@
 
 namespace App\Livewire\Finance;
 
-use App\Enums\AccountType;
 use App\Enums\PaymentMethod;
 use App\Livewire\Concerns\KeepsBooks;
 use App\Models\LedgerAccount;
 use App\Services\Finance\ChartOfAccounts;
-use App\Support\HospitalSettings;
+use App\Services\Finance\FinanceSettings;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -60,73 +58,58 @@ class Settings extends Component
     /** @return array<string,mixed> */
     private function stored(): array
     {
-        $hospital = app(HospitalSettings::class)->hospital();
-
-        return is_array($hospital?->settings['finance'] ?? null) ? $hospital->settings['finance'] : [];
+        return app(FinanceSettings::class)->stored();
     }
 
     /** @return \Illuminate\Support\Collection<int, LedgerAccount> */
     #[Computed]
     public function books()
     {
-        return LedgerAccount::query()->books()->active()->ordered()->get();
+        return app(FinanceSettings::class)->books();
     }
 
-    /** Where a delivery can be owed: payables, or a book if it is paid on the spot. */
     /** @return \Illuminate\Support\Collection<int, LedgerAccount> */
     #[Computed]
     public function creditAccounts()
     {
-        return LedgerAccount::query()->active()
-            ->where(fn ($q) => $q->where('is_book', true)->orWhere('type', AccountType::Liability->value))
-            ->ordered()->get();
+        return app(FinanceSettings::class)->creditAccounts();
     }
 
     /** What each falls back to when left blank. @return array<string,string> */
     #[Computed]
     public function defaults(): array
     {
-        $chart = app(ChartOfAccounts::class);
-        $out = [];
-        foreach (ChartOfAccounts::METHOD_BOOKS as $method => $key) {
-            $out['method.'.$method] = $chart->has($key) ? $chart->key($key)->name : '—';
-        }
-        $out['card'] = $chart->key('book.cash')->name;
-        $out['insurer'] = $chart->key('book.bank')->name;
-        $out['stock'] = $chart->key('payable')->name;
-
-        return $out;
+        return app(FinanceSettings::class)->defaults();
     }
 
     public function save(): void
     {
         abort_unless(Auth::user()?->can('finance.manage'), 403);
 
-        $books = $this->books->pluck('id')->map(fn ($id) => (string) $id)->all();
-        $credit = $this->creditAccounts->pluck('id')->map(fn ($id) => (string) $id)->all();
+        $this->validate($this->webRules());
 
-        $this->validate([
-            'methodBooks' => ['array'],
-            'methodBooks.*' => ['nullable', Rule::in($books)],
-            'cardTopUpBook' => ['nullable', Rule::in($books)],
-            'insurerDepositBook' => ['nullable', Rule::in($books)],
-            'stockCreditAccount' => ['nullable', Rule::in($credit)],
+        app(FinanceSettings::class)->save([
+            'method_books' => $this->methodBooks,
+            'card_topup_book' => $this->cardTopUpBook,
+            'insurer_deposit_book' => $this->insurerDepositBook,
+            'stock_credit_account' => $this->stockCreditAccount,
         ]);
-
-        $hospital = app(HospitalSettings::class)->hospital();
-        abort_if($hospital === null, 404);
-
-        $settings = $hospital->settings ?? [];
-        $settings['finance'] = array_merge($this->stored(), [
-            'method_books' => array_map(fn ($v) => filled($v) ? (int) $v : null, array_intersect_key($this->methodBooks, ChartOfAccounts::METHOD_BOOKS)),
-            'card_topup_book' => filled($this->cardTopUpBook) ? (int) $this->cardTopUpBook : null,
-            'insurer_deposit_book' => filled($this->insurerDepositBook) ? (int) $this->insurerDepositBook : null,
-            'stock_credit_account' => filled($this->stockCreditAccount) ? (int) $this->stockCreditAccount : null,
-        ]);
-        $hospital->settings = $settings;
-        $hospital->save();
 
         $this->dispatch('toast', message: 'Finance settings saved — they apply from the next posting.', type: 'success');
+    }
+
+    /** The shared rules, under this form's property names. @return array<string, array<int,mixed>> */
+    private function webRules(): array
+    {
+        $rules = app(FinanceSettings::class)->rules();
+
+        return [
+            'methodBooks' => $rules['method_books'],
+            'methodBooks.*' => $rules['method_books.*'],
+            'cardTopUpBook' => $rules['card_topup_book'],
+            'insurerDepositBook' => $rules['insurer_deposit_book'],
+            'stockCreditAccount' => $rules['stock_credit_account'],
+        ];
     }
 
     public function render()

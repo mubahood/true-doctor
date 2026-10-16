@@ -11,7 +11,7 @@ use App\Livewire\Concerns\WithTable;
 use App\Models\Admission;
 use App\Models\Bed;
 use App\Models\Ward;
-use App\Support\PlanLimit;
+use App\Services\HospitalStructureService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -110,7 +110,7 @@ class Index extends Component
     protected function assertCreatable(): void
     {
         try {
-            app(PlanLimit::class)->assertCanCreate('beds');
+            app(HospitalStructureService::class)->assertBedCreatable();
         } catch (PlanLimitExceededException $e) {
             throw new \DomainException($e->getMessage(), 0, $e);
         }
@@ -119,15 +119,15 @@ class Index extends Component
     /** Never let the catalogue form flip an occupied bed's status by hand. */
     protected function beforeSave(array &$data, ?Model $model): void
     {
-        if ($model instanceof Bed && $model->status === BedStatus::Occupied) {
-            unset($data['status']);
+        if ($model instanceof Bed) {
+            $data = app(HospitalStructureService::class)->bedAttributes($model, $data);
         }
     }
 
     protected function assertDeletable(Model $model): void
     {
-        if ($model instanceof Bed && $model->status === BedStatus::Occupied) {
-            throw new \DomainException('An occupied bed cannot be deleted.');
+        if ($model instanceof Bed) {
+            app(HospitalStructureService::class)->assertBedDeletable($model);
         }
     }
 

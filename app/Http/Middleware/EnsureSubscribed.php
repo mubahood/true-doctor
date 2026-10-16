@@ -29,6 +29,8 @@ class EnsureSubscribed
         // The app's equivalents: enough to say who you are, show the
         // "subscription ended" screen, and sign out.
         'api.auth.me', 'api.auth.logout', 'api.auth.password', 'api.meta',
+        // …and the subscription itself, as the web's page is, so it can be renewed.
+        'api.subscription.*',
     ];
 
     public function __construct(private readonly SubscriptionState $state) {}

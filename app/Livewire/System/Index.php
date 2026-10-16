@@ -3,14 +3,13 @@
 namespace App\Livewire\System;
 
 use App\Services\Install\InstallationBackups;
+use App\Services\Install\ServerHealth;
 use App\Services\Install\StandaloneUpdater;
 use App\Services\Install\SystemState;
 use App\Services\Install\UpdateChannel;
 use App\Support\Edition;
 use App\Support\Licensing\InstalledLicence;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -39,9 +38,7 @@ class Index extends Component
     public function mount(): void
     {
         $this->authorizeOwner();
-        $last = app(UpdateChannel::class)->lastCheck();
-        $this->available = is_array($last['latest'] ?? null) && version_compare((string) $last['latest']['version'], Edition::version(), '>')
-            ? $last['latest'] : null;
+        $this->available = app(ServerHealth::class)->availableUpdate();
     }
 
     private function authorizeOwner(): void
@@ -143,20 +140,18 @@ class Index extends Component
     {
         $this->authorizeOwner();
         $licence = app(InstalledLicence::class);
-        $heartbeat = Cache::get('standalone:scheduler-heartbeat');
-        $marker = (string) config('edition.installed_path');
-        $installed = is_file($marker) ? (json_decode((string) file_get_contents($marker), true) ?: []) : [];
+        $health = app(ServerHealth::class)->health();
 
         return view('livewire.system.index', [
             'version' => Edition::version(),
-            'installed' => $installed,
+            'installed' => $health['installed'],
             'licence' => $licence,
             'hostMatches' => $licence->isValid() && $licence->matchesHost(request()->getHost()),
-            'heartbeat' => is_string($heartbeat) ? \Illuminate\Support\Carbon::parse($heartbeat) : null,
-            'queued' => DB::table('jobs')->count(),
-            'diskFree' => @disk_free_space(base_path()) ?: null,
-            'uploadLimit' => ini_get('upload_max_filesize'),
-            'backupAge' => app(InstallationBackups::class)->newestAge(),
+            'heartbeat' => $health['heartbeat'],
+            'queued' => $health['queued'],
+            'diskFree' => $health['diskFree'],
+            'uploadLimit' => $health['uploadLimit'],
+            'backupAge' => $health['backupAge'],
             'busy' => in_array($this->state['status'] ?? null, ['queued', 'running'], true),
         ])->title('Licence & updates');
     }

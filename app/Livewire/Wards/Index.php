@@ -164,8 +164,8 @@ class Index extends Component
     /** A ward that still holds beds may not be removed (was WardController::destroy). */
     protected function assertDeletable(Model $model): void
     {
-        if ($model instanceof Ward && $model->beds()->exists()) {
-            throw new \DomainException('This ward has beds — remove them first.');
+        if ($model instanceof Ward) {
+            app(\App\Services\HospitalStructureService::class)->assertWardDeletable($model);
         }
     }
 

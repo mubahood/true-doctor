@@ -25,6 +25,15 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
     Route::get('openapi.json', OpenApiController::class)->name('api.openapi');
     Route::post('auth/login', [AuthController::class, 'login'])->name('api.auth.login');
 
+    // Self-registration for the app (SaaS only: 404 on a standalone installation).
+    // Same RegistrationRequest + RegistrationService + picture check as the web
+    // form; 6 sign-ups an hour per IP (the web allows 10). docs/api/extras.md.
+    Route::prefix('public')->middleware('edition:saas')->name('api.public.')->group(function () {
+        Route::get('plans', [\App\Http\Controllers\Api\V1\PublicRegistrationController::class, 'plans'])->middleware('throttle:30,1')->name('plans');
+        Route::get('human-check', [\App\Http\Controllers\Api\V1\PublicRegistrationController::class, 'humanCheck'])->middleware('throttle:30,1')->name('human-check');
+        Route::post('register', [\App\Http\Controllers\Api\V1\PublicRegistrationController::class, 'register'])->middleware('throttle:6,60')->name('register');
+    });
+
     // Authenticated
     // `api.account` before `subscribed`: a disabled account is told it is
     // disabled, not that its hospital's subscription ended.
@@ -121,5 +130,10 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
         Route::get('invoices/{invoice}/pdf', [\App\Http\Controllers\Admin\InvoiceController::class, 'pdf'])->name('api.invoices.pdf');
         Route::get('payments/{payment:uuid}/receipt', [\App\Http\Controllers\Admin\PaymentController::class, 'receipt'])->name('api.payments.receipt');
         Route::apiResource('invoices', InvoiceController::class)->only(['index', 'show']);
+
+        // The rest of the back office, one file per area (docs/api.md).
+        foreach (['care', 'pharmacy', 'finance', 'admin', 'extras'] as $area) {
+            require __DIR__."/api/{$area}.php";
+        }
     });
 });

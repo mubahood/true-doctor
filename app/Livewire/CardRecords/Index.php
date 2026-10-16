@@ -2,17 +2,16 @@
 
 namespace App\Livewire\CardRecords;
 
-use App\Enums\CardEntryType;
 use App\Livewire\Concerns\PeeksRecords;
 use App\Livewire\Concerns\WithTable;
 use App\Models\CardRecord;
 use App\Models\InsuranceProvider;
 use App\Models\PatientCard;
+use App\Services\CardService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -77,45 +76,15 @@ class Index extends Component
     #[Computed]
     public function totals(): array
     {
-        $in = '0.00';
-        $out = '0.00';
-
-        foreach ($this->query()->get(['type', 'amount']) as $row) {
-            $row->type === CardEntryType::Credit
-                ? $in = bcadd($in, (string) $row->amount, 2)
-                : $out = bcadd($out, (string) $row->amount, 2);
-        }
-
-        return ['in' => $in, 'out' => $out, 'net' => bcsub($in, $out, 2)];
+        return app(CardService::class)->ledgerTotals($this->query());
     }
 
     /** @return Builder<CardRecord> */
     private function query(): Builder
     {
-        return CardRecord::query()
-            ->when($this->type !== '', fn (Builder $q) => $q->where('type', $this->type))
-            ->when($this->insurer === 'insured', fn (Builder $q) => $q
-                ->whereHas('card', fn (Builder $c) => $c->whereNotNull('insurance_provider_id')))
-            ->when(
-                $this->insurer !== '' && $this->insurer !== 'insured',
-                fn (Builder $q) => $q->whereHas('card', fn (Builder $c) => $c
-                    ->where('insurance_provider_id', (int) $this->insurer)),
-            )
-            ->when($this->from !== '', fn (Builder $q) => $q
-                ->where('created_at', '>=', Carbon::parse($this->from)->startOfDay()))
-            ->when($this->to !== '', fn (Builder $q) => $q
-                ->where('created_at', '<=', Carbon::parse($this->to)->endOfDay()))
-            ->when($this->search !== '', function (Builder $query) {
-                $term = $this->search;
-                $query->where(function (Builder $q) use ($term) {
-                    $q->where('description', 'like', "%{$term}%")
-                        ->orWhere('reference', 'like', "%{$term}%")
-                        ->orWhereHas('patient', fn (Builder $p) => $p
-                            ->where('first_name', 'like', "%{$term}%")
-                            ->orWhere('last_name', 'like', "%{$term}%")
-                            ->orWhere('patient_no', 'like', "%{$term}%"));
-                });
-            });
+        return app(CardService::class)->ledger([
+            'type' => $this->type, 'insurer' => $this->insurer, 'from' => $this->from, 'to' => $this->to, 'q' => $this->search,
+        ]);
     }
 
     /** @return LengthAwarePaginator<int,CardRecord> */

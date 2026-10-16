@@ -7,7 +7,6 @@ use App\Http\Requests\MedicationAdministrationRequest;
 use App\Models\MedicationAdministration;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Lazy;
@@ -67,9 +66,7 @@ class Medications extends Component
         $data = $this->validate(MedicationAdministrationRequest::rulesFor());
         $data = array_map(fn ($v) => $v === '' ? null : $v, $data);
 
-        $admission->medications()->create($data + [
-            'administered_by' => Auth::id(), 'created_at' => Carbon::now(),
-        ]);
+        app(\App\Services\NursingChartService::class)->recordMedication($admission, $data, Auth::id());
 
         $this->reset(self::FIELDS);
         $this->status = MedicationAdminStatus::Given->value;

@@ -178,8 +178,8 @@ class Index extends Component
     /** A category that still has stock items may not be removed (was StockCategoryController::destroy). */
     protected function assertDeletable(Model $model): void
     {
-        if ($model instanceof StockCategory && $model->items()->exists()) {
-            throw new \DomainException('This category has stock items — reassign them first.');
+        if ($model instanceof StockCategory && $reason = $model->deletionBlocker()) {
+            throw new \DomainException($reason);
         }
     }
 
@@ -245,19 +245,10 @@ class Index extends Component
         // categories would otherwise be sixty extra round trips, and the
         // aggregates have to be sortable columns anyway.
         $query = StockCategory::query()
-            ->withCount([
-                'items',
-                'items as active_count' => fn (Builder $q) => $q->where('is_active', true),
-                'items as low_count' => fn (Builder $q) => StockItem::applyLowStock($q->where('is_active', true)),
-                'items as expiring_count' => fn (Builder $q) => StockItem::applyExpiringBefore($q->where('is_active', true), $horizon),
-            ])
-            ->withSum(['items as on_hand' => fn (Builder $q) => $q->where('is_active', true)], 'current_quantity')
-            ->withSum(['items as stock_value' => fn (Builder $q) => $q->where('is_active', true)], 'current_stock_value')
+            ->withShelfFigures($horizon)
             ->when($this->search !== '', fn (Builder $q) => $q->where('name', 'like', "%{$this->search}%"))
             ->when($this->status !== '', fn (Builder $q) => $q->where('is_active', $this->status === 'active'))
-            ->when($this->attention, fn (Builder $q) => $q->where(fn (Builder $inner) => $inner
-                ->whereHas('items', fn (Builder $i) => StockItem::applyLowStock($i->where('is_active', true)))
-                ->orWhereHas('items', fn (Builder $i) => StockItem::applyExpiringBefore($i->where('is_active', true), $horizon))));
+            ->when($this->attention, fn (Builder $q) => $q->needingAttention($horizon));
 
         /** @var Builder<StockCategory> $sorted */
         $sorted = $this->applySort($query, fn (Builder $q) => $q->orderBy('name'));

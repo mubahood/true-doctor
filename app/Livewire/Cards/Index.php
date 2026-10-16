@@ -9,6 +9,7 @@ use App\Models\CardHolder;
 use App\Models\CardRecord;
 use App\Models\InsuranceProvider;
 use App\Models\PatientCard;
+use App\Services\CardService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -75,42 +76,15 @@ class Index extends Component
     #[Computed]
     public function totals(): array
     {
-        $rows = $this->query()->get(['balance']);
-
-        $held = '0.00';
-        $owed = '0.00';
-
-        foreach ($rows as $row) {
-            bccomp((string) $row->balance, '0', 2) < 0
-                ? $owed = bcsub($owed, (string) $row->balance, 2)
-                : $held = bcadd($held, (string) $row->balance, 2);
-        }
-
-        return ['cards' => $rows->count(), 'held' => $held, 'owed' => $owed];
+        return app(CardService::class)->totals($this->query());
     }
 
     /** @return Builder<PatientCard> */
     private function query(): Builder
     {
-        return PatientCard::query()
-            ->when($this->status !== '', fn (Builder $q) => $q->where('status', $this->status))
-            ->when($this->owing, fn (Builder $q) => $q->where('balance', '<', 0))
-            ->when($this->insurer === 'insured', fn (Builder $q) => $q->whereNotNull('insurance_provider_id'))
-            ->when($this->insurer === 'own', fn (Builder $q) => $q->whereNull('insurance_provider_id'))
-            ->when(
-                $this->insurer !== '' && ! in_array($this->insurer, ['insured', 'own'], true),
-                fn (Builder $q) => $q->where('insurance_provider_id', (int) $this->insurer),
-            )
-            ->when($this->search !== '', function (Builder $query) {
-                $term = $this->search;
-                $query->where(function (Builder $q) use ($term) {
-                    $q->where('member_no', 'like', "%{$term}%")
-                        ->orWhereHas('patient', fn (Builder $p) => $p
-                            ->where('first_name', 'like', "%{$term}%")
-                            ->orWhere('last_name', 'like', "%{$term}%")
-                            ->orWhere('patient_no', 'like', "%{$term}%"));
-                });
-            });
+        return app(CardService::class)->search([
+            'status' => $this->status, 'insurer' => $this->insurer, 'owing' => $this->owing, 'q' => $this->search,
+        ]);
     }
 
     /** @return LengthAwarePaginator<int,PatientCard> */

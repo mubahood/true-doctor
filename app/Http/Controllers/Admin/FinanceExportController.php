@@ -62,12 +62,7 @@ class FinanceExportController extends Controller
         $report = in_array($report, ['income', 'balance', 'trial', 'cashflow'], true) ? $report : 'income';
         [$cFrom, $cTo] = $this->comparison((string) $request->query('vs', 'none'), $from, $to);
 
-        $data = match ($report) {
-            'balance' => $statements->balanceSheet($to),
-            'trial' => $statements->trialBalance($to),
-            'cashflow' => $statements->cashFlow($from, $to),
-            default => $statements->incomeStatement($from, $to, $cFrom, $cTo),
-        };
+        $data = $statements->report($report, $from, $to, (string) $request->query('vs', 'none'));
 
         $title = \App\Livewire\Finance\Statements::REPORTS[$report][0];
         $period = in_array($report, ['balance', 'trial'], true) ? 'As at '.$to->format('d M Y') : $from->format('d M Y').' — '.$to->format('d M Y');
@@ -218,10 +213,6 @@ class FinanceExportController extends Controller
     /** @return array{0:?Carbon,1:?Carbon} */
     private function comparison(string $vs, Carbon $from, Carbon $to): array
     {
-        return match ($vs) {
-            'previous' => [$from->copy()->subDays($from->diffInDays($to) + 1), $from->copy()->subDay()],
-            'year' => [$from->copy()->subYearNoOverflow(), $to->copy()->subYearNoOverflow()],
-            default => [null, null],
-        };
+        return app(FinancialStatements::class)->comparisonRange($vs, $from, $to);
     }
 }

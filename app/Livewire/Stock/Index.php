@@ -168,8 +168,8 @@ class Index extends Component
     /** Delete-protection: an item with movement history is audit evidence. */
     protected function assertDeletable(Model $model): void
     {
-        if ($model instanceof StockItem && $model->movements()->exists()) {
-            throw new \DomainException('This item has stock movements and cannot be deleted — deactivate it instead.');
+        if ($model instanceof StockItem && $reason = $model->deletionBlocker()) {
+            throw new \DomainException($reason);
         }
     }
 

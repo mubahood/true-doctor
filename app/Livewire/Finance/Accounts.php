@@ -3,9 +3,11 @@
 namespace App\Livewire\Finance;
 
 use App\Enums\AccountType;
+use App\Exceptions\AccountRuleException;
 use App\Http\Requests\LedgerAccountRequest;
 use App\Livewire\Concerns\KeepsBooks;
 use App\Models\LedgerAccount;
+use App\Services\Finance\AccountManager;
 use App\Services\Finance\ChartOfAccounts;
 use App\Services\Finance\FinancialStatements;
 use Illuminate\Support\Carbon;
@@ -77,8 +79,7 @@ class Accounts extends Component
     #[Computed]
     public function usage(): array
     {
-        return \App\Models\JournalLine::query()->groupBy('ledger_account_id')
-            ->selectRaw('ledger_account_id, COUNT(*) as n')->pluck('n', 'ledger_account_id')->map(fn ($n) => (int) $n)->all();
+        return app(AccountManager::class)->usage();
     }
 
     public function create(string $type = 'expense'): void
@@ -124,36 +125,16 @@ class Accounts extends Component
         $data = $this->validate(LedgerAccountRequest::rulesFor($this->editingId));
         $account = $this->editingId !== null ? LedgerAccount::query()->findOrFail($this->editingId) : null;
 
-        // Only an asset can hold money.
-        $data['is_book'] = (bool) ($data['is_book'] ?? false) && $data['type'] === AccountType::Asset->value;
+        try {
+            app(AccountManager::class)->save($account, $data);
+        } catch (AccountRuleException $e) {
+            $this->addError($e->field, $e->getMessage());
 
-        if ($account !== null) {
-            $used = ($this->usage[$account->id] ?? 0) > 0;
-
-            if ($account->isSystem() && ! $data['is_active']) {
-                $this->addError('is_active', 'The system posts to this account, so it stays on.');
-
-                return;
-            }
-            if ($account->isSystem() && $data['type'] !== $account->type->value) {
-                $this->addError('type', 'The system posts to this account as '.strtolower($account->type->label()).'; its kind cannot change.');
-
-                return;
-            }
-            if ($used && $data['type'] !== $account->type->value) {
-                $this->addError('type', 'This account already has entries — moving it to another kind would rewrite past statements. Make a new account instead.');
-
-                return;
-            }
-
-            $account->update($data);
-        } else {
-            LedgerAccount::create($data + ['subtype' => $this->subtypeFor(AccountType::from($data['type']), $data['is_book'])]);
+            return;
         }
 
         $this->showForm = false;
         unset($this->balances, $this->usage);
-        app(ChartOfAccounts::class)->forget();
         $this->dispatch('toast', message: $account ? 'Account saved.' : 'Account added.', type: 'success');
     }
 
@@ -162,13 +143,15 @@ class Accounts extends Component
         abort_unless(Auth::user()?->can('finance.manage'), 403);
 
         $account = LedgerAccount::query()->findOrFail($id);
-        if ($account->isSystem() && $account->is_active) {
-            $this->dispatch('toast', message: 'The system posts to “'.$account->name.'”, so it stays on.', type: 'error');
+
+        try {
+            app(AccountManager::class)->toggleActive($account);
+        } catch (AccountRuleException $e) {
+            $this->dispatch('toast', message: $e->getMessage(), type: 'error');
 
             return;
         }
 
-        $account->update(['is_active' => ! $account->is_active]);
         $this->dispatch('toast', message: $account->is_active ? 'Switched back on.' : 'Switched off — it keeps its history.', type: 'success');
     }
 
@@ -178,40 +161,21 @@ class Accounts extends Component
 
         $account = LedgerAccount::query()->findOrFail($id);
 
-        if ($account->isSystem() || $account->lines()->exists() || \App\Models\Service::query()->where('ledger_account_id', $account->id)->exists()) {
-            $this->dispatch('toast', message: 'This account is in use — switch it off instead, and its history stays.', type: 'error');
+        try {
+            app(AccountManager::class)->delete($account);
+        } catch (AccountRuleException $e) {
+            $this->dispatch('toast', message: $e->getMessage(), type: 'error');
 
             return;
         }
 
-        $account->delete();
         unset($this->usage);
         $this->dispatch('toast', message: 'Account deleted.', type: 'success');
     }
 
-    /** The next free code in the type's range, after the last one used. */
     private function nextCode(AccountType $type): string
     {
-        $codes = LedgerAccount::query()->where('type', $type->value)->pluck('code')
-            ->filter(fn ($c) => ctype_digit((string) $c))->map(fn ($c) => (int) $c)->sort()->values();
-
-        $next = $codes->isEmpty() ? (int) ($type->codePrefix().'000') : $codes->last() + 10;
-        while (LedgerAccount::query()->where('code', (string) $next)->exists()) {
-            $next++;
-        }
-
-        return (string) $next;
-    }
-
-    private function subtypeFor(AccountType $type, bool $isBook): string
-    {
-        return match ($type) {
-            AccountType::Asset => $isBook ? 'cash' : 'current_asset',
-            AccountType::Liability => 'payable',
-            AccountType::Equity => 'capital',
-            AccountType::Income => 'operating_income',
-            AccountType::Expense => 'operating_expense',
-        };
+        return app(AccountManager::class)->nextCode($type);
     }
 
     public function render()

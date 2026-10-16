@@ -7,7 +7,6 @@ use App\Livewire\Concerns\CrudModal;
 use App\Livewire\Concerns\ImportsSamples;
 use App\Livewire\Concerns\PeeksAndEditsRecords;
 use App\Livewire\Concerns\WithTable;
-use App\Models\LabOrderItem;
 use App\Models\LabTest;
 use App\Support\SampleCatalogue;
 use Illuminate\Database\Eloquent\Builder;
@@ -139,20 +138,9 @@ class Index extends Component
             return ['times' => 0, 'earned' => '0.00'];
         }
 
-        // Counted on the lab order's own items, not OrderItem: these are ordered
-        // through their own order, and pointing at the billing line would have
-        // printed a confident zero for every row.
-        $lines = LabOrderItem::where('lab_test_id', $this->peekId)
-            ->where('created_at', '>=', now()->subDays(self::USAGE_DAYS))
-            ->get(['price']);
+        $usage = \App\Support\CatalogueStore::usage(LabTest::findOrFail($this->peekId));
 
-        return [
-            'times' => $lines->count(),
-            'earned' => $lines->reduce(
-                fn (string $sum, LabOrderItem $l) => bcadd($sum, (string) $l->price, 2),
-                '0.00',
-            ),
-        ];
+        return ['times' => $usage['times'], 'earned' => $usage['earned']];
     }
 
     public function render()

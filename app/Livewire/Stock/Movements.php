@@ -6,6 +6,7 @@ use App\Enums\StockMovementReason;
 use App\Livewire\Concerns\WithTable;
 use App\Models\StockItem;
 use App\Models\StockMovement;
+use App\Services\StockLedger;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Attributes\Computed;
@@ -104,96 +105,16 @@ class Movements extends Component
     #[Computed]
     public function totals(): array
     {
-        $incoming = array_map(
-            fn (StockMovementReason $r) => $r->value,
-            array_filter(StockMovementReason::cases(), fn (StockMovementReason $r) => $r->isIncoming()),
-        );
-
-        $base = $this->filtered();
-
-        $losses = array_map(
-            fn (StockMovementReason $r) => $r->value,
-            StockMovementReason::losses(),
-        );
-
-        // Money is summed in PHP over the rows, not in SQL: a movement's worth
-        // is quantity × the price IT happened under, and the database has no
-        // column holding that product. Bounded by the page's own filters, and
-        // the figures are only ever read beside them.
-        $priced = (clone $base)->select(['reason', 'quantity', 'unit_cost', 'unit_price'])->get();
-
-        $bought = '0';
-        $sold = '0';
-        $margin = '0';
-        $lost = '0';
-        $unpriced = 0;
-
-        foreach ($priced as $movement) {
-            $cost = $movement->costValue();
-
-            if ($cost === null) {
-                $unpriced++;
-
-                continue;
-            }
-
-            if ($movement->reason->isIncoming()) {
-                $bought = bcadd($bought, $cost, 2);
-
-                continue;
-            }
-
-            if ($movement->reason->isLoss()) {
-                // A write-off is a loss at COST — what the store paid for
-                // something it never sold. Valuing it at the selling price
-                // would book a profit the hospital never made.
-                $lost = bcadd($lost, $cost, 2);
-
-                continue;
-            }
-
-            $sale = $movement->saleValue();
-
-            if ($sale === null) {
-                $unpriced++;
-
-                continue;
-            }
-
-            $sold = bcadd($sold, $sale, 2);
-            $margin = bcadd($margin, bcsub($sale, $cost, 2), 2);
-        }
-
-        return [
-            'in' => (string) ((clone $base)->whereIn('reason', $incoming)->sum('quantity') ?: '0'),
-            'out' => (string) ((clone $base)->whereNotIn('reason', $incoming)->sum('quantity') ?: '0'),
-            'rows' => $priced->count(),
-            'bought' => $bought,
-            'sold' => $sold,
-            'margin' => $margin,
-            'lost' => $lost,
-            'unpriced' => $unpriced,
-        ];
+        return StockLedger::totals($this->filtered());
     }
 
     /** @return Builder<StockMovement> */
     private function filtered(): Builder
     {
-        $incoming = array_map(
-            fn (StockMovementReason $r) => $r->value,
-            array_filter(StockMovementReason::cases(), fn (StockMovementReason $r) => $r->isIncoming()),
-        );
-
-        return StockMovement::query()
-            ->when($this->item !== '', fn (Builder $q) => $q->where('stock_item_id', (int) $this->item))
-            ->when($this->reason !== '', fn (Builder $q) => $q->where('reason', $this->reason))
-            ->when($this->direction === 'in', fn (Builder $q) => $q->whereIn('reason', $incoming))
-            ->when($this->direction === 'out', fn (Builder $q) => $q->whereNotIn('reason', $incoming))
-            ->when($this->from !== '', fn (Builder $q) => $q->whereDate('created_at', '>=', $this->from))
-            ->when($this->to !== '', fn (Builder $q) => $q->whereDate('created_at', '<=', $this->to))
-            ->when($this->search !== '', fn (Builder $q) => $q->where(fn (Builder $inner) => $inner
-                ->whereHas('stockItem', fn (Builder $i) => $i->where('name', 'like', "%{$this->search}%"))
-                ->orWhere('note', 'like', "%{$this->search}%")));
+        return StockLedger::filtered([
+            'item' => $this->item, 'reason' => $this->reason, 'direction' => $this->direction,
+            'from' => $this->from, 'to' => $this->to, 'search' => $this->search,
+        ]);
     }
 
     public function render()

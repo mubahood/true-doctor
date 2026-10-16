@@ -292,22 +292,17 @@ class Board extends Component
         $this->authorize('update', $bed);
 
         $to = BedStatus::tryFrom($status);
-        if ($to === null || $to === BedStatus::Occupied) {
-            // Occupied is not something anybody sets by hand — it is what
-            // admitting a patient DOES, and setting it here would strand a bed
-            // that no admission can ever free.
-            $this->dispatch('toast', message: 'A bed is only occupied by admitting somebody to it.', type: 'error');
-
+        if ($to === null) {
             return;
         }
 
-        if ($bed->status === BedStatus::Occupied) {
-            $this->dispatch('toast', message: 'Discharge or transfer the patient first.', type: 'error');
+        try {
+            app(\App\Services\WardService::class)->setBedStatus($bed, $to);
+        } catch (\RuntimeException $e) {
+            $this->dispatch('toast', message: $e->getMessage(), type: 'error');
 
             return;
         }
-
-        $bed->update(['status' => $to]);
 
         unset($this->wards, $this->figures);
         $this->forgetPeeked();

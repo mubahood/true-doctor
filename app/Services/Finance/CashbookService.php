@@ -198,6 +198,62 @@ class CashbookService
         ], $lines);
     }
 
+    /**
+     * What money can be for, grouped, the usual kind first — the category
+     * picker of the money-in / money-out form.
+     *
+     * @return array<string, array<int,string>> group label => [id => "code · name"]
+     */
+    public function categories(string $kind): array
+    {
+        $accounts = LedgerAccount::query()->active()->where('is_book', false)
+            ->where(fn ($q) => $q->whereNull('system_key')->orWhereNotIn('system_key', ['inventory', 'discounts', 'opening_equity']))
+            ->ordered()->get();
+
+        $order = $kind === 'out'
+            ? [AccountType::Expense, AccountType::Liability, AccountType::Asset, AccountType::Equity, AccountType::Income]
+            : [AccountType::Income, AccountType::Asset, AccountType::Liability, AccountType::Equity, AccountType::Expense];
+
+        $heading = fn (AccountType $t) => match ([$kind, $t]) {
+            ['in', AccountType::Income] => 'Income',
+            ['in', AccountType::Asset] => 'Money owed to you, collected',
+            ['in', AccountType::Liability] => 'Loans and deposits received',
+            ['in', AccountType::Equity] => 'Capital put in',
+            ['out', AccountType::Expense] => 'Expenses',
+            ['out', AccountType::Liability] => 'Paying what you owe',
+            ['out', AccountType::Asset] => 'Buying equipment and other assets',
+            ['out', AccountType::Equity] => 'Owner\'s drawings',
+            default => $t->plural().' (unusual here)',
+        };
+
+        $groups = [];
+        foreach ($order as $type) {
+            $rows = $accounts->where('type', $type);
+            if ($rows->isNotEmpty()) {
+                $groups[$heading($type)] = $rows->mapWithKeys(fn (LedgerAccount $a) => [$a->id => $a->label()])->all();
+            }
+        }
+
+        return $groups;
+    }
+
+    /** The accounts a hospital starts with a balance in: what it has and what it owes. */
+    /** @return \Illuminate\Support\Collection<int, LedgerAccount> */
+    public function openingAccounts()
+    {
+        return LedgerAccount::query()->active()
+            ->whereIn('type', [AccountType::Asset->value, AccountType::Liability->value, AccountType::Equity->value])
+            // Not the ones the system keeps for itself: stock is valued by the
+            // stock ledger, and card and insurer balances by their own ledgers.
+            ->where(fn ($q) => $q->whereNull('system_key')->orWhereNotIn('system_key', ['opening_equity', 'retained_earnings', 'inventory', 'card_deposits', 'insurer_floats']))
+            ->ordered()->get();
+    }
+
+    public function hasOpening(): bool
+    {
+        return JournalEntry::query()->where('kind', JournalKind::Opening->value)->whereNull('reversed_by_id')->exists();
+    }
+
     private function book(int $id): LedgerAccount
     {
         $book = LedgerAccount::query()->find($id);

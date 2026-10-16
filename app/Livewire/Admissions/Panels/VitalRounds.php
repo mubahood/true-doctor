@@ -6,7 +6,6 @@ use App\Http\Requests\VitalRoundRequest;
 use App\Models\VitalRound;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Lazy;
@@ -62,9 +61,7 @@ class VitalRounds extends Component
         // An untouched box is "not recorded", not an empty reading.
         $data = array_map(fn ($v) => $v === '' ? null : $v, $data);
 
-        $admission->vitalRounds()->create($data + [
-            'recorded_by' => Auth::id(), 'created_at' => Carbon::now(),
-        ]);
+        app(\App\Services\NursingChartService::class)->recordVitals($admission, $data, Auth::id());
 
         $this->reset(self::FIELDS);
         unset($this->rounds);

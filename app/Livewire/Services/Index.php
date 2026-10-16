@@ -2,13 +2,11 @@
 
 namespace App\Livewire\Services;
 
-use App\Enums\OrderItemStatus;
 use App\Http\Requests\ServiceRequest;
 use App\Livewire\Concerns\CrudModal;
 use App\Livewire\Concerns\ImportsSamples;
 use App\Livewire\Concerns\PeeksAndEditsRecords;
 use App\Livewire\Concerns\WithTable;
-use App\Models\OrderItem;
 use App\Models\Service;
 use App\Support\SampleCatalogue;
 use Illuminate\Database\Eloquent\Builder;
@@ -174,18 +172,9 @@ class Index extends Component
             return ['times' => 0, 'earned' => '0.00'];
         }
 
-        $lines = OrderItem::where('service_id', $this->peekId)
-            ->where('created_at', '>=', now()->subDays(self::USAGE_DAYS))
-            ->where('status', '!=', OrderItemStatus::Cancelled)
-            ->get(['quantity', 'line_total']);
+        $usage = \App\Support\CatalogueStore::usage(Service::findOrFail($this->peekId));
 
-        return [
-            'times' => $lines->count(),
-            'earned' => $lines->reduce(
-                fn (string $sum, OrderItem $l) => bcadd($sum, (string) $l->line_total, 2),
-                '0.00',
-            ),
-        ];
+        return ['times' => $usage['times'], 'earned' => $usage['earned']];
     }
 
     public function render()

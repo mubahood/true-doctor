@@ -16,6 +16,9 @@ class StockItemResource extends JsonResource
             // What a dispensing line names (DispensationRequest takes the id).
             'server_id' => $this->id,
             'name' => $this->name,
+            'sku' => $this->sku,
+            'is_active' => (bool) $this->is_active,
+            'category_id' => $this->stock_category_id,
             'unit' => $this->unit,
             'category' => $this->whenLoaded('category', fn () => $this->category?->name),
             'current_quantity' => $this->current_quantity,

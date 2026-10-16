@@ -5,10 +5,9 @@ namespace App\Livewire\Sync;
 use App\Livewire\Concerns\PeeksRecords;
 use App\Livewire\Concerns\WithTable;
 use App\Models\Device;
-use App\Models\SyncConflict;
 use App\Models\SyncOperation;
 use App\Models\SyncSession;
-use Illuminate\Database\Eloquent\Builder;
+use App\Services\Sync\DeviceService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -48,7 +47,7 @@ class Index extends Component
     public string $state = '';
 
     /** A device that has not been seen for this long has probably gone. */
-    public const STALE_DAYS = 14;
+    public const STALE_DAYS = DeviceService::STALE_DAYS;
 
     // ── Revoking ─────────────────────────────────────────────────────────
     public bool $showRevoke = false;
@@ -73,20 +72,7 @@ class Index extends Component
     #[Computed]
     public function figures(): array
     {
-        return [
-            'devices' => Device::whereNull('revoked_at')->count(),
-            'revoked' => Device::whereNotNull('revoked_at')->count(),
-            'stale' => Device::whereNull('revoked_at')
-                ->where(fn (Builder $q) => $q
-                    ->whereNull('last_seen_at')
-                    ->orWhere('last_seen_at', '<', now()->subDays(self::STALE_DAYS)))
-                ->count(),
-            'conflicts' => SyncConflict::whereNull('resolved_at')->count(),
-            'rejected' => SyncOperation::where('status', 'rejected')
-                ->where('created_at', '>=', now()->subDays(7))->count(),
-            'failed' => SyncOperation::where('status', 'failed')
-                ->where('created_at', '>=', now()->subDays(7))->count(),
-        ];
+        return app(DeviceService::class)->figures();
     }
 
     // ── Reading one device ───────────────────────────────────────────────
@@ -176,17 +162,7 @@ class Index extends Component
 
         $device = Device::findOrFail($this->revokingId);
 
-        $device->update([
-            'revoked_at' => now(),
-            'revoked_by' => Auth::id(),
-            'revoked_reason' => $this->revoke_reason,
-        ]);
-
-        activity()
-            ->causedBy(Auth::user())
-            ->performedOn($device)
-            ->withProperties(['reason' => $this->revoke_reason, 'label' => $device->label])
-            ->log('offline device revoked');
+        app(DeviceService::class)->revoke($device, $this->revoke_reason, Auth::user());
 
         $this->showRevoke = false;
         $this->reset(['revokingId', 'revoke_reason']);
@@ -202,9 +178,7 @@ class Index extends Component
         $this->authorize('manage', Device::class);
 
         $device = Device::findOrFail($deviceId);
-        $device->update(['revoked_at' => null, 'revoked_by' => null, 'revoked_reason' => null]);
-
-        activity()->causedBy(Auth::user())->performedOn($device)->log('offline device restored');
+        app(DeviceService::class)->restore($device, Auth::user());
 
         unset($this->figures);
         $this->forgetPeeked();
@@ -216,21 +190,7 @@ class Index extends Component
     {
         $this->authorize('manage', Device::class);
 
-        $rows = Device::query()
-            ->with('user')
-            ->when($this->state === 'active', fn (Builder $q) => $q->whereNull('revoked_at'))
-            ->when($this->state === 'revoked', fn (Builder $q) => $q->whereNotNull('revoked_at'))
-            ->when($this->state === 'stale', fn (Builder $q) => $q
-                ->whereNull('revoked_at')
-                ->where(fn (Builder $qq) => $qq
-                    ->whereNull('last_seen_at')
-                    ->orWhere('last_seen_at', '<', now()->subDays(self::STALE_DAYS))))
-            ->when($this->search !== '', fn (Builder $q) => $q
-                ->where(fn (Builder $qq) => $qq
-                    ->where('label', 'like', "%{$this->search}%")
-                    ->orWhereHas('user', fn (Builder $u) => $u->where('name', 'like', "%{$this->search}%"))))
-            ->latest('last_seen_at')
-            ->paginate($this->perPage);
+        $rows = app(DeviceService::class)->query($this->state, $this->search)->paginate($this->perPage);
 
         return view('livewire.sync.index', ['rows' => $rows])->title('Offline devices');
     }

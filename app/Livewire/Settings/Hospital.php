@@ -2,12 +2,11 @@
 
 namespace App\Livewire\Settings;
 
-use App\Services\AvatarService;
+use App\Services\HospitalProfileService;
 use App\Support\BrandColour;
 use App\Support\HospitalBrand;
 use App\Support\HospitalSettings;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -136,30 +135,12 @@ class Hospital extends Component
     /** @return array<string, list<string|\Closure>> */
     protected function rules(): array
     {
-        return [
-            'name' => ['required', 'string', 'max:150'],
-            'address' => ['nullable', 'string', 'max:500'],
-            'phone' => ['nullable', 'string', 'max:64'],
-            'email' => ['nullable', 'email', 'max:191'],
-            'website' => ['nullable', 'string', 'max:191'],
-            'registration' => ['nullable', 'string', 'max:120'],
-            'footer' => ['nullable', 'string', 'max:255'],
-            'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,gif', 'max:2048'],
-            'wordmark' => ['nullable', 'image', 'mimes:png,jpg,jpeg,gif', 'max:2048'],
-            'tagline' => ['nullable', 'string', 'max:120'],
-            'brandColour' => ['nullable', 'string', 'max:7', function (string $attribute, mixed $value, \Closure $fail): void {
-                $colour = BrandColour::normalise(is_string($value) ? $value : null);
-                if ($colour === null) {
-                    $fail('Enter a colour as six hexadecimal digits, like #1C4795.');
-                } elseif (! BrandColour::readableOnWhite($colour)) {
-                    $fail(sprintf(
-                        'This colour is too light for white text on buttons (contrast %.1f:1; at least %.1f:1 is needed). Choose a darker shade.',
-                        // Rounded DOWN: a refused 4.48 must never read as the 4.5 it missed.
-                        floor(BrandColour::contrastWithWhite($colour) * 10) / 10, BrandColour::MIN_CONTRAST,
-                    ));
-                }
-            }],
-        ];
+        $rules = app(HospitalProfileService::class)->rules();
+        // The form's property is camel-cased; the service (and the API) snake-case.
+        $rules['brandColour'] = $rules['brand_colour'];
+        unset($rules['brand_colour']);
+
+        return $rules;
     }
 
     /** @return array<string,string> */
@@ -192,7 +173,7 @@ class Hospital extends Component
         $this->validateOnly('brandColour');
     }
 
-    public function save(HospitalSettings $settings, AvatarService $images): void
+    public function save(HospitalSettings $settings, HospitalProfileService $profiles): void
     {
         $this->authorizeManage();
 
@@ -201,56 +182,10 @@ class Hospital extends Component
         $hospital = $settings->hospital();
         abort_if($hospital === null, 404, 'No hospital in context.');
 
-        $hospital->name = $data['name'];
-        $hospital->address = $this->blank($data['address'] ?? null);
+        $data['brand_colour'] = $data['brandColour'] ?? null;
+        $hospital = $profiles->save($hospital, $data, $this->logo, $this->wordmark);
 
-        if ($this->logo !== null) {
-            $previous = $hospital->logo;
-            $hospital->logo = $images->storeLogo($this->logo);
-
-            // The old file is nobody's once the new one is in place, and a
-            // settings page that leaves a trail of orphans behind it fills a
-            // disk one upload at a time.
-            $this->forget($previous);
-        }
-
-        $stored = $hospital->settings ?? [];
-        $brand = is_array($stored['brand'] ?? null) ? $stored['brand'] : [];
-
-        if ($this->wordmark !== null) {
-            // Wider than the square logo's box: it is read across a letterhead.
-            $previousWordmark = $brand['wordmark'] ?? null;
-            $brand['wordmark'] = $images->storeLogo($this->wordmark, 900, 300);
-            $this->forget(is_string($previousWordmark) ? $previousWordmark : null);
-        }
-        $brand['colour'] = BrandColour::normalise($this->blank($data['brandColour'] ?? null));
-        $brand['tagline'] = $this->blank($data['tagline'] ?? null);
-        $brand = array_filter($brand, fn ($value) => $value !== null && $value !== '');
-
-        $hospital->settings = array_merge($stored, [
-            // One store, shared with setup (OnboardingStatus::contact) — the
-            // two used to write different keys, so a hospital could fill this
-            // in and still be held in the wizard for want of the same details.
-            'profile' => array_filter(array_merge(
-                is_array($stored['profile'] ?? null) ? $stored['profile'] : [],
-                [
-                    'phone' => $this->blank($data['phone'] ?? null),
-                    'email' => $this->blank($data['email'] ?? null),
-                    'website' => $this->blank($data['website'] ?? null),
-                    'registration' => $this->blank($data['registration'] ?? null),
-                ],
-            ), fn ($value) => $value !== null),
-            // The footer is a billing setting and stays one — this page writes
-            // into the same key rather than opening a second copy of it.
-            'billing' => array_merge(
-                is_array($stored['billing'] ?? null) ? $stored['billing'] : [],
-                ['invoice_footer' => $this->blank($data['footer'] ?? null)],
-            ),
-            'brand' => $brand,
-        ]);
-
-        $hospital->save();
-
+        $brand = $hospital->settings['brand'] ?? [];
         $this->currentLogo = $hospital->logo;
         $this->logo = null;
         $this->currentWordmark = $brand['wordmark'] ?? null;
@@ -264,16 +199,14 @@ class Hospital extends Component
         $this->redirectRoute('admin.settings.hospital', navigate: false);
     }
 
-    public function removeLogo(HospitalSettings $settings): void
+    public function removeLogo(HospitalSettings $settings, HospitalProfileService $profiles): void
     {
         $this->authorizeManage();
 
         $hospital = $settings->hospital();
         abort_if($hospital === null, 404, 'No hospital in context.');
 
-        $this->forget($hospital->logo);
-        $hospital->logo = null;
-        $hospital->save();
+        $profiles->removeLogo($hospital);
 
         $this->currentLogo = null;
 
@@ -283,44 +216,17 @@ class Hospital extends Component
         $this->redirectRoute('admin.settings.hospital', navigate: false);
     }
 
-    public function removeWordmark(HospitalSettings $settings): void
+    public function removeWordmark(HospitalSettings $settings, HospitalProfileService $profiles): void
     {
         $this->authorizeManage();
 
         $hospital = $settings->hospital();
         abort_if($hospital === null, 404, 'No hospital in context.');
 
-        $stored = $hospital->settings ?? [];
-        $brand = is_array($stored['brand'] ?? null) ? $stored['brand'] : [];
-        $this->forget(is_string($brand['wordmark'] ?? null) ? $brand['wordmark'] : null);
-        unset($brand['wordmark']);
-        $stored['brand'] = $brand;
-        $hospital->settings = $stored;
-        $hospital->save();
+        $profiles->removeWordmark($hospital);
 
         $this->currentWordmark = null;
         $this->dispatch('toast', message: 'Wide logo removed.', type: 'success');
-    }
-
-    /** Silent: a file that has already gone is the outcome we wanted anyway. */
-    private function forget(?string $path): void
-    {
-        if ($path === null || $path === '') {
-            return;
-        }
-
-        try {
-            Storage::disk('public')->delete($path);
-        } catch (\Throwable) {
-            // nothing to do about it, and nothing depending on it
-        }
-    }
-
-    private function blank(?string $value): ?string
-    {
-        $value = trim((string) $value);
-
-        return $value === '' ? null : $value;
     }
 
     private function authorizeManage(): void

@@ -2,7 +2,6 @@
 
 namespace App\Livewire\Finance;
 
-use App\Enums\AccountType;
 use App\Enums\JournalKind;
 use App\Exceptions\ClosedPeriodException;
 use App\Http\Requests\CashEntryRequest;
@@ -163,18 +162,13 @@ class Journal extends Component
     #[Computed]
     public function openingAccounts()
     {
-        return LedgerAccount::query()->active()
-            ->whereIn('type', [AccountType::Asset->value, AccountType::Liability->value, AccountType::Equity->value])
-            // Not the ones the system keeps for itself: stock is valued by the
-            // stock ledger, and card and insurer balances by their own ledgers.
-            ->where(fn ($q) => $q->whereNull('system_key')->orWhereNotIn('system_key', ['opening_equity', 'retained_earnings', 'inventory', 'card_deposits', 'insurer_floats']))
-            ->ordered()->get();
+        return app(CashbookService::class)->openingAccounts();
     }
 
     #[Computed]
     public function hasOpening(): bool
     {
-        return JournalEntry::query()->where('kind', JournalKind::Opening->value)->whereNull('reversed_by_id')->exists();
+        return app(CashbookService::class)->hasOpening();
     }
 
     public function newOpening(): void

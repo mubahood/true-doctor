@@ -80,6 +80,13 @@ invoice money fields, and cross-hospital 404/empty.
 `stock-items`, `lab-orders`, `invoices`. More write resources can follow the same
 service+policy+resource pattern as needed.
 
+## More areas: `docs/api/*.md`
+
+The surface beyond the first resources is documented per area, next to the routes in `routes/api/*.php`:
+[`api/care.md`](api/care.md), [`api/pharmacy.md`](api/pharmacy.md), [`api/finance.md`](api/finance.md),
+[`api/admin.md`](api/admin.md) and [`api/extras.md`](api/extras.md) (suggestions at `GET /api/v1/insights`,
+public self-registration for the app, and starter-data imports). They share this envelope, auth and error model.
+
 ## OpenAPI
 
 `GET /api/v1/openapi.json` (public) serves a hand-maintained OpenAPI 3.0 document describing the
