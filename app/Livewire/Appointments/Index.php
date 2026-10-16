@@ -113,6 +113,17 @@ class Index extends Component
         // a booking made for next week disappeared the moment it was saved.
         // Empty means "every appointment", soonest first, which is the list
         // somebody opening this page is actually looking for.
+
+        // "Book appointment" on a patient's record arrives with ?for={patient
+        // uuid}: the booking dialog opens with that patient chosen.
+        $for = request()->query('for');
+        if (is_string($for) && $for !== '' && auth()->user()?->can('create', Appointment::class)) {
+            $patient = \App\Models\Patient::where('uuid', $for)->first();
+            if ($patient !== null) {
+                $this->create();
+                $this->patient_id = $patient->id;
+            }
+        }
     }
 
     protected function resetsPage(): array

@@ -148,6 +148,18 @@ class Index extends Component
     public function mount(): void
     {
         $this->authorize('viewAny', Visit::class);
+
+        // "New visit" on a patient's record arrives with ?for={patient uuid}:
+        // the dialog opens with that patient chosen, so nobody searches for
+        // someone they were just looking at.
+        $for = request()->query('for');
+        if (is_string($for) && $for !== '' && auth()->user()?->can('create', Visit::class)) {
+            $patient = Patient::where('uuid', $for)->first();
+            if ($patient !== null) {
+                $this->create();
+                $this->patient_id = $patient->id;
+            }
+        }
     }
 
     protected function resetsPage(): array

@@ -74,6 +74,7 @@ class PatientCard extends Model
         return $this->hasMany(CardHolder::class);
     }
 
+    /** @return BelongsTo<InsuranceProvider, $this> */
     public function provider(): BelongsTo
     {
         return $this->belongsTo(InsuranceProvider::class, 'insurance_provider_id');

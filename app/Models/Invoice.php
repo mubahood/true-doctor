@@ -70,6 +70,19 @@ class Invoice extends Model
      * @param  Builder<Invoice>  $query
      * @return Builder<Invoice>
      */
+    /**
+     * Money still owed: issued or part-paid, with something left on it.
+     *
+     * The ONE definition of "outstanding" — the reports, the patient's record
+     * and the statement all read it from here, so the figures cannot drift.
+     */
+    public function scopeOutstanding(Builder $query): Builder
+    {
+        return $query
+            ->whereIn('status', [InvoiceStatus::Issued->value, InvoiceStatus::PartiallyPaid->value])
+            ->where('balance', '>', 0);
+    }
+
     public function scopeMatching(Builder $query, ?string $term): Builder
     {
         $term = trim((string) $term);

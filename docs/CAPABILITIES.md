@@ -113,6 +113,14 @@ opens onto low stock and a doctor onto their queue.
 - **Patient cards** — prepaid and insurer member cards (§L).
 - **Insurance coverage** — one patient, several policies.
 - **Treatment records** — procedures performed outside a visit, with photographs.
+- **The patient record** — one page with everything about the person: an alert
+  strip (allergies, chronic conditions, what they owe and for how long,
+  admitted now), a row of figures, and tabs for the overview timeline, visits,
+  billing (invoices, payments, aged debt), clinical history, appointments, the
+  working records and the details. Each person sees only the tabs their role
+  allows, and a practice without a module (say, admissions in a dental clinic)
+  never sees it. A printable **statement of account**, and the same facts as
+  `GET /api/v1/patients/{uuid}/summary` for the app.
 - **QR ID cards**, printable, for fast lookup at the desk.
 - **Status** — active, inactive or deceased; an inactive patient is findable but
   not bookable.

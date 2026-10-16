@@ -2265,3 +2265,10 @@ body.has-brand::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z-i
 .tb-footer-name{flex:0 1 auto;}
 .tb-footer-tagline{flex:0 1000 auto;font-weight:400;font-style:italic;color:var(--mt);}
 @media (max-width:1200px){.tb-footer-tagline{display:none;}}
+
+.tb-stack-tight{gap:8px;}
+/* Tab strip that scrolls sideways on a phone instead of wrapping into rows (patient record). */
+@media(max-width:640px){
+  .tb-tabs-scroll{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .tb-tabs-scroll .tb-tab{flex:0 0 auto;white-space:nowrap;}
+}

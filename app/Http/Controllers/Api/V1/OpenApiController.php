@@ -75,6 +75,7 @@ class OpenApiController extends Controller
                 ],
 
                 '/patients/{uuid}/brief' => ['get' => ['summary' => 'Before opening a visit: open visit, booking today, money owed', 'tags' => ['Patients'], 'security' => $secured, 'parameters' => [$this->path('uuid')], 'responses' => ['200' => $ok, '404' => $ok]]],
+                '/patients/{uuid}/summary' => ['get' => ['summary' => 'The patient page as data: figures, alerts and recent activity (sections you may not see are omitted)', 'tags' => ['Patients'], 'security' => $secured, 'parameters' => [$this->path('uuid'), $this->q('limit')], 'responses' => ['200' => $ok, '403' => $ok, '404' => $ok]]],
 
                 '/appointments' => [
                     'get' => ['summary' => 'List appointments', 'tags' => ['Appointments'], 'security' => $secured, 'parameters' => [$this->q('date'), $this->q('status'), $this->q('doctor')], 'responses' => ['200' => $ok]],

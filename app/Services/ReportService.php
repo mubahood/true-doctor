@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Enums\BedStatus;
-use App\Enums\InvoiceStatus;
 use App\Enums\OrderItemStatus;
 use App\Enums\OrderType;
 use App\Enums\PatientSex;
@@ -219,9 +218,7 @@ class ReportService
      */
     public function outstanding(): array
     {
-        $invoices = Invoice::query()
-            ->whereIn('status', [InvoiceStatus::Issued->value, InvoiceStatus::PartiallyPaid->value])
-            ->get(['balance', 'created_at']);
+        $invoices = Invoice::query()->outstanding()->get(['balance', 'created_at']);
 
         $total = '0.00';
         $count = 0;

@@ -141,6 +141,7 @@ class GeneratedDocumentTest extends TestCase
             ['patient ID card', route('admin.patients.id-card', $this->patient())],
             ['insurance statement', route('admin.insurance-providers.usage', $insurer)],
             ['visit report', route('admin.visits.report', $visit)],
+            ['statement of account', route('admin.patients.statement', $invoice->patient)],
             ['financial statement', route('admin.finance.statement-pdf', ['report' => 'income', 'preset' => 'this_month'])],
             ['period report', route('admin.reports.pdf', [
                 'from' => now()->startOfMonth()->toDateString(),

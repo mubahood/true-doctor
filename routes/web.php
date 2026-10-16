@@ -146,6 +146,7 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'subscribed', 'onboarding',
     Route::get('patients', \App\Livewire\Patients\Index::class)->name('patients.index');
     Route::get('patients/create', \App\Livewire\Patients\Form::class)->name('patients.create');
     Route::get('patients/{patient}/edit', \App\Livewire\Patients\Form::class)->name('patients.edit');
+    Route::get('patients/{patient}/statement', [\App\Http\Controllers\Admin\PatientController::class, 'statement'])->name('patients.statement');
     Route::get('patients/{patient}/id-card', [\App\Http\Controllers\Admin\PatientController::class, 'idCard'])->name('patients.id-card');
     Route::get('patients/{patient}', \App\Livewire\Patients\Show::class)->name('patients.show');
 

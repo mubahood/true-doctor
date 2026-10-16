@@ -98,3 +98,83 @@ would otherwise create. Self-links and duplicates are rejected. Unique index
 `PatientController@idCard` renders an A7 landscape card via DomPDF
 (`resources/views/pdf/patient-card.blade.php`) with a QR of the `patient_no` embedded as an
 inline data-URI (`QrService`, endroid GD backend) — the PDF is fully self-contained.
+
+## The patient record
+
+`admin/patients/{patient}` is the one page that shows EVERYTHING about a person.
+Code: `app/Livewire/Patients/Show.php` (the shell), `app/Livewire/Patients/Tabs/*`
+(one lazy component per tab), `app/Services/PatientSummaryService.php` (the facts),
+`resources/views/livewire/patients/{show,tabs/*}.blade.php`.
+
+### One service owns the facts
+
+`PatientSummaryService` is read by the page AND by `GET /api/v1/patients/{uuid}/summary`
+([api/patients.md](api/patients.md)), so the web and the app cannot disagree.
+Aggregate queries only (no N+1), tenant scoping from the global scope, money as
+scale-2 decimal strings formatted in the views by `HospitalSettings`.
+
+- `figures()` - outstanding, billed, paid, card balance, visits and last visit,
+  open visit, next appointment, admitted now.
+- `alerts()` - allergies, chronic conditions, owes (with the age of the oldest
+  unpaid invoice), no consent, inactive/deceased, admitted now, insurance and
+  claims awaiting. Only what applies.
+- `recent()` / `activity()` - bounded recent lists, and the timeline merging them
+  newest first. `visitsPage()`, `invoicesPage()`, `paymentsPage()`,
+  `appointmentsPage()` feed the paginated tabs.
+- `aging()` - unpaid invoices in 0-30 / 31-60 / 61-90 / 90+ day bands.
+  "Outstanding" is `Invoice::outstanding()` (issued or part-paid with a balance
+  left), the same scope `ReportService::outstanding()` uses, and age is counted
+  from when the invoice was raised, as the reports do. Only the band edges differ
+  (the report's first band is 7 days, which suits a hospital; 30 suits one account).
+  A void invoice is neither billed nor owed.
+- `statement()` - what the printed statement carries.
+
+### Sections: who sees what
+
+`PatientSummaryService::sectionsFor($user)` turns permissions and the practice's
+modules into sections; everything else keys off it.
+
+| Section | Needs | Gives |
+|---|---|---|
+| visits | `visits.view` | Visits tab, visit count, open visit |
+| clinical | `visits.view` | Clinical tab: diagnoses, medication, prescriptions, vitals |
+| lab / imaging | `visits.view` + module laboratory / radiology | lab results with flags, imaging reports |
+| money | `billing.view` | Billing tab, outstanding/billed/paid, the "owes" alert, Statement |
+| appointments | `appointments.view` | Appointments tab, next appointment |
+| admissions | `ipd.view` + module inpatient | admissions, "currently admitted" |
+| cards | `patients.card.manage` + module cards | card balance, card ledger |
+| insurance | `insurance.view` + module insurance | claims awaiting |
+
+A section a person may not see is OMITTED (never empty - an empty money block
+reads as "owes nothing"). Every tab also re-checks its own section, because a
+Livewire component can be addressed without its button.
+
+### The page
+
+Header (name, number, age/sex, status; New visit or Open visit, Book appointment,
+Statement, ID card, Edit, Archive), alert strip, figures row, then tabs. The tab is
+in the URL (`?tab=billing`); a tab is mounted the first time it is opened and kept
+(hidden) afterwards; a tab you may not have lands on Overview.
+
+| Tab | Holds |
+|---|---|
+| Overview | activity timeline + the latest few of each kind |
+| Visits | every visit: serial, visit no, date, stage, doctor, diagnosis, billed, balance (paginated) |
+| Billing | invoices (PDF), payments (receipt PDF), debts: aged bands, unpaid list, claims awaiting, card ledger |
+| Clinical | diagnoses, current medication, prescriptions, vitals, lab results with abnormal flags, imaging reports, admissions |
+| Appointments | upcoming and past |
+| Records | cards, documents, dependents, insurances, treatments - the working panels |
+| Details | identity, contact, medical, family and emergency, insurance on file, consent, notes |
+
+"New visit" and "Book appointment" link to the visit / appointment lists with
+`?for={patient uuid}`, which opens the usual dialog with the patient chosen.
+
+### Statement of account
+
+`GET admin/patients/{patient}/statement` (`admin.patients.statement`, needs
+`billing.view`) prints invoices, payments, totals, the balance due and the aged
+bands on the letterhead (`resources/views/pdf/patient-statement.blade.php`). It is
+held to the every-document rules in `tests/Feature/GeneratedDocumentTest.php`.
+
+Tests: `PatientSummaryServiceTest`, `Livewire/PatientRecordTabsTest`,
+`PatientStatementTest`, `Api/PatientSummaryApiTest`.

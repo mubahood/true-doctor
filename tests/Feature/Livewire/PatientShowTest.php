@@ -48,7 +48,8 @@ class PatientShowTest extends TestCase
         $this->acting($h, 'receptionist');
         $patient = Patient::factory()->create(['hospital_id' => $h->id, 'first_name' => 'Grace', 'last_name' => 'Nakato']);
 
-        Livewire::test(Show::class, ['patient' => $patient])
+        // Consent is held on the Details tab since the record became tabbed.
+        Livewire::withQueryParams(['tab' => 'details'])->test(Show::class, ['patient' => $patient])
             ->assertOk()
             ->assertSee('Grace Nakato')
             ->assertSee($patient->patient_no)
@@ -128,14 +129,14 @@ class PatientShowTest extends TestCase
         // Doctor: patients.view but no patients.card.manage (plan D5).
         $this->acting($h, 'doctor');
         Livewire::withoutLazyLoading();
-        Livewire::test(Show::class, ['patient' => $patient])
+        Livewire::withQueryParams(['tab' => 'records'])->test(Show::class, ['patient' => $patient])
             ->assertOk()
             ->assertDontSee('Prepaid cards');
 
         // Receptionist: patients.card.manage → the panel renders.
         $this->acting($h, 'receptionist');
         Livewire::withoutLazyLoading();
-        Livewire::test(Show::class, ['patient' => $patient])
+        Livewire::withQueryParams(['tab' => 'records'])->test(Show::class, ['patient' => $patient])
             ->assertOk()
             ->assertSee('Prepaid cards');
     }

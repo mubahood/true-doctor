@@ -37,4 +37,20 @@ class PatientController extends Controller
 
         return $pdf->stream("patient-card-{$patient->patient_no}.pdf");
     }
+
+    /**
+     * The statement of account: what was billed, what was paid and what is
+     * still owed, on the letterhead. Opens inline like every other document.
+     */
+    public function statement(Patient $patient, \App\Services\PatientSummaryService $summary)
+    {
+        $this->authorize('view', $patient);
+        abort_unless(auth()->user()?->can('billing.view'), 403);
+
+        return Pdf::loadView('pdf.patient-statement', [
+            'patient' => $patient,
+            's' => $summary->statement($patient),
+            'asAt' => now(),
+        ])->setPaper('a4')->stream('statement-of-account-'.$patient->patient_no.'.pdf');
+    }
 }
