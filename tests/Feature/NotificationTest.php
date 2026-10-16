@@ -90,6 +90,8 @@ class NotificationTest extends TestCase
         $doctor = $this->staff($h, 'doctor');
         app(CurrentHospital::class)->set($h->id);
         $patient = Patient::factory()->create(['hospital_id' => $h->id, 'phone_1' => '0772000000']);
+        // The command runs hourly and stays quiet at night: ask it at midday, hospital time.
+        $this->travelTo(now($h->timezone)->setTime(12, 0));
         $when = now()->addDay()->setTime(10, 0);
         \App\Models\Appointment::create([
             'uuid' => (string) \Illuminate\Support\Str::uuid(), 'hospital_id' => $h->id, 'patient_id' => $patient->id,

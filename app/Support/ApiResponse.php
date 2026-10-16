@@ -27,6 +27,24 @@ class ApiResponse
     }
 
     /**
+     * A success whose list is a slice or carries a tally: the envelope plus a
+     * `meta` block, for endpoints that are not paginated (`total`, `truncated`).
+     *
+     * @param  array<string,mixed>  $meta
+     */
+    public static function withMeta(mixed $data, array $meta, ?string $message = null, int $status = 200): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'code' => 'ok',
+            'message' => $message,
+            'data' => $data,
+            'meta' => $meta,
+            'errors' => null,
+        ], $status);
+    }
+
+    /**
      * A paginated list in the standard envelope: items under `data`, page info
      * under `meta` (so the envelope shape stays consistent across endpoints).
      */
@@ -48,20 +66,38 @@ class ApiResponse
         ]);
     }
 
-    /** @param array<string, mixed>|null $errors */
+    /**
+     * `retryable` and `retry_after` (seconds) are optional additions to the
+     * error envelope: present only when the server has a view on whether the
+     * same request may succeed later, so old clients see the same shape as before.
+     *
+     * @param  array<string, mixed>|null  $errors
+     */
     public static function error(
         ApiErrorCode $code,
         string $message,
         int $status,
         ?array $errors = null,
         mixed $data = null,
+        ?bool $retryable = null,
+        ?int $retryAfter = null,
     ): JsonResponse {
-        return response()->json([
+        $body = [
             'success' => false,
             'code' => $code->value,
             'message' => $message,
             'data' => $data,
             'errors' => $errors,
-        ], $status);
+        ];
+
+        if ($retryable !== null) {
+            $body['retryable'] = $retryable;
+        }
+
+        if ($retryAfter !== null) {
+            $body['retry_after'] = $retryAfter;
+        }
+
+        return response()->json($body, $status);
     }
 }

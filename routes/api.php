@@ -35,9 +35,11 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
     });
 
     // Authenticated
+    // `api.conditional` tags every successful GET with a weak ETag and answers
+    // `If-None-Match` with 304 (docs/api/plane.md). It only touches safe methods.
     // `api.account` before `subscribed`: a disabled account is told it is
     // disabled, not that its hospital's subscription ended.
-    Route::middleware(['auth:sanctum', 'api.account', 'subscribed', 'idempotent'])->group(function () {
+    Route::middleware(['auth:sanctum', 'api.account', 'subscribed', 'idempotent', 'api.conditional'])->group(function () {
         Route::get('auth/me', [AuthController::class, 'me'])->name('api.auth.me');
         Route::post('auth/logout', [AuthController::class, 'logout'])->name('api.auth.logout');
         Route::post('auth/password', [AuthController::class, 'password'])->name('api.auth.password');

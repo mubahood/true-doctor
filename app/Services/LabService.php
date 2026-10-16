@@ -106,11 +106,8 @@ class LabService
                 $locked->completed_at = Carbon::now();
                 $locked->save();
 
-                // Notify the ordering doctor that results are ready.
-                $locked->loadMissing('orderedBy');
-                if ($locked->orderedBy !== null) {
-                    $locked->orderedBy->notify(new \App\Notifications\LabResultReady($locked));
-                }
+                // Results are out: App\Listeners\NotifyUser tells the ordering doctor.
+                \App\Events\LabResultReleased::dispatch($locked);
 
                 return $locked;
             }

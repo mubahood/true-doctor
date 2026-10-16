@@ -9,6 +9,7 @@ use App\Enums\VisitStage;
 use App\Enums\VisitStatus;
 use App\Exceptions\InvalidVisitTransitionException;
 use App\Exceptions\PlanLimitExceededException;
+use App\Http\Controllers\Api\V1\Concerns\PagesAndDeltas;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\VisitClinicalRequest;
 use App\Http\Requests\VisitIntakeRequest;
@@ -33,6 +34,8 @@ use Throwable;
  */
 class VisitController extends Controller
 {
+    use PagesAndDeltas;
+
     public function __construct(private readonly VisitService $service) {}
 
     /**
@@ -46,7 +49,7 @@ class VisitController extends Controller
         $status = (string) $request->query('status', '');
         $stage = VisitStage::tryFrom((string) $request->query('stage', ''));
 
-        $visits = Visit::with(['patient', 'doctor'])
+        $visits = $this->applyDelta(Visit::with(['patient', 'doctor'])
             // What the row's gate needs, counted in the one statement.
             ->withCount(['orders as open_orders_count' => fn (Builder $q) => $q->whereIn(
                 'status', [OrderStatus::Pending->value, OrderStatus::InProgress->value],
@@ -65,10 +68,10 @@ class VisitController extends Controller
                 'patient', fn (Builder $p) => $p->where('uuid', (string) $request->query('patient')),
             ))
             ->matching((string) $request->query('q', ''))
-            ->latest('id')
-            ->paginate(min(max((int) $request->query('per_page', 20), 1), 100));
+            ->latest('id'), $request)
+            ->paginate($this->perPage($request));
 
-        return ApiResponse::paginated($visits, VisitResource::collection($visits->items()));
+        return $this->deltaPage($request, $visits, VisitResource::class);
     }
 
     /** Open a visit for a registered patient, with whatever was taken at the desk. */
@@ -105,7 +108,7 @@ class VisitController extends Controller
                 $request->user()->id,
             );
         } catch (PlanLimitExceededException $e) {
-            return ApiResponse::error(ApiErrorCode::Forbidden, $e->getMessage(), 403);
+            return ApiResponse::error(ApiErrorCode::PlanLimit, $e->getMessage(), 403, null, null, false);
         }
         $visit = $this->service->recordWhatWasTaken($visit, $data, $request->user()->id);
 

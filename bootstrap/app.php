@@ -60,6 +60,7 @@ $application = Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\EnsureInstalled::class,
             \App\Http\Middleware\SetLocale::class,
             \App\Http\Middleware\ResolveHospital::class,
+            \App\Http\Middleware\ApplyApiLocale::class,
         ]);
 
         // Tenancy is safety-critical (HMS_PLAN.md §2.1): resolve the current
@@ -94,6 +95,8 @@ $application = Application::configure(basePath: dirname(__DIR__))
             'api.account' => \App\Http\Middleware\EnsureApiAccount::class,
             'idempotent' => \App\Http\Middleware\IdempotentRequests::class,
             'api.app-version' => \App\Http\Middleware\EnsureAppVersion::class,
+            // Weak ETag + If-None-Match -> 304 on GET JSON (docs/api/plane.md).
+            'api.conditional' => \App\Http\Middleware\ConditionalJson::class,
             'onboarding' => \App\Http\Middleware\RequireOnboarding::class,
             'no-store' => \App\Http\Middleware\NoStoreResponses::class,
             // Records where a visitor came from and routes an ad click to
@@ -143,8 +146,21 @@ $application = Application::configure(basePath: dirname(__DIR__))
             return ApiResponse::error(ApiErrorCode::NotFound, 'Resource not found.', 404);
         });
 
+        // A plan or licence limit reached: 403 as before, now with its own code.
+        $exceptions->render(function (\App\Exceptions\PlanLimitExceededException $e, Request $request) use ($wantsJson) {
+            if (! $wantsJson($request)) {
+                return null;
+            }
+
+            return ApiResponse::error(ApiErrorCode::PlanLimit, $e->getMessage(), 403, null, null, false);
+        });
+
         // Catches everything else with an HTTP status (404 route-not-found,
         // 429 throttled, abort(403, '...') as EnsureSubscribed uses, ...).
+        // The status never changes for an old app; the code gets more precise
+        // (409 conflict, 413 payload_too_large, 503 maintenance, 402
+        // licence_expired) and `retryable` / `retry_after` say whether trying
+        // again can help. Rate-limit and Retry-After headers are kept.
         $exceptions->render(function (HttpExceptionInterface $e, Request $request) use ($wantsJson) {
             if (! $wantsJson($request)) {
                 return null;
@@ -152,18 +168,34 @@ $application = Application::configure(basePath: dirname(__DIR__))
 
             $status = $e->getStatusCode();
             $code = match (true) {
+                $status === 402 => ApiErrorCode::LicenceExpired,
                 $status === 403 => ApiErrorCode::Forbidden,
                 $status === 404 => ApiErrorCode::NotFound,
+                $status === 409 => ApiErrorCode::Conflict,
+                $status === 413 => ApiErrorCode::PayloadTooLarge,
                 $status === 429 => ApiErrorCode::TooManyRequests,
+                $status === 503 => ApiErrorCode::Maintenance,
                 $status >= 500 => ApiErrorCode::ServerError,
                 default => ApiErrorCode::ServerError,
+            };
+
+            $headers = $e->getHeaders();
+            $retryAfter = isset($headers['Retry-After']) && is_numeric($headers['Retry-After']) ? (int) $headers['Retry-After'] : null;
+            $retryable = match (true) {
+                $status === 429, $status === 503, $status === 502, $status === 504 => true,
+                $status === 413, $status === 402, $status === 409 => false,
+                default => null,
             };
 
             return ApiResponse::error(
                 $code,
                 $e->getMessage() ?: 'An error occurred.',
                 $status,
-            );
+                null,
+                null,
+                $retryable,
+                $retryAfter,
+            )->withHeaders($headers);
         });
 
         $exceptions->render(function (\Throwable $e, Request $request) use ($wantsJson) {

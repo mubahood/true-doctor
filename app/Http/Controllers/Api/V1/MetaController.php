@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Models\Hospital;
 use App\Support\ApiResponse;
+use App\Support\Capabilities;
 use App\Support\CurrentHospital;
 use App\Support\Edition;
+use App\Support\EnumCatalogue;
 use App\Support\HospitalSettings;
 use App\Support\Navigation;
 use App\Support\OnboardingStatus;
@@ -15,7 +17,6 @@ use App\Support\SubscriptionState;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 /**
  * Everything an app needs to draw the system the way the web draws it.
@@ -31,27 +32,32 @@ class MetaController extends Controller
     /** The API contract version; bumped only for breaking changes. */
     public const API_VERSION = 1;
 
-    /** Enum badge classes → the handful of tones a client needs to know. */
-    private const TONES = [
-        'badge-success' => 'success', 'badge-active' => 'success', 'badge-verified' => 'success',
-        'badge-info' => 'info', 'badge-pending' => 'info', 'badge-ongoing' => 'info',
-        'badge-warn' => 'warn', 'badge-high' => 'warn',
-        'badge-danger' => 'danger', 'badge-closed' => 'danger',
-        'badge-neutral' => 'neutral', 'badge-brown' => 'neutral',
-    ];
+    public function __invoke(Request $request): JsonResponse
+    {
+        return ApiResponse::success($this->document($request));
+    }
 
-    public function __invoke(
-        Request $request,
-        HospitalSettings $settings,
-        SubscriptionState $subscriptions,
-        OnboardingStatus $onboarding,
-    ): JsonResponse {
+    /**
+     * The whole `meta` document. Also the `meta` of `GET /bootstrap`, so the
+     * two can never describe the system differently.
+     *
+     * Existing keys are unchanged (installed apps read them); `capabilities`
+     * is added beside them.
+     *
+     * @return array<string,mixed>
+     */
+    public function document(Request $request): array
+    {
+        $settings = app(HospitalSettings::class);
+        $subscriptions = app(SubscriptionState::class);
+        $onboarding = app(OnboardingStatus::class);
+
         /** @var \App\Models\User $user */
         $user = $request->user()->loadMissing('hospital');
         $hospital = Hospital::find(app(CurrentHospital::class)->id());
         $inSetup = $onboarding->mustCompleteSetup($user);
 
-        return ApiResponse::success([
+        return [
             'api_version' => self::API_VERSION,
             'edition' => Edition::name(),
             'version' => Edition::version(),
@@ -73,14 +79,17 @@ class MetaController extends Controller
             'subscription' => Edition::isSaas() && $hospital ? $this->subscription($hospital, $subscriptions) : null,
             'setup_required' => $inSetup,
             'navigation' => $this->navigation(Navigation::for($user, $inSetup)['sections']),
-            'enums' => $this->enums(),
-            // Option lists that are data, not enums — the same lists the web
+            'enums' => EnumCatalogue::all(),
+            // Option lists that are data, not enums - the same lists the web
             // forms read, so the app offers the same choices.
             'options' => [
                 'districts' => \App\Models\District::query()->orderBy('name')->get(['id', 'name'])->toArray(),
                 'blood_types' => \App\Http\Requests\PatientRequest::BLOOD_TYPES,
             ],
-        ]);
+            // What this server can do for this user: versions, edition,
+            // permissions, features, limits (docs/api/plane.md).
+            'capabilities' => Capabilities::for($user, $hospital),
+        ];
     }
 
     /** @return array<string, mixed> */
@@ -175,43 +184,10 @@ class MetaController extends Controller
         ], $sections);
     }
 
-    /**
-     * Every status and option list the app renders, with the web's own label
-     * and badge tone for each value — read from app/Enums, so a label changed
-     * there changes in the app with no release.
-     *
-     * @return array<string, list<array{value:string, label:string, tone:?string, icon:?string}>>
-     */
-    private function enums(): array
-    {
-        $out = [];
-
-        foreach (glob(app_path('Enums/*.php')) ?: [] as $file) {
-            $class = 'App\\Enums\\'.basename($file, '.php');
-
-            if (! enum_exists($class) || ! method_exists($class, 'label')) {
-                continue;
-            }
-
-            $out[Str::snake(class_basename($class))] = array_map(fn (\UnitEnum $case) => [
-                'value' => $case instanceof \BackedEnum ? (string) $case->value : $case->name,
-                'label' => $case->label(),
-                'tone' => method_exists($case, 'badge') ? self::tone((string) $case->badge()) : null,
-                'icon' => method_exists($case, 'icon') ? $case->icon() : null,
-            ], $class::cases());
-        }
-
-        ksort($out);
-
-        return $out;
-    }
-
     /** A badge class (`badge-info`) or a bare tone (`active`) as a client tone. */
     public static function tone(string $badge): string
     {
-        $class = str_starts_with($badge, 'badge-') ? $badge : 'badge-'.$badge;
-
-        return self::TONES[$class] ?? 'neutral';
+        return EnumCatalogue::tone($badge);
     }
 
     private function logoUrl(?string $path): ?string

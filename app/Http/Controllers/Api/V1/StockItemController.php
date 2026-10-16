@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Api\V1\Concerns\PagesAndDeltas;
 use App\Http\Controllers\Api\V1\Concerns\WritesCatalogue;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StockItemRequest;
@@ -21,7 +22,9 @@ use Illuminate\Support\Str;
  */
 class StockItemController extends Controller
 {
-    use WritesCatalogue;
+    use PagesAndDeltas, WritesCatalogue {
+        PagesAndDeltas::perPage insteadof WritesCatalogue;
+    }
 
     private const FIELDS = ['name', 'stock_category_id', 'sku', 'unit', 'batch_no', 'expiry_date', 'cost_price', 'sale_price', 'reorder_level', 'is_active'];
 
@@ -55,12 +58,12 @@ class StockItemController extends Controller
 
         // The web register's filters (StockItem::listed): low, expiring,
         // expired; a category; a name — and its shelf figures in meta.
-        $items = StockItem::with('category')
+        $items = $this->applyDelta(StockItem::with('category')
             ->listed((string) $request->query('filter', ''), $request->query('category'), (string) $request->query('q', ''))
-            ->orderBy('name')
-            ->paginate(min(max((int) $request->query('per_page', 25), 1), 100));
+            ->orderBy('name'), $request)
+            ->paginate($this->perPage($request, 25));
 
-        return ApiResponse::paginated($items, StockItemResource::collection($items->items()), [
+        return $this->deltaPage($request, $items, StockItemResource::class, [
             'shelf' => StockItem::shelf(),
             'expiry_horizon_days' => StockItem::EXPIRY_HORIZON_DAYS,
             // What this practice calls the store ("Drugs inventory" at a dental clinic).

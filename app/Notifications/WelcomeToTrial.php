@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Subscription;
+use App\Notifications\Concerns\AppNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -11,14 +12,14 @@ use Illuminate\Notifications\Notification;
 /** Sent to the hospital owner right after self-registration. */
 class WelcomeToTrial extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use AppNotification, Queueable;
 
     public function __construct(public readonly Subscription $subscription) {}
 
     /** @return array<int,string> */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        return $this->withPush(['mail', 'database']);
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -35,12 +36,37 @@ class WelcomeToTrial extends Notification implements ShouldQueue
     }
 
     /** @return array<string,mixed> */
-    public function toArray(object $notifiable): array
+    protected function legacyData(): array
     {
         return [
             'type' => 'welcome_trial',
             'title' => 'Welcome — trial started',
             'message' => 'Your 14-day free trial is active. Finish onboarding to get going.',
         ];
+    }
+
+    protected function category(): string
+    {
+        return 'account';
+    }
+
+    protected function priority(): string
+    {
+        return 'low';
+    }
+
+    protected function publicMessage(): string
+    {
+        return 'Your trial has started.';
+    }
+
+    protected function routeName(): ?string
+    {
+        return 'admin.onboarding';
+    }
+
+    protected function entityType(): ?string
+    {
+        return 'onboarding';
     }
 }

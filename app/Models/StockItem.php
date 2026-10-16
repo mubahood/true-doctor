@@ -117,7 +117,10 @@ class StockItem extends Model
             ->when($filter === 'expiring', fn (Builder $x) => $x->expiringBefore(now()->addDays(self::EXPIRY_HORIZON_DAYS)->toDateString()))
             ->when($filter === 'expired', fn (Builder $x) => $x->expiringBefore(now()->toDateString()))
             ->when(($category ?? '') !== '' && (int) $category > 0, fn (Builder $x) => $x->where('stock_category_id', (int) $category))
-            ->when($search !== '', fn (Builder $x) => $x->where('name', 'like', "%{$search}%"));
+            ->when($search !== '', fn (Builder $x) => $x->where(fn (Builder $y) => $y
+                ->where('name', 'like', "%{$search}%")
+                // The code on the shelf label, so a scanned or typed SKU finds the item.
+                ->orWhere('sku', 'like', "%{$search}%")));
     }
 
     /**

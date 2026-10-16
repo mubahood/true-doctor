@@ -228,12 +228,7 @@ class StockService
 
     private function notifyLowStock(StockItem $item): void
     {
-        $recipients = \App\Models\User::where('hospital_id', $item->hospital_id)
-            ->whereIn('role', ['pharmacist', 'hospital_admin'])
-            ->get();
-
-        if ($recipients->isNotEmpty()) {
-            \Illuminate\Support\Facades\Notification::send($recipients, new \App\Notifications\LowStockAlert($item));
-        }
+        // App\Listeners\NotifyUser works out who is told (pharmacy.manage) and sends it.
+        \App\Events\StockBelowReorder::dispatch($item);
     }
 }

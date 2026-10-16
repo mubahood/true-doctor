@@ -92,6 +92,8 @@ class AuthController extends Controller
 
     public function logout(): JsonResponse
     {
+        // This phone stops getting pushes for this person (docs/api/notify.md).
+        \App\Models\DeviceToken::revokeFor(request()->user(), request()->header('X-Device-Id'));
         $token = request()->user()?->currentAccessToken();
         if ($token instanceof \Laravel\Sanctum\PersonalAccessToken) {
             $token->delete();

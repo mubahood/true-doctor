@@ -27,4 +27,25 @@ enum ApiErrorCode: string
     // the same request is still being processed.
     case IdempotencyKeyReused = 'idempotency_key_reused';
     case RequestInProgress = 'request_in_progress';
+
+    // Precision added for the super app (docs/api/plane.md). Each keeps the
+    // HTTP status the older, vaguer answer used, so an installed app that
+    // branches on the status keeps working; a newer app can branch on the code.
+    /** 409 - the record changed under the caller. */
+    case Conflict = 'conflict';
+
+    /** 403 - the plan or licence limit for this resource is reached. */
+    case PlanLimit = 'plan_limit';
+
+    /** 413 - the body or the upload is bigger than the server accepts. */
+    case PayloadTooLarge = 'payload_too_large';
+
+    /** 403 - this device was blocked; the app clears its local copy. */
+    case DeviceRevoked = 'device_revoked';
+
+    /** 402 - the standalone licence has lapsed. */
+    case LicenceExpired = 'licence_expired';
+
+    /** 503 - down for maintenance; retry later. */
+    case Maintenance = 'maintenance';
 }

@@ -28,7 +28,7 @@ Each row is a real incident and the rule it produced. Skim before risky work.
 ## Known gaps (as of 2026-10-16)
 
 - Web commits (idempotency, API for the whole back office, printables fix, patient record, compact UI) are **local, unpushed, undeployed**; Divine Dental's server has only the PDF hotfix by hand.
-- Lab worklist: closed orders leave without a tombstone. Radiology list capped at 50 without "N of M".
+- Lab worklist tombstones: fixed (2026-10-17, `docs/api/plane.md` section 6). Radiology list pages with `meta.total` like every list.
 - Idempotency has a documented crash-window gap.
 - iOS backup exclusion and the QR scanner are untested on real devices; macOS e2e `orders_test` never completed (locked screen).
 - Web patient-record tab scrolling, "View all" buttons and the compact density were not checked in a browser.

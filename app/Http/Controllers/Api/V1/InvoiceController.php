@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Api\V1\Concerns\PagesAndDeltas;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\InvoiceResource;
 use App\Models\Invoice;
@@ -12,17 +13,19 @@ use Illuminate\Http\Request;
 /** Read-only invoices for billing/integration clients (billing.view). */
 class InvoiceController extends Controller
 {
+    use PagesAndDeltas;
+
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Invoice::class);
 
-        $invoices = Invoice::with('patient')
+        $invoices = $this->applyDelta(Invoice::with('patient')
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->query('status')))
             ->matching((string) $request->query('q', ''))
-            ->latest()
-            ->paginate(min((int) $request->query('per_page', 20), 100));
+            ->latest(), $request)
+            ->paginate($this->perPage($request));
 
-        return ApiResponse::paginated($invoices, InvoiceResource::collection($invoices->items()));
+        return $this->deltaPage($request, $invoices, InvoiceResource::class);
     }
 
     public function show(Invoice $invoice): JsonResponse

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\ApiErrorCode;
 use App\Enums\LabOrderStatus;
+use App\Http\Controllers\Api\V1\Concerns\PagesAndDeltas;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\LabOrderResource;
 use App\Models\LabOrder;
@@ -23,11 +24,13 @@ use RuntimeException;
  */
 class LabOrderController extends Controller
 {
+    use PagesAndDeltas;
+
     public function index(Request $request): JsonResponse
     {
         abort_unless($request->user()->can('lab.view'), 403);
 
-        $orders = LabBench::filter(
+        $orders = $this->applyDelta(LabBench::filter(
             LabOrder::with(['patient', 'items', 'visit', 'orderedBy']),
             (string) $request->query('status', ''),
             $request->boolean('outstanding'),
@@ -35,10 +38,10 @@ class LabOrderController extends Controller
         )
             // The oldest outstanding work first when that is what was asked
             // for — it is what a bench works down; otherwise newest first.
-            ->when($request->boolean('outstanding'), fn ($q) => $q->oldest('id'), fn ($q) => $q->latest('id'))
-            ->paginate(min(max((int) $request->query('per_page', 20), 1), 100));
+            ->when($request->boolean('outstanding'), fn ($q) => $q->oldest('id'), fn ($q) => $q->latest('id')), $request)
+            ->paginate($this->perPage($request));
 
-        return ApiResponse::paginated($orders, LabOrderResource::collection($orders->items()), [
+        return $this->deltaPage($request, $orders, LabOrderResource::class, [
             'tally' => LabBench::tally(),
             'old_hours' => LabBench::OLD_HOURS,
         ]);

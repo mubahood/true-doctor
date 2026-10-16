@@ -20,22 +20,28 @@ use Illuminate\Http\JsonResponse;
  */
 class PrescriptionController extends Controller
 {
+    /** The most one visit's list returns; more is reported in meta.truncated. */
+    private const LIST_CAP = 200;
+
     public function __construct(private readonly PrescriptionService $service) {}
 
     public function index(Visit $visit): JsonResponse
     {
         $this->authorize('view', $visit);
 
+        $total = $visit->prescriptions()->count();
         $prescriptions = $visit->prescriptions()
             ->with(['prescriber', 'doseItems.records.administeredBy'])
-            ->latest()->get();
+            ->latest()->limit(self::LIST_CAP)->get();
 
         $out = [];
         foreach ($prescriptions as $p) {
             $out[] = $this->shape($p);
         }
 
-        return ApiResponse::success($out);
+        return ApiResponse::withMeta($out, [
+            'total' => $total, 'returned' => count($out), 'limit' => self::LIST_CAP, 'truncated' => $total > self::LIST_CAP,
+        ]);
     }
 
     /** @return array<string,mixed> */

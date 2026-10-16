@@ -232,6 +232,11 @@ an operation id for ever.
 - **`deleted_at` is a tombstone.** A deleted record is *sent*, not omitted;
   omitting it leaves the device holding it for ever.
 - **Page size 200**, `has_more` until drained.
+- **`removed`** (additive): `[{entity, uuid, at, reason, revision}]` — records the device must
+  forget (deleted, or a lab/radiology order closed out of the worklist: entities `lab_orders`,
+  `lab_items`, `radiology_orders`, plus `patients`, `visits`, `invoices`, `stock_items`,
+  `appointments`, `services`). They share the revision line with `changes` and the same pages;
+  clients that do not know the key ignore it.
 
 ### The client's obligation
 
@@ -275,7 +280,15 @@ Returns `{ "closed": 1 }`. A device can close only its own conflicts;
 ## 8. `GET /sync/reference?since=…`
 
 Catalogues the device reads and never edits: wards, beds, services, lab tests,
-medication names. Scoped by permission — a nurse gets no formulary.
+medication names, and (additive) doctors with their schedules, departments, stock categories,
+insurance providers, payment methods, districts and imaging studies. Scoped by permission — a
+nurse gets no formulary.
+
+`?since=<reference_version>` returns only the sections that changed after it (each in full;
+the device replaces a section). `?have=a,b` names the sections the device holds; a visible one
+it lacks is sent regardless. The answer adds `unchanged`, `revisions` (per section),
+`omitted_kinds` (sections the user may not see now: purge them) and `removed` (ids that left a
+section). Without `since` it is the full set, as before. See `api/plane.md`.
 
 **Nothing here carries a balance.** A stock quantity changes by the minute, and
 a device showing a stale one would be telling a pharmacist something untrue.

@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Plan;
 use App\Models\Subscription;
+use App\Notifications\Concerns\AppNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -12,7 +13,7 @@ use Illuminate\Notifications\Notification;
 /** Payment receipt + confirmation when a paid subscription is activated. */
 class SubscriptionActivated extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use AppNotification, Queueable;
 
     public function __construct(
         public readonly Subscription $subscription,
@@ -23,7 +24,7 @@ class SubscriptionActivated extends Notification implements ShouldQueue
     /** @return array<int,string> */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        return $this->withPush(['mail', 'database']);
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -40,12 +41,37 @@ class SubscriptionActivated extends Notification implements ShouldQueue
     }
 
     /** @return array<string,mixed> */
-    public function toArray(object $notifiable): array
+    protected function legacyData(): array
     {
         return [
             'type' => 'subscription_activated',
             'title' => 'Subscription active',
             'message' => "{$this->plan->name} plan active — payment of ".\App\Support\PlatformCurrency::format($this->amount).' received.',
         ];
+    }
+
+    protected function category(): string
+    {
+        return 'billing';
+    }
+
+    protected function priority(): string
+    {
+        return 'low';
+    }
+
+    protected function publicMessage(): string
+    {
+        return 'Your subscription is active.';
+    }
+
+    protected function routeName(): ?string
+    {
+        return 'admin.subscription.index';
+    }
+
+    protected function entityType(): ?string
+    {
+        return 'subscription';
     }
 }

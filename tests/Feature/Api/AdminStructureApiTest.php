@@ -194,7 +194,7 @@ class AdminStructureApiTest extends TestCase
 
         $this->postJson('/api/v1/admin/beds', ['ward_id' => $ward->id, 'name' => 'B1', 'daily_charge' => '10', 'status' => 'available'])->assertCreated();
         $this->postJson('/api/v1/admin/beds', ['ward_id' => $ward->id, 'name' => 'B2', 'daily_charge' => '10', 'status' => 'available'])
-            ->assertStatus(403)->assertJsonPath('code', 'forbidden');
+            ->assertStatus(403)->assertJsonPath('code', 'plan_limit');
         $this->assertSame(1, Bed::withoutGlobalScopes()->where('hospital_id', $this->h->id)->count());
     }
 

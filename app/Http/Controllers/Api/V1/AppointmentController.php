@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Api\V1\Concerns\PagesAndDeltas;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AppointmentRequest;
 use App\Http\Requests\AppointmentTransitionRequest;
@@ -21,20 +22,22 @@ use Throwable;
  */
 class AppointmentController extends Controller
 {
+    use PagesAndDeltas;
+
     public function __construct(private readonly AppointmentService $service) {}
 
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Appointment::class);
 
-        $appointments = Appointment::with(['patient', 'doctor'])
+        $appointments = $this->applyDelta(Appointment::with(['patient', 'doctor'])
             ->when($request->filled('date'), fn ($q) => $q->forDate($request->date('date')->format('Y-m-d')))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->query('status')))
             ->when($request->filled('doctor'), fn ($q) => $q->where('doctor_user_id', $request->integer('doctor')))
-            ->orderBy('scheduled_at')
-            ->paginate(min((int) $request->query('per_page', 20), 100));
+            ->orderBy('scheduled_at'), $request)
+            ->paginate($this->perPage($request));
 
-        return ApiResponse::paginated($appointments, AppointmentResource::collection($appointments->items()));
+        return $this->deltaPage($request, $appointments, AppointmentResource::class);
     }
 
     public function store(AppointmentRequest $request): JsonResponse

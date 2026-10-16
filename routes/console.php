@@ -16,7 +16,9 @@ Artisan::command('inspire', function () {
 | appointment reminders, …) are added per HMS_PLAN.md as their modules land.
 */
 
-\Illuminate\Support\Facades\Schedule::command('appointments:remind')->dailyAt('07:00');
+// Hourly, not daily: a shared host's cron can be late or skip a run, and each
+// reminder is stamped on the appointment so a run never repeats another's.
+\Illuminate\Support\Facades\Schedule::command('appointments:remind')->hourly()->withoutOverlapping(10);
 
 \Illuminate\Support\Facades\Schedule::call(function (): void {
     \Illuminate\Support\Facades\Cache::put('standalone:scheduler-heartbeat', now()->toIso8601String(), now()->addMinutes(5));
@@ -46,6 +48,12 @@ Artisan::command('inspire', function () {
     ->everyFifteenMinutes()->name('sync:reclaim-stale')->withoutOverlapping();
 \Illuminate\Support\Facades\Schedule::call(fn () => app(\App\Services\Sync\OperationLedger::class)->prune())
     ->dailyAt('03:40')->name('sync:prune-ledger')->withoutOverlapping();
+
+// Tombstones (what devices must forget) are kept 90 days. Every-minute entry
+// with its own once-per-12-hours guard, so a cron that fires only every 19
+// minutes still prunes (see SyncTombstone::pruneIfDue).
+\Illuminate\Support\Facades\Schedule::call(fn () => \App\Models\SyncTombstone::pruneIfDue())
+    ->everyMinute()->name('sync:prune-tombstones')->withoutOverlapping();
 
 // Traffic retention: crawler rows after 90 days, unconverted visitors after
 // 400. A visit that became a hospital is never pruned — see TrafficSession.

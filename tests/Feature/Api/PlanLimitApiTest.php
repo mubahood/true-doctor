@@ -35,7 +35,7 @@ class PlanLimitApiTest extends TestCase
         Sanctum::actingAs($recep);
 
         $this->postJson('/api/v1/patients', ['first_name' => 'Over', 'last_name' => 'Limit', 'consent_given' => true])
-            ->assertStatus(403)->assertJsonPath('code', 'forbidden');
+            ->assertStatus(403)->assertJsonPath('code', 'plan_limit')->assertJsonPath('retryable', false);
 
         $this->assertSame(1, Patient::withoutGlobalScopes()->where('hospital_id', $h->id)->count());
     }

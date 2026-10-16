@@ -111,7 +111,7 @@ class AdminPeopleApiTest extends TestCase
         $this->as('hospital_admin');   // fills the single seat
 
         $this->postJson('/api/v1/admin/users', ['name' => 'Over', 'email' => 'over@example.com', 'role' => 'nurse'])
-            ->assertStatus(403)->assertJsonPath('code', 'forbidden');
+            ->assertStatus(403)->assertJsonPath('code', 'plan_limit');
         $this->assertFalse(User::where('email', 'over@example.com')->exists());
     }
 

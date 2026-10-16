@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Api\V1\Concerns\PagesAndDeltas;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PatientRequest;
 use App\Http\Resources\PatientResource;
@@ -18,19 +19,21 @@ use Illuminate\Http\Request;
  */
 class PatientController extends Controller
 {
+    use PagesAndDeltas;
+
     public function __construct(private readonly PatientService $service) {}
 
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Patient::class);
 
-        $patients = Patient::query()
+        $patients = $this->applyDelta(Patient::query()
             ->search($request->query('q'))
             ->when($request->filled('status'), fn ($qq) => $qq->where('status', $request->query('status')))
-            ->latest()
-            ->paginate(min((int) $request->query('per_page', 20), 100));
+            ->latest(), $request)
+            ->paginate($this->perPage($request));
 
-        return ApiResponse::paginated($patients, PatientResource::collection($patients->items()));
+        return $this->deltaPage($request, $patients, PatientResource::class);
     }
 
     public function store(PatientRequest $request): JsonResponse
@@ -40,7 +43,7 @@ class PatientController extends Controller
         try {
             $patient = $this->service->register($request->validated(), $request->user()->id);
         } catch (\App\Exceptions\PlanLimitExceededException $e) {
-            return ApiResponse::error(\App\Enums\ApiErrorCode::Forbidden, $e->getMessage(), 403);
+            return ApiResponse::error(\App\Enums\ApiErrorCode::PlanLimit, $e->getMessage(), 403, null, null, false);
         }
 
         return ApiResponse::success(new PatientResource($patient), 'Patient registered.', 201);

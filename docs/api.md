@@ -16,7 +16,8 @@ Every response — success or error — is:
 ```
 
 Lists add a `meta` block (`current_page`, `per_page`, `total`, `last_page`) via
-`ApiResponse::paginated()`. Errors are rendered into the envelope centrally in `bootstrap/app.php`
+`ApiResponse::paginated()`; the delta lists also carry `server_time` and `next_since`, and `per_page` is capped at 100
+([`api/plane.md`](api/plane.md)). Errors may add `retryable` and `retry_after`. Errors are rendered into the envelope centrally in `bootstrap/app.php`
 (validation → 422 `validation_failed`, auth → 401 `unauthenticated`, policy → 403 `forbidden`,
 model-not-found → 404 `not_found`, throttle → 429, else 500). JSON Resources are configured
 `withoutWrapping()` so the envelope is the only wrapper.
@@ -87,6 +88,10 @@ The surface beyond the first resources is documented per area, next to the route
 [`api/admin.md`](api/admin.md) and [`api/extras.md`](api/extras.md), [`api/patients.md`](api/patients.md) (the patient page as data, `GET /api/v1/patients/{uuid}/summary`) (suggestions at `GET /api/v1/insights`,
 public self-registration for the app, and starter-data imports). They share this envelope, auth and error model.
 Writes are safe to retry with an `Idempotency-Key` header: [`api/idempotency.md`](api/idempotency.md).
+Notifications, devices, notification preferences and upcoming reminders: [`api/notify.md`](api/notify.md).
+The data plane - `GET /bootstrap`, `meta.capabilities`, `GET /search`, ETag/`304`, `?updated_since=`, tombstones (`removed`) and the
+extended error codes (`conflict`, `plan_limit`, `payload_too_large`, `device_revoked`, `licence_expired`, `maintenance`,
+`retryable`/`retry_after`): [`api/plane.md`](api/plane.md).
 
 ## OpenAPI
 
@@ -111,7 +116,7 @@ show the right screen instead of a generic error. All enforced by `EnsureApiAcco
   rules and messages as the web page (`PasswordChangeRequest`, at least 6 characters, must differ
   from the current one). Clears `password_change_required` and **revokes every other token** of the
   user.
-- `GET /api/v1/meta` — what the app draws the system from, never copied into its code:
+- `GET /api/v1/meta` — (plus `capabilities`, see [`api/plane.md`](api/plane.md)) what the app draws the system from, never copied into its code:
   `api_version`, `sync_protocol`, `server_time`, `web_url`; `user` (+ `role_label`, `permissions`);
   `hospital` (name, logo URL, timezone, `money` {code, symbol, position, decimals, separators},
   `tax`); `subscription` (status, plan, grants_access, days_remaining, badge); `setup_required`;

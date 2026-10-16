@@ -29,6 +29,9 @@ use Throwable;
  */
 class OrderController extends Controller
 {
+    /** The most one visit's list returns; more is reported in meta.truncated. */
+    private const LIST_CAP = 200;
+
     public function __construct(private readonly OrderDesk $desk, private readonly OrderService $orders) {}
 
     /** Everything on this visit, newest first, with a count per kind. */
@@ -36,18 +39,21 @@ class OrderController extends Controller
     {
         $this->authorize('view', $visit);
 
-        $orders = Order::where('visit_id', $visit->id)
-            ->when(OrderType::tryFrom((string) $request->query('type')), fn ($q, $t) => $q->where('type', $t->value))
-            ->with(['items', 'assignee', 'department', 'subject'])
-            ->latest('id')->get();
+        // A visit has a handful of orders, but "a handful" is not a bound: cap
+        // the slice and say so (meta.total / meta.truncated).
+        $query = Order::where('visit_id', $visit->id)
+            ->when(OrderType::tryFrom((string) $request->query('type')), fn ($q, $t) => $q->where('type', $t->value));
+        $total = (clone $query)->count();
+        $orders = $query->with(['items', 'assignee', 'department', 'subject'])
+            ->latest('id')->limit(self::LIST_CAP)->get();
 
         $counts = Order::where('visit_id', $visit->id)->selectRaw('type, count(*) as n')->groupBy('type')->pluck('n', 'type');
 
-        return ApiResponse::success([
+        return ApiResponse::withMeta([
             'orders' => OrderResource::collection($orders),
             'counts' => collect(OrderType::cases())->mapWithKeys(fn ($t) => [$t->value => (int) ($counts[$t->value] ?? 0)]),
             'writable' => OrderDesk::canWrite($request->user()) && $visit->isOpen(),
-        ]);
+        ], ['total' => $total, 'returned' => $orders->count(), 'limit' => self::LIST_CAP, 'truncated' => $total > self::LIST_CAP]);
     }
 
     /** Place one order of any kind. */

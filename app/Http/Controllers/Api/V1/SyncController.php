@@ -269,7 +269,15 @@ class SyncController extends Controller
         return ApiResponse::success(['closed' => $closed]);
     }
 
-    /** Catalogues the device reads and never edits. */
+    /**
+     * Catalogues the device reads and never edits.
+     *
+     * `?since=<reference_version>` returns only the sections that changed after
+     * it (each in full); `?have=wards,beds` names the sections the device
+     * already holds, so one it has never had is sent whatever its revision.
+     * Without `since` everything the user may see is returned, as before.
+     * `omitted_kinds` lists kinds this user may no longer see - purge them.
+     */
     public function reference(Request $request): JsonResponse
     {
         $device = $this->resolveDevice($request);
@@ -278,9 +286,19 @@ class SyncController extends Controller
             return $device;
         }
 
+        $have = $request->filled('have')
+            ? array_values(array_filter(array_map('trim', explode(',', (string) $request->query('have')))))
+            : null;
+
+        $report = $this->pull->referenceReport(Auth::user(), max(0, (int) $request->query('since', '0')), $have);
+
         return ApiResponse::success([
-            'reference' => $this->pull->reference(Auth::user(), (int) $request->query('since', '0')),
-            'reference_version' => SyncRevision::current(),
+            'reference' => $report['reference'] ?: new \stdClass,
+            'reference_version' => $report['revision'],
+            'unchanged' => $report['unchanged'],
+            'revisions' => $report['revisions'] ?: new \stdClass,
+            'omitted_kinds' => $report['omitted_kinds'],
+            'removed' => $report['removed'] ?: new \stdClass,
         ]);
     }
 
@@ -313,14 +331,15 @@ class SyncController extends Controller
         if (! $device->isActive()) {
             // The client wipes its local database on seeing this code, so it
             // must be unambiguous and must not be reused for anything else.
-            return response()->json([
-                'success' => false,
-                'code' => 'device_revoked',
-                'message' => $device->revoked_reason
+            return ApiResponse::error(
+                ApiErrorCode::DeviceRevoked,
+                $device->revoked_reason
                     ?: 'This device has been blocked from offline use. Its local copy will be cleared.',
-                'data' => null,
-                'errors' => null,
-            ], 403);
+                403,
+                null,
+                null,
+                false,
+            );
         }
 
         if ((int) $request->input('protocol_version', self::PROTOCOL_VERSION) !== self::PROTOCOL_VERSION) {

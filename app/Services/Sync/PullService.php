@@ -7,19 +7,28 @@ use App\Enums\LabOrderStatus;
 use App\Enums\VisitStatus;
 use App\Models\Admission;
 use App\Models\Bed;
+use App\Models\Department;
 use App\Models\Device;
+use App\Models\District;
+use App\Models\InsuranceProvider;
 use App\Models\LabOrder;
 use App\Models\LabOrderItem;
 use App\Models\LabTest;
 use App\Models\MedicationAdministration;
 use App\Models\NursingNote;
 use App\Models\Patient;
+use App\Models\RadiologyStudy;
 use App\Models\Service;
+use App\Models\StockCategory;
 use App\Models\StockItem;
+use App\Models\SyncTombstone;
 use App\Models\User;
 use App\Models\Visit;
 use App\Models\VitalRound;
 use App\Models\Ward;
+use App\Support\CurrentHospital;
+use App\Support\ReferenceRevision;
+use App\Support\SyncRevision;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
@@ -47,6 +56,12 @@ class PullService
 
     /** How far back closed visits stay interesting. */
     public const VISIT_WINDOW_DAYS = 7;
+
+    /** Entities a tombstone can name; each is gated by SyncTombstone::permissionFor(). */
+    public const TOMBSTONE_ENTITIES = [
+        'patients', 'visits', 'invoices', 'stock_items', 'appointments',
+        'lab_orders', 'lab_items', 'radiology_orders', 'services',
+    ];
 
     /**
      * The window a hospital has actually configured.
@@ -101,23 +116,73 @@ class PullService
             }
         }
 
+        // Tombstones ride the same revision line as the changes, so a page is
+        // still a contiguous slice of the hospital's history: a cursor never
+        // advances past a removal it was not sent.
+        $tombstones = $this->tombstonesAfter($cursor->revision, $actor, $this->pageSize() + 1);
+
         // Interleave the streams by revision, so a page is a slice of the
         // hospital's history rather than all of one table then all of another.
         // Without this, a cursor advanced past a big patients page would skip
         // every visit written in the same window.
-        usort($rows, fn ($a, $b) => $a['revision'] <=> $b['revision']);
+        $events = $rows;
+        foreach ($tombstones as $t) {
+            $events[] = ['entity' => '__removed', 'revision' => $t->revision, 'record' => $t];
+        }
+        usort($events, fn ($a, $b) => $a['revision'] <=> $b['revision']);
 
-        $hasMore = count($rows) > $this->pageSize();
-        $page = array_slice($rows, 0, $this->pageSize());
+        $hasMore = count($events) > $this->pageSize();
+        $events = array_slice($events, 0, $this->pageSize());
 
-        $highest = $page === [] ? $cursor->revision : (int) end($page)['revision'];
+        $page = array_values(array_filter($events, fn ($e) => $e['entity'] !== '__removed'));
+        $removed = array_values(array_map(
+            fn ($e) => $e['record']->toRemoval(),
+            array_filter($events, fn ($e) => $e['entity'] === '__removed'),
+        ));
+
+        $highest = $events === [] ? $cursor->revision : (int) end($events)['revision'];
 
         return [
             'changes' => $page,
+            // Records this device should forget: deleted, or closed out of a
+            // worklist (reason `closed`). Same revision line as `changes`.
+            'removed' => $removed,
             'next_cursor' => $cursor->advancedTo($highest)->encode(),
             'has_more' => $hasMore,
             'current_revision' => \App\Support\SyncRevision::current(),
         ];
+    }
+
+    /**
+     * Tombstones after a revision that this user is allowed to hear about.
+     *
+     * Tenant-scoped by the model's global scope; permission-filtered so a
+     * receptionist is not told which lab results were closed (the uuid alone is
+     * harmless, but the smallest defensible copy is the one not sent).
+     *
+     * @return \Illuminate\Support\Collection<int, SyncTombstone>
+     */
+    public function tombstonesAfter(int $revision, User $actor, int $limit = 500, ?int $upTo = null)
+    {
+        $allowed = [];
+        foreach (self::TOMBSTONE_ENTITIES as $entity) {
+            $permission = SyncTombstone::permissionFor($entity);
+            if ($permission !== null && $actor->can($permission)) {
+                $allowed[] = $entity;
+            }
+        }
+
+        if ($allowed === []) {
+            return collect();
+        }
+
+        return SyncTombstone::query()
+            ->where('revision', '>', $revision)
+            ->when($upTo !== null, fn (Builder $q) => $q->where('revision', '<=', $upTo))
+            ->whereIn('entity', $allowed)
+            ->orderBy('revision')
+            ->limit($limit)
+            ->get();
     }
 
     /**
@@ -380,56 +445,259 @@ class PullService
     }
 
     /**
-     * Reference data — catalogues the device reads and never edits.
+     * Reference data - catalogues the device reads and never edits.
      *
      * Versioned separately from the change stream because it behaves nothing
      * like it: a formulary of three thousand medications is downloaded once
      * and then changes twice a year. Sending it through the cursor would put
      * it in front of every clinical change on first sync.
      *
+     * With `$sinceVersion` (a `revision` this server issued) only the sections
+     * that changed after it are returned, each in FULL (the device replaces a
+     * section, it does not patch one). Without it, everything this user may see.
+     * Kinds the user may not see are never present; {@see referenceReport()} also
+     * says which those are, so a device can purge them.
+     *
+     * @param  list<string>|null  $have  sections the device already holds; any visible section not in the list is sent in full whatever its revision
      * @return array<string, array<int, array<string,mixed>>>
      */
-    public function reference(User $actor, int $sinceVersion = 0): array
+    public function reference(User $actor, int $sinceVersion = 0, ?array $have = null): array
     {
+        return $this->referenceReport($actor, $sinceVersion, $have)['reference'];
+    }
+
+    /**
+     * The reference sections, what changed, what the user lost, what is gone.
+     *
+     * - `revision`   the counter, read BEFORE the rows: pass it back as `since`.
+     * - `reference`  the changed sections, in full.
+     * - `revisions`  the revision of EVERY section this user can see.
+     * - `omitted_kinds` sections that exist but this user may not see now.
+     * - `removed`    per changed section, ids that left it (deleted or inactive).
+     * - `unchanged`  true when nothing needed sending.
+     *
+     * @param  list<string>|null  $have
+     * @return array{revision: int, reference: array<string,list<array<string,mixed>>>, revisions: array<string,int>, omitted_kinds: list<string>, removed: array<string,list<int>>, unchanged: bool}
+     */
+    public function referenceReport(User $actor, int $since = 0, ?array $have = null): array
+    {
+        $hospitalId = app(CurrentHospital::class)->id();
+
+        // In this order, and no other: section revisions first (reading one
+        // that was never stamped mints it), THEN the counter, THEN the rows.
+        // A change landing after the counter was read is > `revision` and is
+        // sent again next time; one landing before it is already in the rows.
+        $revisions = ReferenceRevision::all($hospitalId);
+        $revision = SyncRevision::current();
+
         $out = [];
+        $seen = [];
+        $omitted = [];
+        $removed = [];
 
-        $out['wards'] = Ward::query()->where('is_active', true)
-            ->get(['id', 'name'])->map(fn (Ward $w) => ['id' => $w->id, 'name' => $w->name])->all();
+        foreach ($this->referenceSections() as $kind => $section) {
+            if (! $this->mayRead($actor, $section['any'])) {
+                $omitted[] = $kind;
 
-        $out['beds'] = Bed::query()->where('is_active', true)
-            ->get(['id', 'ward_id', 'name', 'status'])
-            ->map(fn (Bed $b) => [
-                'id' => $b->id, 'ward_id' => $b->ward_id, 'name' => $b->name, 'status' => $b->status->value,
-            ])->all();
+                continue;
+            }
 
-        if ($actor->can('visits.view')) {
-            $out['services'] = Service::query()->where('is_active', true)
-                ->get(['id', 'name', 'code', 'price'])
-                ->map(fn (Service $s) => [
-                    'id' => $s->id, 'name' => $s->name, 'code' => $s->code, 'price' => (string) $s->price,
-                ])->all();
+            $seen[$kind] = $revisions[$kind] ?? 0;
+
+            $changed = $since <= 0
+                || $hospitalId === null
+                || ($revisions[$kind] ?? 0) > $since
+                || ($have !== null && ! in_array($kind, $have, true));
+
+            if (! $changed) {
+                continue;
+            }
+
+            $out[$kind] = $section['rows']();
+
+            if ($since > 0 && isset($section['gone'])) {
+                $gone = $section['gone']();
+                if ($gone !== []) {
+                    $removed[$kind] = $gone;
+                }
+            }
         }
 
-        if ($actor->can('lab.view')) {
-            $out['lab_tests'] = LabTest::query()->where('is_active', true)
-                ->get(['id', 'name', 'specimen', 'unit', 'reference_range', 'price'])
-                ->map(fn (LabTest $t) => [
-                    'id' => $t->id, 'name' => $t->name, 'specimen' => $t->specimen,
-                    'unit' => $t->unit, 'reference_range' => $t->reference_range, 'price' => (string) $t->price,
-                ])->all();
+        return [
+            'revision' => $revision,
+            'reference' => $out,
+            'revisions' => $seen,
+            'omitted_kinds' => $omitted,
+            'removed' => $removed,
+            'unchanged' => $out === [],
+        ];
+    }
+
+    /** Every reference kind the server has, whoever may read it. @return list<string> */
+    public function referenceKinds(): array
+    {
+        return array_keys($this->referenceSections());
+    }
+
+    /** @param list<string> $any */
+    private function mayRead(User $actor, array $any): bool
+    {
+        if ($any === []) {
+            return true;
         }
 
-        if ($actor->can('pharmacy.view')) {
-            // Names and units only. A stock BALANCE is not reference data — it
-            // changes by the minute and a device showing a stale one would be
-            // telling a pharmacist something untrue (plan §4.5).
-            $out['medications'] = StockItem::query()->where('is_active', true)
-                ->get(['id', 'name', 'unit', 'sku'])
-                ->map(fn (StockItem $i) => [
-                    'id' => $i->id, 'name' => $i->name, 'unit' => $i->unit, 'sku' => $i->sku,
-                ])->all();
+        foreach ($any as $permission) {
+            if ($actor->can($permission)) {
+                return true;
+            }
         }
 
-        return $out;
+        return false;
+    }
+
+    /**
+     * The sections: who may read each, how its rows are built, and (for the
+     * ones backed by a table) how to list the ids that left it.
+     *
+     * Every row has an integer `id` - an installed app files reference rows by
+     * it and a row without one would fail its whole refresh. Only active rows
+     * are sent; an inactive or deleted one is simply absent from its section.
+     *
+     * @return array<string, array{any: list<string>, rows: callable(): list<array<string,mixed>>, gone?: callable(): list<int>}>
+     */
+    private function referenceSections(): array
+    {
+        $gone = fn (string $model) => fn (): array => $model::withTrashed()
+            ->where(fn (Builder $q) => $q->whereNotNull('deleted_at')->orWhere('is_active', false))
+            ->limit(1000)->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        return [
+            'wards' => [
+                'any' => ['ipd.view', 'wards.manage'],
+                'rows' => fn () => Ward::query()->where('is_active', true)
+                    ->get(['id', 'name'])->map(fn (Ward $w) => ['id' => $w->id, 'name' => $w->name])->all(),
+                'gone' => $gone(Ward::class),
+            ],
+            'beds' => [
+                'any' => ['ipd.view', 'wards.manage'],
+                'rows' => fn () => Bed::query()->where('is_active', true)
+                    ->get(['id', 'ward_id', 'name', 'status'])
+                    ->map(fn (Bed $b) => ['id' => $b->id, 'ward_id' => $b->ward_id, 'name' => $b->name, 'status' => $b->status->value])->all(),
+                'gone' => $gone(Bed::class),
+            ],
+            'services' => [
+                'any' => ['visits.view'],
+                'rows' => fn () => Service::query()->where('is_active', true)
+                    ->get(['id', 'name', 'code', 'price'])
+                    ->map(fn (Service $s) => ['id' => $s->id, 'name' => $s->name, 'code' => $s->code, 'price' => (string) $s->price])->all(),
+                'gone' => $gone(Service::class),
+            ],
+            'lab_tests' => [
+                'any' => ['lab.view'],
+                'rows' => fn () => LabTest::query()->where('is_active', true)
+                    ->get(['id', 'name', 'specimen', 'unit', 'reference_range', 'price'])
+                    ->map(fn (LabTest $t) => [
+                        'id' => $t->id, 'name' => $t->name, 'specimen' => $t->specimen,
+                        'unit' => $t->unit, 'reference_range' => $t->reference_range, 'price' => (string) $t->price,
+                    ])->all(),
+                'gone' => $gone(LabTest::class),
+            ],
+            'medications' => [
+                'any' => ['pharmacy.view'],
+                // Names and units only. A stock BALANCE is not reference data - it
+                // changes by the minute and a device showing a stale one would be
+                // telling a pharmacist something untrue (plan §4.5).
+                'rows' => fn () => StockItem::query()->where('is_active', true)
+                    ->get(['id', 'name', 'unit', 'sku'])
+                    ->map(fn (StockItem $i) => ['id' => $i->id, 'name' => $i->name, 'unit' => $i->unit, 'sku' => $i->sku])->all(),
+                'gone' => $gone(StockItem::class),
+            ],
+            'doctors' => [
+                'any' => ['appointments.view'],
+                'rows' => fn () => $this->doctors(),
+            ],
+            'departments' => [
+                'any' => ['visits.view', 'appointments.view'],
+                'rows' => fn () => Department::query()->where('is_active', true)->orderBy('name')
+                    ->get(['id', 'name', 'code'])->map(fn (Department $d) => ['id' => $d->id, 'name' => $d->name, 'code' => $d->code])->all(),
+                'gone' => $gone(Department::class),
+            ],
+            'stock_categories' => [
+                'any' => ['pharmacy.view'],
+                'rows' => fn () => StockCategory::query()->where('is_active', true)->orderBy('name')
+                    ->get(['id', 'name', 'unit'])->map(fn (StockCategory $c) => ['id' => $c->id, 'name' => $c->name, 'unit' => $c->unit])->all(),
+                'gone' => $gone(StockCategory::class),
+            ],
+            'insurance_providers' => [
+                'any' => ['insurance.view'],
+                'rows' => fn () => InsuranceProvider::query()->where('is_active', true)->orderBy('name')
+                    ->get(['id', 'name', 'code'])->map(fn (InsuranceProvider $p) => ['id' => $p->id, 'name' => $p->name, 'code' => $p->code])->all(),
+                'gone' => $gone(InsuranceProvider::class),
+            ],
+            'payment_methods' => [
+                'any' => ['billing.view'],
+                'rows' => fn () => ReferenceRevision::paymentMethods(),
+            ],
+            'districts' => [
+                'any' => ['patients.view'],
+                'rows' => fn () => District::query()->orderBy('name')
+                    ->get(['id', 'name'])->map(fn (District $d) => ['id' => $d->id, 'name' => $d->name])->all(),
+            ],
+            'radiology_studies' => [
+                'any' => ['radiology.view'],
+                'rows' => fn () => RadiologyStudy::query()->where('is_active', true)->orderBy('name')
+                    ->get(['id', 'name', 'modality', 'body_part', 'price'])
+                    ->map(fn (RadiologyStudy $r) => [
+                        'id' => $r->id, 'name' => $r->name, 'modality' => $r->modality,
+                        'body_part' => $r->body_part, 'price' => (string) $r->price,
+                    ])->all(),
+                'gone' => $gone(RadiologyStudy::class),
+            ],
+        ];
+    }
+
+    /**
+     * The doctors a booking can be made with, each with the week they sit.
+     *
+     * @return list<array<string,mixed>>
+     */
+    private function doctors(): array
+    {
+        $rows = [];
+
+        foreach (User::currentHospital()->clinicians()->where('is_active', true)
+            ->with(['staffProfile', 'schedules' => fn ($s) => $s->where('is_active', true)->orderBy('weekday')->orderBy('start_time')])
+            ->orderBy('name')->get() as $doctor) {
+            $rows[] = $this->doctorRow($doctor);
+        }
+
+        return $rows;
+    }
+
+    /** @return array<string,mixed> */
+    private function doctorRow(User $doctor): array
+    {
+        $profile = $doctor->staffProfile;
+        $windows = [];
+
+        foreach ($doctor->schedules as $w) {
+            $windows[] = [
+                'id' => $w->id,
+                'weekday' => $w->weekday->value,
+                'start_time' => $w->start_time,
+                'end_time' => $w->end_time,
+                'slot_minutes' => (int) $w->slot_minutes,
+                'room_id' => $w->room_id,
+            ];
+        }
+
+        return [
+            'id' => $doctor->id,
+            'name' => $doctor->name,
+            'role' => $doctor->role,
+            'specialty' => $profile?->getAttribute('specialty'),
+            'department_id' => $profile?->getAttribute('department_id'),
+            'schedules' => $windows,
+        ];
     }
 }

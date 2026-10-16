@@ -129,6 +129,15 @@ class AppServiceProvider extends ServiceProvider
             $model::observe(\App\Observers\SyncRevisionObserver::class);
         }
 
+        // Data plane (docs/api/plane.md): a revision per reference section, and
+        // a tombstone when a listed record is deleted or closed out of a
+        // worklist. Observers, not schedules - a standalone cron may run only
+        // every 19 minutes.
+        \App\Support\ReferenceRevision::observe();
+        foreach (array_keys(\App\Observers\TombstoneObserver::ENTITIES) as $model) {
+            $model::observe(\App\Observers\TombstoneObserver::class);
+        }
+
         // API JSON Resources don't add their own {"data": …} wrapper — the single
         // envelope comes from App\Support\ApiResponse, so resources stay flat.
         \Illuminate\Http\Resources\Json\JsonResource::withoutWrapping();

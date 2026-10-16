@@ -66,6 +66,6 @@ trait ReadsAdminInput
 
     protected function forbiddenLimit(string $message): JsonResponse
     {
-        return ApiResponse::error(ApiErrorCode::Forbidden, $message, 403);
+        return ApiResponse::error(ApiErrorCode::PlanLimit, $message, 403, null, null, false);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\ApiErrorCode;
 use App\Enums\RadiologyOrderStatus;
+use App\Http\Controllers\Api\V1\Concerns\PagesAndDeltas;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\RadiologyReportRequest;
 use App\Http\Resources\RadiologyOrderResource;
@@ -23,6 +24,8 @@ use RuntimeException;
  */
 class RadiologyOrderController extends Controller
 {
+    use PagesAndDeltas;
+
     private const WITH = ['patient', 'items', 'visit', 'orderedBy', 'reportedBy'];
 
     public function __construct(private readonly RadiologyService $service) {}
@@ -31,16 +34,16 @@ class RadiologyOrderController extends Controller
     {
         abort_unless($request->user()->can('radiology.view'), 403);
 
-        $orders = RadiologyBench::filter(
+        $orders = $this->applyDelta(RadiologyBench::filter(
             RadiologyOrder::with(self::WITH),
             (string) $request->query('status', ''),
             $request->boolean('outstanding'),
             (string) $request->query('q', ''),
         )
-            ->when($request->boolean('outstanding'), fn ($q) => $q->oldest('id'), fn ($q) => $q->latest('id'))
-            ->paginate(min(max((int) $request->query('per_page', 20), 1), 100));
+            ->when($request->boolean('outstanding'), fn ($q) => $q->oldest('id'), fn ($q) => $q->latest('id')), $request)
+            ->paginate($this->perPage($request));
 
-        return ApiResponse::paginated($orders, RadiologyOrderResource::collection($orders->items()), [
+        return $this->deltaPage($request, $orders, RadiologyOrderResource::class, [
             'tally' => RadiologyBench::tally(),
             'old_hours' => RadiologyBench::OLD_HOURS,
         ]);

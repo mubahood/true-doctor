@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Api\V1\Concerns\PagesAndDeltas;
 use App\Http\Controllers\Api\V1\Concerns\WritesCatalogue;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ServiceRequest;
@@ -22,7 +23,9 @@ use Illuminate\Http\Request;
  */
 class ServiceController extends Controller
 {
-    use WritesCatalogue;
+    use PagesAndDeltas, WritesCatalogue {
+        PagesAndDeltas::perPage insteadof WritesCatalogue;
+    }
 
     private const FIELDS = ['name', 'code', 'category', 'ledger_account_id', 'price', 'max_price', 'tax_exempt', 'is_active'];
 
@@ -33,12 +36,12 @@ class ServiceController extends Controller
         $this->authorize('viewAny', Service::class);
 
         $q = trim(mb_substr((string) $request->query('q', ''), 0, 100));
-        $rows = Service::query()
+        $rows = $this->applyDelta(Service::query()
             ->when($q !== '', fn ($x) => $x->where(fn ($y) => $y->where('name', 'like', "%{$q}%")->orWhere('code', 'like', "%{$q}%")))
-            ->orderBy('name')
+            ->orderBy('name'), $request)
             ->paginate($this->perPage($request));
 
-        return ApiResponse::paginated($rows, ServiceResource::collection($rows->items()), $this->formMeta());
+        return $this->deltaPage($request, $rows, ServiceResource::class, $this->formMeta());
     }
 
     public function show(Service $service): JsonResponse
