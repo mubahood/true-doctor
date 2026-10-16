@@ -22,4 +22,9 @@ enum ApiErrorCode: string
     case PasswordChangeRequired = 'password_change_required';
     case SubscriptionEnded = 'subscription_ended';
     case UpgradeRequired = 'upgrade_required';
+
+    // Idempotency-Key misuse: the key was used for a different request, or
+    // the same request is still being processed.
+    case IdempotencyKeyReused = 'idempotency_key_reused';
+    case RequestInProgress = 'request_in_progress';
 }

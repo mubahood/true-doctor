@@ -92,6 +92,7 @@ $application = Application::configure(basePath: dirname(__DIR__))
             'edition' => \App\Http\Middleware\RequireEdition::class,
             // A disabled account or a temporary password, on the API.
             'api.account' => \App\Http\Middleware\EnsureApiAccount::class,
+            'idempotent' => \App\Http\Middleware\IdempotentRequests::class,
             'api.app-version' => \App\Http\Middleware\EnsureAppVersion::class,
             'onboarding' => \App\Http\Middleware\RequireOnboarding::class,
             'no-store' => \App\Http\Middleware\NoStoreResponses::class,

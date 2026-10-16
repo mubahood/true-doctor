@@ -86,6 +86,7 @@ The surface beyond the first resources is documented per area, next to the route
 [`api/care.md`](api/care.md), [`api/pharmacy.md`](api/pharmacy.md), [`api/finance.md`](api/finance.md),
 [`api/admin.md`](api/admin.md) and [`api/extras.md`](api/extras.md) (suggestions at `GET /api/v1/insights`,
 public self-registration for the app, and starter-data imports). They share this envelope, auth and error model.
+Writes are safe to retry with an `Idempotency-Key` header: [`api/idempotency.md`](api/idempotency.md).
 
 ## OpenAPI
 

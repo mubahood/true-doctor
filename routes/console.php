@@ -125,3 +125,8 @@ if (\App\Support\Edition::isSaas() && config('demo.enabled') && config('demo.res
         ->dailyAt((string) config('demo.reset.at', '03:30'))
         ->withoutOverlapping();
 }
+
+// Stored answers for Idempotency-Key retries are good for 24 hours.
+\Illuminate\Support\Facades\Schedule::call(function (): void {
+    \Illuminate\Support\Facades\DB::table('idempotency_keys')->where('created_at', '<', now()->subDay())->delete();
+})->dailyAt('03:30')->name('idempotency-keys-prune');
