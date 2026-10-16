@@ -142,6 +142,17 @@ class Index extends Component
         $data = $this->validate();
         $data = $this->staff()->attributes($data);
 
+        // The demonstration's logins are public: a visitor must not change the
+        // password, email or role of any account in it.
+        if ($user !== null && \App\Support\Demo::isDemoUser($this->actor())
+            && (filled($this->password)
+                || strtolower((string) ($data['email'] ?? $user->email)) !== strtolower((string) $user->email)
+                || (string) ($data['role'] ?? $user->role) !== (string) $user->role)) {
+            $this->dispatch('toast', message: 'In the demo you cannot change a password, email or role.', type: 'error');
+
+            return;
+        }
+
         if ($user === null) {
             try {
                 $result = $this->staff()->create($this->actor(), $data, $this->avatar);

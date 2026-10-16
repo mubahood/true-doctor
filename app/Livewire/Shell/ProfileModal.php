@@ -94,6 +94,13 @@ class ProfileModal extends Component
 
     public function savePassword(): void
     {
+        // The demonstration's passwords are public; changing one would lock out the next visitor.
+        if (\App\Support\Demo::isDemoUser(Auth::user())) {
+            $this->dispatch('toast', message: 'Demo passwords cannot be changed — they are shared with every visitor.', type: 'error');
+
+            return;
+        }
+
         $this->validate([
             'current_password' => ['required', 'current_password'],
             'password' => ['required', 'string', Password::defaults(), 'confirmed'],
