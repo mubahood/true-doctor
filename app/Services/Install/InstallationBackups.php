@@ -16,7 +16,7 @@ use ZipArchive;
  * server, which is why the page and the guide both tell the owner to download
  * one regularly and keep it somewhere else.
  */
-final class InstallationBackups
+final class InstallationBackups implements \App\Services\Backups\MakesArchive
 {
     public const KEEP = 7;
 

@@ -18,7 +18,7 @@ final class FinancialYearAttention extends Rule
         return 'financial-year';
     }
 
-    protected function permission(): ?string
+    protected function permission(): string
     {
         return 'finance.view';
     }

@@ -24,6 +24,12 @@ use Spatie\Permission\Traits\HasRoles;
  * @property bool $is_active
  * @property bool $is_admin
  * @property bool $password_change_required
+ * @property \Illuminate\Support\Carbon|null $last_active_at
+ * @property string|null $two_factor_secret
+ * @property list<string>|null $two_factor_recovery_codes
+ * @property \Illuminate\Support\Carbon|null $two_factor_confirmed_at
+ * @property int|null $two_factor_last_step
+ * @property \Illuminate\Support\Carbon|null $signed_out_everywhere_at
  */
 class User extends Authenticatable implements MustVerifyEmailContract
 {
@@ -77,7 +83,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
     }
 
     protected $hidden = [
-        'password', 'remember_token',
+        'password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes', 'two_factor_last_step',
     ];
 
     protected function casts(): array
@@ -90,6 +96,11 @@ class User extends Authenticatable implements MustVerifyEmailContract
             'last_active_at' => 'datetime',
             'password_change_required' => 'boolean',
             'sees_patients' => 'boolean',
+            'two_factor_secret' => 'encrypted',
+            'two_factor_recovery_codes' => 'encrypted:array',
+            'two_factor_confirmed_at' => 'datetime',
+            'two_factor_last_step' => 'integer',
+            'signed_out_everywhere_at' => 'datetime',
         ];
     }
 

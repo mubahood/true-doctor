@@ -263,7 +263,7 @@ class FakeBackup extends DatabaseBackup
         return $path.'.sql.gz';
     }
 
-    public function restore(string $path): void
+    public function restore(string $path, ?string $connection = null): void
     {
         $this->restored = true;
     }

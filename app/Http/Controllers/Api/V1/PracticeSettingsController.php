@@ -123,8 +123,8 @@ class PracticeSettingsController extends Controller
                     'packs' => $s->packs, 'suggested' => $s->suggested, 'modules' => $s->modules,
                     'default_modules' => Practice::defaultModules($s),
                 ], Practice::sectors())),
-                'packs' => array_values(array_map(fn (string $key) => $this->pack($key), array_keys(Practice::PACKS))),
-                'modules' => array_values(array_map(fn (string $key, array $m) => ['key' => $key] + $m, array_keys(Practice::MODULES), Practice::MODULES)),
+                'packs' => array_map(fn (string $key) => $this->pack($key), array_keys(Practice::PACKS)),
+                'modules' => array_map(fn (string $key, array $m) => ['key' => $key] + $m, array_keys(Practice::MODULES), Practice::MODULES),
                 'parts' => PracticeService::PARTS,
             ],
         ];

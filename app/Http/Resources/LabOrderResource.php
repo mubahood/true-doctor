@@ -19,6 +19,8 @@ class LabOrderResource extends JsonResource
                 'uuid' => $this->patient?->uuid,
                 'name' => $this->patient?->full_name,
                 'patient_no' => $this->patient?->patient_no,
+                // Allergies, conditions, deceased: before a result is entered (docs/api/care.md).
+                'alerts' => \App\Support\Clinical\PatientAlerts::forPayload($this->patient),
             ],
             'visit_no' => $this->whenLoaded('visit', fn () => $this->visit?->visit_no),
             'ordered_by' => $this->whenLoaded('orderedBy', fn () => $this->orderedBy?->name),

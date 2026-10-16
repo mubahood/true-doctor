@@ -24,6 +24,8 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
     // Public: docs + auth
     Route::get('openapi.json', OpenApiController::class)->name('api.openapi');
     Route::post('auth/login', [AuthController::class, 'login'])->name('api.auth.login');
+    // The second step when two-step sign-in is on (docs/api/security.md).
+    Route::post('auth/two-factor', [\App\Http\Controllers\Api\V1\AccountSecurityController::class, 'challenge'])->middleware('throttle:12,1')->name('api.auth.two-factor');
 
     // Self-registration for the app (SaaS only: 404 on a standalone installation).
     // Same RegistrationRequest + RegistrationService + picture check as the web
@@ -46,6 +48,13 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
         Route::get('auth/me', [AuthController::class, 'me'])->name('api.auth.me');
         Route::post('auth/logout', [AuthController::class, 'logout'])->name('api.auth.logout');
         Route::post('auth/password', [AuthController::class, 'password'])->name('api.auth.password');
+        Route::post('auth/two-factor/setup', [\App\Http\Controllers\Api\V1\AccountSecurityController::class, 'setup'])->name('api.auth.two-factor.setup');
+        Route::post('auth/two-factor/confirm', [\App\Http\Controllers\Api\V1\AccountSecurityController::class, 'confirm'])->middleware('throttle:12,1')->name('api.auth.two-factor.confirm');
+        Route::get('auth/devices', [\App\Http\Controllers\Api\V1\AccountSecurityController::class, 'devices'])->name('api.auth.devices');
+        Route::delete('auth/devices/{device}', [\App\Http\Controllers\Api\V1\AccountSecurityController::class, 'revoke'])->whereNumber('device')->name('api.auth.devices.revoke');
+        // Crashes the app recorded, for the error list (docs/api/security.md).
+        Route::post('diagnostics/errors', \App\Http\Controllers\Api\V1\ErrorReportController::class)->middleware('throttle:10,1')->name('api.diagnostics.errors');
+        Route::post('auth/sign-out-everywhere', [\App\Http\Controllers\Api\V1\AccountSecurityController::class, 'signOutEverywhere'])->name('api.auth.sign-out-everywhere');
 
         // What an app needs to draw the system the way the web does:
         // hospital, money format, subscription, menu, statuses.

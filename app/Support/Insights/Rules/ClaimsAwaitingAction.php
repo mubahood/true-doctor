@@ -21,12 +21,12 @@ final class ClaimsAwaitingAction extends Rule
         return 'claims-awaiting-action';
     }
 
-    protected function permission(): ?string
+    protected function permission(): string
     {
         return 'insurance.view';
     }
 
-    protected function module(): ?string
+    protected function module(): string
     {
         return 'insurance';
     }

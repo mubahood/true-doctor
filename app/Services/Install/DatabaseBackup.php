@@ -38,16 +38,19 @@ class DatabaseBackup
         };
     }
 
-    /** Put the database back exactly as `$path` holds it. */
-    public function restore(string $path): void
+    /**
+     * Put the database back exactly as `$path` holds it: into the default
+     * connection, or into `$connection` (the restore drill's scratch database).
+     */
+    public function restore(string $path, ?string $connection = null): void
     {
         if (! is_file($path)) {
             throw new \RuntimeException('The backup file is missing: '.basename($path));
         }
 
-        match (DB::connection()->getDriverName()) {
-            'mysql', 'mariadb' => $this->restoreMysql($path),
-            'sqlite' => $this->restoreSqlite($path),
+        match (DB::connection($connection)->getDriverName()) {
+            'mysql', 'mariadb' => $this->restoreMysql($path, $connection),
+            'sqlite' => $this->restoreSqlite($path, $connection),
             default => throw new \RuntimeException('Backups support MySQL and SQLite databases.'),
         };
     }
@@ -112,9 +115,9 @@ class DatabaseBackup
         return $path;
     }
 
-    private function restoreMysql(string $path): void
+    private function restoreMysql(string $path, ?string $connection = null): void
     {
-        $pdo = DB::connection()->getPdo();
+        $pdo = DB::connection($connection)->getPdo();
         $gz = gzopen($path, 'rb');
         if ($gz === false) {
             throw new \RuntimeException('The backup file cannot be read.');
@@ -167,13 +170,13 @@ class DatabaseBackup
         return $path;
     }
 
-    private function restoreSqlite(string $path): void
+    private function restoreSqlite(string $path, ?string $connection = null): void
     {
-        $database = (string) DB::connection()->getConfig('database');
-        DB::disconnect();
+        $database = (string) DB::connection($connection)->getConfig('database');
+        DB::disconnect($connection);
         if (! copy($path, $database)) {
             throw new \RuntimeException('The database file could not be restored.');
         }
-        DB::reconnect();
+        DB::reconnect($connection);
     }
 }

@@ -18,6 +18,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * enough to tell whether two submissions carried the same content.
  *
  * @property array<string,mixed>|null $result
+ * @property \Illuminate\Support\Carbon|null $processed_at
+ * @property \Illuminate\Support\Carbon|null $created_at
  */
 class SyncOperation extends Model
 {

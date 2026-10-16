@@ -17,7 +17,7 @@ final class LongWaits extends Rule
         return 'queue-long-waits';
     }
 
-    protected function permission(): ?string
+    protected function permission(): string
     {
         return 'appointments.view';
     }

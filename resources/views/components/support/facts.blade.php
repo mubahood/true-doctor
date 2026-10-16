@@ -12,3 +12,6 @@
 @if($contact->hours() !== '')
   <span class="hours">{{ $contact->hours() }}</span>
 @endif
+@if($contact->statusUrl() !== '')
+  <a href="{{ $contact->statusUrl() }}" rel="noopener"><i class="fas fa-signal" aria-hidden="true"></i> Service status</a>
+@endif

@@ -117,7 +117,6 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
-
     /*
     |--------------------------------------------------------------------------
     | Breached-password check
@@ -130,5 +129,25 @@ return [
     */
 
     'password_breach_check' => (bool) env('PASSWORD_BREACH_CHECK', true),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Two-step sign-in
+    |--------------------------------------------------------------------------
+    |
+    | A code from an authenticator app after the password. Required for the
+    | roles below (owners and administrators, and the platform's super admin)
+    | when `enforce` is on; anybody else may turn it on for themselves. A
+    | device can be trusted for `trust_days`, so a desk computer is not asked
+    | every morning.
+    |
+    */
+
+    'two_factor' => [
+        'enforce' => (bool) env('TWO_FACTOR_ENFORCE', true),
+        'required_roles' => ['super_admin', 'hospital_admin'],
+        'trust_days' => 30,
+        'challenge_minutes' => 10,
+    ],
 
 ];

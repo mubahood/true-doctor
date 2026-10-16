@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property FinancialYearStatus $status
  * @property \Illuminate\Support\Carbon $starts_on
  * @property \Illuminate\Support\Carbon $ends_on
+ * @property \Illuminate\Support\Carbon|null $closed_at
  */
 class FinancialYear extends Model
 {

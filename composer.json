@@ -59,7 +59,7 @@
         ],
         "test": [
             "@php artisan config:clear --ansi",
-            "@php artisan test"
+            "bash scripts/ci/test-shard.sh all"
         ],
         "stan": [
             "vendor/bin/phpstan analyse --memory-limit=1G"

@@ -14,7 +14,7 @@ class JournalEntryResource extends JsonResource
         return [
             'uuid' => $this->uuid,
             'entry_no' => $this->entry_no,
-            'date' => $this->date?->toDateString(),
+            'date' => $this->date->toDateString(),
             'kind' => $this->kind->value,
             'kind_label' => $this->kind->label(),
             'memo' => $this->memo,

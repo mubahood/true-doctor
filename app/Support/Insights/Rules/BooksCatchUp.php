@@ -15,7 +15,7 @@ final class BooksCatchUp extends Rule
         return 'books-catch-up';
     }
 
-    protected function permission(): ?string
+    protected function permission(): string
     {
         return 'finance.manage';
     }

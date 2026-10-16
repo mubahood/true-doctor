@@ -18,7 +18,7 @@ final class VisitsStuckOpen extends Rule
         return 'visits-stuck-open';
     }
 
-    protected function permission(): ?string
+    protected function permission(): string
     {
         return 'visits.view';
     }

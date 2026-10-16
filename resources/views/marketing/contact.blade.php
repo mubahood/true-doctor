@@ -134,10 +134,10 @@
   <div class="wrap">
     <div class="sec-head"><h2>Or reach us directly</h2></div>
     <div class="grid" style="max-width:820px;margin:0 auto;">
-      <a class="card" href="mailto:{{ config('mail.from.address') }}">
+      <a class="card" href="mailto:{{ $supportEmail }}">
         <div class="ic" aria-hidden="true"><i class="fas fa-envelope"></i></div>
         <h3>Email</h3>
-        <p>{{ config('mail.from.address') }}<br><span style="color:var(--tx3);">Usually answered within one business day.</span></p>
+        <p>{{ $supportEmail }}<br><span style="color:var(--tx3);">Usually answered within one business day.</span></p>
       </a>
       @if($demo)
         <a class="card" href="{{ route('test-login') }}">

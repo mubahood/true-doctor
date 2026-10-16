@@ -87,4 +87,11 @@ return [
         'download_url' => env('MOBILE_DOWNLOAD_URL'),
     ],
 
+    // Error tracking (App\Support\Errors\ErrorTracker). Errors are always
+    // kept, grouped and scrubbed, in error_events; with a DSN they are also
+    // sent to Sentry or a self-hosted GlitchTip (same store API).
+    'error_tracking' => [
+        'dsn' => env('ERROR_TRACKING_DSN'),
+    ],
+
 ];

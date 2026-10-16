@@ -18,12 +18,12 @@ final class LongStayAdmissions extends Rule
         return 'admissions-long-stay';
     }
 
-    protected function permission(): ?string
+    protected function permission(): string
     {
         return 'ipd.view';
     }
 
-    protected function module(): ?string
+    protected function module(): string
     {
         return 'inpatient';
     }

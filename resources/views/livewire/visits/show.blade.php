@@ -6,6 +6,8 @@
     </x-slot:actions>
   </x-ui.page-header>
 
+  <x-clinical.alerts :patient="$visit->patient" />
+
   {{-- ── Where it is, and what is holding it ──────────────────────────
        Nobody picks a stage: the gate decides, and when it is shut it says
        what is shutting it, in figures (docs/visits.md). --}}

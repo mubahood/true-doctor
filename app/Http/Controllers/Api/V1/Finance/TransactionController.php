@@ -66,7 +66,7 @@ class TransactionController extends Controller
 
         $items = $rows->getCollection()->map(fn (JournalLine $l) => [
             'id' => $l->id,
-            'date' => $l->date?->toDateString(),
+            'date' => $l->date->toDateString(),
             'book' => ['id' => $l->account->id, 'name' => $l->account->name],
             'in' => (string) $l->debit,
             'out' => (string) $l->credit,

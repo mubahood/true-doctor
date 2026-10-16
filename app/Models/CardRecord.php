@@ -45,23 +45,33 @@ class CardRecord extends Model
         ];
     }
 
+    /** @return BelongsTo<PatientCard, $this> */
     public function card(): BelongsTo
     {
         return $this->belongsTo(PatientCard::class, 'patient_card_id');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    /** The member this was spent on — the cardholder unless it says otherwise. */
+    /**
+     * The member this was spent on — the cardholder unless it says otherwise.
+     *
+     * @return BelongsTo<Patient, $this>
+     */
     public function patient(): BelongsTo
     {
         return $this->belongsTo(Patient::class);
     }
 
-    /** The insurer's settlement that paid for this credit, where there was one. */
+    /**
+     * The insurer's settlement that paid for this credit, where there was one.
+     *
+     * @return BelongsTo<InsuranceTransaction, $this>
+     */
     public function settlement(): BelongsTo
     {
         return $this->belongsTo(InsuranceTransaction::class, 'insurance_transaction_id');

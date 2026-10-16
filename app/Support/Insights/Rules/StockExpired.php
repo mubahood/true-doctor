@@ -15,12 +15,12 @@ final class StockExpired extends Rule
         return 'stock-expired';
     }
 
-    protected function permission(): ?string
+    protected function permission(): string
     {
         return 'pharmacy.view';
     }
 
-    protected function module(): ?string
+    protected function module(): string
     {
         return 'pharmacy';
     }

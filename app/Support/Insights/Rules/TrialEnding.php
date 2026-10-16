@@ -18,12 +18,12 @@ final class TrialEnding extends Rule
         return 'subscription-ending';
     }
 
-    protected function permission(): ?string
+    protected function permission(): string
     {
         return 'manage-settings';
     }
 
-    protected function edition(): ?string
+    protected function edition(): string
     {
         return Edition::SAAS;
     }

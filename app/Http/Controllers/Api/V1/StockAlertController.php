@@ -39,6 +39,7 @@ class StockAlertController extends Controller
                 'low' => $board->lowStock(),
                 'expiring' => $board->expiring(),
             };
+            /** @var \Illuminate\Support\Collection<int, StockItem> $items */
             $rows[$name] = $items->map(fn (StockItem $i) => $this->row($i))->values();
         }
 

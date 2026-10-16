@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Enums\ApiErrorCode;
 use App\Http\Controllers\Controller;
 use App\Support\ApiResponse;
 use App\Support\Practice\Practice;

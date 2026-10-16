@@ -20,7 +20,7 @@ defines is undefined inside the page that extends it.
 
 Plan prices are stored in shillings — that is what the subscription is settled
 in. A reader outside East Africa is quoted in dollars at a fixed rate from
-`config/pricing.php` (`PRICING_USD_RATE`, currently **3,800 shillings to the
+`config/services.php` (`USD_TO_UGX_RATE`, default **3,800 shillings to the
 dollar**). A fixed rate, not a live one: a price that moves while somebody is
 reading it is worse than one that is a few percent stale, and a public page has
 no business calling a rates API on every render.

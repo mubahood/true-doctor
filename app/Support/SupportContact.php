@@ -161,6 +161,12 @@ final class SupportContact
         return $this->values['hours'] ?? '';
     }
 
+    /** The public status page, when there is one (platform only). */
+    public function statusUrl(): string
+    {
+        return $this->who === self::WHO_PLATFORM ? trim((string) config('support.status_url')) : '';
+    }
+
     /** platform, partner or own: who answers. */
     public function who(): string
     {
@@ -250,6 +256,7 @@ final class SupportContact
             'email' => $this->email() ?: null,
             'hours' => $this->hours() ?: null,
             'who' => $this->who,
+            'status_url' => $this->statusUrl() ?: null,
             'templates' => $templates,
         ];
     }

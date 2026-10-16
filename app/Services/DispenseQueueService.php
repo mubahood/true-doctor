@@ -88,6 +88,8 @@ class DispenseQueueService
                 'uuid' => $p->visit?->patient?->uuid,
                 'name' => $p->visit?->patient?->full_name,
                 'patient_no' => $p->visit?->patient?->patient_no,
+                // What the pharmacist must see before handing anything over.
+                'alerts' => \App\Support\Clinical\PatientAlerts::forPayload($p->visit?->patient),
             ],
             'prescribed_at' => $p->created_at?->toIso8601String(),
             'waited_minutes' => max(0, (int) $p->created_at->diffInMinutes($now)),

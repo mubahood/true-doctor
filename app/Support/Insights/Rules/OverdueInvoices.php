@@ -15,7 +15,7 @@ final class OverdueInvoices extends Rule
         return 'invoices-overdue';
     }
 
-    protected function permission(): ?string
+    protected function permission(): string
     {
         return 'billing.view';
     }

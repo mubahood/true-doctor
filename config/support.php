@@ -18,6 +18,9 @@ return [
     'email' => env('SUPPORT_EMAIL', 'support@true-doctor.online'),
     'hours' => env('SUPPORT_HOURS', 'Monday to Saturday, 8:00 to 20:00'),
 
+    // A public status page (the uptime monitor's), linked from the site and the app when set.
+    'status_url' => env('STATUS_PAGE_URL'),
+
     /*
     | Whether patient documents carry a small "System by True-Doctor" line.
     | On for the online service, off for a standalone copy (the buyer's brand

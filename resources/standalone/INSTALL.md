@@ -7,6 +7,8 @@ no command line — only your hosting control panel (cPanel) and a web browser.
 The same guide is in the download page of your buyer portal and, as
 `INSTALL.md`, inside the ZIP.
 
+{{support}}
+
 ## What you need
 
 - **Hosting with cPanel** (or similar), **PHP 8.2 or newer**, and **MySQL 5.7+
@@ -145,6 +147,7 @@ is needed to read encrypted data, and is inside every backup.
 - **A blank page or "500 error".** The reason is in
   `true_doctor_app/storage/logs/laravel.log`. Send us that file's last lines —
   never send `.env` or a backup to anyone.
+- **Stuck?** {{support}}
 - **Lost the download email?** On the buyer portal, enter your email for a new
   private link.
 

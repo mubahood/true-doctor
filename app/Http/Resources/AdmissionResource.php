@@ -27,6 +27,7 @@ class AdmissionResource extends JsonResource
                 'uuid' => $this->patient?->uuid,
                 'name' => $this->patient?->full_name,
                 'patient_no' => $this->patient?->patient_no,
+                'alerts' => \App\Support\Clinical\PatientAlerts::forPayload($this->patient),
             ],
             'ward' => $bed?->ward === null ? null : ['id' => $bed->ward->id, 'name' => $bed->ward->name],
             'bed' => $bed === null ? null : ['id' => $bed->id, 'name' => $bed->name, 'daily_charge' => (string) $bed->daily_charge],

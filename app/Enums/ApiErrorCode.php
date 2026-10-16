@@ -23,6 +23,12 @@ enum ApiErrorCode: string
     case SubscriptionEnded = 'subscription_ended';
     case UpgradeRequired = 'upgrade_required';
 
+    /** 401 at sign-in - the password was right; now the authenticator code (`data.challenge`). */
+    case TwoFactorRequired = 'two_factor_required';
+
+    /** 403 - an owner or administrator must set up two-step sign-in first. */
+    case TwoFactorSetupRequired = 'two_factor_setup_required';
+
     // Idempotency-Key misuse: the key was used for a different request, or
     // the same request is still being processed.
     case IdempotencyKeyReused = 'idempotency_key_reused';

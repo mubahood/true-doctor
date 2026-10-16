@@ -19,6 +19,8 @@
     </x-slot:subtitle>
   </x-ui.page-header>
 
+  <x-clinical.alerts :patient="$dispensation->patient" />
+
   <div class="tb-card">
     <div class="tb-card-header"><span class="tb-card-title">Items</span></div>
     <div class="tb-table-wrap"><table class="tb-table">

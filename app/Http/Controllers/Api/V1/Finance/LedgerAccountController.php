@@ -69,7 +69,7 @@ class LedgerAccountController extends Controller
             'debit' => $st['debit'],
             'credit' => $st['credit'],
             'lines' => $st['lines']->map(fn ($r) => [
-                'date' => $r['line']->date?->toDateString(),
+                'date' => $r['line']->date->toDateString(),
                 'entry_uuid' => $r['line']->entry->uuid,
                 'entry_no' => $r['line']->entry->entry_no,
                 'memo' => $r['line']->memo ?: $r['line']->entry->memo,

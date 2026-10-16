@@ -15,6 +15,8 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->bind(\App\Services\Backups\MakesArchive::class, \App\Services\Install\InstallationBackups::class);
+
         // The resolved tenant context for this request/process — one instance
         // per request, set early by App\Http\Middleware\ResolveHospital.
         $this->app->singleton(\App\Support\CurrentHospital::class);
@@ -146,6 +148,15 @@ class AppServiceProvider extends ServiceProvider
         // reset, forced change, staff accounts, the API (App\Support\PasswordPolicy).
         Password::defaults(fn () => \App\Support\PasswordPolicy::rule());
 
+        // Every web sign-in (the form, the second step, a "keep me signed in"
+        // cookie) stamps the session, so "sign out everywhere" can end the
+        // sessions that began before it (EnsureSessionIsCurrent).
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Login::class, function (\Illuminate\Auth\Events\Login $event): void {
+            if ($event->guard === 'web' && request()->hasSession()) {
+                request()->session()->put('auth.at', now()->getTimestamp());
+            }
+        });
+
         // The breach check asks one outside service; a slow or unreachable one
         // must not hold a password change for the default 30 seconds.
         $this->app->singleton(\Illuminate\Contracts\Validation\UncompromisedVerifier::class, fn ($app) => new \Illuminate\Validation\NotPwnedVerifier($app[\Illuminate\Http\Client\Factory::class], 5));
@@ -188,6 +199,9 @@ class AppServiceProvider extends ServiceProvider
                 // resolved per page so the header, the prices and the footer
                 // switch can never disagree about it on the same render.
                 'region' => app(\App\Support\VisitorRegion::class),
+                // A real inbox for every "email us" on the public pages, never a no-reply one.
+                'supportEmail' => \App\Support\SupportContact::current()->email() ?: (string) config('mail.from.address'),
+                'company' => array_filter((array) config('company')),
             ]),
         );
 

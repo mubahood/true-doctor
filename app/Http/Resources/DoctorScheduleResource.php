@@ -6,7 +6,11 @@ use App\Services\DoctorScheduleService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** One availability window. @mixin \App\Models\DoctorSchedule */
+/**
+ * One availability window.
+ *
+ * @mixin \App\Models\DoctorSchedule
+ */
 class DoctorScheduleResource extends JsonResource
 {
     /** @return array<string,mixed> */

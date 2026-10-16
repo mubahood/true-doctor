@@ -16,12 +16,12 @@ final class RadiologyWaiting extends Rule
         return 'radiology-waiting';
     }
 
-    protected function permission(): ?string
+    protected function permission(): string
     {
         return 'radiology.view';
     }
 
-    protected function module(): ?string
+    protected function module(): string
     {
         return 'radiology';
     }

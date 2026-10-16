@@ -166,6 +166,7 @@ class CardService
         $out = '0.00';
 
         foreach ($query->get(['type', 'amount']) as $row) {
+            /** @var \App\Models\CardRecord $row */
             $row->type === CardEntryType::Credit
                 ? $in = bcadd($in, (string) $row->amount, 2)
                 : $out = bcadd($out, (string) $row->amount, 2);

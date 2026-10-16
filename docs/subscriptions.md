@@ -12,7 +12,7 @@ account. No conversion sits anywhere on the money path, and there is no
 rounding drift between the quote and the charge.
 
 The `$` figure shown beside a price is **presentation only**: the UGX amount
-divided by a fixed platform rate (`USD_TO_UGX_RATE`, default 3600), a stable
+divided by a fixed platform rate (`USD_TO_UGX_RATE`, default 3800), a stable
 reference for anyone reading in dollars. It is never billed and never stored.
 
 `App\Support\PlatformCurrency` owns all of this (bcmath, never float) — and is
@@ -171,7 +171,7 @@ PESAPAL_CONSUMER_SECRET=…
 PESAPAL_ENVIRONMENT=sandbox          # sandbox | production
 PESAPAL_IPN_URL="${APP_URL}/gateway/pesapal/ipn"
 PESAPAL_CALLBACK_URL="${APP_URL}/gateway/pesapal/callback"
-USD_TO_UGX_RATE=3600
+USD_TO_UGX_RATE=3800
 ```
 
 The IPN and callback URLs follow `APP_URL` so they are right in every

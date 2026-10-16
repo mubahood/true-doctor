@@ -16,12 +16,12 @@ final class LabWaiting extends Rule
         return 'lab-waiting';
     }
 
-    protected function permission(): ?string
+    protected function permission(): string
     {
         return 'lab.view';
     }
 
-    protected function module(): ?string
+    protected function module(): string
     {
         return 'laboratory';
     }

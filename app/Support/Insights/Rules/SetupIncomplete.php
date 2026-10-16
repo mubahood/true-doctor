@@ -16,7 +16,7 @@ final class SetupIncomplete extends Rule
         return 'setup-incomplete';
     }
 
-    protected function permission(): ?string
+    protected function permission(): string
     {
         return 'manage-settings';
     }

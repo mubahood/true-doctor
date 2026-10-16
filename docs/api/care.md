@@ -115,3 +115,15 @@ Admit from a free bed with `POST /admissions`; transfer/discharge with the exist
 
 Appointments, the check-in queue and booking already had API routes. Wards, beds, rooms and departments CRUD
 belong to the admin area.
+
+## Clinical alerts on every patient
+
+Wherever a payload names the patient a clinician is about to act on (a visit, an admission, a lab or imaging order, a prescription in the dispense queue), `patient.alerts` carries the same block (`App\Support\Clinical\PatientAlerts`):
+
+```json
+"alerts": { "allergies": ["Penicillin"], "conditions": ["Hypertension"], "deceased": false, "allergies_recorded": true }
+```
+
+- `allergies` leaves out "None", "NKDA" and "No known allergies", which record that there are none.
+- `allergies_recorded: false` means nobody has asked: show "Allergies not recorded", never nothing.
+- `null` when there is no patient on the record.

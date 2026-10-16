@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * @property ClaimStatus $status
  * @property numeric-string $amount
+ * @property \Illuminate\Support\Carbon|null $submitted_at
+ * @property \Illuminate\Support\Carbon|null $resolved_at
  */
 class InsuranceClaim extends Model
 {
@@ -51,7 +53,11 @@ class InsuranceClaim extends Model
         return $this->belongsTo(Invoice::class);
     }
 
-    /** Who settled it, where it has been settled. @return BelongsTo<User, $this> */
+    /**
+     * Who settled it, where it has been settled.
+     *
+     * @return BelongsTo<User, $this>
+     */
     public function resolvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'resolved_by');

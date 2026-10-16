@@ -392,8 +392,10 @@ Envelope, pagination, versioning, OpenAPI docs, compression per §3.D.
     *(done)*
 17. ✅ **Insurance**: providers, patient coverage, claims lifecycle (Paid claim settles the invoice). *(done)*
 18. ✅ **Financial years**: accounting periods, period close (posting boundary), per-period reporting. *(done)*
-19. ✅ **Notifications**: appointment reminders, lab-result ready, low stock — database/SMS via
-    queued channels + `device_tokens`, SMS behind the swappable VerificationChannel. *(done)*
+19. ✅ **Notifications**: appointment reminders, lab-result ready, low stock — database and mail
+    via queued channels + `device_tokens`. SMS sits behind the swappable VerificationChannel, but
+    **no SMS provider is connected yet** (the bound channel logs instead of sending; Africa's
+    Talking is roadmap 05 §1). *(in-app and email done; SMS not live)*
 20. ✅ **Reports & dashboards**: daily revenue, doctor performance/productivity, patient
     demographics/statistics, service usage & revenue, stock valuation, ward occupancy;
     per-hospital dashboard + super-admin SaaS metrics; events/meetings/tasks module.

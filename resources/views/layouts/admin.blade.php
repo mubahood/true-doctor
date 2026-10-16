@@ -128,6 +128,7 @@
           <div class="tb-user-dropdown" role="menu">
             <button type="button" role="menuitem" @click="$dispatch('open-profile'); userMenu=false"><i class="fas fa-user-pen" aria-hidden="true"></i> My profile</button>
             <button type="button" role="menuitem" @click="$dispatch('open-password'); userMenu=false"><i class="fas fa-lock" aria-hidden="true"></i> Change password</button>
+            <a role="menuitem" href="{{ route('account.security') }}"><i class="fas fa-shield-halved" aria-hidden="true"></i> Account security</a>
             @if($u->isSuperAdmin())<a role="menuitem" wire:navigate href="{{ route('admin.settings.index') }}"><i class="fas fa-gear" aria-hidden="true"></i> Site settings</a>@endif
             <hr>
             <button type="submit" form="logout-form" role="menuitem" class="danger"><i class="fas fa-right-from-bracket" aria-hidden="true"></i> Sign out</button>

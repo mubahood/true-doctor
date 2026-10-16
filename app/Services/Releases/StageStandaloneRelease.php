@@ -60,7 +60,18 @@ final class StageStandaloneRelease
             if (! is_file($guide)) {
                 throw new \RuntimeException('This commit has no standalone installation guide (resources/standalone/INSTALL.md).');
             }
-            File::copy($guide, $stage.'/INSTALL.md');
+            // Who to ask: written in at build time from SupportContact, never
+            // typed into the guide or the installer (they cannot read settings).
+            $support = \App\Support\SupportContact::platform();
+            File::put($stage.'/INSTALL.md', str_replace('{{support}}', self::supportLine($support), (string) File::get($guide)));
+            File::put($stage.'/SUPPORT.json', json_encode([
+                'whatsapp' => $support->whatsappDigits() ?: null,
+                'whatsapp_display' => $support->whatsappDisplay() ?: null,
+                'phone' => $support->phone() ?: null,
+                'email' => $support->email() ?: null,
+                'hours' => $support->hours() ?: null,
+                'install_message' => $support->message('standalone.install', ['licence' => 'not yet installed']),
+            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)."\n");
             File::ensureDirectoryExists(dirname($destination), 0700);
 
             $progress('Signing and verifying the complete archive');
@@ -74,6 +85,18 @@ final class StageStandaloneRelease
         } finally {
             File::deleteDirectory($work);
         }
+    }
+
+    /** The guide's "talk to us" line. */
+    public static function supportLine(\App\Support\SupportContact $support): string
+    {
+        $ways = array_filter([
+            $support->hasWhatsapp() ? 'WhatsApp **'.$support->whatsappDisplay().'** ('.$support->waLink('standalone.install', ['licence' => 'from my buyer portal']).')' : null,
+            $support->phone() !== '' ? 'call **'.$support->phone().'**' : null,
+            $support->email() !== '' ? 'email **'.$support->email().'**' : null,
+        ]);
+
+        return $ways === [] ? 'Contact True-Doctor from your buyer portal.' : 'Need help at any step? '.ucfirst(implode(', ', $ways)).'.'.($support->hours() !== '' ? ' '.$support->hours().'.' : '');
     }
 
     /**

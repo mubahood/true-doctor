@@ -16,7 +16,7 @@ final class NoShowsToday extends Rule
         return 'no-shows-today';
     }
 
-    protected function permission(): ?string
+    protected function permission(): string
     {
         return 'appointments.view';
     }

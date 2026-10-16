@@ -34,6 +34,7 @@ class Room extends Model
         ];
     }
 
+    /** @return BelongsTo<Department, $this> */
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);

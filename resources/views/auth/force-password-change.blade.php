@@ -40,7 +40,7 @@
     <div class="a-inwrap">
       <i class="fas fa-lock" aria-hidden="true"></i>
       <input class="a-input has-eye @error('password') is-bad @enderror" id="password" type="password"
-             name="password" required autocomplete="new-password" minlength="6"
+             name="password" required autocomplete="new-password" minlength="8"
              data-strength-for="pw-strength"
              @error('password') autofocus aria-invalid="true" @enderror
              aria-describedby="password-rule {{ $errors->has('password') ? 'password-error' : '' }}">

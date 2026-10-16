@@ -2273,3 +2273,10 @@ body.has-brand::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z-i
   .tb-tabs-scroll{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;}
   .tb-tabs-scroll .tb-tab{flex:0 0 auto;white-space:nowrap;}
 }
+
+/* ── Clinical alerts: allergies before anything else ─────────────── */
+.clin-alerts{display:flex;flex-direction:column;gap:6px;}
+.clin-alerts .tb-alert{margin:0;}
+.clin-alerts .badge-tb{margin-right:3px;}
+.clin-none{display:flex;align-items:center;gap:6px;}
+.clin-none i{color:var(--ok);}

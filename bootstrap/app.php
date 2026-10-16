@@ -54,7 +54,9 @@ $application = Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\SecurityHeaders::class,
             \App\Http\Middleware\SetLocale::class,
             \App\Http\Middleware\ResolveHospital::class,
+            \App\Http\Middleware\EnsureSessionIsCurrent::class,
             \App\Http\Middleware\RequirePasswordChange::class,
+            \App\Http\Middleware\RequireTwoFactor::class,
         ]);
         $middleware->api(append: [
             \App\Http\Middleware\EnsureInstalled::class,
@@ -109,15 +111,13 @@ $application = Application::configure(basePath: dirname(__DIR__))
         // error, never Laravel's default ad hoc shape per exception type.
         $wantsJson = fn (Request $request) => $request->is('api/*') || $request->expectsJson();
 
-        // A reference that is in the log and on the error page, so a person who
-        // messages support with it points us at exactly one failure.
-        $exceptions->context(function (\Throwable $e): array {
-            $ref = strtoupper(\Illuminate\Support\Str::random(6));
-            if (! app()->runningInConsole()) {
-                request()->attributes->set('error_ref', $ref);
-            }
+        // A reference that is in the log, on the error page and in the error
+        // list, so a person who messages support with it points at one failure.
+        $exceptions->context(fn (\Throwable $e): array => ['ref' => \App\Support\Errors\ErrorRef::for($e)]);
 
-            return ['ref' => $ref];
+        // Grouped, scrubbed, and forwarded when a tracker is set (ErrorTracker).
+        $exceptions->reportable(function (\Throwable $e): void {
+            app(\App\Support\Errors\ErrorTracker::class)->capture($e);
         });
 
         $exceptions->render(function (ValidationException $e, Request $request) use ($wantsJson) {

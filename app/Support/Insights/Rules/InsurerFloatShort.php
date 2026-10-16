@@ -17,12 +17,12 @@ final class InsurerFloatShort extends Rule
         return 'insurer-float-short';
     }
 
-    protected function permission(): ?string
+    protected function permission(): string
     {
         return 'insurance.manage';
     }
 
-    protected function module(): ?string
+    protected function module(): string
     {
         return 'insurance';
     }

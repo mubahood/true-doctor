@@ -50,6 +50,19 @@ class AuthController extends Controller
             return ApiResponse::error(ApiErrorCode::Forbidden, 'This account cannot access this installation.', 403);
         }
 
+        // Two-step sign-in: the password was right; the token comes from
+        // auth/two-factor with this sealed challenge and the app's code.
+        $twoFactor = app(\App\Services\TwoFactorService::class);
+        if ($twoFactor->isEnabled($user)) {
+            return ApiResponse::error(
+                ApiErrorCode::TwoFactorRequired,
+                'Enter the 6-digit code from your authenticator app.',
+                401,
+                null,
+                ['challenge' => $twoFactor->challengeFor($user, (string) ($request->validated('device_name') ?: 'api')), 'methods' => ['totp', 'recovery_code']],
+            );
+        }
+
         $token = $user->createToken($request->validated('device_name') ?: 'api')->plainTextToken;
         $user->loadMissing('hospital');
 

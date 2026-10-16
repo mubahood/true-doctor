@@ -129,4 +129,31 @@ class SupportEverywhereTest extends TestCase
         $this->post('/register', $data)->assertSessionHasErrors('whatsapp');
         $this->postJson('/api/v1/public/register', $data)->assertJsonMissingValidationErrors('whatsapp');
     }
+
+    public function test_every_email_us_on_the_public_pages_goes_to_the_support_inbox(): void
+    {
+        config(['mail.from.address' => 'noreply@example.test']);
+
+        foreach (['/security', '/privacy', '/terms', '/contact'] as $path) {
+            $this->get($path)->assertOk()->assertSee('mailto:help@example.test', false)->assertDontSee('noreply@example.test');
+        }
+    }
+
+    public function test_company_facts_show_only_when_set(): void
+    {
+        config(['company.legal_name' => 'SOLAVIA GROUP LIMITED', 'company.registration_no' => null]);
+        $this->get('/')->assertSee('a product of SOLAVIA GROUP LIMITED')->assertDontSee('Reg. No.');
+
+        config(['company.registration_no' => '80020001234567']);
+        $this->get('/pricing')->assertSee('Reg. No. 80020001234567');
+    }
+
+    public function test_the_security_page_says_what_is_true_now(): void
+    {
+        $this->get('/security')->assertSee('Two-step sign-in')->assertDontSee('Two-factor authentication is not yet on every account')
+            ->assertDontSee('Backups that are tested', false);
+
+        config(['backup.encryption_key' => \App\Support\Backups\BackupCipher::newKey(), 'backup.s3.bucket' => 'td']);
+        $this->get('/security')->assertSee('Backups that are tested');
+    }
 }

@@ -20,11 +20,13 @@ Who to ask for help, and the prefilled messages, so the app never holds the numb
   "email": "help@example.com",
   "hours": "Monday to Saturday, 8:00 to 20:00",
   "who": "platform",
+  "status_url": "https://status.example.com",
   "templates": { "admin.help": "Hello True-Doctor, I am :role at :hospital and I need help with :screen." }
 }
 ```
 
 - `who` is `platform`, `partner` or `own`: who answers.
+- `status_url` is the public status page, when the platform has one (null otherwise, and always null for a partner's or own IT's copy).
 - Any of `whatsapp`, `phone`, `email`, `hours` may be `null`; the app shows only what it has.
 - `templates` are keyed by context (`site.*`, `auth.signin`, `trial.welcome`, `admin.*`, `app.*`, `standalone.*`). The app fills `:placeholders` itself with a page or screen name, the hospital's name, the person's role, an error reference, a version or a diagnostics report. **Never a patient or a record.**
 - An older server has no `support` key: the app shows no support line until a server says so.

@@ -20,6 +20,8 @@
     </x-slot:actions>
   </x-ui.page-header>
 
+  <x-clinical.alerts :patient="$order->patient" />
+
   @can('radiology.report')
     @if($order->status->transitionsTo())
       <div class="tb-card tb-mb-5"><div class="tb-card-body tb-flex">

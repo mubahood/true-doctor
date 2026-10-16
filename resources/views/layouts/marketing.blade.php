@@ -55,6 +55,7 @@
         '@context' => 'https://schema.org',
         '@type' => 'Organization',
         'name' => 'True-Doctor',
+        'legalName' => config('company.legal_name') ?: null,
         'url' => route('home'),
         'contactPoint' => array_filter([
           '@type' => 'ContactPoint',
@@ -197,7 +198,15 @@
     </div>
 
     <div class="foot-bar">
-      <span>&copy; {{ date('Y') }} True-Doctor. Hospital management software.</span>
+      @php
+        // The company facts, each only when set (config/company.php).
+        $facts = array_filter([
+            ! empty($company['legal_name']) ? 'a product of '.$company['legal_name'] : null,
+            ! empty($company['registration_no']) ? 'Reg. No. '.$company['registration_no'] : null,
+            implode(', ', array_filter([$company['address'] ?? null, $company['po_box'] ?? null, ! empty($company['address']) ? ($company['country'] ?? null) : null])) ?: null,
+        ]);
+      @endphp
+      <span>&copy; {{ date('Y') }} True-Doctor{{ $facts === [] ? '' : ', '.implode(' · ', $facts) }}.</span>
       <x-site.currency-switch />
     </div>
   </div>

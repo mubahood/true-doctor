@@ -28,6 +28,13 @@ if ($root === null) {
 
 require $root.'/vendor/autoload.php';
 
+// Who to ask for help: written into the package at build time (SUPPORT.json),
+// because nothing here can read the settings yet.
+$support = is_file($root.'/SUPPORT.json') ? json_decode((string) file_get_contents($root.'/SUPPORT.json'), true) : null;
+$supportLink = is_array($support) && ! empty($support['whatsapp'])
+    ? 'https://wa.me/'.preg_replace('/\D/', '', (string) $support['whatsapp']).'?text='.rawurlencode((string) ($support['install_message'] ?? ''))
+    : null;
+
 $marker = $root.'/storage/app/private/installed.json';
 $draftPath = $root.'/storage/app/private/install-draft.dat';
 $environmentFile = $root.'/.env';
@@ -390,5 +397,13 @@ header('Cache-Control: no-store, private');
     <button type="submit" <?= $ready ? '' : 'disabled' ?>>Install True-Doctor</button>
     <p class="small" style="margin-top:12px">Keep this browser open while the database is prepared. Back up the generated .env file; its APP_KEY protects prepaid card lookups.</p>
   </form>
+<?php endif; ?>
+<?php if ($supportLink !== null || ! empty($support['email'] ?? null)): ?>
+  <p class="small" style="margin-top:18px">Stuck?
+    <?php if ($supportLink !== null): ?><a href="<?= $escape($supportLink) ?>" target="_blank" rel="noopener">WhatsApp <?= $escape((string) ($support['whatsapp_display'] ?? '')) ?></a><?php endif; ?>
+    <?php if (! empty($support['phone'] ?? null)): ?> · call <?= $escape((string) $support['phone']) ?><?php endif; ?>
+    <?php if (! empty($support['email'] ?? null)): ?> · <?= $escape((string) $support['email']) ?><?php endif; ?>
+    <?php if (! empty($support['hours'] ?? null)): ?> · <?= $escape((string) $support['hours']) ?><?php endif; ?>
+  </p>
 <?php endif; ?>
 </main></body></html>

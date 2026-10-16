@@ -14,8 +14,8 @@ class FinancialYearResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'starts_on' => $this->starts_on?->toDateString(),
-            'ends_on' => $this->ends_on?->toDateString(),
+            'starts_on' => $this->starts_on->toDateString(),
+            'ends_on' => $this->ends_on->toDateString(),
             'status' => $this->status->value,
             'status_label' => $this->status->label(),
             'is_open' => $this->isOpen(),

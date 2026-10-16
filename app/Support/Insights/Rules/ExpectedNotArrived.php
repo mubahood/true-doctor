@@ -19,7 +19,7 @@ final class ExpectedNotArrived extends Rule
         return 'appointments-not-arrived';
     }
 
-    protected function permission(): ?string
+    protected function permission(): string
     {
         return 'appointments.view';
     }

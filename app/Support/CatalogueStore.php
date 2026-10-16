@@ -47,7 +47,10 @@ class CatalogueStore
         }
 
         if ($archived = self::archivedTwin($class, $data, $uniqueKey)) {
-            $archived->restore();
+            // archivedTwin only ever returns a soft-deleting model.
+            if (method_exists($archived, 'restore')) {
+                $archived->restore();
+            }
             $archived->update($data);
 
             return [$archived, 'restored'];
@@ -104,7 +107,7 @@ class CatalogueStore
 
         return [
             'times' => $rows->count(),
-            'earned' => $rows->reduce(fn (string $sum, Model $l) => bcadd($sum, (string) $l->{$column}, 2), '0.00'),
+            'earned' => $rows->reduce(fn (string $sum, Model $l) => bcadd($sum, (string) $l->getAttribute($column), 2), '0.00'),
             'days' => self::USAGE_DAYS,
         ];
     }

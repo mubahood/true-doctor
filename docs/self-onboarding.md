@@ -18,13 +18,13 @@ the data appears** — configure billing, add a price list, create a department,
 activate the subscription — each deep-linking to its setup page, with a progress bar. No
 separate state is stored; it reflects reality.
 
-## 3. Pay the plan (Flutterwave)
+## 3. Pay the plan (Pesapal)
 
 `GET /admin/subscription` shows the current plan/trial status and the plan grid. `POST
 /admin/subscription/{plan}/checkout` (`SubscriptionCheckoutService::initialize`) opens a
-Flutterwave hosted payment for the plan price and logs it as a **subscription-purpose**
-`gateway_log`, then redirects the owner to pay. The **same** verified, idempotent
-`GatewayPaymentService::settle` (callback + signed webhook) handles it: it branches on the log's
+Pesapal hosted payment (mobile money or card, in UGX) for the plan price and logs it as a
+**subscription-purpose** `gateway_log`, then redirects the owner to pay. `GatewayPaymentService::settle`,
+built for Pesapal by `PesapalPaymentController` (callback + IPN), verifies it idempotently: it branches on the log's
 purpose and calls `SubscriptionCheckoutService::activate`, which converts the trial to an
 **active paid period** (`status=active`, `ends_at = now + cycle`, `trial_ends_at` cleared) and
 records a `SubscriptionPayment`. Plan-limit enforcement (§21) then applies to the active plan.
@@ -63,7 +63,7 @@ The signup → pay → onboard flow is surfaced across the marketing site:
   advertises the 14-day free trial.
 
 From there the flow is unchanged: register (trial + welcome email) → onboarding wizard → pay a
-plan via Flutterwave (receipt email) → active subscription with plan-limit enforcement.
+plan via Pesapal (receipt email) → active subscription with plan-limit enforcement.
 
 Tested by `MarketingSignupTest` (pricing lists real plans with trial CTAs, home/header link to
 registration, `?plan=` preselects).

@@ -33,7 +33,7 @@
     <div class="a-inwrap">
       <i class="fas fa-lock"></i>
       <input class="a-input has-eye @error('password') is-bad @enderror" id="password" type="password" name="password"
-             placeholder="••••••••" required autocomplete="new-password" minlength="6"
+             placeholder="••••••••" required autocomplete="new-password" minlength="8"
              data-strength-for="pw-strength" aria-describedby="password-rule"
              @error('password') aria-invalid="true" @enderror>
       <button type="button" class="a-eye" data-eye="password" aria-label="Show password"><i class="fas fa-eye" aria-hidden="true"></i></button>

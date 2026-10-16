@@ -28,6 +28,7 @@ class Department extends Model
         return ['is_active' => 'boolean'];
     }
 
+    /** @return BelongsTo<User, $this> */
     public function head(): BelongsTo
     {
         return $this->belongsTo(User::class, 'head_user_id');

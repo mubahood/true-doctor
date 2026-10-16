@@ -73,7 +73,7 @@ class BedController extends Controller
                 ->map(fn (Admission $a) => [
                     'id' => $a->id,
                     'patient' => $a->patient?->full_name,
-                    'admitted_at' => $a->admitted_at?->toIso8601String(),
+                    'admitted_at' => $a->admitted_at->toIso8601String(),
                     'discharged_at' => $a->discharged_at?->toIso8601String(),
                 ])->values(),
             'figures' => [
@@ -136,7 +136,7 @@ class BedController extends Controller
 
         // A new bed starts at its ward's standard rate, unless one was given.
         if ($bed === null && (! isset($input['daily_charge']) || $input['daily_charge'] === '') && isset($input['ward_id'])) {
-            $input['daily_charge'] = (string) (Ward::find($input['ward_id'])?->default_daily_charge ?? '');
+            $input['daily_charge'] = (string) (Ward::find($input['ward_id'])->default_daily_charge ?? '');
         }
         if ($bed === null) {
             $input['status'] ??= BedStatus::Available->value;

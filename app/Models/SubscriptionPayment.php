@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * plain string, not an enum, deliberately — with exactly one value today
  * ("manual") an enum would be speculative; it becomes one once Phase 4
  * introduces real gateway methods.
+ *
+ * @property \Illuminate\Support\Carbon|null $paid_at
  */
 class SubscriptionPayment extends Model
 {

@@ -112,6 +112,7 @@ class Appointment extends Model
         return $this->origin_visit_id !== null;
     }
 
+    /** @return HasMany<AppointmentStatusHistory, $this> */
     public function history(): HasMany
     {
         return $this->hasMany(AppointmentStatusHistory::class)->latest('created_at')->latest('id');

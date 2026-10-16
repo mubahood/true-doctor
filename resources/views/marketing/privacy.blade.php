@@ -146,7 +146,7 @@
     </p>
     <p>
       Questions about this policy? Email
-      <a class="link" href="mailto:{{ config('mail.from.address') }}">{{ config('mail.from.address') }}</a>.
+      <a class="link" href="mailto:{{ $supportEmail }}">{{ $supportEmail }}</a>.
     </p>
   </div>
 </section>

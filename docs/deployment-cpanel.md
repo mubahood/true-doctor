@@ -103,7 +103,7 @@ crontab /tmp/ct
 | `MAIL_FROM_ADDRESS` | `hello@true-doctor.online` | Must be a domain this host may send for |
 | `MAIL_ENQUIRIES_TO` | where contact-form enquiries land | Falls back to the from-address |
 | `TELESCOPE_ENABLED` / `DEBUGBAR_ENABLED` | `false` | Never in production |
-| `PRICING_USD_RATE` | `3800` | See [public-site.md](public-site.md) |
+| `USD_TO_UGX_RATE` | `3800` | See [public-site.md](public-site.md) |
 
 ### Two things that will bite, carried over from deployment.md §3 and §7
 

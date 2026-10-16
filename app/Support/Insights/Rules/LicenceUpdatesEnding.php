@@ -18,12 +18,12 @@ final class LicenceUpdatesEnding extends Rule
         return 'licence-updates-ending';
     }
 
-    protected function permission(): ?string
+    protected function permission(): string
     {
         return 'manage-settings';
     }
 
-    protected function edition(): ?string
+    protected function edition(): string
     {
         return Edition::STANDALONE;
     }

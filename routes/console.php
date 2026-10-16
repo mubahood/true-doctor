@@ -11,10 +11,15 @@ Artisan::command('inspire', function () {
 |--------------------------------------------------------------------------
 | Scheduled tasks
 |--------------------------------------------------------------------------
-| The True-Doctor registry expiry sweep/reminders retired with the registry
-| domain. HMS scheduled tasks (subscription expiry, low-stock alerts,
-| appointment reminders, …) are added per HMS_PLAN.md as their modules land.
+| The live host's cron fires every 19 minutes, not every minute, so a job
+| pinned to a minute ("03:40") would never run. Every daily and weekly job is
+| registered through ScheduledRun: it runs at the first tick at or after its
+| time, and a day the cron missed is caught up at the next tick. Each tick is
+| recorded, so the health check can say when the scheduler last ran.
 */
+
+\Illuminate\Support\Facades\Schedule::call(fn () => \App\Support\Scheduling\ScheduledRun::tick())
+    ->everyMinute()->name('scheduler-tick');
 
 // Hourly, not daily: a shared host's cron can be late or skip a run, and each
 // reminder is stamped on the appointment so a run never repeats another's.
@@ -30,24 +35,33 @@ Artisan::command('inspire', function () {
 \Illuminate\Support\Facades\Schedule::command('standalone:system-requests')
     ->everyMinute()->name('standalone-system-requests')->withoutOverlapping(60)->runInBackground()
     ->when(fn () => \App\Support\Edition::isStandalone());
-\Illuminate\Support\Facades\Schedule::command('standalone:backup')->dailyAt('02:15')
-    ->name('standalone-backup')->withoutOverlapping(120)
+\App\Support\Scheduling\ScheduledRun::daily(\Illuminate\Support\Facades\Schedule::command('standalone:backup'), 'standalone-backup', '02:15')
+    ->withoutOverlapping(120)
     ->when(fn () => \App\Support\Edition::isStandalone());
-\Illuminate\Support\Facades\Schedule::command('standalone:update --check')->dailyAt('06:10')
-    ->name('standalone-update-check')
+\App\Support\Scheduling\ScheduledRun::daily(\Illuminate\Support\Facades\Schedule::command('standalone:update --check'), 'standalone-update-check', '06:10')
     ->when(fn () => \App\Support\Edition::isStandalone() && filled(config('edition.update_server')));
 
-\Illuminate\Support\Facades\Schedule::command('subscriptions:trial-reminders')->dailyAt('08:00')
+// The online service's own backups: nightly, encrypted, off the server; and
+// once a month the newest is restored into a scratch database to prove it
+// (config/backup.php). A standalone copy has standalone:backup instead.
+\App\Support\Scheduling\ScheduledRun::daily(\Illuminate\Support\Facades\Schedule::command('td:backup'), 'td-backup', '01:30')
+    ->withoutOverlapping(120)
+    ->when(fn () => \App\Support\Edition::isSaas() && filled(config('backup.encryption_key')));
+\App\Support\Scheduling\ScheduledRun::monthly(\Illuminate\Support\Facades\Schedule::command('td:backup-drill'), 'td-backup-drill', 2, '05:00')
+    ->withoutOverlapping(120)
+    ->when(fn () => \App\Support\Edition::isSaas() && filled(config('backup.encryption_key')));
+
+\App\Support\Scheduling\ScheduledRun::daily(\Illuminate\Support\Facades\Schedule::command('subscriptions:trial-reminders'), 'subscriptions-trial-reminders', '08:00')
     ->when(fn () => \App\Support\Edition::isSaas());
 
 // Offline sync ledger. A claim left `processing` by a process that died is
 // marked retryable, so the device's next attempt runs instead of waiting; and
 // results older than the replay window (90 days) are dropped. Both existed and
 // were never called.
-\Illuminate\Support\Facades\Schedule::call(fn () => app(\App\Services\Sync\OperationLedger::class)->reclaimStale())
-    ->everyFifteenMinutes()->name('sync:reclaim-stale')->withoutOverlapping();
-\Illuminate\Support\Facades\Schedule::call(fn () => app(\App\Services\Sync\OperationLedger::class)->prune())
-    ->dailyAt('03:40')->name('sync:prune-ledger')->withoutOverlapping();
+\App\Support\Scheduling\ScheduledRun::every(\Illuminate\Support\Facades\Schedule::call(fn () => app(\App\Services\Sync\OperationLedger::class)->reclaimStale()), 'sync:reclaim-stale', 15)
+    ->withoutOverlapping();
+\App\Support\Scheduling\ScheduledRun::daily(\Illuminate\Support\Facades\Schedule::call(fn () => app(\App\Services\Sync\OperationLedger::class)->prune()), 'sync:prune-ledger', '03:40')
+    ->withoutOverlapping();
 
 // Tombstones (what devices must forget) are kept 90 days. Every-minute entry
 // with its own once-per-12-hours guard, so a cron that fires only every 19
@@ -57,15 +71,15 @@ Artisan::command('inspire', function () {
 
 // Traffic retention: crawler rows after 90 days, unconverted visitors after
 // 400. A visit that became a hospital is never pruned — see TrafficSession.
-\Illuminate\Support\Facades\Schedule::command('model:prune', [
+\App\Support\Scheduling\ScheduledRun::daily(\Illuminate\Support\Facades\Schedule::command('model:prune', [
     '--model' => [\App\Models\TrafficEvent::class, \App\Models\TrafficSession::class],
-])->dailyAt('03:30')->withoutOverlapping();
+]), 'traffic-prune', '03:30')->withoutOverlapping();
 
 // Last night, onto every open stay's bill. Just after midnight, so a night is
 // billed the moment it is complete and a ward round in the morning already
-// sees it. Idempotent — see App\Console\Commands\AccrueBedCharges.
-\Illuminate\Support\Facades\Schedule::command('admissions:accrue-bed-charges')
-    ->dailyAt('00:05')
+// sees it. Idempotent (it bills the nights completed minus the nights already
+// billed), so a night the cron missed is billed at the next tick, once.
+\App\Support\Scheduling\ScheduledRun::daily(\Illuminate\Support\Facades\Schedule::command('admissions:accrue-bed-charges'), 'admissions-accrue-bed-charges', '00:05')
     ->withoutOverlapping();
 
 /*
@@ -101,20 +115,19 @@ Artisan::command('inspire', function () {
 )->everyMinute()->name('standalone-release-worker')->withoutOverlapping(35)->runInBackground()
     ->when(fn () => \App\Support\Edition::isSaas());
 
-\Illuminate\Support\Facades\Schedule::call(function (): void {
+\App\Support\Scheduling\ScheduledRun::every(\Illuminate\Support\Facades\Schedule::call(function (): void {
     \App\Models\StandaloneRelease::where('status', 'building')
         ->where('updated_at', '<', now()->subMinutes(40))
         ->update(['status' => 'failed', 'progress' => 'Release worker stopped unexpectedly', 'failure' => 'The build worker did not finish. Review its logs, then stage a new version.']);
-})->everyTenMinutes()->name('standalone-release-stale-check')->when(fn () => \App\Support\Edition::isSaas());
+}), 'standalone-release-stale-check', 10)->when(fn () => \App\Support\Edition::isSaas());
 
 // A job that has failed three times is kept for a week so somebody can look
 // at it, then cleared so the table does not grow without limit.
-\Illuminate\Support\Facades\Schedule::command('queue:prune-failed --hours=168')
-    ->weeklyOn(1, '02:00');
+\App\Support\Scheduling\ScheduledRun::weekly(\Illuminate\Support\Facades\Schedule::command('queue:prune-failed --hours=168'), 'queue-prune-failed', 1, '02:00');
 
 // Sessions expire on their own schedule; the rows do not. Only relevant on
 // the database session driver, which is what production uses.
-\Illuminate\Support\Facades\Schedule::command('auth:clear-resets')->daily();
+\App\Support\Scheduling\ScheduledRun::daily(\Illuminate\Support\Facades\Schedule::command('auth:clear-resets'), 'auth-clear-resets', '00:00');
 
 /*
 |--------------------------------------------------------------------------
@@ -129,12 +142,11 @@ Artisan::command('inspire', function () {
 | own guards besides — see App\Console\Commands\ResetDemoHospital.
 */
 if (\App\Support\Edition::isSaas() && config('demo.enabled') && config('demo.reset.enabled')) {
-    \Illuminate\Support\Facades\Schedule::command('demo:reset --force')
-        ->dailyAt((string) config('demo.reset.at', '03:30'))
+    \App\Support\Scheduling\ScheduledRun::daily(\Illuminate\Support\Facades\Schedule::command('demo:reset --force'), 'demo-reset', (string) config('demo.reset.at', '03:30'))
         ->withoutOverlapping();
 }
 
 // Stored answers for Idempotency-Key retries are good for 24 hours.
-\Illuminate\Support\Facades\Schedule::call(function (): void {
+\App\Support\Scheduling\ScheduledRun::daily(\Illuminate\Support\Facades\Schedule::call(function (): void {
     \Illuminate\Support\Facades\DB::table('idempotency_keys')->where('created_at', '<', now()->subDay())->delete();
-})->dailyAt('03:30')->name('idempotency-keys-prune');
+}), 'idempotency-keys-prune', '03:30');

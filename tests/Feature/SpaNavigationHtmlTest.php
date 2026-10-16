@@ -29,6 +29,10 @@ class SpaNavigationHtmlTest extends TestCase
         // `wire:navigate` to it would try to swap a client-rendered shell
         // into the Livewire SPA and leave neither working.
         'field',
+        // Account security is a sign-in page (the auth layout and its own
+        // stylesheet), where an owner may be held until two-step sign-in is
+        // set up: a full page load, not a swap inside the back office.
+        'account.security',
     ];
 
     /**

@@ -122,6 +122,7 @@ class WardController extends Controller
 
         if ($apply) {
             $this->authorize('update', $saved);
+            /** @var \App\Models\Ward $saved */
             $repriced = $this->wards->applyNightlyChargeToBeds($saved, (string) $saved->default_daily_charge);
 
             if ($repriced['beds'] > 0) {

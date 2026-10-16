@@ -58,17 +58,23 @@ class PatientCard extends Model
 
     protected $hidden = ['card_number', 'card_hash'];
 
+    /** @return BelongsTo<Patient, $this> */
     public function patient(): BelongsTo
     {
         return $this->belongsTo(Patient::class);
     }
 
+    /** @return HasMany<CardRecord, $this> */
     public function records(): HasMany
     {
         return $this->hasMany(CardRecord::class)->latest('created_at')->latest('id');
     }
 
-    /** Everyone besides the primary holder, revoked ones included. */
+    /**
+     * Everyone besides the primary holder, revoked ones included.
+     *
+     * @return HasMany<CardHolder, $this>
+     */
     public function holders(): HasMany
     {
         return $this->hasMany(CardHolder::class);
@@ -80,6 +86,7 @@ class PatientCard extends Model
         return $this->belongsTo(InsuranceProvider::class, 'insurance_provider_id');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function issuer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'issued_by');

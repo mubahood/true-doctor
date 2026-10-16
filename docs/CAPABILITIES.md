@@ -7,9 +7,9 @@ rather than alphabetically. If you want a specific term, use the
 This is a **capability reference**, not a manual. It says what exists and what
 the rules are; the linked module docs say how each one is built.
 
-Figures in this document were counted from the codebase on 25 September 2026:
-**62 data models · 28 domain services · 69 back-office screens · 35 state
-enumerations · 9 printable documents · 1,913 automated tests.**
+Figures in this document were counted from the codebase on 17 October 2026:
+**76 data models · 50 domain services · 70 back-office screens · 38 state
+enumerations · 13 printable documents · 2,599 server tests and 724 app tests.**
 
 ---
 
@@ -459,13 +459,23 @@ work does not stop for any of them.
 - **Rate limiting** on sign-in — five attempts, then a timed lockout.
 - **Sessions last 90 days** when "keep me signed in" is ticked (it is, by
   default). The cookie is HttpOnly, tied to one user, and cycled the moment
-  anybody signs out of that account anywhere.
+  anybody signs out of that account anywhere. Sessions are encrypted, and the
+  cookie is secure on https.
+- **Two-step sign-in** (an authenticator-app code after the password) is
+  required for owners, administrators and the platform's super admin, and open
+  to anyone; recovery codes work once, a browser can be trusted for 30 days,
+  and "sign out everywhere" ends every other session and app. Web and app.
 - **Session fixation** prevented — a new session id on privilege change,
   issued only after the account checks pass.
-- **Encryption at rest** for card numbers, bank details and protected clinical
-  fields.
-- **Change auditing** — who changed a patient or visit record, when, and what
-  the value was before. **Read access is not logged** (see §Y).
+- **Encryption at rest** for prepaid card numbers and patients' bank details,
+  and for two-step sign-in secrets. **Clinical fields are not yet encrypted**
+  (planned for HIV status, mental health and sexual and reproductive health
+  notes: roadmap 07 §3).
+- **Change auditing** — who changed a patient's number, name or status, or a
+  visit's number, status, stage, outcome or diagnosis, when, and what the value
+  was before. Other records keep append-only histories and ledgers instead
+  (below); field-level auditing of every clinical and money record is planned
+  (roadmap 07 §3). **Read access is not logged** (see §Y).
 - **Append-only status histories** on every workflow — a visit's stages, an
   appointment's attendance, a claim's progress, an order's status — never
   edited in place.

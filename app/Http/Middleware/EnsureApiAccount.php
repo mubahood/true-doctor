@@ -32,6 +32,9 @@ class EnsureApiAccount
     /** Reachable while the password is still a temporary one. */
     private const PASSWORD_ALLOWED = ['api.auth.me', 'api.auth.logout', 'api.auth.password', 'api.meta'];
 
+    /** Reachable while an owner or administrator still has to set up two-step sign-in. */
+    private const TWO_FACTOR_ALLOWED = ['api.auth.me', 'api.auth.logout', 'api.auth.password', 'api.meta', 'api.auth.two-factor.setup', 'api.auth.two-factor.confirm'];
+
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
@@ -59,6 +62,14 @@ class EnsureApiAccount
             return ApiResponse::error(
                 ApiErrorCode::PasswordChangeRequired,
                 'Set your own password before continuing.',
+                403,
+            );
+        }
+
+        if (! $request->routeIs(...self::TWO_FACTOR_ALLOWED) && app(\App\Services\TwoFactorService::class)->mustSetUp($user)) {
+            return ApiResponse::error(
+                ApiErrorCode::TwoFactorSetupRequired,
+                'Owners and administrators use two-step sign-in. Set it up to carry on.',
                 403,
             );
         }

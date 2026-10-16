@@ -49,7 +49,7 @@ class IdempotencyTest extends TestCase
         return [$h, $clerk, $invoice];
     }
 
-    private function pay(array $body, ?string $key, array $invoice = null)
+    private function pay(array $body, ?string $key, ?array $invoice = null)
     {
         return $this->postJson('/api/v1/invoices/'.($invoice ?? $this->invoice)['uuid'].'/payments', $body, $key === null ? [] : ['Idempotency-Key' => $key]);
     }

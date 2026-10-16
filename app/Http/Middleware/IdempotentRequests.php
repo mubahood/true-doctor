@@ -148,7 +148,8 @@ class IdempotentRequests
 
         if ($request->allFiles() !== []) {
             $files = [];
-            array_walk_recursive($request->allFiles(), function ($file, $name) use (&$files) {
+            $uploads = $request->allFiles();
+            array_walk_recursive($uploads, function ($file, $name) use (&$files) {
                 $files[] = $name.':'.$file->getClientOriginalName().':'.$file->getSize();
             });
             sort($files);

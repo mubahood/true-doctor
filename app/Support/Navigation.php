@@ -85,6 +85,7 @@ final class Navigation
                     ['label' => 'Standalone licences', 'icon' => 'fa-certificate', 'route' => 'super.licences.index', 'match' => ['super.licences.*']],
                     ['label' => 'Subscriptions', 'icon' => 'fa-file-invoice-dollar', 'route' => 'super.subscriptions.index', 'match' => ['super.subscriptions.*']],
                     ['label' => 'Traffic & campaigns', 'icon' => 'fa-chart-line', 'route' => 'super.traffic.index', 'match' => ['super.traffic.*']],
+                    ['label' => 'Errors', 'icon' => 'fa-bug', 'route' => 'super.errors.index', 'match' => ['super.errors.*']],
                     // Platform-global config (site name, contacts) — a SaaS page, not a tenant one.
                     ['label' => 'Site settings', 'icon' => 'fa-sliders', 'route' => 'admin.settings.index', 'match' => ['admin.settings.index']],
                 ]],

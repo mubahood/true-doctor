@@ -142,6 +142,22 @@ class AuthenticatedSessionController extends Controller
             $this->abandon($request, 'Access denied. Staff credentials are required.');
         }
 
+        // Two-step sign-in: the password was right, but nobody is signed in
+        // until the code is. Undo the sign-in (without ending this person's
+        // other sessions) and drop the "keep me signed in" cookie the attempt
+        // queued; it is issued after the code passes.
+        $twoFactor = app(\App\Services\TwoFactorService::class);
+        if ($twoFactor->isEnabled($user) && ! $twoFactor->isTrusted($user, $request->cookie(TwoFactorChallengeController::trustCookie($user)))) {
+            $remember = $request->remembers();
+            /** @var \Illuminate\Auth\SessionGuard $guard */
+            $guard = Auth::guard('web');
+            $guard->logoutCurrentDevice();
+            $request->session()->regenerate();
+            $request->session()->put(['login.id' => $user->getKey(), 'login.remember' => $remember, 'login.at' => now()->getTimestamp()]);
+
+            return redirect()->route('two-factor.challenge');
+        }
+
         // Session fixation: a new id for the newly-privileged session. It runs
         // after the two checks so a rejected attempt never gets a fresh one.
         $request->session()->regenerate();

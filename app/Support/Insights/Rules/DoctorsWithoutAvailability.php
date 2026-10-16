@@ -16,7 +16,7 @@ final class DoctorsWithoutAvailability extends Rule
         return 'doctors-without-availability';
     }
 
-    protected function permission(): ?string
+    protected function permission(): string
     {
         return 'schedules.manage';
     }

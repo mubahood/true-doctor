@@ -51,6 +51,7 @@ class VisitResource extends JsonResource
                 'blood_type' => $patient?->blood_type,
                 // Shown on the visit, where somebody is about to prescribe.
                 'allergies' => array_values(array_filter((array) ($patient->allergies ?? []))),
+                'alerts' => \App\Support\Clinical\PatientAlerts::forPayload($patient),
             ],
             'doctor' => $this->doctor?->name,
             'doctor_user_id' => $this->doctor_user_id,

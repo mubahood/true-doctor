@@ -26,6 +26,9 @@ Route::middleware(['edition:saas', 'landing'])->group(function () {
     Route::get('/pricing', [\App\Http\Controllers\MarketingController::class, 'pricing'])->name('pricing');
     Route::view('/security', 'marketing.security')->name('security');
 });
+// For an uptime monitor: overall status and each check's status (td:check has the details).
+Route::get('/health', \App\Http\Controllers\HealthController::class)->middleware('throttle:60,1')->name('health');
+
 Route::get('/contact', [\App\Http\Controllers\MarketingController::class, 'contact'])
     ->middleware(['edition:saas', 'landing'])->name('contact');
 Route::post('/contact', [\App\Http\Controllers\MarketingController::class, 'enquire'])->middleware('edition:saas')->name('contact.send');
@@ -323,6 +326,7 @@ Route::prefix('super')->middleware(['edition:saas', 'auth', 'super', 'no-store']
     Route::get('releases/{release}/download', \App\Http\Controllers\Super\StandaloneReleaseDownloadController::class)->name('releases.download');
     Route::get('products', \App\Livewire\Super\Products\Index::class)->name('products.index');
     Route::get('licences', \App\Livewire\Super\Licences\Index::class)->name('licences.index');
+    Route::get('errors', \App\Livewire\Super\Errors\Index::class)->name('errors.index');
     Route::get('subscriptions', \App\Livewire\Super\Subscriptions\Index::class)->name('subscriptions.index');
 
     // Where the people arriving at the public site came from, and which of

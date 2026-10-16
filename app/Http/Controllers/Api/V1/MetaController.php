@@ -90,6 +90,12 @@ class MetaController extends Controller
             // What this server can do for this user: versions, edition,
             // permissions, features, limits (docs/api/plane.md).
             'capabilities' => Capabilities::for($user, $hospital),
+            // Two-step sign-in, so the app can offer it or insist on it (docs/api/security.md).
+            'security' => [
+                'two_factor_enabled' => app(\App\Services\TwoFactorService::class)->isEnabled($user),
+                'two_factor_required' => app(\App\Services\TwoFactorService::class)->isRequired($user),
+                'recovery_codes_left' => app(\App\Services\TwoFactorService::class)->recoveryCodesLeft($user),
+            ],
             // Who to ask for help, and the prefilled messages (docs/api/support.md).
             'support' => \App\Support\SupportContact::forHospital($hospital)->toArray(),
         ] + (Demo::isDemoUser($user) ? ['demo' => [

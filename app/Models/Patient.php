@@ -88,11 +88,13 @@ class Patient extends Model
 
     // ── Relationships ──────────────────────────────────────────
 
+    /** @return BelongsTo<District, $this> */
     public function district(): BelongsTo
     {
         return $this->belongsTo(District::class);
     }
 
+    /** @return BelongsTo<User, $this> */
     public function registeredBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'registered_by');

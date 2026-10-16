@@ -15,7 +15,7 @@ final class UnpaidInvoices extends Rule
         return 'invoices-unpaid';
     }
 
-    protected function permission(): ?string
+    protected function permission(): string
     {
         return 'billing.view';
     }

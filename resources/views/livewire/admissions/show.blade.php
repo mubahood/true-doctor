@@ -32,6 +32,8 @@
     </x-slot:actions>
   </x-ui.page-header>
 
+  <x-clinical.alerts :patient="$admission->patient" />
+
   <div class="tb-detail-cols">
     {{-- ── Summary column (read-only) ─────────────────────────── --}}
     <div class="tb-stack">
