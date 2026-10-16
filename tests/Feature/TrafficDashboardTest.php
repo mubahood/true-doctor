@@ -82,7 +82,7 @@ class TrafficDashboardTest extends TestCase
 
         $this->as($visitor)->post('/register', [...$this->humanCheck('register'),
             'hospital_name' => $name, 'name' => 'Owner', 'email' => Str::slug($name).'@dash.test',
-            'password' => 'password1', 'password_confirmation' => 'password1', 'plan_id' => $plan->id,
+            'password' => 'password1', 'password_confirmation' => 'password1', 'whatsapp' => '+256 700 111 222', 'plan_id' => $plan->id,
         ])->assertRedirect();
 
         auth()->logout();

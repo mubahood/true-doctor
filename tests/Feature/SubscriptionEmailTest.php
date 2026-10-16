@@ -34,7 +34,7 @@ class SubscriptionEmailTest extends TestCase
 
         $this->post('/register', [...$this->humanCheck('register'),
             'hospital_name' => 'Welcome Clinic', 'name' => 'Owner', 'email' => 'owner@welcome.test',
-            'password' => 'password1', 'password_confirmation' => 'password1', 'plan_id' => $plan->id,
+            'password' => 'password1', 'password_confirmation' => 'password1', 'whatsapp' => '+256 700 111 222', 'plan_id' => $plan->id,
         ]);
 
         $owner = User::where('email', 'owner@welcome.test')->firstOrFail();

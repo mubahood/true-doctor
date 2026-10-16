@@ -90,6 +90,8 @@ class MetaController extends Controller
             // What this server can do for this user: versions, edition,
             // permissions, features, limits (docs/api/plane.md).
             'capabilities' => Capabilities::for($user, $hospital),
+            // Who to ask for help, and the prefilled messages (docs/api/support.md).
+            'support' => \App\Support\SupportContact::forHospital($hospital)->toArray(),
         ] + (Demo::isDemoUser($user) ? ['demo' => [
             'active' => true,
             'role' => $user->role,

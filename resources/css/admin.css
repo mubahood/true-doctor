@@ -178,6 +178,7 @@ strong,b{font-weight:600;}
 .tb-user-dropdown a:hover,.tb-user-dropdown button:hover{background:var(--surface-2);}
 .tb-user-dropdown a i,.tb-user-dropdown button i{width:15px;color:var(--mt2);}
 .tb-user-dropdown hr{border:none;border-top:1px solid var(--line);margin:5px 0;}
+.tb-menu-note{display:block;padding:4px 10px 6px;font-size:11px;color:var(--mt2);}
 .tb-user-dropdown button.danger:hover{color:var(--bad);}
 
 /* ── Row actions menu (x-ui.actions-menu) ───────────────────

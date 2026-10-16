@@ -21,7 +21,7 @@ class HumanCheckTest extends TestCase
 
         return array_merge([
             'hospital_name' => 'St. Mary\'s Clinic', 'name' => 'Dr. Sarah Nakato', 'email' => 'sarah@stmarys.test',
-            'password' => 'secret12', 'password_confirmation' => 'secret12', 'plan_id' => $plan->id,
+            'password' => 'secret12', 'password_confirmation' => 'secret12', 'whatsapp' => '+256 700 111 222', 'plan_id' => $plan->id,
         ], $overrides);
     }
 

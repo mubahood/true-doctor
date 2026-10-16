@@ -37,7 +37,8 @@ class SubscriptionActivated extends Notification implements ShouldQueue
             ->line("Your payment of {$amount} for the {$this->plan->name} plan was received.")
             ->line('Your subscription is active until '.$this->subscription->ends_at?->format('d M Y').'.')
             ->action('View subscription', route('admin.subscription.index'))
-            ->line('This email is your receipt.');
+            ->line('This email is your receipt.')
+            ->line(\App\Support\SupportContact::platform()->mailLine('admin.help', ['role' => 'the owner', 'hospital' => $notifiable->hospital->name ?? 'our hospital', 'screen' => 'my subscription']));
     }
 
     /** @return array<string,mixed> */

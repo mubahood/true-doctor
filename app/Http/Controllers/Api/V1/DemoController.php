@@ -43,7 +43,7 @@ class DemoController extends Controller
         $accounts = $hospital === null ? collect() : $this->accounts($hospital);
 
         if ($hospital === null || $accounts->isEmpty()) {
-            return ApiResponse::success(['enabled' => false, 'hospital' => null, 'resets' => false, 'roles' => []]);
+            return ApiResponse::success(['enabled' => false, 'hospital' => null, 'resets' => false, 'roles' => [], 'support' => \App\Support\SupportContact::platform()->toArray()]);
         }
 
         $roles = [];
@@ -62,6 +62,8 @@ class DemoController extends Controller
             'hospital' => ['name' => $hospital->name, 'currency' => strtoupper((string) $billing['currency_code'])],
             'resets' => Demo::resets(),
             'roles' => $roles,
+            // The landing's "talk to us", known before anybody signs in.
+            'support' => \App\Support\SupportContact::platform()->toArray(),
         ]);
     }
 

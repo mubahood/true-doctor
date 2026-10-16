@@ -103,7 +103,10 @@ class DemoApiTest extends TestCase
 
     public function test_the_listing_never_carries_an_email_or_password(): void
     {
-        $body = $this->getJson('/api/v1/public/demo')->getContent();
+        // The support block carries the vendor's own contact; the demo's accounts never appear.
+        $data = $this->getJson('/api/v1/public/demo')->json('data');
+        unset($data['support']);
+        $body = json_encode($data);
 
         $this->assertStringNotContainsString('@', $body);
         $this->assertStringNotContainsStringIgnoringCase('password', $body);

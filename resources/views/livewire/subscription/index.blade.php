@@ -28,6 +28,13 @@
             Active, no end date.
           @endif
         </p>
+        @php($support = \App\Support\SupportContact::current())
+        @php($hospitalName = app(\App\Support\HospitalSettings::class)->hospital()?->name ?? 'our hospital')
+        @if($support->hasWhatsapp())
+          <p class="sub-status-line">
+            <x-support.link context="admin.renew" :vars="['hospital' => $hospitalName]">Renew or change plan on WhatsApp</x-support.link>
+          </p>
+        @endif
       </div>
       @if($sub->plan && $sub->status->value !== 'trialing')
         <div class="sub-status-price">

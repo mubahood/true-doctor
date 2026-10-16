@@ -45,6 +45,9 @@
           <h2>Your release is being prepared</h2>
           <p>No published release is covered by this licence yet. We will email you when it is ready — or <a href="{{ route('contact') }}">contact us</a>.</p>
         @endif
+        @if($licence)
+          <p class="own-small"><x-support.link context="standalone.install" :vars="['licence' => $licence->id]">Need help installing? WhatsApp us</x-support.link></p>
+        @endif
       </div>
 
       {{-- ── The licence ───────────────────────────────────────── --}}

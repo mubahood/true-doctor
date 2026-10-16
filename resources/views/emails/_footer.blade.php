@@ -18,6 +18,12 @@
             </p>
           @endif
         @endif
+        @php $mailSupport = \App\Support\SupportContact::forHospital(\App\Models\Hospital::query()->withoutGlobalScopes()->find(($user ?? null)?->hospital_id)); @endphp
+        @if($mailSupport->hasWhatsapp())
+          <p style="font-size:12px;color:#5A6B80;margin:10px 0 0;line-height:1.6;">
+            Need a hand? <a href="{{ $mailSupport->waLink('admin.help', ['role' => 'staff', 'hospital' => $mailOrg ?: 'True-Doctor', 'screen' => 'my account']) }}" style="color:#0A6EBD;">WhatsApp {{ $mailSupport->whatsappDisplay() }}</a>@if($mailSupport->phone() !== '') or call {{ $mailSupport->phone() }}@endif.
+          </p>
+        @endif
         <p style="font-size:10.5px;color:#93A1B3;margin:10px 0 0;line-height:1.6;">
           You are receiving this because you have a staff account{{ $mailOrg ? ' at '.$mailOrg : '' }}.<br>
           Sent automatically by {{ $mailOrg ? $mailOrg.'’s' : 'the' }} True-Doctor system.

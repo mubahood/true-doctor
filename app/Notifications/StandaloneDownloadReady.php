@@ -57,6 +57,7 @@ class StandaloneDownloadReady extends Notification implements ShouldQueue
             default => $message->subject('Your True-Doctor download link')
                 ->line('Here is the private link to your True-Doctor downloads.')
                 ->action('Open my downloads', $link),
-        })->line('The link works for '.self::LINK_HOURS.' hours. You can always ask for a new one from the downloads page.');
+        })->line('The link works for '.self::LINK_HOURS.' hours. You can always ask for a new one from the downloads page.')
+            ->line(\App\Support\SupportContact::platform()->mailLine('standalone.install', ['licence' => (string) $licence?->id]));
     }
 }

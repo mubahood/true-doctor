@@ -18,6 +18,12 @@
           <x-ui.field label="Contact phone" for="set-phone" name="contact_phone">
             <input id="set-phone" type="text" wire:model="contact_phone" class="tb-input">
           </x-ui.field>
+          <x-ui.field label="Support WhatsApp (with country code)" for="set-wa" name="contact_whatsapp">
+            <input id="set-wa" type="text" wire:model="contact_whatsapp" class="tb-input" placeholder="Leave empty to use the default">
+          </x-ui.field>
+          <x-ui.field label="Support hours" for="set-hours" name="support_hours">
+            <input id="set-hours" type="text" wire:model="support_hours" class="tb-input" placeholder="Leave empty to use the default">
+          </x-ui.field>
           <x-ui.field label="Verify rate limit (per minute)" for="set-rate" name="verify_rate_limit" required>
             <input id="set-rate" type="number" wire:model="verify_rate_limit" class="tb-input">
           </x-ui.field>

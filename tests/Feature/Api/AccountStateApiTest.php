@@ -101,12 +101,12 @@ class AccountStateApiTest extends TestCase
 
         $this->api($token)->postJson('/api/v1/auth/password', [
             'current_password' => 'secret123',
-            'password' => 'kampala',
-            'password_confirmation' => 'kampala',
+            'password' => 'kampala7',
+            'password_confirmation' => 'kampala7',
         ])->assertOk()->assertJsonPath('data.password_change_required', false);
 
         $this->assertFalse($user->fresh()->password_change_required);
-        $this->assertTrue(Hash::check('kampala', $user->fresh()->password));
+        $this->assertTrue(Hash::check('kampala7', $user->fresh()->password));
         $this->api($token)->getJson('/api/v1/patients')->assertOk();
     }
 
@@ -114,9 +114,9 @@ class AccountStateApiTest extends TestCase
     public static function refusals(): array
     {
         return [
-            'wrong current password' => [['current_password' => 'nope', 'password' => 'garden', 'password_confirmation' => 'garden'], 'current_password', 'That is not the password you signed in with.'],
-            'too short' => [['current_password' => 'secret123', 'password' => 'abc', 'password_confirmation' => 'abc'], 'password', 'The new password needs at least 6 characters.'],
-            'not confirmed' => [['current_password' => 'secret123', 'password' => 'garden', 'password_confirmation' => 'gardens'], 'password', 'The two new passwords do not match.'],
+            'wrong current password' => [['current_password' => 'nope', 'password' => 'garden12', 'password_confirmation' => 'garden12'], 'current_password', 'That is not the password you signed in with.'],
+            'too short' => [['current_password' => 'secret123', 'password' => 'abc', 'password_confirmation' => 'abc'], 'password', 'The new password needs at least 8 characters.'],
+            'not confirmed' => [['current_password' => 'secret123', 'password' => 'garden12', 'password_confirmation' => 'gardens12'], 'password', 'The two new passwords do not match.'],
             'same as before' => [['current_password' => 'secret123', 'password' => 'secret123', 'password_confirmation' => 'secret123'], 'password', 'Choose a password different from the one you signed in with.'],
         ];
     }
@@ -140,7 +140,7 @@ class AccountStateApiTest extends TestCase
         $laptop = $this->tokenFor($user);
 
         $this->api($phone)->postJson('/api/v1/auth/password', [
-            'current_password' => 'secret123', 'password' => 'kampala', 'password_confirmation' => 'kampala',
+            'current_password' => 'secret123', 'password' => 'kampala7', 'password_confirmation' => 'kampala7',
         ])->assertOk();
 
         $this->api($phone)->getJson('/api/v1/auth/me')->assertOk();

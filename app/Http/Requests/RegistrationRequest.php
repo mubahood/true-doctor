@@ -22,6 +22,9 @@ class RegistrationRequest extends FormRequest
             'hospital_name' => ['required', 'string', 'max:120', new PlainName, Rule::unique('hospitals', 'name')],
             'name' => ['required', 'string', 'max:120', new PlainName],
             'email' => ['required', 'email', 'max:191', Rule::unique('users', 'email')],
+            // WhatsApp is how we help a new owner set up. Required on the web form;
+            // optional over the API so an installed app that does not ask yet still signs people up.
+            'whatsapp' => [$this->is('api/*') ? 'nullable' : 'required', 'string', 'max:20', 'regex:/^\+?[0-9][0-9 ()\-]{7,18}$/'],
             'password' => ['required', 'confirmed', Password::defaults()],
             'plan_id' => ['required', 'integer', Rule::exists('plans', 'id')->where('is_active', true)],
         ] + HumanCheck::rules('register');
@@ -29,6 +32,9 @@ class RegistrationRequest extends FormRequest
 
     public function messages(): array
     {
-        return HumanCheck::messages();
+        return [
+            'whatsapp.required' => 'Please give us your WhatsApp number, with the country code, so we can help you set up.',
+            'whatsapp.regex' => 'Enter the number with the country code, for example +256 7XX XXX XXX.',
+        ] + HumanCheck::messages();
     }
 }

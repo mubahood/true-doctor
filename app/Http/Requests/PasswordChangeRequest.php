@@ -10,8 +10,8 @@ use Illuminate\Validation\Rules\Password;
  *
  * The web page (PUT /password) and the app (POST /api/v1/auth/password) both
  * type-hint this, so the rule and the messages a person reads cannot differ
- * between the two. The rule itself is Password::defaults(): at least six
- * characters, nothing more (AppServiceProvider).
+ * between the two. The rule itself is Password::defaults():
+ * App\Support\PasswordPolicy (8 characters, letters and numbers, not breached).
  */
 class PasswordChangeRequest extends FormRequest
 {

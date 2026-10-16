@@ -35,6 +35,22 @@ final class InstalledLicence
         return is_string($this->payload['customer'] ?? null) ? $this->payload['customer'] : null;
     }
 
+    /**
+     * Who supports this copy, when a partner sold and installed it: the
+     * `support` block of the signed licence (name, whatsapp, phone, email).
+     *
+     * @return array<string,string>
+     */
+    public function support(): array
+    {
+        $this->load();
+        $block = $this->payload['support'] ?? null;
+
+        return is_array($block)
+            ? array_filter($block, fn ($v) => is_string($v) && trim($v) !== '')
+            : [];
+    }
+
     public function updatesUntil(): ?Carbon
     {
         $this->load();

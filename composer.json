@@ -70,11 +70,15 @@
         "secrets-scan": [
             "bash scripts/ci/secrets-scan.sh"
         ],
+        "support-number-scan": [
+            "bash scripts/ci/support-number-scan.sh"
+        ],
         "ci": [
             "vendor/bin/pint --test",
             "@stan",
             "@check-empty-files",
             "@secrets-scan",
+            "@support-number-scan",
             "@test"
         ],
         "post-autoload-dump": [

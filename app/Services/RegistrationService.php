@@ -21,7 +21,7 @@ class RegistrationService
 {
     private const TRIAL_DAYS = 14;
 
-    /** @param array{hospital_name:string,name:string,email:string,password:string,plan_id:int} $data */
+    /** @param array{hospital_name:string,name:string,email:string,password:string,plan_id:int,whatsapp?:?string} $data */
     public function register(array $data): User
     {
         if (\App\Support\Edition::isStandalone()) {
@@ -41,6 +41,7 @@ class RegistrationService
                 'name' => $data['name'],
                 'email' => $data['email'],
                 'password' => Hash::make($data['password']),
+                'phone' => filled($data['whatsapp'] ?? null) ? trim($data['whatsapp']) : null,
                 'role' => 'hospital_admin',
                 'hospital_id' => $hospital->id,
                 'is_active' => true,

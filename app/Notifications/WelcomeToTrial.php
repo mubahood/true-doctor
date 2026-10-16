@@ -32,6 +32,7 @@ class WelcomeToTrial extends Notification implements ShouldQueue
             ->line('Your hospital account is ready and your 14-day free trial is active'.($ends ? " until {$ends}." : '.'))
             ->line('Finish setting up in a few quick steps, then activate a plan to keep going.')
             ->action('Get started', route('admin.onboarding'))
+            ->line(\App\Support\SupportContact::platform()->mailLine('trial.welcome', ['hospital' => $notifiable->hospital->name ?? 'our hospital']))
             ->line('Thanks for choosing True-Doctor.');
     }
 

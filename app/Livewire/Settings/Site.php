@@ -27,6 +27,10 @@ class Site extends Component
 
     public ?string $contact_phone = null;
 
+    public ?string $contact_whatsapp = null;
+
+    public ?string $support_hours = null;
+
     public int $verify_rate_limit = 60;
 
     public function mount(): void
@@ -38,6 +42,8 @@ class Site extends Component
         $this->tagline = (string) ($settings['tagline'] ?? '');
         $this->contact_email = $settings['contact_email'] ?? null;
         $this->contact_phone = $settings['contact_phone'] ?? null;
+        $this->contact_whatsapp = $settings['contact_whatsapp'] ?? null;
+        $this->support_hours = $settings['support_hours'] ?? null;
         $this->verify_rate_limit = (int) ($settings['verify_rate_limit'] ?? 60);
     }
 
@@ -54,6 +60,8 @@ class Site extends Component
             'tagline' => ['required', 'string', 'max:191'],
             'contact_email' => ['nullable', 'email', 'max:191'],
             'contact_phone' => ['nullable', 'string', 'max:32'],
+            'contact_whatsapp' => ['nullable', 'string', 'max:32', 'regex:/^\+?[0-9 ]{9,20}$/'],
+            'support_hours' => ['nullable', 'string', 'max:120'],
             'verify_rate_limit' => ['required', 'integer', 'min:1', 'max:1000'],
         ];
     }

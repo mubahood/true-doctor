@@ -120,12 +120,13 @@ return [
     | Where public enquiries go
     |--------------------------------------------------------------------------
     |
-    | The contact form's destination. Falls back to the from-address so the
-    | form is never silently a black hole on an installation that has not set
-    | it — an enquiry that goes nowhere is worse than no form at all.
+    | The contact form's destination. When this is empty the support email
+    | (Settings → Site, else SUPPORT_EMAIL) receives it, and failing that the
+    | from-address, so the form is never silently a black hole and never lands
+    | in a no-reply mailbox.
     |
     */
 
-    'enquiries_to' => env('MAIL_ENQUIRIES_TO', env('MAIL_FROM_ADDRESS', 'hello@example.com')),
+    'enquiries_to' => env('MAIL_ENQUIRIES_TO'),
 
 ];

@@ -117,6 +117,7 @@
              component, which checks the hospital rather than the email. --}}
         <livewire:shell.demo-invite />
         <x-shell.subscription-badge />
+        <x-shell.help-menu />
         <livewire:shell.notification-bell />
         <div class="tb-user-menu" :class="{'open': userMenu}" @click.outside="userMenu=false" @keydown.escape="userMenu=false">
           <button type="button" class="tb-user-trigger" @click="userMenu=!userMenu" :aria-expanded="userMenu" aria-haspopup="menu" aria-label="Account menu">

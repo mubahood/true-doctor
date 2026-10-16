@@ -71,6 +71,22 @@
       @enderror
     </div>
 
+    <div class="a-field span2">
+      <label class="a-label" for="whatsapp">Your WhatsApp number</label>
+      <div class="a-inwrap">
+        <i class="fab fa-whatsapp" aria-hidden="true"></i>
+        <input class="a-input @error('whatsapp') is-bad @enderror" id="whatsapp" type="tel" name="whatsapp"
+               value="{{ old('whatsapp') }}" placeholder="+256 7XX XXX XXX" required autocomplete="tel"
+               inputmode="tel" maxlength="20"
+               @error('whatsapp') aria-invalid="true" aria-describedby="whatsapp-error" @enderror>
+      </div>
+      @error('whatsapp')
+        <p class="a-err" id="whatsapp-error" role="alert"><i class="fas fa-circle-exclamation" aria-hidden="true"></i> {{ $message }}</p>
+      @else
+        <div class="a-hint">With the country code. We use it only to help you set up.</div>
+      @enderror
+    </div>
+
     <div class="a-field">
       <label class="a-label" for="password">Password</label>
       <div class="a-inwrap">
@@ -83,7 +99,7 @@
         <button type="button" class="a-eye" data-eye="password" aria-label="Show password"><i class="fas fa-eye" aria-hidden="true"></i></button>
       </div>
       @error('password')<p class="a-err" id="password-error" role="alert"><i class="fas fa-circle-exclamation" aria-hidden="true"></i> {{ $message }}</p>@enderror
-      <div class="a-hint" id="password-rule">At least 6 characters.</div>
+      <div class="a-hint" id="password-rule">{{ \App\Support\PasswordPolicy::hint() }}</div>
       {{-- Filled in by auth.js. Empty and hidden until typing starts, so the
            page does not open with a meter reading "too short". --}}
       <div class="a-strength" id="pw-strength" hidden>
@@ -181,7 +197,9 @@
       </div>
     </div>
     <div class="a-panel-foot">
-      Questions first? <a href="{{ route('contact') }}" class="a-link">Talk to us</a>.
+      Questions before you start?
+      <x-support.link context="site.general" class="a-link" :icon="false">WhatsApp us</x-support.link>
+      or <a href="{{ route('contact') }}" class="a-link">send a message</a>.
     </div>
   </div>
 @endsection

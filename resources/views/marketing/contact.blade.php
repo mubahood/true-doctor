@@ -16,8 +16,23 @@
   </div>
 </section>
 
+@php $support = \App\Support\SupportContact::current(); @endphp
 <section style="padding-top:44px;">
   <div class="wrap">
+    {{-- WhatsApp first: it is how a clinic owner in Uganda would rather ask. --}}
+    <div class="formcard support-card">
+      @if($support->hasWhatsapp())
+        <x-support.link context="site.general" class="btn lg">Chat with us on WhatsApp</x-support.link>
+        <p class="support-note">{{ $support->whatsappDisplay() }}@if($support->hours() !== '') &middot; {{ $support->hours() }}@endif</p>
+      @endif
+      <p class="support-note">
+        @if($support->phone() !== '')Call <a href="{{ $support->phoneLink() }}">{{ $support->phone() }}</a>@endif
+        @if($support->phone() !== '' && $support->email() !== '') or @endif
+        @if($support->email() !== '')email <a href="mailto:{{ $support->email() }}">{{ $support->email() }}</a>@endif
+      </p>
+      <p class="support-note">Or leave a message below and we reply within one business day.</p>
+    </div>
+
     {{-- The anchor an ad's "Contact Sales" sitelink opens at, so the form is
          what a visitor sees rather than the top of the page. --}}
     <div class="formcard" id="enquiry">

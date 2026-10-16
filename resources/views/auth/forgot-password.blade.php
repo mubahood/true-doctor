@@ -31,5 +31,6 @@
   <button type="submit" class="a-btn" data-busy="Sending the link…"><i class="fas fa-paper-plane" aria-hidden="true"></i> Email me a reset link</button>
 </form>
 
+<div class="a-alt"><x-support.link context="auth.signin" :vars="['hospital' => \App\Support\HospitalBrand::forSignIn()->name() ?? 'True-Doctor']" class="a-link">Trouble signing in? WhatsApp us</x-support.link></div>
 <div class="a-alt"><a href="{{ route('admin.login') }}" class="a-back"><i class="fas fa-arrow-left"></i> Back to sign in</a></div>
 @endsection

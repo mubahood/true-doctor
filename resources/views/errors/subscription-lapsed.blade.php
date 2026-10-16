@@ -24,6 +24,16 @@
           system is temporarily unavailable. Ask your hospital administrator to renew it — everything
           picks up right where it left off.
         </p>
+        @php
+          $support = \App\Support\SupportContact::current();
+          $renew = $support->waLink('admin.renew', ['hospital' => auth()->user()?->hospital?->name ?? 'our hospital']);
+        @endphp
+        @if($renew !== '')
+          <p class="muted">
+            <a href="{{ $renew }}" target="_blank" rel="noopener" class="btn-tb btn-tb-primary"><i class="fab fa-whatsapp" aria-hidden="true"></i> WhatsApp us to renew</a>
+          </p>
+          <p class="muted">{{ $support->whatsappDisplay() }}@if($support->phone() !== '') · <a href="{{ $support->phoneLink() }}">{{ $support->phone() }}</a>@endif @if($support->email() !== '')· {{ $support->email() }}@endif</p>
+        @endif
         <form method="POST" action="{{ route('admin.logout') }}" class="blk-actions">
           @csrf
           <button type="submit" class="btn-tb btn-tb-ghost"><i class="fas fa-right-from-bracket" aria-hidden="true"></i> Sign out</button>

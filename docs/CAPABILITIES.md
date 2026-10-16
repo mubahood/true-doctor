@@ -455,7 +455,7 @@ work does not stop for any of them.
 - **No default passwords.** The first administrator is created with a random
   password printed once to the console and a forced change at first sign-in.
   Staff are invited the same way.
-- **Password policy**: minimum 8 characters, letters and numbers.
+- **Password policy**: minimum 8 characters, letters and numbers, and not a password already published in a breach (checked against Have I Been Pwned's k-anonymity API; fails open when the server has no internet). One rule, `App\Support\PasswordPolicy`, for sign-up, reset, forced change, staff accounts and the API.
 - **Rate limiting** on sign-in — five attempts, then a timed lockout.
 - **Sessions last 90 days** when "keep me signed in" is ticked (it is, by
   default). The cookie is HttpOnly, tied to one user, and cycled the moment

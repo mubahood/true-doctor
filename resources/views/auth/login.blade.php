@@ -74,6 +74,7 @@
   </button>
 </form>
 
+<div class="a-alt"><x-support.link context="auth.signin" :vars="['hospital' => \App\Support\HospitalBrand::forSignIn()->name() ?? 'True-Doctor']" class="a-link">Trouble signing in? WhatsApp us</x-support.link></div>
 @if(\App\Support\Edition::isSaas())
   <div class="a-alt">New here? <a href="{{ route('register') }}">Create your hospital</a> — 14-day free trial.</div>
 @endif

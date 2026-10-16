@@ -322,7 +322,7 @@ class LandingTrafficTest extends TestCase
                 'name' => 'Sarah Nakato',
                 'email' => 'sarah@attributed.test',
                 'password' => 'password1',
-                'password_confirmation' => 'password1',
+                'password_confirmation' => 'password1', 'whatsapp' => '+256 700 111 222',
                 'plan_id' => $plan->id,
             ])->assertRedirect();
 
@@ -353,7 +353,7 @@ class LandingTrafficTest extends TestCase
         $this->asBrowser()->withCookie($cookie, 'v2')->post('/register', [...$this->humanCheck('register'),
             'hospital_name' => 'First Touch Clinic',
             'name' => 'A', 'email' => 'a@first.test',
-            'password' => 'password1', 'password_confirmation' => 'password1',
+            'password' => 'password1', 'password_confirmation' => 'password1', 'whatsapp' => '+256 700 111 222',
             'plan_id' => $plan->id,
         ])->assertRedirect();
 
@@ -371,7 +371,7 @@ class LandingTrafficTest extends TestCase
         $this->asBrowser()->post('/register', [...$this->humanCheck('register'),
             'hospital_name' => 'Organic Clinic',
             'name' => 'B', 'email' => 'b@organic.test',
-            'password' => 'password1', 'password_confirmation' => 'password1',
+            'password' => 'password1', 'password_confirmation' => 'password1', 'whatsapp' => '+256 700 111 222',
             'plan_id' => $plan->id,
         ])->assertRedirect();
 
@@ -439,7 +439,7 @@ class LandingTrafficTest extends TestCase
         return $request->post('/register', [...$this->humanCheck('register'),
             'hospital_name' => $name,
             'name' => 'Owner', 'email' => \Illuminate\Support\Str::slug($name).'@signup.test',
-            'password' => 'password1', 'password_confirmation' => 'password1',
+            'password' => 'password1', 'password_confirmation' => 'password1', 'whatsapp' => '+256 700 111 222',
             'plan_id' => $plan->id,
         ])->assertRedirect();
     }

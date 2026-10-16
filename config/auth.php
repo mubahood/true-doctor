@@ -117,4 +117,18 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Breached-password check
+    |--------------------------------------------------------------------------
+    |
+    | Refuse a new password that is already published in a breach (Have I
+    | Been Pwned, k-anonymity: only five characters of the hash leave the
+    | server). It fails open when the service cannot be reached.
+    |
+    */
+
+    'password_breach_check' => (bool) env('PASSWORD_BREACH_CHECK', true),
+
 ];

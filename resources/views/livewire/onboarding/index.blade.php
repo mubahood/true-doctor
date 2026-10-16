@@ -12,6 +12,7 @@
           @else
             The rest of the system unlocks once these {{ $this->progress['total'] }} steps are done. Each one takes about a minute.
           @endif
+          <x-support.link context="trial.welcome" :vars="['hospital' => app(\App\Support\HospitalSettings::class)->hospital()?->name ?? 'our hospital']">Stuck? WhatsApp us</x-support.link>
         </p>
       </div>
 

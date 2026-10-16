@@ -142,12 +142,13 @@ class AppServiceProvider extends ServiceProvider
         // envelope comes from App\Support\ApiResponse, so resources stay flat.
         \Illuminate\Http\Resources\Json\JsonResource::withoutWrapping();
 
-        // One password rule, everywhere Password::defaults() is used — sign-up,
-        // reset, forced change, staff accounts, the API: at least 6 characters.
-        // Deliberately nothing more. Composition rules (a digit, a capital) make
-        // people write passwords down and add a 1 at the end; length is the part
-        // that matters, and the strength meter nudges towards more of it.
-        Password::defaults(fn () => Password::min(6));
+        // One password rule, everywhere Password::defaults() is used: sign-up,
+        // reset, forced change, staff accounts, the API (App\Support\PasswordPolicy).
+        Password::defaults(fn () => \App\Support\PasswordPolicy::rule());
+
+        // The breach check asks one outside service; a slow or unreachable one
+        // must not hold a password change for the default 30 seconds.
+        $this->app->singleton(\Illuminate\Contracts\Validation\UncompromisedVerifier::class, fn ($app) => new \Illuminate\Validation\NotPwnedVerifier($app[\Illuminate\Http\Client\Factory::class], 5));
 
         // Use our themed pagination view for every ->links() call (admin + trade),
         // instead of the default unstyled Tailwind markup.

@@ -29,7 +29,8 @@ class TrialEnding extends Notification implements ShouldQueue
             ->greeting("Hi {$notifiable->name},")
             ->line('Your True-Doctor free trial ends on '.$this->subscription->trial_ends_at?->format('d M Y').'.')
             ->line('Activate a plan now to keep uninterrupted access to your hospital.')
-            ->action('Choose a plan', route('admin.subscription.index'));
+            ->action('Choose a plan', route('admin.subscription.index'))
+            ->line(\App\Support\SupportContact::platform()->mailLine('admin.renew', ['hospital' => $notifiable->hospital->name ?? 'our hospital']));
     }
 
     /** @return array<string,mixed> */

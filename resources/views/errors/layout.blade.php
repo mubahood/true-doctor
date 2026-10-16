@@ -23,6 +23,15 @@
   $wide = $wideUrl !== null;
   $phone = $own ? ($errorBrand->contact()['phone'] ?? null) : null;
   try {
+      $support = \App\Support\SupportContact::current();
+      $ref = request()->attributes->get('error_ref');
+      $helpLink = $support->waLink('admin.error', ['hospital' => $orgName ?? 'True-Doctor', 'ref' => $ref ?? 'none']);
+  } catch (\Throwable) {
+      $support = null;
+      $ref = null;
+      $helpLink = '';
+  }
+  try {
       $home = \Illuminate\Support\Facades\Route::has('admin.dashboard') ? route('admin.dashboard') : url('/');
       $signIn = \Illuminate\Support\Facades\Route::has('admin.login') ? route('admin.login') : url('/');
   } catch (\Throwable) {
@@ -64,6 +73,8 @@
     .err-btn.ghost:hover{background:var(--br-soft);}
     .err-foot{margin-top:26px;padding-top:16px;border-top:1px solid var(--line);font-size:11.5px;color:var(--mt);line-height:1.7;}
     .err-foot b{color:var(--tx);font-weight:500;}
+    .err-help{margin-top:18px;font-size:13px;color:var(--mt);line-height:1.6;}
+    .err-help a{color:var(--br);font-weight:500;text-decoration:none;}
   </style>
 </head>
 <body>
@@ -87,6 +98,14 @@
         <a class="err-btn ghost" href="javascript:history.back()">Go back</a>
       @show
     </div>
+    @if($helpLink !== '' || $support?->phone())
+      <p class="err-help">
+        @if($ref)Reference <b>{{ $ref }}</b>. @endif
+        @if($helpLink !== '')<a href="{{ $helpLink }}" rel="noopener">WhatsApp us {{ $support->whatsappDisplay() }}</a>@endif
+        @if($helpLink !== '' && $support->phone()) or @endif
+        @if($support?->phone())call <a href="{{ $support->phoneLink() }}">{{ $support->phone() }}</a>@endif
+      </p>
+    @endif
     <p class="err-foot">
       @if($orgName)
         <b>{{ $orgName }}</b>@if($phone) · {{ $phone }}@endif<br>Runs on True-Doctor

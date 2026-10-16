@@ -182,7 +182,7 @@ class MarketingController extends Controller
         ] + \App\Support\HumanCheck::messages());
         unset($data['human_id'], $data['human_answer'], $data['human_started'], $data['website']);
 
-        $to = (string) config('mail.enquiries_to', config('mail.from.address'));
+        $to = (string) (config('mail.enquiries_to') ?: (\App\Support\SupportContact::platform()->email() ?: config('mail.from.address')));
 
         if ($to !== '') {
             Notification::route('mail', $to)->notify(new PublicEnquiryReceived($data));

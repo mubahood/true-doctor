@@ -109,6 +109,17 @@ $application = Application::configure(basePath: dirname(__DIR__))
         // error, never Laravel's default ad hoc shape per exception type.
         $wantsJson = fn (Request $request) => $request->is('api/*') || $request->expectsJson();
 
+        // A reference that is in the log and on the error page, so a person who
+        // messages support with it points us at exactly one failure.
+        $exceptions->context(function (\Throwable $e): array {
+            $ref = strtoupper(\Illuminate\Support\Str::random(6));
+            if (! app()->runningInConsole()) {
+                request()->attributes->set('error_ref', $ref);
+            }
+
+            return ['ref' => $ref];
+        });
+
         $exceptions->render(function (ValidationException $e, Request $request) use ($wantsJson) {
             if (! $wantsJson($request)) {
                 return null;

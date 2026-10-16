@@ -48,6 +48,24 @@
       ],
     ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
   </script>
+  @php $ldSupport = \App\Support\SupportContact::current(); @endphp
+  @if($ldSupport->phone() !== '')
+    <script type="application/ld+json">
+      {!! json_encode([
+        '@context' => 'https://schema.org',
+        '@type' => 'Organization',
+        'name' => 'True-Doctor',
+        'url' => route('home'),
+        'contactPoint' => array_filter([
+          '@type' => 'ContactPoint',
+          'telephone' => $ldSupport->phone(),
+          'email' => $ldSupport->email() ?: null,
+          'contactType' => 'customer support',
+          'availableLanguage' => ['en', 'lg', 'sw'],
+        ]),
+      ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+    </script>
+  @endif
   @stack('structured-data')
   @stack('styles')
 
@@ -93,6 +111,7 @@
         </a>
       @else
         @if($demo)<a href="{{ route('test-login') }}" class="btn ghost desk sm">Try the demo</a>@endif
+        <x-support.link context="site.general" class="btn plain desk sm wa">WhatsApp us</x-support.link>
         <a href="{{ route('admin.login') }}" class="btn ghost desk sm">Sign in</a>
         <a href="{{ route('register') }}" class="btn desk sm">Sign up</a>
       @endauth
@@ -104,6 +123,7 @@
 </header>
 
 <div class="mmenu" id="mmenu">
+  <x-support.link context="site.general" class="btn wa-menu">WhatsApp us</x-support.link>
   <a href="{{ route('features') }}">Product</a>
   <a href="{{ route('pricing') }}">Pricing</a>
   <a href="{{ route('security') }}">Security</a>
@@ -169,7 +189,10 @@
           <a href="{{ route('register') }}">Start a free trial</a>
           <a href="{{ route('admin.login') }}">Staff sign in</a>
         @endauth
-        <a href="mailto:{{ config('mail.from.address') }}">{{ config('mail.from.address') }}</a>
+      </div>
+      <div class="foot-support">
+        <h4>Talk to us</h4>
+        <x-support.facts context="site.general" />
       </div>
     </div>
 
@@ -179,6 +202,8 @@
     </div>
   </div>
 </footer>
+
+<x-support.float context="site.general" />
 
 @stack('scripts')
 </body>

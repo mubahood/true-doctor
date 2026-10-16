@@ -11,7 +11,6 @@ use App\Support\ApiResponse;
 use App\Support\HumanCheck;
 use App\Support\PlatformCurrency;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 /**
  * Hospital self-registration for the app (SaaS only; the routes 404 on a
@@ -26,6 +25,7 @@ class PublicRegistrationController extends Controller
     {
         return ApiResponse::success([
             'trial_days' => self::trialDays(),
+            'support' => \App\Support\SupportContact::platform()->toArray(),
             'plans' => Plan::where('is_active', true)->orderBy('price')->get()->map(fn (Plan $p) => [
                 'id' => $p->id,
                 'name' => $p->name,

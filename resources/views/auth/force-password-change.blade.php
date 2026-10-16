@@ -47,7 +47,7 @@
       <button type="button" class="a-eye" data-eye="password" aria-label="Show password"><i class="fas fa-eye" aria-hidden="true"></i></button>
     </div>
     @error('password')<p class="a-err" id="password-error" role="alert"><i class="fas fa-circle-exclamation" aria-hidden="true"></i> {{ $message }}</p>@enderror
-    <div class="a-hint" id="password-rule">At least 6 characters. Longer is safer.</div>
+    <div class="a-hint" id="password-rule">{{ \App\Support\PasswordPolicy::hint() }}</div>
     <div class="a-strength" id="pw-strength" hidden>
       <span class="a-strength-bar"><span></span></span>
       <span class="a-strength-word"></span>

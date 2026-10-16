@@ -60,7 +60,7 @@ class ForcedPasswordChangeTest extends TestCase
     // The errors used to go to a named bag the page never read, so every
     // refusal reloaded the form in silence.
 
-    private function forced(string $password = '111111', array $extra = []): User
+    private function forced(string $password = 'garden123', array $extra = []): User
     {
         return User::factory()->create([
             'password' => bcrypt($password),
@@ -73,10 +73,10 @@ class ForcedPasswordChangeTest extends TestCase
     public static function refusals(): array
     {
         return [
-            'wrong current password' => [['current_password' => 'nope', 'password' => 'garden', 'password_confirmation' => 'garden'], 'current_password', 'That is not the password you signed in with.'],
-            'too short' => [['current_password' => '111111', 'password' => 'abc', 'password_confirmation' => 'abc'], 'password', 'The new password needs at least 6 characters.'],
-            'not confirmed' => [['current_password' => '111111', 'password' => 'garden', 'password_confirmation' => 'gardens'], 'password', 'The two new passwords do not match.'],
-            'same as before' => [['current_password' => '111111', 'password' => '111111', 'password_confirmation' => '111111'], 'password', 'Choose a password different from the one you signed in with.'],
+            'wrong current password' => [['current_password' => 'nope', 'password' => 'garden12', 'password_confirmation' => 'garden12'], 'current_password', 'That is not the password you signed in with.'],
+            'too short' => [['current_password' => 'garden123', 'password' => 'abc', 'password_confirmation' => 'abc'], 'password', 'The new password needs at least 8 characters.'],
+            'not confirmed' => [['current_password' => 'garden123', 'password' => 'garden12', 'password_confirmation' => 'gardens12'], 'password', 'The two new passwords do not match.'],
+            'same as before' => [['current_password' => 'garden123', 'password' => 'garden123', 'password_confirmation' => 'garden123'], 'password', 'Choose a password different from the one you signed in with.'],
         ];
     }
 
@@ -101,9 +101,9 @@ class ForcedPasswordChangeTest extends TestCase
     }
 
     /** The only rule is length: no digit, capital or symbol demanded. */
-    public function test_any_six_characters_are_enough(): void
+    public function test_eight_characters_with_letters_and_numbers_are_enough_and_less_is_refused(): void
     {
-        foreach (['garden', '123456', 'ABCDEF', 'my dog'] as $i => $password) {
+        foreach (['garden12', '1234abcd', 'ABCDEFG7', 'my dog 22'] as $i => $password) {
             $user = $this->forced('temporary-'.$i);
 
             $this->actingAs($user)->put(route('password.update'), [
@@ -114,19 +114,29 @@ class ForcedPasswordChangeTest extends TestCase
 
             $this->assertTrue(\Illuminate\Support\Facades\Hash::check($password, $user->fresh()->password), "{$password} was refused");
         }
+
+        foreach (['garden', '12345678', 'ABCDEFGH'] as $i => $password) {
+            $user = $this->forced('temporary-x'.$i);
+
+            $this->actingAs($user)->put(route('password.update'), [
+                'current_password' => 'temporary-x'.$i,
+                'password' => $password,
+                'password_confirmation' => $password,
+            ])->assertSessionHasErrors('password');
+        }
     }
 
     /** The case that was stuck in production: a super admin on a temporary password. */
     public function test_a_super_admin_gets_through_to_a_working_page(): void
     {
-        $admin = $this->forced('111111', ['hospital_id' => null, 'role' => 'super_admin']);
+        $admin = $this->forced('garden123', ['hospital_id' => null, 'role' => 'super_admin']);
 
         $this->actingAs($admin)->get('/admin')->assertRedirect(route('password.change'));
 
         $this->actingAs($admin)->followingRedirects()->put(route('password.update'), [
-            'current_password' => '111111',
-            'password' => 'kampala',
-            'password_confirmation' => 'kampala',
+            'current_password' => 'garden123',
+            'password' => 'kampala7',
+            'password_confirmation' => 'kampala7',
         ])->assertOk()->assertDontSee('Set your password');
 
         $this->assertFalse($admin->fresh()->password_change_required);
@@ -138,6 +148,6 @@ class ForcedPasswordChangeTest extends TestCase
         $this->actingAs($this->forced())->get(route('password.change'))
             ->assertOk()
             ->assertSee(route('admin.logout'), false)
-            ->assertSee('At least 6 characters');
+            ->assertSee('At least 8 characters, with letters and numbers');
     }
 }

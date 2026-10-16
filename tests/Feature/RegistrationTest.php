@@ -32,7 +32,7 @@ class RegistrationTest extends TestCase
 
         $res = $this->post('/register', [...$this->humanCheck('register'),
             'hospital_name' => 'Sunrise Medical', 'name' => 'Dr Owner',
-            'email' => 'owner@sunrise.test', 'password' => 'password1', 'password_confirmation' => 'password1',
+            'email' => 'owner@sunrise.test', 'password' => 'password1', 'password_confirmation' => 'password1', 'whatsapp' => '+256 700 111 222',
             'plan_id' => $plan->id,
         ]);
 
@@ -44,6 +44,7 @@ class RegistrationTest extends TestCase
         $this->assertSame('hospital_admin', $owner->role);
         $this->assertSame($hospital->id, $owner->hospital_id);
         $this->assertTrue($owner->hasRole('hospital_admin'));
+        $this->assertSame('+256 700 111 222', $owner->phone, 'the owner\'s WhatsApp is kept so support can help them set up');
 
         $sub = Subscription::where('hospital_id', $hospital->id)->firstOrFail();
         $this->assertSame('trialing', $sub->status->value);
@@ -61,7 +62,7 @@ class RegistrationTest extends TestCase
 
         $this->post('/register', [...$this->humanCheck('register'),
             'hospital_name' => 'X Clinic', 'name' => 'A', 'email' => 'taken@test.com',
-            'password' => 'password1', 'password_confirmation' => 'password1', 'plan_id' => $plan->id,
+            'password' => 'password1', 'password_confirmation' => 'password1', 'whatsapp' => '+256 700 111 222', 'plan_id' => $plan->id,
         ])->assertSessionHasErrors('email');
         $this->assertGuest();
     }
@@ -71,7 +72,7 @@ class RegistrationTest extends TestCase
         $plan = Plan::factory()->create(['is_active' => true]);
         $this->post('/register', [...$this->humanCheck('register'),
             'hospital_name' => 'Y Clinic', 'name' => 'B', 'email' => 'b@y.test',
-            'password' => 'password1', 'password_confirmation' => 'password1', 'plan_id' => $plan->id,
+            'password' => 'password1', 'password_confirmation' => 'password1', 'whatsapp' => '+256 700 111 222', 'plan_id' => $plan->id,
         ]);
 
         // The new owner lands in the setup wizard, is told what is still needed,
