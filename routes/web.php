@@ -240,6 +240,12 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'subscribed', 'onboarding',
     Route::get('stock/{stock}', \App\Livewire\Stock\Show::class)->name('stock.show');
     Route::get('stock-categories', \App\Livewire\StockCategories\Index::class)->name('stock-categories.index');
 
+    // ── Procurement: suppliers, purchase orders, goods received (roadmap 04 §7) ──
+    Route::get('suppliers', \App\Livewire\Suppliers\Index::class)->name('suppliers.index');
+    Route::get('purchase-orders', \App\Livewire\PurchaseOrders\Index::class)->name('purchase-orders.index');
+    Route::get('purchase-orders/{purchaseOrder}', \App\Livewire\PurchaseOrders\Show::class)->name('purchase-orders.show');
+    Route::get('purchase-orders/{purchaseOrder}/pdf', [\App\Http\Controllers\Admin\PurchaseOrderController::class, 'pdf'])->name('purchase-orders.pdf');
+
     // ── Laboratory (Phase 2 Step 13) ──────────────────────────
     Route::get('lab-tests', \App\Livewire\LabTests\Index::class)->name('lab-tests.index');
     Route::get('lab-orders', \App\Livewire\LabOrders\Index::class)->name('lab-orders.index');

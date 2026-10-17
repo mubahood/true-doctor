@@ -2351,3 +2351,8 @@ body.has-brand::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z-i
 .hmis-grid td:first-child{white-space:normal;min-width:180px;}
 .hmis-zero td{color:var(--mt);}
 .hmis-hit td{background:var(--warn-soft);font-weight:600;}
+
+/* ── Procurement: suppliers, purchase orders, goods received (roadmap 04 §7) ── */
+.tb-proc-form{display:contents;}
+.tb-proc-num{width:96px;text-align:right;}
+.tb-proc-return td{background:var(--surface-2);font-size:11.5px;padding-top:3px;padding-bottom:3px;}

@@ -141,6 +141,12 @@ class GeneratedDocumentTest extends TestCase
         ]]);
         $shares = app(\App\Services\InvoiceShareService::class);
 
+        $purchaseOrder = app(\App\Services\ProcurementService::class)->createOrder(
+            \App\Models\Supplier::create(['name' => 'Nile Pharma Distributors', 'is_active' => true]), [],
+            [['stock_item_id' => \App\Models\StockItem::factory()->create(['hospital_id' => $this->hospital->id])->id, 'quantity' => '100', 'unit_cost' => '95']],
+            $this->admin,
+        );
+
         return [
             ['cashier day summary', route('api.cashier.day-summary.pdf', ['date' => now()->toDateString()])],
             ['ward handover', route('api.ward.handover.pdf', $handover)],
@@ -154,6 +160,7 @@ class GeneratedDocumentTest extends TestCase
             ['patient ID card', route('admin.patients.id-card', $this->patient())],
             ['insurance statement', route('admin.insurance-providers.usage', $insurer)],
             ['visit report', route('admin.visits.report', $visit)],
+            ['purchase order', route('admin.purchase-orders.pdf', $purchaseOrder)],
             ['statement of account', route('admin.patients.statement', $invoice->patient)],
             ['financial statement', route('admin.finance.statement-pdf', ['report' => 'income', 'preset' => 'this_month'])],
             ['period report', route('admin.reports.pdf', [

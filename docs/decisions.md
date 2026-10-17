@@ -176,3 +176,16 @@ One line per decision: date, decision, reason. Append-only; do not edit past ent
 - **Form lines in `config/hmis.php` by code prefix, first match wins, notifiable first.** Reason: when the Ministry revises the 105/108/033b, one file changes.
 - **Nothing is guessed.** A visit with no code, no age or no sex is not counted; it is listed under "Missing data" with a link to fix it. Reason: a report the in-charge signs must be defensible line by line.
 - **A records officer codes through the `diagnoses.code` gate** (visits.diagnose, or the records officer role), so the menu and the worklist agree.
+
+## 2026-10-17: Procurement (roadmap 04 §7)
+
+- **No new permission: `pharmacy.view` reads, `pharmacy.manage` orders, receives and returns.** Reason: the people who order and receive are the people who already receive stock by hand; a new permission would need every existing role re-seeded on live copies for no gain.
+- **A delivery line and a supplier return are the source of their stock movement** (`StockService::receive(..., source:)`, new `StockService::returnToSupplier`). Reason: StockService stays the only writer of stock, and the ledger can say which delivery a unit came on. The books already posted Dr inventory / Cr payable for a receipt; through `NamesALedgerParty` the entry now carries the supplier as party and `GRN / supplier invoice` as reference, so the payable says who is owed.
+- **A return is valued at the delivery's cost, not today's.** Reason: the payable must fall by exactly what that delivery added to it; the item's own cost is not touched because nothing new came in.
+- **A stock item keeps the earliest expiry on its shelf.** It has one batch and one expiry, read by the alerts. A delivery onto an empty shelf takes over; onto stock already there it takes over only if it expires sooner (or the shelf's expiry was never known). Each delivery line keeps its own batch and expiry. Reason: showing the later batch's expiry would hide stock that expires first. Per-batch stock (FEFO dispensing) is a larger change left for later.
+- **Receipts and returns are append-only; cancel only before anything is received, close after.** Reason: received goods are on the shelf and in the books; a wrong receipt is undone by a return, which leaves an audit trail.
+- **Order lines and delivery lines are addressed by integer id inside their order (API).** Reason: they never exist outside their order, and orders, receipts and returns themselves carry uuids.
+- **Receive and return require an Idempotency-Key from the app** (`KEY_REQUIRED_ROUTES`). Reason: both move stock and money.
+- **Paying a supplier stays Finance → money out against Accounts payable.** Reason: the roadmap item is suppliers, orders, receipts and returns; supplier statements and ageing are not built yet.
+- **Known, not changed here: the shelf value and the inventory account can drift when costs differ.** `StockService` values the shelf at the latest cost (`qty × cost_price`) while the books post each movement at its own cost; procurement makes cost changes more frequent. Weighted-average cost would close it and is an owner decision, since it changes how every existing item is valued.
+- **Creating an order and adding a line also require an Idempotency-Key from the app.** Reason: a retried add would double an ordered quantity (lines merge by item).

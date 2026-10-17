@@ -61,6 +61,23 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
         Route::get('patients/{patient}/dental/quote', \App\Http\Controllers\Admin\DentalQuoteController::class)->name('api.dental.quote');
         Route::get('dental/report', [\App\Http\Controllers\Api\V1\DentalController::class, 'report'])->name('api.dental.report');
 
+        // Procurement: suppliers, purchase orders, goods received, returns (roadmap 04 §7, docs/api/procurement.md).
+        Route::get('suppliers', [\App\Http\Controllers\Api\V1\ProcurementController::class, 'suppliers'])->name('api.suppliers.index');
+        Route::post('suppliers', [\App\Http\Controllers\Api\V1\ProcurementController::class, 'supplierStore'])->name('api.suppliers.store');
+        Route::get('suppliers/{supplier}', [\App\Http\Controllers\Api\V1\ProcurementController::class, 'supplierShow'])->name('api.suppliers.show');
+        Route::match(['put', 'patch'], 'suppliers/{supplier}', [\App\Http\Controllers\Api\V1\ProcurementController::class, 'supplierUpdate'])->name('api.suppliers.update');
+        Route::get('purchase-orders', [\App\Http\Controllers\Api\V1\ProcurementController::class, 'index'])->name('api.purchase-orders.index');
+        Route::post('purchase-orders', [\App\Http\Controllers\Api\V1\ProcurementController::class, 'store'])->name('api.purchase-orders.store');
+        Route::get('purchase-orders/{purchaseOrder}', [\App\Http\Controllers\Api\V1\ProcurementController::class, 'show'])->name('api.purchase-orders.show');
+        Route::post('purchase-orders/{purchaseOrder}/lines', [\App\Http\Controllers\Api\V1\ProcurementController::class, 'addLine'])->name('api.purchase-orders.lines.store');
+        Route::delete('purchase-orders/{purchaseOrder}/lines/{line}', [\App\Http\Controllers\Api\V1\ProcurementController::class, 'removeLine'])->whereNumber('line')->name('api.purchase-orders.lines.destroy');
+        Route::post('purchase-orders/{purchaseOrder}/order', [\App\Http\Controllers\Api\V1\ProcurementController::class, 'order'])->name('api.purchase-orders.order');
+        Route::post('purchase-orders/{purchaseOrder}/receive', [\App\Http\Controllers\Api\V1\ProcurementController::class, 'receive'])->name('api.purchase-orders.receive');
+        Route::post('purchase-orders/{purchaseOrder}/returns', [\App\Http\Controllers\Api\V1\ProcurementController::class, 'returnToSupplier'])->name('api.purchase-orders.returns');
+        Route::post('purchase-orders/{purchaseOrder}/close', [\App\Http\Controllers\Api\V1\ProcurementController::class, 'close'])->name('api.purchase-orders.close');
+        Route::post('purchase-orders/{purchaseOrder}/cancel', [\App\Http\Controllers\Api\V1\ProcurementController::class, 'cancel'])->name('api.purchase-orders.cancel');
+        Route::get('purchase-orders/{purchaseOrder}/pdf', [\App\Http\Controllers\Admin\PurchaseOrderController::class, 'pdf'])->name('api.purchase-orders.pdf');
+
         // Coded diagnoses (docs/api/diagnoses.md).
         Route::get('diagnoses/search', [\App\Http\Controllers\Api\V1\DiagnosisController::class, 'search'])->name('api.diagnoses.search');
         Route::get('visits/{visit}/diagnoses', [\App\Http\Controllers\Api\V1\DiagnosisController::class, 'index'])->name('api.diagnoses.index');

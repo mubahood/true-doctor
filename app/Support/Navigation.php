@@ -114,6 +114,9 @@ final class Navigation
                     ['label' => 'Stock items', 'icon' => 'fa-boxes-stacked', 'route' => 'admin.stock.index', 'match' => ['admin.stock.index', 'admin.stock.show']],
                     ['label' => 'Stock alerts', 'icon' => 'fa-triangle-exclamation', 'route' => 'admin.stock.alerts', 'match' => ['admin.stock.alerts']],
                     ['label' => 'Stock ledger', 'icon' => 'fa-book', 'route' => 'admin.stock.movements', 'match' => ['admin.stock.movements']],
+                    // Procurement (roadmap 04 §7): ordering from suppliers and receiving what comes.
+                    ['label' => 'Purchase orders', 'icon' => 'fa-file-invoice', 'route' => 'admin.purchase-orders.index', 'match' => ['admin.purchase-orders.*']],
+                    ['label' => 'Suppliers', 'icon' => 'fa-truck-field', 'route' => 'admin.suppliers.index', 'match' => ['admin.suppliers.*']],
                 ]],
 
                 ['key' => 'ipd', 'label' => 'Inpatient', 'icon' => 'fa-hospital-user', 'gate' => 'ipd.view', 'module' => 'inpatient', 'items' => [
