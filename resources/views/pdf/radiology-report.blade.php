@@ -1,4 +1,5 @@
 <x-pdf.document
+  :patient="$order->patient"
   title="Radiology report"
   :reference="'RAD-'.str_pad((string) $order->id, 6, '0', STR_PAD_LEFT)"
   :meta="[

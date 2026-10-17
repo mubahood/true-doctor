@@ -17,6 +17,7 @@
                  target="_blank" rel="noopener" class="btn-tb">
         <i class="fas fa-file-pdf" aria-hidden="true"></i> PDF
       </x-ui.link>
+      <livewire:patient-links.panels.share type="lab_result" :uuid="$order->uuid" :key="'share-'.$order->uuid" />
     </x-slot:actions>
   </x-ui.page-header>
 

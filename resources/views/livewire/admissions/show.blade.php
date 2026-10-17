@@ -28,6 +28,7 @@
         <a href="{{ route('admin.admissions.summary', $admission) }}" target="_blank" rel="noopener" class="btn-tb">
           <i class="fas fa-file-pdf" aria-hidden="true"></i> Summary
         </a>
+        <livewire:patient-links.panels.share type="discharge_summary" :uuid="$admission->uuid" :key="'share-'.$admission->uuid" />
       @endif
     </x-slot:actions>
   </x-ui.page-header>

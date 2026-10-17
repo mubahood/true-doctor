@@ -115,6 +115,7 @@ class Messages extends Component
             'appointment_day_before' => ['time' => '10:30'],
             'receipt' => ['amount' => '20,000', 'invoice' => 'INV-2026-00123', 'link' => url('/s/r/…')],
             'dental_recall' => [],
+            'document_link' => ['document' => 'lab result', 'link' => url('/p/…'), 'code' => '482913'],
         ];
         $out = [];
         foreach ($samples as $event => $vars) {

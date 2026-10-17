@@ -3,6 +3,7 @@
      invoice, every payment, what is still owed and how old it is. The same
      figures as the patient's Billing tab, from PatientSummaryService. --}}
 <x-pdf.document
+  :patient="$patient"
   title="Statement of account"
   :reference="$patient->patient_no"
   :meta="array_filter([
