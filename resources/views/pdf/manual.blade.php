@@ -27,7 +27,7 @@
   <div class="cover">
     <h1>True-Doctor</h1>
     <p>User manual</p>
-    <p>{{ now()->format('F Y') }} · edition {{ $version }}</p>
+    <p>{{ now()->format('F Y') }}</p>
   </div>
   <div class="chapter">
     <h1>Contents</h1>
