@@ -94,7 +94,8 @@
             @endforeach
           </dl>
         @endif
-        <p class="own-small">Lost this page? Enter your email on the downloads page and a new private link is sent to you.</p>
+        <p class="own-small">This browser remembers your downloads for 90 days. Lost them on another device? Enter your email on the downloads page and a new private link is sent to you.</p>
+        <form method="post" action="{{ route('standalone.portal.forget') }}">@csrf<button type="submit" class="btn sm plain">Forget this device</button></form>
       </div>
       <div class="own-card">
         <div class="tag">User manual</div>

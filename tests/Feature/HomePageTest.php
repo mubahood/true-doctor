@@ -65,6 +65,7 @@ class HomePageTest extends TestCase
 
     public function test_prices_come_from_the_tables_with_the_price_of_a_day(): void
     {
+        StandaloneProduct::query()->update(['is_active' => false]); // only this test's product on sale
         StandaloneProduct::query()->create(['name' => 'Clinic copy', 'slug' => 'clinic', 'price_ugx' => '3000000.00', 'updates_months' => 12, 'is_active' => true]);
 
         $this->withCookie('td_currency', 'UGX')->get('/')

@@ -14,6 +14,13 @@
   @if(session('error'))<div class="notice bad" role="alert"><x-site.icon name="fa-circle-exclamation" /><span>{{ session('error') }}</span></div>@endif
   @if($errors->any())<div class="notice bad" role="alert"><x-site.icon name="fa-circle-exclamation" /><span>{{ $errors->first() }}</span></div>@endif
 
+  @if($owned)
+    <div class="notice ok" role="status"><x-site.icon name="fa-circle-check" /><span>You already own a copy on this device. <a href="{{ route('standalone.portal') }}">Open your downloads</a>.</span></div>
+  @elseif($resumeOrder)
+    <div class="notice" role="status"><x-site.icon name="fa-arrow-right" /><span>You started paying on {{ $resumeOrder->created_at?->format('j M, H:i') }} (reference {{ $resumeOrder->reference }}). <a href="{{ route('standalone.status') }}">See where it stands</a>.</span></div>
+  @elseif($resumeDraft && $available)
+    <div class="notice" role="status"><x-site.icon name="fa-arrow-right" /><span>Your details are saved. <a href="{{ route('standalone.review') }}">Continue where you stopped</a>.</span></div>
+  @endif
   @if($products->isEmpty() || ! $available)
     <div class="formcard"><h2>Coming soon</h2><p>The self-hosted edition opens for sale as soon as its first verified release is published. <a href="{{ route('contact') }}">Tell us you are interested</a> and we will let you know.</p></div>
   @else
@@ -30,13 +37,7 @@
             <li><x-site.icon name="fa-check" /> {{ empty($product->limits['max_staff']) ? 'Unlimited staff accounts' : 'Up to '.$product->limits['max_staff'].' staff accounts' }}</li>
             <li><x-site.icon name="fa-check" /> Download, licence and guide right after payment</li>
           </ul>
-          <form method="post" action="{{ route('standalone.checkout', $product) }}" class="own-form">
-            @csrf
-            <div class="f"><label for="buy-name-{{ $product->id }}">Your organisation's name</label><input id="buy-name-{{ $product->id }}" name="name" required maxlength="190" value="{{ old('name') }}"></div>
-            <div class="f"><label for="buy-email-{{ $product->id }}">Email for your downloads</label><input id="buy-email-{{ $product->id }}" type="email" name="email" required value="{{ old('email') }}"></div>
-            <div class="f"><label for="buy-domain-{{ $product->id }}">Address you will install on</label><input id="buy-domain-{{ $product->id }}" name="domain" required placeholder="hms.yourhospital.com" value="{{ old('domain') }}"><div class="hint">You can change it later from your downloads page.</div></div>
-            <button class="btn" type="submit">Pay securely <x-site.icon name="fa-lock" /></button>
-          </form>
+          <a class="btn" href="{{ route('standalone.buy', $product) }}">Choose {{ $product->name }}</a>
         </div>
       @endforeach
     </div>

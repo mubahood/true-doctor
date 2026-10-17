@@ -62,6 +62,22 @@ class StandaloneSalesService
         ]), 'True-Doctor Standalone licence');
     }
 
+    /**
+     * Ask the gateway about an order the buyer is waiting on: settled, already
+     * settled, still pending, not successful, or no payment started for it.
+     */
+    public function check(StandaloneOrder $order): string
+    {
+        if ($order->status === 'paid') {
+            return 'already_settled';
+        }
+        if (blank($order->gateway_tracking_id)) {
+            return 'not_started';
+        }
+
+        return $this->settle((string) $order->gateway_tracking_id);
+    }
+
     /** @return array{0:StandaloneOrder,1:GatewayCharge} */
     public function startRenewal(StandaloneLicence $licence): array
     {
@@ -213,6 +229,10 @@ class StandaloneSalesService
         ]);
         if (! $charge->ok) {
             $order->update(['status' => 'failed']);
+        } elseif ($charge->providerRef !== null) {
+            // Kept now, so the buyer's status page can ask the gateway about it
+            // even if they never come back through the callback.
+            $order->update(['gateway_tracking_id' => $charge->providerRef]);
         }
 
         return [$order, $charge];

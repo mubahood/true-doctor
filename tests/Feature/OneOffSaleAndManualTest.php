@@ -100,4 +100,65 @@ class OneOffSaleAndManualTest extends TestCase
         $this->getJson('/api/v1/manual')->assertOk()->assertJsonPath('data.chapters.0.slug', $first['slug']);
         $this->getJson('/api/v1/manual/'.$first['slug'])->assertOk()->assertJsonPath('data.title', $first['title']);
     }
+
+    private function gateway(bool $starts = true, bool $paid = true): void
+    {
+        $gateway = \Mockery::mock(PesapalGateway::class);
+        $gateway->shouldReceive('initialize')->andReturnUsing(static fn (array $d): GatewayCharge => $starts
+            ? new GatewayCharge(true, $d['tx_ref'], 'https://pay.example.test', null, 'trk-'.$d['tx_ref'])
+            : new GatewayCharge(false, $d['tx_ref'], null, 'Payment gateway unreachable.'));
+        $gateway->shouldReceive('verify')->andReturnUsing(static fn (string $t): GatewayVerification => new GatewayVerification(
+            $paid, substr($t, 4), $t, '1200000.00', 'UGX'));
+        app()->instance(PesapalGateway::class, $gateway);
+    }
+
+    public function test_the_wizard_keeps_the_buyer_details_through_a_failed_payment_and_a_lost_session(): void
+    {
+        StandaloneRelease::create(['version' => '1.0.8', 'status' => 'published', 'published_at' => now()]);
+        $product = StandaloneProduct::query()->where('slug', 'true-doctor-own-copy')->firstOrFail();
+        $this->gateway(starts: false);
+
+        $this->get(route('standalone.buy', $product))->assertOk()->assertSee('Your details');
+        $saved = $this->post(route('standalone.buy.save', $product), ['name' => 'Kato Clinic', 'email' => 'Owner@Kato.test', 'phone' => '0772000000', 'domain' => 'hms.kato.test'])
+            ->assertRedirect(route('standalone.review'));
+        $draftCookie = $saved->getCookie(\App\Http\Controllers\StandalonePurchaseController::DRAFT);
+        $this->assertNotNull($draftCookie);
+
+        // The session is gone (a new browser session); the cookie brings the details back.
+        $this->flushSession();
+        $this->withCookie($draftCookie->getName(), $draftCookie->getValue())
+            ->get(route('standalone.review'))->assertOk()->assertSee('owner@kato.test')->assertSee('hms.kato.test');
+
+        // The payment page cannot open: back to review, details intact, a human message.
+        $this->post(route('standalone.pay'), ['agree' => '1'])->assertRedirect(route('standalone.review'));
+        $this->get(route('standalone.review'))->assertSee('Your details are saved')->assertSee('owner@kato.test');
+        $this->assertSame('failed', StandaloneOrder::firstOrFail()->status);
+        $this->post(route('standalone.pay'), [])->assertSessionHasErrors('agree');
+    }
+
+    public function test_a_buyer_who_never_came_back_from_the_payment_page_finds_the_order_and_then_the_downloads(): void
+    {
+        StandaloneRelease::create(['version' => '1.0.8', 'status' => 'published', 'published_at' => now()]);
+        $product = StandaloneProduct::query()->where('slug', 'true-doctor-own-copy')->firstOrFail();
+        $this->gateway();
+
+        $this->post(route('standalone.buy.save', $product), ['name' => 'Kato Clinic', 'email' => 'owner@kato.test', 'domain' => 'hms.kato.test']);
+        $this->post(route('standalone.pay'), ['agree' => '1'])->assertRedirect('https://pay.example.test');
+        $order = StandaloneOrder::firstOrFail();
+        $this->assertSame('trk-'.$order->reference, $order->gateway_tracking_id, 'the gateway id is kept at once');
+
+        // They come back to the site later, not through the callback.
+        $this->get(route('standalone.products'))->assertSee($order->reference);
+        $this->get(route('standalone.status'))->assertOk()->assertSee('Waiting for your payment')->assertSee($order->reference);
+        $done = $this->post(route('standalone.status.check'))->assertRedirect(route('standalone.portal'));
+        $licenceCookie = $done->getCookie(\App\Http\Controllers\StandalonePurchaseController::LICENCE);
+        $this->assertNotNull($licenceCookie);
+        $this->assertSame('paid', $order->fresh()->status);
+
+        // A new session on the same device still opens the downloads; forgetting the device ends that.
+        $this->flushSession();
+        $this->withCookie($licenceCookie->getName(), $licenceCookie->getValue())->get('/my-licence')->assertOk()->assertSee('Receipt (PDF)');
+        $this->withCookie($licenceCookie->getName(), $licenceCookie->getValue())->post(route('standalone.portal.forget'))
+            ->assertRedirect(route('standalone.portal'))->assertCookieExpired(\App\Http\Controllers\StandalonePurchaseController::LICENCE);
+    }
 }

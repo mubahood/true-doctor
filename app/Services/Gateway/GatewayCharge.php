@@ -10,5 +10,6 @@ final class GatewayCharge
         public readonly string $reference,   // our tx_ref
         public readonly ?string $link,       // hosted payment URL
         public readonly ?string $error = null,
+        public readonly ?string $providerRef = null, // the gateway's own id for this payment, to ask about it later
     ) {}
 }

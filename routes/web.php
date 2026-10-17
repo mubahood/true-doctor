@@ -92,6 +92,16 @@ Route::middleware('edition:saas')->group(function () {
     Route::redirect('/standalone', '/own-your-copy', 301);
     Route::post('/standalone/checkout/{product}', [\App\Http\Controllers\StandalonePurchaseController::class, 'checkout'])
         ->middleware('throttle:8,60')->name('standalone.checkout');
+    // The buying wizard: choose, your details, review and pay, status. What the buyer typed,
+    // the order being paid and the licence bought are kept in this session and in encrypted
+    // cookies, so a closed tab or a failed payment page never loses them.
+    Route::get('/standalone/buy/{product}', [\App\Http\Controllers\StandalonePurchaseController::class, 'details'])->whereNumber('product')->name('standalone.buy');
+    Route::post('/standalone/buy/{product}', [\App\Http\Controllers\StandalonePurchaseController::class, 'saveDetails'])->whereNumber('product')->middleware('throttle:20,1')->name('standalone.buy.save');
+    Route::get('/standalone/review', [\App\Http\Controllers\StandalonePurchaseController::class, 'review'])->name('standalone.review');
+    Route::post('/standalone/pay', [\App\Http\Controllers\StandalonePurchaseController::class, 'pay'])->middleware('throttle:10,1')->name('standalone.pay');
+    Route::get('/standalone/status', [\App\Http\Controllers\StandalonePurchaseController::class, 'status'])->name('standalone.status');
+    Route::post('/standalone/status', [\App\Http\Controllers\StandalonePurchaseController::class, 'checkStatus'])->middleware('throttle:20,1')->name('standalone.status.check');
+    Route::post('/my-licence/forget', [\App\Http\Controllers\StandalonePurchaseController::class, 'forget'])->name('standalone.portal.forget');
     Route::get('/standalone/payment/return', [\App\Http\Controllers\StandalonePurchaseController::class, 'callback'])
         ->name('standalone.checkout.callback');
     Route::get('/my-licence', [\App\Http\Controllers\StandalonePurchaseController::class, 'portal'])->name('standalone.portal');

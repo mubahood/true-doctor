@@ -15,9 +15,14 @@ class StandalonePurchaseController extends Controller
 {
     public function __construct(private readonly StandaloneSalesService $sales) {}
 
-    public function products(): \Illuminate\Contracts\View\View
+    public function products(Request $request): \Illuminate\Contracts\View\View
     {
+        $order = $this->orderInBrowser($request);
+
         return view('marketing.standalone', [
+            'resumeOrder' => $order !== null && $order->status !== 'paid' ? $order : null,
+            'resumeDraft' => $this->draft($request),
+            'owned' => self::licenceInSession($request),
             'products' => StandaloneProduct::where('is_active', true)->orderBy('price_ugx')->get(),
             'available' => $this->sales->open(),
             'latest' => StandaloneRelease::where('status', 'published')->orderByDesc('published_at')->first(),
@@ -43,6 +48,109 @@ class StandalonePurchaseController extends Controller
         return redirect()->away($charge->link);
     }
 
+    /** Cookie names: what the buyer typed, the order they are paying, the licence they own. */
+    public const DRAFT = 'td_buy_draft';
+
+    public const ORDER = 'td_buy_order';
+
+    public const LICENCE = 'td_licence';
+
+    /** Step 2: who is buying and where it will run, kept as they type it. */
+    public function details(Request $request, StandaloneProduct $product): \Illuminate\Contracts\View\View|RedirectResponse
+    {
+        if (! $product->is_active || ! $this->sales->open()) {
+            return redirect()->route('standalone.products');
+        }
+
+        return view('marketing.standalone-buy', ['step' => 2, 'product' => $product, 'draft' => $this->draft($request)]);
+    }
+
+    public function saveDetails(Request $request, StandaloneProduct $product): RedirectResponse
+    {
+        abort_unless($product->is_active, 404);
+        $data = $request->validate([
+            'name' => ['required', 'string', 'min:2', 'max:190'],
+            'email' => ['required', 'email', 'max:190'],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'domain' => ['required', 'string', 'max:253', 'regex:/^(?=.{4,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i'],
+        ], ['domain.regex' => 'Enter the address only, like hms.yourhospital.com, without https:// or a slash.']);
+        $draft = ['product_id' => $product->id, 'name' => trim($data['name']), 'email' => mb_strtolower(trim($data['email'])),
+            'phone' => trim((string) ($data['phone'] ?? '')), 'domain' => mb_strtolower(trim($data['domain']))];
+        $request->session()->put(self::DRAFT, $draft);
+
+        return redirect()->route('standalone.review')->withCookie(cookie(self::DRAFT, json_encode($draft), 60 * 24 * 30));
+    }
+
+    /** Step 3: check it, then pay. */
+    public function review(Request $request): \Illuminate\Contracts\View\View|RedirectResponse
+    {
+        $draft = $this->draft($request);
+        $product = $draft ? StandaloneProduct::where('is_active', true)->find($draft['product_id'] ?? 0) : null;
+        if ($product === null || blank($draft['email'] ?? null)) {
+            return redirect()->route('standalone.products');
+        }
+
+        return view('marketing.standalone-buy', ['step' => 3, 'product' => $product, 'draft' => $draft]);
+    }
+
+    public function pay(Request $request): RedirectResponse
+    {
+        $draft = $this->draft($request);
+        $product = $draft ? StandaloneProduct::where('is_active', true)->find($draft['product_id'] ?? 0) : null;
+        if ($product === null || blank($draft['email'] ?? null)) {
+            return redirect()->route('standalone.products');
+        }
+        $request->validate(['agree' => ['accepted']], ['agree.accepted' => 'Tick the box to confirm the terms.']);
+        try {
+            [$order, $charge] = $this->sales->start($product, $draft['name'], $draft['email'], $draft['domain']);
+        } catch (\DomainException $exception) {
+            return redirect()->route('standalone.review')->with('error', $exception->getMessage());
+        }
+        $request->session()->put(self::ORDER, $order->reference);
+        $remember = cookie(self::ORDER, $order->reference, 60 * 24 * 30);
+        if (! $charge->ok || $charge->link === null) {
+            \Illuminate\Support\Facades\Log::warning('Standalone payment did not start', ['order' => $order->reference, 'error' => $charge->error]);
+
+            return redirect()->route('standalone.review')->withCookie($remember)->with('error',
+                'We could not open the payment page just now ('.($charge->error ?? 'no answer').'). Your details are saved. Try again in a minute, or WhatsApp us and we will help you pay by mobile money.');
+        }
+
+        return redirect()->away($charge->link)->withCookie($remember);
+    }
+
+    /** Step 4 when the payment is not confirmed yet: the order this browser is paying, and a button to ask again. */
+    public function status(Request $request): \Illuminate\Contracts\View\View|RedirectResponse
+    {
+        $order = $this->orderInBrowser($request);
+        if ($order === null) {
+            return redirect()->route('standalone.products');
+        }
+        if ($order->status === 'paid' && $order->licence_id !== null) {
+            return $this->toDownloads($request, (string) $order->licence_id);
+        }
+
+        return view('marketing.standalone-buy', ['step' => 4, 'order' => $order, 'product' => $order->product, 'draft' => $this->draft($request)]);
+    }
+
+    public function checkStatus(Request $request): RedirectResponse
+    {
+        $order = $this->orderInBrowser($request);
+        if ($order === null) {
+            return redirect()->route('standalone.products');
+        }
+        $result = $this->sales->check($order);
+        $order->refresh();
+        if (in_array($result, ['settled', 'already_settled'], true) && $order->licence_id !== null) {
+            return $this->toDownloads($request, (string) $order->licence_id, 'Payment confirmed. Your downloads are ready.');
+        }
+
+        return redirect()->route('standalone.status')->with('status', match ($result) {
+            'not_started' => 'No payment was made for this order. Go back and pay when you are ready.',
+            'not_successful' => 'The payment service says this payment did not go through. You can try again; you have not been charged twice.',
+            default => 'Not confirmed yet. Mobile money can take a few minutes. Check again shortly; we also email you the moment it is confirmed.',
+        });
+    }
+
     public function callback(Request $request): RedirectResponse
     {
         $tracking = (string) $request->query('OrderTrackingId', '');
@@ -51,16 +159,21 @@ class StandalonePurchaseController extends Controller
         }
         $result = $this->sales->settle($tracking);
         if (! in_array($result, ['settled', 'already_settled'], true)) {
+            $pending = \App\Models\StandaloneOrder::where('gateway_tracking_id', $tracking)->first();
+            if ($pending !== null) {
+                $request->session()->put(self::ORDER, $pending->reference);
+
+                return redirect()->route('standalone.status')->withCookie(cookie(self::ORDER, $pending->reference, 60 * 24 * 30));
+            }
+
             return redirect()->route('standalone.products')->with('error', 'Payment is not confirmed yet. Reference: '.$result);
         }
         $order = \App\Models\StandaloneOrder::where('gateway_tracking_id', $tracking)->first();
         if ($order === null || $order->licence_id === null) {
             return redirect()->route('standalone.products')->with('error', 'Payment was confirmed but the download is not ready. Contact support with your receipt.');
         }
-        $request->session()->regenerate();
-        $request->session()->put('standalone_licence_id', $order->licence_id);
 
-        return redirect()->route('standalone.portal')->with('status', 'Payment confirmed. Your downloads are ready.');
+        return $this->toDownloads($request, (string) $order->licence_id, 'Payment confirmed. Your downloads are ready.');
     }
 
     public function portal(Request $request): \Illuminate\Contracts\View\View
@@ -134,10 +247,8 @@ class StandalonePurchaseController extends Controller
     public function claim(Request $request, StandaloneLicence $licence): RedirectResponse
     {
         abort_unless($licence->status === 'active', 404);
-        $request->session()->regenerate();
-        $request->session()->put('standalone_licence_id', $licence->id);
 
-        return redirect()->route('standalone.portal');
+        return $this->toDownloads($request, (string) $licence->id);
     }
 
     public function downloadLicence(Request $request): \Illuminate\Http\Response
@@ -177,18 +288,57 @@ class StandalonePurchaseController extends Controller
         ]);
     }
 
+    /** A shared computer: forget the licence on this browser. */
+    public function forget(Request $request): RedirectResponse
+    {
+        $request->session()->forget('standalone_licence_id');
+
+        return redirect()->route('standalone.portal')->withCookie(cookie()->forget(self::LICENCE))
+            ->with('status', 'This browser no longer opens your downloads. Your email link still works.');
+    }
+
+    /** Sign this browser in to a licence's downloads, and remember it on this device. */
+    private function toDownloads(Request $request, string $licenceId, ?string $status = null): RedirectResponse
+    {
+        $request->session()->regenerate();
+        $request->session()->put('standalone_licence_id', $licenceId);
+        $request->session()->forget([self::DRAFT, self::ORDER]);
+        $to = redirect()->route('standalone.portal')
+            ->withCookie(cookie(self::LICENCE, $licenceId, 60 * 24 * 90))
+            ->withCookie(cookie()->forget(self::DRAFT))
+            ->withCookie(cookie()->forget(self::ORDER));
+
+        return $status !== null ? $to->with('status', $status) : $to;
+    }
+
+    /** @return array<string,mixed>|null what the buyer typed, from this session or this device */
+    private function draft(Request $request): ?array
+    {
+        $draft = $request->session()->get(self::DRAFT);
+        if (! is_array($draft)) {
+            $draft = json_decode((string) $request->cookie(self::DRAFT, ''), true);
+        }
+
+        return is_array($draft) ? $draft : null;
+    }
+
+    private function orderInBrowser(Request $request): ?\App\Models\StandaloneOrder
+    {
+        $reference = $request->session()->get(self::ORDER) ?? $request->cookie(self::ORDER);
+
+        return is_string($reference) && $reference !== '' ? \App\Models\StandaloneOrder::where('reference', $reference)->first() : null;
+    }
+
     public static function licenceInSession(Request $request): ?StandaloneLicence
     {
-        $id = $request->session()->get('standalone_licence_id');
+        $id = $request->session()->get('standalone_licence_id') ?? $request->cookie(self::LICENCE);
 
         return is_string($id) ? StandaloneLicence::whereKey($id)->where('status', 'active')->first() : null;
     }
 
     private function sessionLicence(Request $request): ?StandaloneLicence
     {
-        $id = $request->session()->get('standalone_licence_id');
-
-        return is_string($id) ? StandaloneLicence::whereKey($id)->where('status', 'active')->first() : null;
+        return self::licenceInSession($request);
     }
 
     private function latestEntitled(StandaloneLicence $licence): ?StandaloneRelease

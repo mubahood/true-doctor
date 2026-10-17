@@ -594,3 +594,19 @@ a.card{display:flex;flex-direction:column;}
 
 /* The words the ads use, leading the home page's H1 in the eyebrow's style. */
 .h1-kicker{display:block;margin-bottom:14px;font-size:11.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--pri);line-height:1.4;}
+
+/* ── Buying your own copy, step by step (marketing/standalone-buy) ─────── */
+.buy{max-width:700px;}
+.buy-steps{list-style:none;display:flex;flex-wrap:wrap;gap:6px 18px;margin:0 0 22px;padding:0;font-size:13px;color:var(--tx2);}
+.buy-steps li{display:flex;align-items:center;gap:7px;}
+.buy-steps span{display:inline-grid;place-items:center;width:22px;height:22px;border:1px solid var(--line);font-size:12px;}
+.buy-steps li.on{color:var(--tx);font-weight:600;}
+.buy-steps li.on span{background:var(--pri);border-color:var(--pri);color:var(--surface);}
+.buy-steps li.done span{border-color:var(--pri);color:var(--pri);}
+.buy-plan{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;margin:0 0 14px;font-size:14px;}
+.buy-plan a{margin-left:auto;font-size:13px;}
+.buy-form{max-width:none;}
+.buy-form h1{font-size:24px;margin:0 0 8px;}
+.buy-acts{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;margin-top:18px;}
+.buy-agree{display:flex;gap:8px;align-items:flex-start;font-size:14px;margin:14px 0 8px;}
+.buy-agree input{margin-top:3px;}

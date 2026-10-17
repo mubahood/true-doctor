@@ -38,6 +38,11 @@ class PesapalGateway implements PaymentGateway
 
     public function initialize(array $data): GatewayCharge
     {
+        if (blank($this->cfg['consumer_key'] ?? null) || blank($this->cfg['consumer_secret'] ?? null)) {
+            Log::error('Pesapal is not configured: PESAPAL_CONSUMER_KEY / PESAPAL_CONSUMER_SECRET are empty.');
+
+            return new GatewayCharge(false, $data['tx_ref'], null, 'Online payment is not set up on this server yet.');
+        }
         $token = $this->token();
         if ($token === null) {
             return new GatewayCharge(false, $data['tx_ref'], null, 'Payment gateway unreachable.');
@@ -77,7 +82,7 @@ class PesapalGateway implements PaymentGateway
 
         $body = $res->json();
         if ($res->successful() && ($body['status'] ?? null) === '200' && filled($body['redirect_url'] ?? null)) {
-            return new GatewayCharge(true, $data['tx_ref'], $body['redirect_url']);
+            return new GatewayCharge(true, $data['tx_ref'], $body['redirect_url'], null, filled($body['order_tracking_id'] ?? null) ? (string) $body['order_tracking_id'] : null);
         }
 
         return new GatewayCharge(false, $data['tx_ref'], null, data_get($body, 'error.message') ?? data_get($body, 'message') ?? 'Could not start payment.');
