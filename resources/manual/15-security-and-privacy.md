@@ -8,7 +8,7 @@ Most of this chapter is for the Hospital Admin. The pages it describes are under
 
 Every staff member can protect their own account from the account menu at the top right, under **Account security**:
 
-- **Two-step sign-in** adds a 6-digit code from your phone after your password, so a stolen password alone cannot open your account. Owners and administrators must use it. How to set it up is in [Getting started](01-getting-started.md).
+- **Two-step sign-in** adds a 6-digit code from your phone after your password, so a stolen password alone cannot open your account. It is optional, and recommended for owners and administrators. How to set it up is in [Getting started](01-getting-started.md).
 - **Trusted browsers** lists browsers that skip the code. **Ask every browser again** makes every browser ask for the code again.
 - **Apps signed in** lists phones signed in to your account. You can sign out any one of them.
 - **Sign out everywhere else** signs out every other browser and app at once. Use it if you lose a phone or signed in on a computer you do not trust. You stay signed in where you are.

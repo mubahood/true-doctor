@@ -135,16 +135,16 @@ return [
     | Two-step sign-in
     |--------------------------------------------------------------------------
     |
-    | A code from an authenticator app after the password. Required for the
-    | roles below (owners and administrators, and the platform's super admin)
-    | when `enforce` is on; anybody else may turn it on for themselves. A
+    | A code from an authenticator app after the password. Optional for
+    | everyone by default (owner's decision, 2026-10-17: never force it on a
+    | clinic); TWO_FACTOR_ENFORCE=true makes it required for the roles below. A
     | device can be trusted for `trust_days`, so a desk computer is not asked
     | every morning.
     |
     */
 
     'two_factor' => [
-        'enforce' => (bool) env('TWO_FACTOR_ENFORCE', true),
+        'enforce' => (bool) env('TWO_FACTOR_ENFORCE', false),
         'required_roles' => ['super_admin', 'hospital_admin'],
         'trust_days' => 30,
         'challenge_minutes' => 10,

@@ -44,7 +44,7 @@ If you still cannot get in, click **Trouble signing in? WhatsApp us** on the **S
 
 Two-step sign-in adds a second check after your password: a 6-digit code from an app on your phone. A stolen password alone then cannot open your account.
 
-Hospital Admins must use it. The first time a Hospital Admin signs in, True-Doctor holds them on the **Account security** page until it is set up. Everyone else can turn it on for themselves, and it is a good idea for anyone who handles money or patient records.
+It is optional. Anyone can turn it on for themselves from **Account security**, and it is a good idea for owners and anyone who handles money or patient records.
 
 ### Turning it on
 
