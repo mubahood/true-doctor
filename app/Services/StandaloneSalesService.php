@@ -200,7 +200,10 @@ class StandaloneSalesService
     public function sendLink(StandaloneLicence $licence, string $reason = 'link'): void
     {
         try {
-            Notification::route('mail', $licence->customer_email)->notify(new StandaloneDownloadReady($licence->id, $reason));
+            // Sent now, not queued: the queue runs with the scheduler (every 19 minutes on the
+            // online service) and a buyer waits for this one. A failure is caught below and the
+            // downloads page has it all anyway.
+            Notification::route('mail', $licence->customer_email)->notifyNow(new StandaloneDownloadReady($licence->id, $reason));
         } catch (\Throwable $exception) {
             Log::error('Standalone download email could not be sent', ['licence_id' => $licence->id, 'error' => get_class($exception)]);
         }
