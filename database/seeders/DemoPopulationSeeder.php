@@ -145,6 +145,7 @@ class DemoPopulationSeeder extends Seeder
             $this->standingArrangements($roster);
             $this->dental($roster);
             $this->books();
+            $this->scenarios();
         });
 
         $this->command->info(sprintf(
@@ -154,6 +155,19 @@ class DemoPopulationSeeder extends Seeder
             \App\Models\Appointment::withoutGlobalScopes()->where('hospital_id', $this->hospital->id)->count(),
             $this->hospital->name,
         ));
+    }
+
+    /**
+     * Every feature's own demo story (database/seeders/DemoScenarios): each
+     * class adds what its screens need to show a working clinic, fitted to the
+     * patients above, and is safe to run again.
+     */
+    private function scenarios(): void
+    {
+        foreach (glob(__DIR__.'/DemoScenarios/*.php') ?: [] as $file) {
+            $class = 'Database\\Seeders\\DemoScenarios\\'.basename($file, '.php');
+            $class::run($this->hospital);
+        }
     }
 
     /**
