@@ -55,6 +55,8 @@ the source record, under the record's own hospital (`CurrentHospital::within`):
 | Expired, damaged, lost, wastage, adjustment out | Stock losses | Inventory | `StockService` |
 | Adjustment in | Inventory | Stock count gains | `StockService` |
 | Returned to supplier | Accounts payable | Inventory | `StockService` |
+| Credit note approved | Credit notes allowed (4910); Tax payable (its share) | Patient receivables | `InvoiceCreditService` ([refunds.md](refunds.md)) |
+| Refund approved | Patient receivables | The book for its method (card: Patient card deposits) | `InvoiceCreditService` |
 
 Stock is valued at the `unit_cost` the stock ledger keeps on every movement.
 A payment by card is posted once, with the payment: `BillingService` passes

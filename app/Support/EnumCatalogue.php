@@ -31,6 +31,8 @@ final class EnumCatalogue
         \App\Enums\CardHolderStatus::class,
         \App\Enums\CardStatus::class,
         \App\Enums\ClaimStatus::class,
+        \App\Enums\CreditKind::class,
+        \App\Enums\CreditStatus::class,
         \App\Enums\DentalFinding::class,
         \App\Enums\DentalTreatmentStatus::class,
         \App\Enums\DiscountType::class,

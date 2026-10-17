@@ -26,6 +26,9 @@
                    :sub="\Illuminate\Support\Carbon::parse($s['date'])->format('l d M Y')" />
       <x-dash.stat icon="fa-ban" label="Voided" :value="number_format($s['voided'])" :tone="$s['voided'] > 0 ? 'warn' : ''"
                    :sub="$s['voided'] > 0 ? 'Check each has a reason' : 'None'" />
+      {{-- Refunds and credit notes (docs/refunds.md): a refund leaves the drawer. --}}
+      <x-dash.stat icon="fa-money-bill-transfer" label="Refunded" :value="$money($s['refunds']['total'])" :tone="$s['refunds']['count'] > 0 ? 'warn' : ''"
+                   :sub="'Net received '.$money($s['net']).' · '.$s['credit_notes']['count'].' '.\Illuminate\Support\Str::plural('credit note', $s['credit_notes']['count'])" />
     </div>
 
     <div class="tb-grid-2">
@@ -45,7 +48,15 @@
             @endforelse
           </tbody>
           @if($s['totals_by_method'] !== [])
-            <tfoot><tr><th>Total</th><th class="tb-text-right">{{ $s['payments_count'] }}</th><th class="tb-text-right mono">{{ $money($s['total']) }}</th></tr></tfoot>
+            <tfoot>
+              <tr><th>Total</th><th class="tb-text-right">{{ $s['payments_count'] }}</th><th class="tb-text-right mono">{{ $money($s['total']) }}</th></tr>
+              @foreach($s['refunds']['by_method'] as $r)
+                <tr wire:key="rf-{{ $r['method'] }}"><td class="muted">Refunded · {{ \App\Enums\PaymentMethod::tryFrom($r['method'])?->label() ?? $r['method'] }}</td><td></td><td class="tb-text-right mono">− {{ $money($r['amount']) }}</td></tr>
+              @endforeach
+              @if($s['refunds']['count'] > 0)
+                <tr><th>Net received</th><th></th><th class="tb-text-right mono">{{ $money($s['net']) }}</th></tr>
+              @endif
+            </tfoot>
           @endif
         </table></div>
       </div>

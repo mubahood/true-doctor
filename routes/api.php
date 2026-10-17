@@ -167,6 +167,14 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
         Route::get('invoices/{invoice}/pdf', [\App\Http\Controllers\Admin\InvoiceController::class, 'pdf'])->name('api.invoices.pdf');
         Route::get('payments/{payment:uuid}/receipt', [\App\Http\Controllers\Admin\PaymentController::class, 'receipt'])->name('api.payments.receipt');
         Route::apiResource('invoices', InvoiceController::class)->only(['index', 'show']);
+        // Refunds and credit notes (roadmap 04 §8, docs/api/refunds.md).
+        Route::get('credits', [\App\Http\Controllers\Api\V1\InvoiceCreditController::class, 'index'])->name('api.credits.index');
+        Route::get('invoices/{invoice}/credits', [\App\Http\Controllers\Api\V1\InvoiceCreditController::class, 'forInvoice'])->name('api.invoices.credits');
+        Route::post('invoices/{invoice}/credit-notes', [\App\Http\Controllers\Api\V1\InvoiceCreditController::class, 'creditNote'])->name('api.invoices.credit-notes');
+        Route::post('invoices/{invoice}/refunds', [\App\Http\Controllers\Api\V1\InvoiceCreditController::class, 'refund'])->name('api.invoices.refunds');
+        Route::post('credits/{credit}/approve', [\App\Http\Controllers\Api\V1\InvoiceCreditController::class, 'approve'])->name('api.credits.approve');
+        Route::post('credits/{credit}/reject', [\App\Http\Controllers\Api\V1\InvoiceCreditController::class, 'reject'])->name('api.credits.reject');
+        Route::get('credits/{credit}/pdf', [\App\Http\Controllers\Admin\InvoiceCreditController::class, 'pdf'])->name('api.credits.pdf');
 
         // The rest of the back office, one file per area (docs/api.md).
         foreach (['care', 'pharmacy', 'finance', 'admin', 'extras', 'plane', 'notify', 'journeys'] as $area) {

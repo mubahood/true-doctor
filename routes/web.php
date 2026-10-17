@@ -244,6 +244,9 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'subscribed', 'onboarding',
     Route::get('payments/{payment}/receipt/thermal', [\App\Http\Controllers\Admin\ThermalController::class, 'receipt'])->name('payments.receipt.thermal');
     Route::get('visits/{visit}/ticket', [\App\Http\Controllers\Admin\ThermalController::class, 'ticket'])->name('visits.ticket');
     Route::post('invoices/{invoice}/pay/flutterwave', [\App\Http\Controllers\Admin\GatewayPaymentController::class, 'start'])->name('invoices.flutterwave');
+    // ── Refunds and credit notes (roadmap 04 §8, docs/refunds.md) ──
+    Route::get('credits', \App\Livewire\Credits\Index::class)->name('credits.index');
+    Route::get('credits/{credit}/pdf', [\App\Http\Controllers\Admin\InvoiceCreditController::class, 'pdf'])->name('credits.pdf');
 
     // ── Dispensing (Phase 2 Step 12b) ─────────────────────────
     Route::get('dispensations/{dispensation}', \App\Livewire\Dispensations\Show::class)->name('dispensations.show');

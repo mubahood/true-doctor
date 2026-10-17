@@ -2,9 +2,12 @@
 
 namespace App\Services;
 
+use App\Enums\CreditKind;
+use App\Enums\CreditStatus;
 use App\Enums\InvoiceStatus;
 use App\Models\Hospital;
 use App\Models\Invoice;
+use App\Models\InvoiceCredit;
 use App\Models\Payment;
 use App\Support\HospitalSettings;
 use Illuminate\Support\Carbon;
@@ -56,7 +59,31 @@ class CashierDaySummary
         usort($methods, fn ($a, $b) => bccomp($b['amount'], $a['amount'], 2));
         arsort($users);
 
+        // Money given back the same day (docs/refunds.md): a refund leaves
+        // the drawer, a credit note only lowers what is owed.
+        $decided = InvoiceCredit::query()->where('status', CreditStatus::Approved->value)
+            ->where('decided_at', '>=', $from)->where('decided_at', '<', $to)
+            ->get(['id', 'kind', 'method', 'amount']);
+        $refunds = ['count' => 0, 'total' => '0.00', 'by_method' => []];
+        $credits = ['count' => 0, 'total' => '0.00'];
+        foreach ($decided as $c) {
+            $amount = (string) $c->amount;
+            if ($c->kind === CreditKind::Refund) {
+                $refunds['count']++;
+                $refunds['total'] = bcadd($refunds['total'], $amount, 2);
+                $m = $c->method->value ?? 'cash';
+                $refunds['by_method'][$m] = bcadd($refunds['by_method'][$m] ?? '0.00', $amount, 2);
+            } else {
+                $credits['count']++;
+                $credits['total'] = bcadd($credits['total'], $amount, 2);
+            }
+        }
+        $refunds['by_method'] = array_map(fn ($m, $a) => ['method' => (string) $m, 'amount' => $a], array_keys($refunds['by_method']), array_values($refunds['by_method']));
+
         return [
+            'refunds' => $refunds,
+            'credit_notes' => $credits,
+            'net' => bcsub($total, $refunds['total'], 2),
             'date' => $date,
             'currency' => app(HospitalSettings::class)->currencyCode(),
             'totals_by_method' => $methods,

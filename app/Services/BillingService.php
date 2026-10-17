@@ -499,7 +499,9 @@ class BillingService
             }
 
             $newPaid = bcadd((string) $locked->amount_paid, $amount, 2);
-            $newBalance = bcsub((string) $locked->total, $newPaid, 2);
+            // What the invoice asks for after its credit notes, less what is
+            // held against it after its refunds (docs/refunds.md).
+            $newBalance = bcsub($locked->netTotal(), bcsub($newPaid, (string) $locked->refunded, 2), 2);
             $status = bccomp($newBalance, '0', 2) === 0 ? InvoiceStatus::Paid : InvoiceStatus::PartiallyPaid;
 
             $locked->update(['amount_paid' => $newPaid, 'balance' => $newBalance, 'status' => $status]);

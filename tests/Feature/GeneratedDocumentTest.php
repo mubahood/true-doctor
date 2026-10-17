@@ -140,6 +140,10 @@ class GeneratedDocumentTest extends TestCase
             'recommendation' => 'Continue IV fluids.',
         ]]);
         $shares = app(\App\Services\InvoiceShareService::class);
+        // A credit note on the paid part, then the money back (docs/refunds.md).
+        $credits = app(\App\Services\InvoiceCreditService::class);
+        $creditNote = $credits->requestCreditNote($invoice->fresh(), '75000.00', 'Second consultation not done.', $this->admin);
+        $refund = $credits->requestRefund($invoice->fresh(), PaymentMethod::Cash, '5000.00', 'Cash back.', $this->admin);
 
         // Patient links (roadmap 05 §4): a visit's prescription prints on its own.
         app(\App\Services\PrescriptionService::class)->prescribe($visit, [[
@@ -154,6 +158,8 @@ class GeneratedDocumentTest extends TestCase
             ['shared receipt link', $shares->sharePayment($payment)['url']],
             ['invoice', route('admin.invoices.pdf', $invoice)],
             ['receipt', route('admin.payments.receipt', $payment)],
+            ['credit note', route('admin.credits.pdf', $creditNote)],
+            ['refund', route('admin.credits.pdf', $refund)],
             ['lab report', route('admin.lab-orders.pdf', $lab)],
             ['radiology report', route('admin.radiology-orders.pdf', $radiology)],
             ['discharge summary', route('admin.admissions.summary', $admission)],

@@ -33,6 +33,19 @@
     </tbody>
   </table>
 
+  {{-- Refunds and credit notes (docs/refunds.md). --}}
+  <h2>Given back</h2>
+  <table class="rows">
+    <tbody>
+      @foreach($summary['refunds']['by_method'] as $r)
+        <tr><td>Refunded · {{ \App\Enums\PaymentMethod::tryFrom($r['method'])?->label() ?? $r['method'] }}</td><td class="num r">− {{ $set->format($r['amount']) }}</td></tr>
+      @endforeach
+      <tr><td>Refunds</td><td class="num r">{{ $summary['refunds']['count'] }} · {{ $set->format($summary['refunds']['total']) }}</td></tr>
+      <tr><td>Credit notes (no money moved)</td><td class="num r">{{ $summary['credit_notes']['count'] }} · {{ $set->format($summary['credit_notes']['total']) }}</td></tr>
+      <tr><td><b>Net received</b></td><td class="num r"><b>{{ $set->format($summary['net']) }}</b></td></tr>
+    </tbody>
+  </table>
+
   <h2>By person</h2>
   <table class="rows">
     <thead><tr><th>Received by</th><th class="r">Total</th></tr></thead>

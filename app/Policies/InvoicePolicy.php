@@ -31,4 +31,10 @@ class InvoicePolicy
     {
         return $user->can('billing.manage');
     }
+
+    /** Ask for a credit note or refund on it; deciding needs billing.refund (InvoiceCreditPolicy). */
+    public function credit(User $user, Invoice $invoice): bool
+    {
+        return $user->can('billing.manage') || $user->can('billing.refund');
+    }
 }

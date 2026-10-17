@@ -3,10 +3,14 @@
 namespace App\Livewire\Invoices;
 
 use App\Enums\PaymentMethod;
+use App\Http\Requests\InvoiceCreditRequest;
 use App\Http\Requests\PaymentRequest;
 use App\Models\Invoice;
+use App\Models\InvoiceCredit;
 use App\Models\PatientCard;
+use App\Models\User;
 use App\Services\BillingService;
+use App\Services\InvoiceCreditService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -30,8 +34,13 @@ use RuntimeException;
  * PDF/receipt links (downloads) and the Flutterwave button (a gateway redirect
  * needs a real POST + CSRF to leave the SPA).
  *
+ * Credit notes and refunds (docs/refunds.md) are asked for here and, by
+ * someone holding billing.refund, approved or rejected here too.
+ *
  * @property-read Invoice $invoice
  * @property-read Collection<int,PatientCard> $cards
+ * @property-read Collection<int,InvoiceCredit> $credits
+ * @property-read array<string,string> $creditFigures
  */
 #[Layout('layouts.admin')]
 class Show extends Component
@@ -50,6 +59,20 @@ class Show extends Component
     public ?string $reference = null;
 
     public ?string $card_uuid = null;
+
+    // ── Credit note / refund dialog ──────────────────────────────────────
+
+    public bool $showCredit = false;
+
+    /** @var array{kind:string,amount:string,reason:string,method:string,reference:?string,card_uuid:?string} */
+    public array $credit = ['kind' => 'credit_note', 'amount' => '', 'reason' => '', 'method' => 'cash', 'reference' => null, 'card_uuid' => null];
+
+    public bool $showReject = false;
+
+    #[Locked]
+    public ?int $rejectId = null;
+
+    public string $rejectNote = '';
 
     public function mount(string $invoice): void
     {
@@ -127,9 +150,131 @@ class Show extends Component
             return;
         }
 
-        unset($this->invoice, $this->cards);
+        $this->forgetMoney();
         $this->showPayment = false;
         $this->dispatch('toast', message: 'Payment recorded.', type: 'success');
+    }
+
+    // ── Credit notes and refunds ─────────────────────────────────────────
+
+    /** @return Collection<int,InvoiceCredit> */
+    #[Computed]
+    public function credits(): Collection
+    {
+        return $this->invoice->credits()->with(['requestedBy:id,name', 'decidedBy:id,name'])->get();
+    }
+
+    /** @return array<string,string> */
+    #[Computed]
+    public function creditFigures(): array
+    {
+        return app(InvoiceCreditService::class)->figures($this->invoice);
+    }
+
+    public function openCredit(string $kind): void
+    {
+        $this->authorize('credit', $this->invoice);
+        $kind = $kind === 'refund' ? 'refund' : 'credit_note';
+
+        $this->resetErrorBag();
+        $f = $this->creditFigures;
+        $this->credit = [
+            'kind' => $kind,
+            'amount' => $kind === 'refund' ? $f['can_refund'] : '',
+            'reason' => '',
+            'method' => PaymentMethod::Cash->value,
+            'reference' => null,
+            'card_uuid' => null,
+        ];
+        $this->showCredit = true;
+    }
+
+    public function saveCredit(InvoiceCreditService $service): void
+    {
+        $invoice = $this->invoice;
+        $this->authorize('credit', $invoice);
+        $kind = $this->credit['kind'] === 'refund' ? 'refund' : 'credit_note';
+
+        $data = $this->validate(InvoiceCreditRequest::rulesFor($kind, 'credit.'), InvoiceCreditRequest::messagesFor('credit.'))['credit'];
+        /** @var User $user */
+        $user = Auth::user();
+        $amount = \App\Support\HospitalSettings::decimal($data['amount'], 2);
+
+        try {
+            $made = $kind === 'refund'
+                ? $service->requestRefund(
+                    $invoice, PaymentMethod::from($data['method']), $amount, $data['reason'], $user,
+                    $data['reference'] ?? null,
+                    filled($data['card_uuid'] ?? null) ? PatientCard::where('uuid', $data['card_uuid'])->first() : null,
+                )
+                : $service->requestCreditNote($invoice, $amount, $data['reason'], $user);
+        } catch (RuntimeException $e) {
+            $this->addError('credit.amount', $e->getMessage());
+
+            return;
+        }
+
+        $this->forgetMoney();
+        $this->showCredit = false;
+        $this->dispatch('toast', type: 'success', message: $made->isPending()
+            ? $made->kind->label().' sent for approval.'
+            : $made->kind->label().' '.$made->number.' approved.');
+    }
+
+    public function approveCredit(int $id, InvoiceCreditService $service): void
+    {
+        $credit = InvoiceCredit::where('invoice_id', $this->invoiceId)->findOrFail($id);
+        $this->authorize('approve', $credit);
+
+        try {
+            /** @var User $user */
+            $user = Auth::user();
+            $credit = $service->approve($credit, $user);
+        } catch (RuntimeException $e) {
+            $this->dispatch('toast', type: 'error', message: $e->getMessage());
+
+            return;
+        }
+
+        $this->forgetMoney();
+        $this->dispatch('toast', type: 'success', message: $credit->kind->label().' '.$credit->number.' approved.');
+    }
+
+    public function openReject(int $id): void
+    {
+        $credit = InvoiceCredit::where('invoice_id', $this->invoiceId)->findOrFail($id);
+        $this->authorize('approve', $credit);
+
+        $this->resetErrorBag();
+        $this->rejectId = $credit->id;
+        $this->rejectNote = '';
+        $this->showReject = true;
+    }
+
+    public function rejectCredit(InvoiceCreditService $service): void
+    {
+        $credit = InvoiceCredit::where('invoice_id', $this->invoiceId)->findOrFail((int) $this->rejectId);
+        $this->authorize('approve', $credit);
+        $this->validate(['rejectNote' => ['required', 'string', 'min:3', 'max:500']], ['rejectNote.required' => 'Say why it is rejected.']);
+
+        try {
+            /** @var User $user */
+            $user = Auth::user();
+            $service->reject($credit, $this->rejectNote, $user);
+        } catch (RuntimeException $e) {
+            $this->addError('rejectNote', $e->getMessage());
+
+            return;
+        }
+
+        $this->forgetMoney();
+        $this->showReject = false;
+        $this->dispatch('toast', type: 'success', message: 'Rejected.');
+    }
+
+    private function forgetMoney(): void
+    {
+        unset($this->invoice, $this->credits, $this->creditFigures, $this->cards);
     }
 
     public function render()
@@ -140,6 +285,7 @@ class Show extends Component
         return view('livewire.invoices.show', [
             'invoice' => $invoice,
             'methods' => PaymentMethod::options(),
+            'refundMethods' => array_intersect_key(PaymentMethod::options(), array_flip(InvoiceCreditService::REFUND_METHODS)),
         ])->title($invoice->invoice_no);
     }
 }
