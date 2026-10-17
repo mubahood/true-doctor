@@ -62,6 +62,7 @@ final class EnumCatalogue
         \App\Enums\PregnancyStatus::class,
 
         \App\Enums\PurchaseOrderStatus::class,
+        \App\Enums\SharedDocumentType::class,
         \App\Enums\RadiologyOrderStatus::class,
         \App\Enums\ResultFlag::class,
         \App\Enums\RoomStatus::class,

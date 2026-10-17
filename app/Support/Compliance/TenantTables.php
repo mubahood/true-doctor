@@ -34,6 +34,8 @@ class TenantTables
     public const OMIT = [
         'password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes', 'two_factor_last_step',
         'card_hash', 'card_number_hash', 'share_nonce', 'pull_cursor',
+        // A patient link's secret and code, hashed: no use to anyone outside, a risk if leaked.
+        'token_hash', 'code_hash',
     ];
 
     /** Columns stored encrypted at rest; an export carries them readable. */
