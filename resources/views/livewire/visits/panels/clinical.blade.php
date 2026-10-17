@@ -24,6 +24,19 @@
     @else
       <x-ui.empty compact icon="fa-notes-medical" message="Nothing written on this visit yet." />
     @endif
+
+    {{-- The confidential note: read only by those who diagnose. Others are
+         told there is one, so nobody writes it twice, but never what it says. --}}
+    @if($this->visit->sensitive_notes)
+      @can('diagnose', $this->visit)
+        <div class="tb-sensitive-note">
+          <span class="tb-label"><i class="fas fa-lock" aria-hidden="true"></i> Confidential</span>
+          <p>{{ $this->visit->sensitive_notes }}</p>
+        </div>
+      @else
+        <p class="muted tb-xs"><i class="fas fa-lock" aria-hidden="true"></i> A confidential note is on this visit.</p>
+      @endcan
+    @endif
   </div>
 
   {{-- ── Writing them ───────────────────────────────────────────── --}}
@@ -124,6 +137,12 @@
               @endif
             </x-ui.field>
           @endforeach
+
+          <x-ui.field label="Confidential note" for="cl-sensitive" name="sensitive_notes"
+                      hint="HIV status, mental health, sexual and reproductive health. Encrypted, and shown only to clinicians who diagnose.">
+            <textarea id="cl-sensitive" class="tb-textarea" rows="2" maxlength="5000"
+                      wire:model.blur="sensitive_notes"></textarea>
+          </x-ui.field>
         </div>
 
         <div class="tb-modal-foot">

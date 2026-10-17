@@ -22,6 +22,7 @@ class PatientSummaryController extends Controller
     public function __invoke(Request $request, Patient $patient, PatientSummaryService $service): JsonResponse
     {
         $this->authorize('view', $patient);
+        app(\App\Services\Audit\RecordAccessLog::class)->opened($patient, $request->user(), $request);
 
         $sections = PatientSummaryService::sectionsFor($request->user());
         $summary = $service->summary($patient, $sections, (int) $request->query('limit', 5));

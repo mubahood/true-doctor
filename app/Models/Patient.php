@@ -11,8 +11,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 /**
  * A patient of one hospital. Tenant-scoped by BelongsToHospital; identity is
@@ -47,7 +45,8 @@ use Spatie\Activitylog\Traits\LogsActivity;
  */
 class Patient extends Model
 {
-    use BelongsToHospital, HasFactory, LogsActivity, SoftDeletes;
+    // Changes are audited field by field by AuditObserver (docs/audit.md).
+    use BelongsToHospital, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'uuid', 'patient_no', 'first_name', 'last_name', 'dob', 'sex',
@@ -69,6 +68,9 @@ class Patient extends Model
             'chronic_conditions' => 'array',
             'next_recall_on' => 'date',
             'bank_details' => 'encrypted',   // C12 — sensitive at rest
+            // Free text where a standing fact like HIV status gets written;
+            // never searched, so it can be encrypted (roadmap 07 §3).
+            'notes' => 'encrypted',
             'consent_given' => 'boolean',
             'consent_at' => 'datetime',
             // Offline provenance. Cast because the docblock promises a Carbon,
@@ -78,15 +80,6 @@ class Patient extends Model
     }
 
     protected $hidden = ['bank_details'];
-
-    public function getActivitylogOptions(): LogOptions
-    {
-        return LogOptions::defaults()
-            ->logOnly(['patient_no', 'first_name', 'last_name', 'status'])
-            ->logOnlyDirty()
-            ->dontSubmitEmptyLogs()
-            ->useLogName('patient');
-    }
 
     // ── Relationships ──────────────────────────────────────────
 

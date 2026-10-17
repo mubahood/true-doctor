@@ -195,7 +195,7 @@ class VisitService
     {
         $visit->fill(array_intersect_key($data, array_flip([
             'reason', 'complaints', 'diagnosis', 'doctor_user_id', 'department_id',
-            'doctor_remarks', 'receptionist_remarks', 'patient_remarks',
+            'doctor_remarks', 'receptionist_remarks', 'patient_remarks', 'sensitive_notes',
         ])))->save();
 
         return $visit;

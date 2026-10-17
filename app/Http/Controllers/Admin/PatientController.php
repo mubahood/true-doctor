@@ -46,6 +46,7 @@ class PatientController extends Controller
     {
         $this->authorize('view', $patient);
         abort_unless(auth()->user()?->can('billing.view'), 403);
+        app(\App\Services\Audit\RecordAccessLog::class)->printed($patient, auth()->user(), 'Statement of account');
 
         return Pdf::loadView('pdf.patient-statement', [
             'patient' => $patient,

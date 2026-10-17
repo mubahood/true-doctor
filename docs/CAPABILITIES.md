@@ -468,14 +468,20 @@ work does not stop for any of them.
 - **Session fixation** prevented — a new session id on privilege change,
   issued only after the account checks pass.
 - **Encryption at rest** for prepaid card numbers and patients' bank details,
-  and for two-step sign-in secrets. **Clinical fields are not yet encrypted**
-  (planned for HIV status, mental health and sexual and reproductive health
-  notes: roadmap 07 §3).
-- **Change auditing** — who changed a patient's number, name or status, or a
-  visit's number, status, stage, outcome or diagnosis, when, and what the value
-  was before. Other records keep append-only histories and ledgers instead
-  (below); field-level auditing of every clinical and money record is planned
-  (roadmap 07 §3). **Read access is not logged** (see §Y).
+  and for two-step sign-in secrets, and for the clinical fields that would
+  hurt a patient if leaked: a visit's confidential note (HIV status, mental
+  health, sexual and reproductive health, shown only to clinicians who
+  diagnose, web only, every read logged) and the patient's free-text notes. Names, phones, the written
+  diagnosis and remarks are not encrypted, because they are searched and
+  counted.
+- **Change auditing** — every change to a clinical or money record (visits,
+  diagnoses, orders, results, prescriptions, dispensations, admissions, beds,
+  invoices, payments, cards, claims, stock, prices, user accounts and roles):
+  who, when, through the web or the app, and each field before and after, with
+  secrets and encrypted fields masked. Append-only. The owner reads it in the
+  Audit log (docs/audit.md).
+- **Read auditing** — who opened or printed a patient's record, when and on
+  what device; the owner sees it per patient ("Who opened it").
 - **Append-only status histories** on every workflow — a visit's stages, an
   appointment's attendance, a claim's progress, an order's status — never
   edited in place.
@@ -644,10 +650,9 @@ A capability list that claims everything is worth nothing. As of today:
 - **Three Field Mode workflows are not yet built** — dispensing intents,
   appointment check-in, and opening a visit offline.
 - **Offline attachments** are not yet supported.
-- **Read access is not audited.** Changes are recorded with who made them and
-  what the value was before, and every workflow keeps an append-only history —
-  but a member of staff opening a patient record and closing it again leaves no
-  entry. If a regulator requires read auditing, this is a real gap.
+- **The audit trail is not yet tamper-evident.** Entries cannot be edited or
+  deleted through the application, but a database administrator could; each
+  row carrying the previous row's hash is planned (roadmap 07 §3).
 
 ---
 

@@ -342,6 +342,9 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'subscribed', 'onboarding',
     // act, and gating it behind `manage-users` would leave the people who
     // actually work offline unable to check.
     Route::get('offline', \App\Livewire\Sync\Readiness::class)->name('offline.readiness');
+
+    // ── Audit log (roadmap 07 §3, docs/audit.md) ──────────────
+    Route::get('audit-log', \App\Livewire\Audit\Index::class)->middleware('permission:manage-settings')->name('audit.index');
 });
 
 /*

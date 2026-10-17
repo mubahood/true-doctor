@@ -68,6 +68,10 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
         Route::patch('visits/{visit}/diagnoses/{id}', [\App\Http\Controllers\Api\V1\DiagnosisController::class, 'update'])->whereNumber('id')->name('api.diagnoses.update');
         Route::delete('visits/{visit}/diagnoses/{id}', [\App\Http\Controllers\Api\V1\DiagnosisController::class, 'destroy'])->whereNumber('id')->name('api.diagnoses.destroy');
 
+        // Audit log: changes, and who opened a record (roadmap 07 §3, docs/api/audit.md).
+        Route::get('audit-log', [\App\Http\Controllers\Api\V1\AuditController::class, 'changes'])->name('api.audit.changes');
+        Route::get('patients/{patient}/access-log', [\App\Http\Controllers\Api\V1\AuditController::class, 'access'])->name('api.audit.access');
+
         // Crashes the app recorded, for the error list (docs/api/security.md).
         Route::post('diagnostics/errors', \App\Http\Controllers\Api\V1\ErrorReportController::class)->middleware('throttle:10,1')->name('api.diagnostics.errors');
         Route::post('auth/sign-out-everywhere', [\App\Http\Controllers\Api\V1\AccountSecurityController::class, 'signOutEverywhere'])->name('api.auth.sign-out-everywhere');

@@ -2351,3 +2351,9 @@ body.has-brand::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z-i
 .hmis-grid td:first-child{white-space:normal;min-width:180px;}
 .hmis-zero td{color:var(--mt);}
 .hmis-hit td{background:var(--warn-soft);font-weight:600;}
+
+/* ── Audit log and confidential notes (Audit\Index, patient "Who opened it", Visits\Panels\Clinical) ── */
+.tb-sensitive-note{margin-top:8px;padding:6px 10px;border:1px solid var(--warn-line);background:var(--warn-soft);}
+.tb-sensitive-note .tb-label{color:var(--warn);}
+.tb-sensitive-note p{margin:2px 0 0;font-size:12.5px;white-space:pre-line;}
+.tb-audit-value{max-width:320px;font-size:12px;word-break:break-word;}
