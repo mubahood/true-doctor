@@ -31,6 +31,10 @@ final class EnumCatalogue
         \App\Enums\CardHolderStatus::class,
         \App\Enums\CardStatus::class,
         \App\Enums\ClaimStatus::class,
+        // Data protection (docs/compliance/README.md).
+        \App\Enums\DataExportStatus::class,
+        \App\Enums\DataRequestKind::class,
+        \App\Enums\DataRequestStatus::class,
         \App\Enums\DentalFinding::class,
         \App\Enums\DentalTreatmentStatus::class,
         \App\Enums\DiscountType::class,

@@ -205,6 +205,9 @@ final class Navigation
                     ['label' => 'Hospital letterhead', 'icon' => 'fa-stamp', 'route' => 'admin.settings.hospital', 'match' => ['admin.settings.hospital']],
                     ['label' => 'Billing settings', 'icon' => 'fa-coins', 'route' => 'admin.settings.billing', 'match' => ['admin.settings.billing*']],
                     ['label' => 'Messages to patients', 'icon' => 'fa-comment-sms', 'route' => 'admin.settings.messages', 'match' => ['admin.settings.messages']],
+                    // Data protection: the Act's documents, the full export, and patients' requests (docs/compliance/README.md).
+                    ['label' => 'Data protection', 'icon' => 'fa-file-shield', 'route' => 'admin.settings.data-protection', 'match' => ['admin.settings.data-protection'], 'tenant' => true],
+                    ['label' => 'Data requests', 'icon' => 'fa-user-shield', 'route' => 'admin.data-requests.index', 'match' => ['admin.data-requests.*'], 'tenant' => true],
                     ['label' => 'Subscription', 'icon' => 'fa-star', 'route' => 'admin.subscription.index', 'match' => ['admin.subscription.*'], 'edition' => 'saas'],
                     // A standalone owner's own server: the release, the licence, updates and backups.
                     ['label' => 'Licence & updates', 'icon' => 'fa-cloud-arrow-down', 'route' => 'admin.system.index', 'match' => ['admin.system.*'], 'edition' => 'standalone'],

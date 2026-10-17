@@ -49,6 +49,10 @@ class SmokeRoutesTest extends TestCase
         'admin.radiology-orders.attachments.download',
         // A standalone installation's backup file.
         'admin.system.backup',
+        // Data protection: the pack as PDFs, a patient's data, a hospital's export.
+        'admin.compliance.document',
+        'admin.patients.personal-data',
+        'admin.data-exports.download',
     ];
 
     /** @var array<string, class-string> route parameter => model */
