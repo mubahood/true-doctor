@@ -52,6 +52,7 @@ final class EnumCatalogue
         \App\Enums\PatientSex::class,
         \App\Enums\PatientStatus::class,
         \App\Enums\PaymentMethod::class,
+        \App\Enums\PregnancyStatus::class,
         \App\Enums\RadiologyOrderStatus::class,
         \App\Enums\ResultFlag::class,
         \App\Enums\RoomStatus::class,

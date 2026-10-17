@@ -182,6 +182,10 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'subscribed', 'onboarding',
     Route::get('patients/{patient}', \App\Livewire\Patients\Show::class)->name('patients.show');
     Route::get('patients/{patient}/dental-quote', \App\Http\Controllers\Admin\DentalQuoteController::class)->name('patients.dental-quote');
 
+    // ── Maternity and child health (docs/mother-child.md) ────
+    // Pregnancy, immunisation and growth are tabs on the patient record; this is the day's due list.
+    Route::get('immunisations', \App\Livewire\Immunisations\Index::class)->name('immunisations.index');
+
     // Documents (private disk — streamed download behind the Policy)
     Route::get('patients/{patient}/documents/{document}', [\App\Http\Controllers\Admin\PatientDocumentController::class, 'download'])->name('patients.documents.download');
 

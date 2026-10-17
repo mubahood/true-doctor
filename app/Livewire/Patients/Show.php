@@ -129,6 +129,20 @@ class Show extends Component
             $tabs = array_slice($tabs, 0, 4, true) + ['dental' => ['Dental', 'fa-tooth']] + array_slice($tabs, 4, null, true);
         }
 
+        // Maternity and child health (roadmap 04 §4, docs/mother-child.md):
+        // each tab only where it applies, by the same rule the app's summary uses.
+        $hospital = app(\App\Support\HospitalSettings::class)->hospital();
+        $mc = array_filter([
+            'pregnancy' => \App\Services\PregnancyService::onPatient($this->patient, $hospital, auth()->user()) ? ['Pregnancy', 'fa-person-pregnant'] : null,
+            'immunisation' => \App\Services\ImmunisationService::onPatient($this->patient, $hospital, auth()->user()) ? ['Immunisation', 'fa-syringe'] : null,
+            'growth' => \App\Services\GrowthService::onPatient($this->patient, $hospital, auth()->user()) ? ['Growth', 'fa-chart-line'] : null,
+        ]);
+        if ($mc !== []) {
+            $at = array_search(isset($tabs['dental']) ? 'dental' : 'clinical', array_keys($tabs), true);
+            $at = $at === false ? 1 : $at + 1;
+            $tabs = array_slice($tabs, 0, $at, true) + $mc + array_slice($tabs, $at, null, true);
+        }
+
         return $tabs;
     }
 

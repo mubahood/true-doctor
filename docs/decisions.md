@@ -176,3 +176,15 @@ One line per decision: date, decision, reason. Append-only; do not edit past ent
 - **Form lines in `config/hmis.php` by code prefix, first match wins, notifiable first.** Reason: when the Ministry revises the 105/108/033b, one file changes.
 - **Nothing is guessed.** A visit with no code, no age or no sex is not counted; it is listed under "Missing data" with a link to fix it. Reason: a report the in-charge signs must be defensible line by line.
 - **A records officer codes through the `diagnoses.code` gate** (visits.diagnose, or the records officer role), so the menu and the worklist agree.
+
+## 2026-10-17: Pregnancy record, immunisation register and growth chart (roadmap 04 §4)
+
+- **Tabs only where they apply.** Pregnancy for a woman of 12 to 55 with a known date of birth (wider than WHO's 15 to 49: adolescent pregnancies are common here and must not be the ones the record hides), Immunisation under 15 (HPV at ten), Growth under five (the WHO standards stop there), in a practice with the maternity or paediatrics pack; each also for anyone already holding such a record. Reason: the Dental rule (`DentalService::onPatient`) applied to mothers and children; a tab on every record is clutter.
+- **Read with `visits.view`, write with `visits.vitals` or `visits.diagnose`.** Reason: the midwife and the immunisation nurse are nurses (vitals), not prescribers; the desk reads the card but does not record doses.
+- **Gestation is always read from the EDD**; the EDD defaults to LMP + 280 days and a scan date overrides it. Reason: one source of truth, so a corrected EDD corrects the whole schedule.
+- **A check stays due until done; only time-bound checks become "missed"** (`until` in config: the dating scan before 24 weeks, deworming in the second trimester). A whole contact not attended is shown as a missed contact. Reason: listing every BP of a missed contact as "missed" is noise; a booking test done late is still a done test.
+- **Doses and contacts are append-only; a wrong dose is voided with a reason** and can then be recorded again. The pregnancy row is editable (dating, risks, birth plan) with an activity log. Reason: the register is audited; a pregnancy's plan legitimately changes.
+- **The UNEPI schedule leaves out the malaria vaccine and the HepB birth dose** until checked against the current card: the malaria vaccine is given only in some districts, and an "overdue" dose a district does not offer would be false. A hospital adds them in `config/mother_child.php`.
+- **Growth reads the visits' vitals as well as the clinic's measurements.** Reason: nothing typed twice; on a day with both the clinic's measurement wins (it is the deliberate one).
+- **WHO LMS tables are held monthly (0 to 60) and interpolated**, taken from the WHO anthro package's daily tables. Reason: 244 rows instead of 7,400, with a difference far below the precision of a scale.
+- **The menu gained a `pack` filter** (`Navigation`), so "Immunisations due" is left out of a practice with neither the paediatrics nor the maternity pack. Reason: `module` covers switchable modules only, not specialty packs.
