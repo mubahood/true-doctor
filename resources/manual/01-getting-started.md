@@ -156,9 +156,9 @@ Every account has one role. The role decides what you can see and do. Your Hospi
 | Role | What they usually do | Main menus they see |
 |---|---|---|
 | Hospital Admin | Runs the hospital in True-Doctor: staff accounts, settings, prices, and can do any clinical, billing, pharmacy, lab or finance task. Approves refunds | Everything, including the **Settings** group, **User accounts** and **Audit log** |
-| Doctor | Sees patients, opens and works on visits, records diagnoses, prescribes, orders lab and imaging, looks after admitted patients | **Visits**, **Scheduling**, **Lab orders**, **Radiology orders**, **Inpatient**, **Diagnoses to code**, **Patients**, **Billing** |
+| Doctor | Sees patients, opens and works on visits, records diagnoses, prescribes, orders lab and imaging, looks after admitted patients. Puts charges on the bills of their own patients | **Visits**, **Scheduling**, **Lab orders**, **Radiology orders**, **Inpatient**, **Diagnoses to code**, **Patients** |
 | Nurse | Takes vitals, gives medicines, records treatments, looks after admitted patients | **Visits**, **Scheduling**, **Inpatient**, **Patients**, **Immunisations due** where the hospital offers it |
-| Receptionist | Registers patients, books appointments, checks patients in, opens visits, takes payments, issues cards | **Visits**, **Scheduling**, **Patients**, **Billing**, **Cards**, **Insurance claims** |
+| Receptionist | Registers patients, books appointments, checks patients in, opens visits, takes payments, gives discounts, issues cards, calls patients due for a review | **Visits**, **Scheduling** (with **Recalls and reviews due**), **Patients**, **Billing**, **Cards**, **Insurance claims** |
 | Pharmacist | Dispenses medicines, manages stock, suppliers and orders | **Visits**, **Pharmacy** (stock, alerts, ledger, purchase orders, suppliers), **Stock categories**, **Patients** |
 | Lab Technician | Processes lab orders, enters results, keeps the lab test list | **Visits**, **Lab orders**, **Lab tests**, **Patients** |
 | Radiologist | Carries out imaging and writes reports, keeps the imaging study list | **Visits**, **Radiology orders**, **Radiology studies**, **Patients** |
@@ -169,4 +169,14 @@ Every role can also open **Departments**, **Rooms**, **Staff profiles**, **Price
 
 A menu also depends on what your hospital uses. If your hospital has no laboratory, nobody sees **Lab orders**, whatever their role.
 
-If you need a page you cannot see, ask your Hospital Admin. They can change your role on the **User accounts** page.
+### What each role does not see
+
+Clinical notes are for the clinical team. The Receptionist and the Accountant see that a visit happened, its reason and its bill, but not the complaints, the diagnosis, the doctor's notes, the prescriptions, the dental chart, the results or the visit report. Where a page has one of these parts, they see **You do not have access to this. Ask your hospital admin.** in its place. The Receptionist still sees the vitals of a visit, because the desk often takes them at check-in; the Accountant does not.
+
+A Doctor sees the bills of their own patients on the visit, but not the clinic's money: the invoice list, the **Cashier's day**, the takings and the reports. A Nurse records vitals and gives treatment but cannot change the diagnosis.
+
+### Your clinic can change this
+
+The table above is the standard. Your Hospital Admin can change what each role may do in **Settings**, **Staff and access**, and can give one person an extra ability on their account (for example the senior nurse who also takes payments). See [Staff and access](02-setting-up.md#staff-and-access).
+
+If you need a page you cannot see, you see **You do not have access to this. Ask your hospital admin.** Ask your Hospital Admin. They can change your role on the **User accounts** page, or what your role may do on the **Staff and access** page.

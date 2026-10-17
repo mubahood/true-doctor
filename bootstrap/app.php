@@ -147,7 +147,12 @@ $application = Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
-            return ApiResponse::error(ApiErrorCode::Forbidden, $e->getMessage(), 403);
+            // The framework's generic refusal, in words the app can show as they are.
+            $message = in_array($e->getMessage(), ['', 'This action is unauthorized.'], true)
+                ? 'You do not have access to this. Ask your hospital admin.'
+                : $e->getMessage();
+
+            return ApiResponse::error(ApiErrorCode::Forbidden, $message, 403);
         });
 
         $exceptions->render(function (ModelNotFoundException $e, Request $request) use ($wantsJson) {
@@ -199,9 +204,15 @@ $application = Application::configure(basePath: dirname(__DIR__))
                 default => null,
             };
 
+            // The framework's generic refusals, in words the app can show as they are.
+            $message = $e->getMessage() ?: 'An error occurred.';
+            if ($status === 403 && in_array($message, ['Forbidden', 'This action is unauthorized.', 'User does not have the right permissions.', 'User does not have the right roles.'], true)) {
+                $message = 'You do not have access to this. Ask your hospital admin.';
+            }
+
             return ApiResponse::error(
                 $code,
-                $e->getMessage() ?: 'An error occurred.',
+                $message,
                 $status,
                 null,
                 null,

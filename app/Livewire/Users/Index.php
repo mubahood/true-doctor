@@ -65,6 +65,14 @@ class Index extends Component
 
     public $avatar = null;        // transient upload
 
+    /**
+     * Extra abilities for this one person, on top of their role (Staff and
+     * access). Only a hospital admin sees or changes them.
+     *
+     * @var array<int, mixed> ability keys, as the browser sent them (checked on save)
+     */
+    public array $extras = [];
+
     public bool $remove_avatar = false;
 
     public function mount(): void
@@ -122,8 +130,17 @@ class Index extends Component
         $this->password_confirmation = null;
         $this->avatar = null;
         $this->remove_avatar = false;
+        $this->extras = app(\App\Services\AccessService::class)->personal($user);
         $this->resetErrorBag();
         $this->showForm = true;
+    }
+
+    /** Whether the edit dialog offers extra abilities: a hospital admin, editing somebody whose role can take them. */
+    public function canGiveExtras(): bool
+    {
+        return $this->editingId !== null
+            && \App\Services\AccessService::canManage($this->actor())
+            && \App\Support\Access\Abilities::roleIsEditable((string) $this->role);
     }
 
     protected function rules(): array
@@ -168,7 +185,23 @@ class Index extends Component
                 : ' (Email delivery failed — share credentials manually.)';
             $message = "User {$created->name} created.{$note}";
         } else {
-            $this->staff()->update($user, $data, $this->avatar, $this->remove_avatar, $this->password);
+            try {
+                $this->staff()->update($user, $data, $this->avatar, $this->remove_avatar, $this->password);
+
+                // Extra abilities: only a hospital admin, and only for a role
+                // that can take them (an admin already has everything).
+                if (\App\Services\AccessService::canManage($this->actor())) {
+                    $user->refresh();
+                    $extras = \App\Support\Access\Abilities::roleIsEditable((string) $user->role)
+                        ? array_values(array_filter($this->extras, fn ($a) => is_string($a) && \App\Support\Access\Abilities::exists($a)))
+                        : [];
+                    app(\App\Services\AccessService::class)->setPersonal($this->actor(), $user, $extras);
+                }
+            } catch (\DomainException $e) {
+                $this->addError('role', $e->getMessage());
+
+                return;
+            }
             $message = "User {$user->name} updated.";
         }
 
@@ -182,22 +215,22 @@ class Index extends Component
         $user = $this->manageable($id);
         $this->authorize('delete', $user);
 
+        $name = $user->name;
+
         try {
             $this->staff()->assertNotSelf($this->actor(), $user, 'delete');
+            $this->staff()->delete($user);
         } catch (\DomainException $e) {
             $this->dispatch('toast', message: $e->getMessage(), type: 'error');
 
             return;
         }
-
-        $name = $user->name;
-        $user->delete();
         $this->dispatch('toast', message: "User {$name} deleted.", type: 'success');
     }
 
     private function resetForm(): void
     {
-        $this->reset(['editingId', 'name', 'email', 'role', 'phone', 'bio', 'password', 'password_confirmation', 'avatar', 'remove_avatar']);
+        $this->reset(['editingId', 'name', 'email', 'role', 'phone', 'bio', 'password', 'password_confirmation', 'avatar', 'remove_avatar', 'extras']);
         $this->is_active = true;
         $this->sees_patients = false;
         $this->resetErrorBag();

@@ -31,6 +31,7 @@ class DentalController extends Controller
     public function show(Request $request, Patient $patient): JsonResponse
     {
         $this->authorize('view', $patient);
+        $this->clinical($request);
         $this->can($request, ['treatments.view', 'visits.diagnose']);
 
         $asOf = $request->query('as_of') ? Carbon::parse((string) $request->query('as_of'))->endOfDay() : null;
@@ -54,6 +55,7 @@ class DentalController extends Controller
     public function record(Request $request, Patient $patient): JsonResponse
     {
         $this->authorize('view', $patient);
+        $this->clinical($request);
         $this->can($request, ['visits.diagnose']);
         $data = $request->validate([
             'findings' => ['required', 'array', 'min:1', 'max:64'],
@@ -78,6 +80,7 @@ class DentalController extends Controller
     public function plan(Request $request, Patient $patient): JsonResponse
     {
         $this->authorize('view', $patient);
+        $this->clinical($request);
         $this->can($request, ['visits.diagnose']);
         $data = $request->validate([
             'service_id' => ['required', 'integer'],
@@ -100,6 +103,7 @@ class DentalController extends Controller
     public function status(Request $request, DentalTreatmentItem $item): JsonResponse
     {
         $this->authorize('view', $item->patient);
+        $this->clinical($request);
         $this->can($request, ['treatments.manage', 'visits.diagnose']);
         $data = $request->validate([
             'status' => ['required', 'string'],
@@ -119,6 +123,7 @@ class DentalController extends Controller
     public function recall(Request $request, Patient $patient): JsonResponse
     {
         $this->authorize('view', $patient);
+        $this->clinical($request);
         $this->can($request, ['patients.update', 'visits.diagnose']);
         $value = $request->input('next_recall_on');
         $on = $value === 'default' ? DentalService::defaultRecall() : ($value ? Carbon::parse((string) $value) : null);
@@ -136,6 +141,12 @@ class DentalController extends Controller
         $to = Carbon::parse((string) $request->query('to', now()->toDateString()));
 
         return ApiResponse::success(['from' => $from->toDateString(), 'to' => $to->toDateString()] + $this->dental->report($from, $to));
+    }
+
+    /** The chart is part of the clinical record (Staff and access, "See clinical notes"). */
+    private function clinical(Request $request): void
+    {
+        abort_unless($request->user()->can('visits.clinical'), 403, 'You do not have access to this. Ask your hospital admin.');
     }
 
     /** @param list<string> $any */

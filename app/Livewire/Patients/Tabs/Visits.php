@@ -33,7 +33,7 @@ class Visits extends Component
         $this->requireSection('visits');
 
         return view('livewire.patients.tabs.visits', [
-            'rows' => $this->summaryService()->visitsPage($this->patient, in_array('money', $this->sections, true), 15, 'visits'),
+            'rows' => $this->summaryService()->visitsPage($this->patient, in_array('money', $this->sections, true), 15, 'visits', in_array('clinical', $this->sections, true)),
         ]);
     }
 }

@@ -56,6 +56,7 @@ class Prescriptions extends Component
         // Anyone who may read the visit may read its prescriptions; the
         // write actions carry their own ability.
         $this->authorize('view', $this->visit);
+        $this->authorize('viewClinical', $this->visit);
 
         $this->items = [self::blankRow()];
     }
@@ -213,6 +214,7 @@ class Prescriptions extends Component
     public function render()
     {
         $this->authorize('view', $this->visit);
+        $this->authorize('viewClinical', $this->visit);
 
         return view('livewire.visits.panels.prescriptions');
     }

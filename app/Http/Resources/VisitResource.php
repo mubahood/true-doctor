@@ -35,6 +35,9 @@ class VisitResource extends JsonResource
     public function toArray(Request $request): array
     {
         $patient = $this->patient;
+        // The clinical record is omitted, not emptied, for somebody outside
+        // the clinical team (Staff and access, docs/rbac.md).
+        $clinical = $request->user()?->can('visits.clinical') === true;
 
         return [
             'uuid' => $this->uuid,
@@ -58,16 +61,16 @@ class VisitResource extends JsonResource
             'department' => $this->whenLoaded('department', fn () => $this->department?->name),
             'status' => $this->status->value,
             'reason' => $this->reason,
-            'complaints' => $this->complaints,
-            'diagnosis' => $this->diagnosis,
-            'doctor_remarks' => $this->doctor_remarks,
+            'complaints' => $this->when($clinical, fn () => $this->complaints),
+            'diagnosis' => $this->when($clinical, fn () => $this->diagnosis),
+            'doctor_remarks' => $this->when($clinical, fn () => $this->doctor_remarks),
             'receptionist_remarks' => $this->receptionist_remarks,
             'patient_remarks' => $this->patient_remarks,
             // The confidential note (docs/audit.md) is read on the web only:
             // the app keeps visit replies in an unencrypted local cache, so
             // it is told only that there is one.
-            'has_sensitive_notes' => filled($this->sensitive_notes),
-            'vitals' => [
+            'has_sensitive_notes' => $this->when($clinical, fn () => filled($this->sensitive_notes)),
+            'vitals' => $this->when($request->user()?->can('viewVitals', $this->resource) === true, fn () => [
                 'temperature' => $this->temperature,
                 'blood_pressure' => $this->blood_pressure,
                 'weight' => $this->weight,
@@ -77,7 +80,7 @@ class VisitResource extends JsonResource
                 'respiratory_rate' => $this->respiratory_rate,
                 'spo2' => $this->spo2,
                 'recorded_at' => $this->vitals_recorded_at?->toIso8601String(),
-            ],
+            ]),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
             'completed_at' => $this->completed_at?->toIso8601String(),

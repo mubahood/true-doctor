@@ -56,6 +56,7 @@ class Vitals extends Component
 
         // Resolves the visit through the tenant scope (404 cross-tenant).
         $this->authorize('view', $this->visit);
+        $this->authorize('viewVitals', $this->visit);
 
         foreach (self::FIELDS as $field) {
             $value = $this->visit->{$field};
@@ -225,6 +226,7 @@ class Vitals extends Component
     public function render()
     {
         $this->authorize('view', $this->visit);
+        $this->authorize('viewVitals', $this->visit);
 
         return view('livewire.visits.panels.vitals');
     }

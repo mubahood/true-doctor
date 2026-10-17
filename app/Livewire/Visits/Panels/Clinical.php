@@ -60,6 +60,7 @@ class Clinical extends Component
         $this->visitId = $visitId;
 
         $this->authorize('view', $this->visit);
+        $this->authorize('viewClinical', $this->visit);
 
         $visit = $this->visit;
         $this->doctor_user_id = $visit->doctor_user_id;
@@ -194,6 +195,7 @@ class Clinical extends Component
     public function render()
     {
         $this->authorize('view', $this->visit);
+        $this->authorize('viewClinical', $this->visit);
 
         return view('livewire.visits.panels.clinical');
     }

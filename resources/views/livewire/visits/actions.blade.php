@@ -102,6 +102,7 @@
                 </dd></div>
               </dl>
 
+              @can('viewBill', $visit)
               <div class="tb-vs-money">
                 @if($invoice)
                   <span class="k">{{ $invoice->invoice_no }}</span>
@@ -117,6 +118,7 @@
                   <span class="k">Not yet invoiced</span>
                 @endif
               </div>
+              @endcan
             </div>
 
             {{-- Only the reason here: complaints, diagnosis and plan belong to
@@ -139,12 +141,18 @@
             {{-- Vitals and the clinical notes are part of the summary of a
                  visit, not tabs beside it. Mounted whole, so each keeps its own
                  authorisation and its own recording dialog. --}}
-            <div class="tb-vs-sub">
-              @livewire('visits.panels.vitals', ['visitId' => $visit->id, 'lazy' => false], key('vs-vitals-'.$visit->id))
-            </div>
-            <div class="tb-vs-sub">
-              @livewire('visits.panels.clinical', ['visitId' => $visit->id, 'lazy' => false], key('vs-clinical-'.$visit->id))
-            </div>
+            @can('viewVitals', $visit)
+              <div class="tb-vs-sub">
+                @livewire('visits.panels.vitals', ['visitId' => $visit->id, 'lazy' => false], key('vs-vitals-'.$visit->id))
+              </div>
+            @endcan
+            @can('viewClinical', $visit)
+              <div class="tb-vs-sub">
+                @livewire('visits.panels.clinical', ['visitId' => $visit->id, 'lazy' => false], key('vs-clinical-'.$visit->id))
+              </div>
+            @else
+              <div class="tb-vs-sub"><x-ui.no-access title="Clinical notes" icon="fa-notes-medical" /></div>
+            @endcan
 
           </section>
 
@@ -228,11 +236,13 @@
                      somewhere else. It opens in a tab rather than
                      downloading, like everything else this system prints
                      (docs/documents.md). --}}
+                @can('viewClinical', $visit)
                 <a href="{{ route('admin.visits.report', $visit) }}" target="_blank" rel="noopener"
                    class="btn-tb btn-tb-sm btn-tb-ghost">
                   <i class="fas fa-file-medical" aria-hidden="true"></i> Visit report
                 </a>
-                @if($visit->prescriptions()->exists())
+                @endcan
+                @if(auth()->user()?->can('viewClinical', $visit) && $visit->prescriptions()->exists())
                   <a href="{{ route('admin.visits.prescription', $visit) }}" target="_blank" rel="noopener"
                      class="btn-tb btn-tb-sm btn-tb-ghost">
                     <i class="fas fa-prescription" aria-hidden="true"></i> Prescription

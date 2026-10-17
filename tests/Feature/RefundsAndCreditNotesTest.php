@@ -404,7 +404,12 @@ class RefundsAndCreditNotesTest extends TestCase
         Livewire::test(InvoiceShow::class, ['invoice' => $invoice->uuid])->assertForbidden();
         $this->get(route('admin.credits.index'))->assertForbidden();
 
+        // A doctor no longer opens invoices at all (docs/rbac.md); the cashier
+        // at the desk opens them but cannot approve.
         $this->actingAs($this->staff('doctor'));
+        Livewire::test(InvoiceShow::class, ['invoice' => $invoice->uuid])->assertForbidden();
+
+        $this->actingAs($this->staff('receptionist'));
         Livewire::test(InvoiceShow::class, ['invoice' => $invoice->uuid])
             ->call('approveCredit', $pending->id)
             ->assertForbidden();

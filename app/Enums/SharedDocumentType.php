@@ -41,8 +41,9 @@ enum SharedDocumentType: string
             self::LabResult => $user->can('lab.view'),
             self::RadiologyReport => $user->can('radiology.view'),
             self::DischargeSummary => $user->can('ipd.view'),
-            self::Prescription => $user->can('visits.view'),
-            self::DentalQuote => $user->can('patients.view') && ($user->can('treatments.view') || $user->can('visits.diagnose')),
+            // Both are the clinical record (Staff and access, docs/rbac.md).
+            self::Prescription => $user->can('visits.view') && $user->can('visits.clinical'),
+            self::DentalQuote => $user->can('patients.view') && $user->can('visits.clinical') && ($user->can('treatments.view') || $user->can('visits.diagnose')),
         };
     }
 

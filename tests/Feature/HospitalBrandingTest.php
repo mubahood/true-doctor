@@ -439,7 +439,7 @@ class HospitalBrandingTest extends TestCase
 
         $this->get('/_brand-test/why')->assertForbidden()->assertSee('Your hospital’s subscription has ended.');
         $this->get('/_brand-test/generic')->assertForbidden()
-            ->assertSee('Your role does not include it')
+            ->assertSee('You do not have access to this. Ask your hospital admin.')
             ->assertDontSee('This action is unauthorized.');
     }
 

@@ -204,13 +204,16 @@ class VisitApiTest extends TestCase
             'start_now' => true,
         ])->assertCreated();
 
+        // Written at the desk, but not read back there: the diagnosis is the
+        // clinical team's (docs/rbac.md), so it is checked where it was stored.
         $res->assertJsonPath('data.status', 'ongoing')
-            ->assertJsonPath('data.diagnosis', 'URTI')
+            ->assertJsonMissingPath('data.diagnosis')
             ->assertJsonPath('data.vitals.bmi', '25.25')
             ->assertJsonPath('data.vitals.respiratory_rate', 22);
         $this->assertNotNull($res->json('data.vitals.recorded_at'));
         $this->assertCount(2, $res->json('data.history'), 'opened, then started — the start is in the trail, not simply appearing');
         $this->assertSame(['pending', 'ongoing'], \App\Models\VisitStatusHistory::orderBy('id')->pluck('to_status')->all());
+        $this->assertSame('URTI', Visit::query()->sole()->diagnosis);
     }
 
     /** Held to the web's ranges — one VisitVitalsRequest. */
@@ -255,10 +258,11 @@ class VisitApiTest extends TestCase
 
         $res->assertJsonPath('data.patient.name', 'Grace Atim')
             ->assertJsonPath('data.status', 'pending')
-            ->assertJsonPath('data.diagnosis', 'Migraine')
+            ->assertJsonMissingPath('data.diagnosis')
             ->assertJsonPath('data.vitals.pulse', 88);
         $patient = Patient::where('uuid', $res->json('data.patient.uuid'))->firstOrFail();
         $this->assertTrue((bool) $patient->consent_given);
+        $this->assertSame('Migraine', Visit::where('uuid', $res->json('data.uuid'))->value('diagnosis'));
         $this->assertMatchesRegularExpression('/^V-\d{8}-\d{3}$/', $res->json('data.visit_no'));
     }
 

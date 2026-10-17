@@ -32,7 +32,7 @@ class Staff extends Component
         return [
             'name' => ['required', 'string', 'max:150'],
             'email' => ['required', 'email', Rule::unique('users', 'email')],
-            'role' => ['required', Rule::in(User::assignableRolesFor(Auth::user()))],
+            'role' => ['required', Rule::in(app(\App\Services\StaffService::class)->assignableRoles(Auth::user()))],
             'phone' => ['nullable', 'string', 'max:20'],
         ];
     }
@@ -42,7 +42,7 @@ class Staff extends Component
     public function roles(): array
     {
         $out = [];
-        foreach (User::assignableRolesFor(Auth::user()) as $role) {
+        foreach (app(\App\Services\StaffService::class)->assignableRoles(Auth::user()) as $role) {
             $out[$role] = (new User(['role' => $role]))->role_label;
         }
 

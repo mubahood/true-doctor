@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Support\PlanLimit;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -59,7 +60,62 @@ class StaffService
      */
     public function assignableRoles(?User $actor): array
     {
-        return User::assignableRolesFor($actor);
+        $roles = User::assignableRolesFor($actor);
+
+        // Somebody given "Manage staff and settings" (Staff and access) runs
+        // the accounts, but only a hospital admin can make another one: the
+        // ability must not be a step up to the role that holds every ability.
+        if ($actor !== null && ! $actor->isSuperAdmin() && $actor->role !== 'hospital_admin') {
+            $roles = array_values(array_diff($roles, ['hospital_admin']));
+        }
+
+        return $roles;
+    }
+
+    /**
+     * Refuse the change that would leave this clinic with no active hospital
+     * admin: demoting, switching off or removing the last one. Nobody could
+     * then run the clinic's staff, settings or access.
+     *
+     * Call it inside the transaction that makes the change: it locks the
+     * clinic's admin rows, so two admins demoting each other at the same
+     * moment cannot both pass.
+     *
+     * @throws \DomainException
+     */
+    public function assertKeepsAnAdmin(User $target, ?string $newRole, bool $active, bool $removing = false): void
+    {
+        if (! $removing && $active && ($newRole === null || $newRole === 'hospital_admin')) {
+            return;
+        }
+
+        // Read from the database, locked: an account switched off is not an
+        // admin the clinic relies on.
+        $stored = User::query()->whereKey($target->id)->lockForUpdate()->first(['id', 'role', 'is_active', 'hospital_id']);
+        if ($stored === null || $stored->role !== 'hospital_admin' || ! $stored->is_active || $stored->hospital_id === null) {
+            return;
+        }
+
+        $others = User::query()->where('hospital_id', $stored->hospital_id)
+            ->where('role', 'hospital_admin')->where('is_active', true)
+            ->whereKeyNot($stored->id)->lockForUpdate()->count() > 0;
+
+        if (! $others) {
+            throw new \DomainException('This is the clinic\'s last hospital admin. Make somebody else a hospital admin first.');
+        }
+    }
+
+    /**
+     * Remove a staff account, never the last admin.
+     *
+     * @throws \DomainException
+     */
+    public function delete(User $user): void
+    {
+        DB::transaction(function () use ($user) {
+            $this->assertKeepsAnAdmin($user, null, true, true);
+            $user->delete();
+        });
     }
 
     /**
@@ -121,7 +177,10 @@ class StaffService
     /** Switch an account on or off; nothing else about it changes. */
     public function setActive(User $user, bool $active): User
     {
-        $user->update(['is_active' => $active]);
+        DB::transaction(function () use ($user, $active) {
+            $this->assertKeepsAnAdmin($user, null, $active);
+            $user->update(['is_active' => $active]);
+        });
 
         return $user;
     }
@@ -202,7 +261,14 @@ class StaffService
             $avatarChanged = true;
         }
 
-        $user->update($data);
+        DB::transaction(function () use ($user, $data) {
+            $this->assertKeepsAnAdmin(
+                $user,
+                isset($data['role']) ? (string) $data['role'] : null,
+                array_key_exists('is_active', $data) ? (bool) $data['is_active'] : true,
+            );
+            $user->update($data);
+        });
 
         if ($avatarChanged && $previousAvatar && Storage::disk('public')->exists($previousAvatar)) {
             Storage::disk('public')->delete($previousAvatar);

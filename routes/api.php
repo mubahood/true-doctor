@@ -165,6 +165,12 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
         Route::get('queue', \App\Http\Controllers\Api\V1\QueueController::class)->name('api.queue');
         Route::apiResource('appointments', AppointmentController::class)->only(['index', 'store', 'show']);
 
+        // A dental clinic's review, item D: reviews booked from a visit, and the recalls and reviews due list (docs/api/follow-up.md).
+        Route::get('visits/{visit}/review', [\App\Http\Controllers\Api\V1\FollowUpController::class, 'suggestion'])->name('api.visits.review');
+        Route::post('visits/{visit}/review', [\App\Http\Controllers\Api\V1\FollowUpController::class, 'book'])->name('api.visits.review.book');
+        Route::get('follow-ups', [\App\Http\Controllers\Api\V1\FollowUpController::class, 'index'])->name('api.follow-ups.index');
+        Route::post('follow-ups/text', [\App\Http\Controllers\Api\V1\FollowUpController::class, 'text'])->name('api.follow-ups.text');
+
         Route::post('visits/{visit}/vitals', [VisitController::class, 'vitals'])->name('api.visits.vitals');
         Route::post('visits/{visit}/clinical', [VisitController::class, 'clinical'])->name('api.visits.clinical');
         Route::post('visits/{visit}/transition', [VisitController::class, 'transition'])->name('api.visits.transition');

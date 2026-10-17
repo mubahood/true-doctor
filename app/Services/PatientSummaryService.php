@@ -72,12 +72,16 @@ class PatientSummaryService
         $sections = [];
         if ($can('visits.view')) {
             $sections[] = 'visits';
-            $sections[] = 'clinical';
-            if ($practice->uses('laboratory')) {
-                $sections[] = 'lab';
-            }
-            if ($practice->uses('radiology')) {
-                $sections[] = 'imaging';
+            // The clinical record is for the clinical team (docs/rbac.md): the
+            // desk sees that a visit happened and why, not what was found.
+            if ($can('visits.clinical')) {
+                $sections[] = 'clinical';
+                if ($practice->uses('laboratory')) {
+                    $sections[] = 'lab';
+                }
+                if ($practice->uses('radiology')) {
+                    $sections[] = 'imaging';
+                }
             }
         }
         if ($can('billing.view')) {
@@ -398,6 +402,7 @@ class PatientSummaryService
             $recent['visits'] = $this->visitRows(
                 Visit::query()->where('patient_id', $patient->id)->with('doctor:id,name')->latest('created_at')->latest('id')->limit($limit)->get(),
                 $has('money'),
+                $has('clinical'),
             );
         }
         if ($has('money')) {
@@ -591,12 +596,12 @@ class PatientSummaryService
     /**
      * @return LengthAwarePaginator<int,array<string,mixed>>
      */
-    public function visitsPage(Patient $patient, bool $withMoney, int $perPage = 15, string $pageName = 'visits'): LengthAwarePaginator
+    public function visitsPage(Patient $patient, bool $withMoney, int $perPage = 15, string $pageName = 'visits', bool $withClinical = true): LengthAwarePaginator
     {
         $page = Visit::query()->where('patient_id', $patient->id)->with('doctor:id,name')
             ->latest('created_at')->latest('id')->paginate($perPage, pageName: $pageName);
 
-        return $this->remap($page, $this->visitRows($page->getCollection(), $withMoney));
+        return $this->remap($page, $this->visitRows($page->getCollection(), $withMoney, $withClinical));
     }
 
     /** @return LengthAwarePaginator<int,array<string,mixed>> */
@@ -685,7 +690,7 @@ class PatientSummaryService
         };
 
         foreach ($recent['visits'] ?? [] as $v) {
-            $push($v['date'], 'visit', 'fa-stethoscope', 'Visit '.$v['visit_no'], trim($v['state'].($v['diagnosis'] ? ' · '.$v['diagnosis'] : '')), 'visits', $v['uuid']);
+            $push($v['date'], 'visit', 'fa-stethoscope', 'Visit '.$v['visit_no'], trim($v['state'].(filled($v['diagnosis'] ?? null) ? ' · '.$v['diagnosis'] : '')), 'visits', $v['uuid']);
         }
         foreach ($recent['invoices'] ?? [] as $i) {
             $push($i['date'], 'invoice', 'fa-file-invoice-dollar', 'Invoice '.$i['invoice_no'], $i['status'], 'billing', $i['uuid']);
@@ -715,7 +720,7 @@ class PatientSummaryService
      * @param  iterable<Visit>  $visits
      * @return list<array<string,mixed>>
      */
-    private function visitRows(iterable $visits, bool $withMoney): array
+    private function visitRows(iterable $visits, bool $withMoney, bool $withClinical = true): array
     {
         $visits = collect($visits);
         $totals = collect();
@@ -725,7 +730,7 @@ class PatientSummaryService
                 ->groupBy('visit_id')->selectRaw('visit_id, sum(total) as billed, sum(balance) as owed')->get()->keyBy('visit_id');
         }
 
-        return $visits->map(function (Visit $v) use ($withMoney, $totals) {
+        return $visits->map(function (Visit $v) use ($withMoney, $withClinical, $totals) {
             $row = [
                 'uuid' => (string) $v->uuid,
                 'visit_no' => (string) $v->visit_no,
@@ -733,9 +738,12 @@ class PatientSummaryService
                 'state' => $v->stateLabel(),
                 'state_badge' => $v->stateBadge(),
                 'doctor' => $v->doctor?->name,
-                'diagnosis' => $v->diagnosis,
                 'reason' => $v->reason,
             ];
+            // Omitted, not empty, for somebody outside the clinical team.
+            if ($withClinical) {
+                $row['diagnosis'] = $v->diagnosis;
+            }
             if ($withMoney) {
                 $row['billed'] = $this->dec($totals[$v->id]->billed ?? 0);
                 $row['balance'] = $this->dec($totals[$v->id]->owed ?? 0);

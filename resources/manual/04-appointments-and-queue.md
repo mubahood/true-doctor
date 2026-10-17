@@ -1,6 +1,6 @@
 # Appointments and the queue
 
-This chapter covers booking patients to see a doctor, running the day's check-in queue, and setting when each doctor can be booked. All three pages are in the sidebar under **Scheduling**: **Appointments**, **Check-in queue** and **Doctor availability**.
+This chapter covers booking patients to see a doctor, running the day's check-in queue, following up reviews and check-ups, and setting when each doctor can be booked. The pages are in the sidebar under **Scheduling**: **Appointments**, **Check-in queue**, **Recalls and reviews due** and **Doctor availability**.
 
 ## Who can do what
 
@@ -145,3 +145,36 @@ To show one doctor's patients, pick the doctor in the box above the lists. Press
 3. Other moves, such as **No-show** or **Cancelled**, are in the row's actions menu under **Move to**.
 
 The queue and the diary show the same appointments. A change on one appears on the other.
+
+## Book a review from the visit
+
+When a patient should come back, for example a week after an extraction, book the review from the visit itself.
+
+1. Open the visit. On the left, under the vitals, is **Book a review**.
+2. The heading suggests when, from what was done today. An extraction or surgery suggests 7 days, a root canal 7 days, a new denture 7 days, a crown 14 days and braces 28 days. Anything else suggests two weeks.
+3. The **Day** is filled in with the suggested day. Change it if the patient prefers another.
+4. Pick a **Time**. Only the times the visit's doctor is free that day are offered. If there are none, a line below says why, for example that the doctor does not work that day.
+5. Press **Book review**.
+
+The review is an ordinary appointment in the diary, for the same doctor, with the reason **Review**. The patient gets the usual text when it is booked and the day before, if they agreed to text messages. Reviews already booked from the visit are listed above the form.
+
+Anyone who can book appointments sees **Book a review**: the Hospital Admin, the Receptionist and the Doctor.
+
+## Recalls and reviews due
+
+**Scheduling**, then **Recalls and reviews due**. This is the calling list for the front desk. It has three lists, each with how many patients are on it:
+
+- **Reviews this week**: reviews booked from today to seven days ahead. Call to confirm.
+- **Missed reviews**: reviews in the last 60 days that the patient did not come to, marked **Did not come** or **Not attended**, where the patient has not been back since and has nothing booked.
+- **Dental check-ups due**: patients whose dental check-up date falls in the next seven days, or has passed in the last six months, who have not been back since and have nothing booked. The number of days overdue is shown.
+
+Search by name, patient number or phone to find one patient.
+
+### Call or text from the list
+
+- Press **Call** to ring the patient's phone from a phone or a computer that can make calls.
+- Press **Text** to send a short message saying they are due to come back for a review and asking them to call the clinic. It goes only to a patient who agreed to text messages, and only once for each review or check-up, so pressing it again does not send a second text. If it cannot go, a message says why, for example that the patient has not agreed to texts.
+
+Texts need **Messages to patients** switched on, with **A review or check-up is due** ticked. See [Messages to patients](02-setting-up.md#messages-to-patients).
+
+When the patient agrees a time, book it in **Appointments**. Once they are booked, or once they come back, they drop off the list by themselves.

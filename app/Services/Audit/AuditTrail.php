@@ -85,6 +85,10 @@ final class AuditTrail
         Models\User::class => 'User account',
         // Settings, Import data: who brought a sheet in, and who undid it (docs/imports.md)
         Models\ImportBatch::class => 'Data import',
+
+        // Staff and access (docs/rbac.md): who changed what a role, or one person, may do.
+        Models\RoleAbility::class => 'Role access',
+        Models\UserAbility::class => 'Extra ability',
     ];
 
     public const EVENTS = [

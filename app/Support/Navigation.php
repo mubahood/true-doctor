@@ -102,6 +102,8 @@ final class Navigation
                 ['key' => 'scheduling', 'label' => 'Scheduling', 'icon' => 'fa-calendar-check', 'items' => [
                     ['label' => 'Appointments', 'icon' => 'fa-calendar-days', 'route' => 'admin.appointments.index', 'match' => ['admin.appointments.index', 'admin.appointments.show'], 'can' => 'appointments.view'],
                     ['label' => 'Check-in queue', 'icon' => 'fa-users-line', 'route' => 'admin.appointments.queue', 'match' => ['admin.appointments.queue'], 'can' => 'appointments.view'],
+                    // A dental clinic's review, item D: the calling list (docs/follow-up.md).
+                    ['label' => 'Recalls and reviews due', 'icon' => 'fa-phone-volume', 'route' => 'admin.appointments.recalls', 'match' => ['admin.appointments.recalls'], 'can' => 'appointments.view'],
                     ['label' => 'Doctor availability', 'icon' => 'fa-user-clock', 'route' => 'admin.schedules.index', 'match' => ['admin.schedules.*'], 'can' => 'appointments.view'],
                 ]],
 
@@ -219,6 +221,9 @@ final class Navigation
                     ['label' => 'Messages to patients', 'icon' => 'fa-comment-sms', 'route' => 'admin.settings.messages', 'match' => ['admin.settings.messages']],
                     // Import data: patients, price list, stock and appointments from a spreadsheet (docs/imports.md).
                     ['label' => 'Import data', 'icon' => 'fa-file-import', 'route' => 'admin.imports.index', 'match' => ['admin.imports.*'], 'tenant' => true],
+
+                    // A dental clinic's review, item C: what each role may do, set by the clinic (docs/rbac.md).
+                    ['label' => 'Staff and access', 'icon' => 'fa-user-lock', 'route' => 'admin.settings.access', 'match' => ['admin.settings.access'], 'tenant' => true],
                     // Data protection: the Act's documents, the full export, and patients' requests (docs/compliance/README.md).
                     ['label' => 'Data protection', 'icon' => 'fa-file-shield', 'route' => 'admin.settings.data-protection', 'match' => ['admin.settings.data-protection'], 'tenant' => true],
                     ['label' => 'Data requests', 'icon' => 'fa-user-shield', 'route' => 'admin.data-requests.index', 'match' => ['admin.data-requests.*'], 'tenant' => true],
