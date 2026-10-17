@@ -22,6 +22,8 @@ final class MessagingSettings
         'appointment_day_before' => ['The day before an appointment', true],
         'receipt' => ['Receipt when a visit is paid', true],
         'dental_recall' => ['Dental check-up due', true],
+        // Patient links (roadmap 05 §4): staff send a result, summary, prescription or quote.
+        'document_link' => ['A document sent by link', true],
     ];
 
     /** @param  array<string,mixed>  $stored */

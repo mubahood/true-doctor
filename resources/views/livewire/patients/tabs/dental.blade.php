@@ -108,6 +108,7 @@
       <div class="tb-flex">
         @if($this->plan->isNotEmpty())
           <a href="{{ $quoteUrl }}" target="_blank" rel="noopener" class="btn-tb btn-tb-ghost btn-tb-sm"><i class="fas fa-file-pdf" aria-hidden="true"></i> Quote</a>
+          <livewire:patient-links.panels.share type="dental_quote" :uuid="$this->patient->uuid" :small="true" :key="'share-quote-'.$this->patient->uuid" />
         @endif
         @if($canChart)<button type="button" class="btn-tb btn-tb-primary btn-tb-sm" wire:click="openPlan"><i class="fas fa-plus" aria-hidden="true"></i> Add</button>@endif
       </div>

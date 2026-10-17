@@ -1,5 +1,6 @@
 @php($set = app(\App\Support\HospitalSettings::class))
 <x-pdf.document
+  :patient="$admission->patient"
   title="Discharge summary"
   :reference="'ADM-'.str_pad((string) $admission->id, 6, '0', STR_PAD_LEFT)"
   :meta="[

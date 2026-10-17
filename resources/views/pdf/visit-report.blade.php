@@ -10,6 +10,7 @@
   came back, what they are taking — and only then, last, what it cost.
 --}}
 <x-pdf.document
+  :patient="$patient"
   title="Visit report"
   :reference="$visit->visit_no"
   :meta="[

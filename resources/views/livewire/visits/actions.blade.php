@@ -232,6 +232,13 @@
                    class="btn-tb btn-tb-sm btn-tb-ghost">
                   <i class="fas fa-file-medical" aria-hidden="true"></i> Visit report
                 </a>
+                @if($visit->prescriptions()->exists())
+                  <a href="{{ route('admin.visits.prescription', $visit) }}" target="_blank" rel="noopener"
+                     class="btn-tb btn-tb-sm btn-tb-ghost">
+                    <i class="fas fa-prescription" aria-hidden="true"></i> Prescription
+                  </a>
+                  <livewire:patient-links.panels.share type="prescription" :uuid="$visit->uuid" :small="true" :key="'share-rx-'.$visit->uuid" />
+                @endif
                 @if($visit->isOpen())
                   <button type="button" class="btn-tb btn-tb-sm btn-tb-ghost tb-vs-cancelbtn"
                           wire:click="openCancel">

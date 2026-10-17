@@ -141,6 +141,12 @@ class GeneratedDocumentTest extends TestCase
         ]]);
         $shares = app(\App\Services\InvoiceShareService::class);
 
+        // Patient links (roadmap 05 §4): a visit's prescription prints on its own.
+        app(\App\Services\PrescriptionService::class)->prescribe($visit, [[
+            'drug_name' => 'Amoxicillin 500mg', 'dosage' => '1 capsule', 'slots' => ['morning', 'evening'], 'days' => 5,
+            'start_date' => now()->toDateString(), 'instructions' => 'After food.',
+        ]], null, $this->admin->id);
+
         return [
             ['cashier day summary', route('api.cashier.day-summary.pdf', ['date' => now()->toDateString()])],
             ['ward handover', route('api.ward.handover.pdf', $handover)],
@@ -154,6 +160,7 @@ class GeneratedDocumentTest extends TestCase
             ['patient ID card', route('admin.patients.id-card', $this->patient())],
             ['insurance statement', route('admin.insurance-providers.usage', $insurer)],
             ['visit report', route('admin.visits.report', $visit)],
+            ['prescription', route('admin.visits.prescription', $visit)],
             ['statement of account', route('admin.patients.statement', $invoice->patient)],
             ['financial statement', route('admin.finance.statement-pdf', ['report' => 'income', 'preset' => 'this_month'])],
             ['period report', route('admin.reports.pdf', [

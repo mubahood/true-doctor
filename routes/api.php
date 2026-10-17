@@ -61,6 +61,13 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
         Route::get('patients/{patient}/dental/quote', \App\Http\Controllers\Admin\DentalQuoteController::class)->name('api.dental.quote');
         Route::get('dental/report', [\App\Http\Controllers\Api\V1\DentalController::class, 'report'])->name('api.dental.report');
 
+        // Patient links (roadmap 05 §4, docs/api/patient-links.md): send a result, summary,
+        // prescription or quote by link; list, read the open log, withdraw.
+        Route::get('patient-links', [\App\Http\Controllers\Api\V1\PatientLinkController::class, 'index'])->name('api.patient-links.index');
+        Route::post('patient-links', [\App\Http\Controllers\Api\V1\PatientLinkController::class, 'store'])->middleware('throttle:30,1')->name('api.patient-links.store');
+        Route::get('patient-links/{patientLink}', [\App\Http\Controllers\Api\V1\PatientLinkController::class, 'show'])->whereUuid('patientLink')->name('api.patient-links.show');
+        Route::delete('patient-links/{patientLink}', [\App\Http\Controllers\Api\V1\PatientLinkController::class, 'destroy'])->whereUuid('patientLink')->name('api.patient-links.destroy');
+
         // Coded diagnoses (docs/api/diagnoses.md).
         Route::get('diagnoses/search', [\App\Http\Controllers\Api\V1\DiagnosisController::class, 'search'])->name('api.diagnoses.search');
         Route::get('visits/{visit}/diagnoses', [\App\Http\Controllers\Api\V1\DiagnosisController::class, 'index'])->name('api.diagnoses.index');

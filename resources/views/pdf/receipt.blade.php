@@ -1,6 +1,7 @@
 @php($set = app(\App\Support\HospitalSettings::class))
 @php($invoice = $payment->invoice)
 <x-pdf.document
+  :patient="$invoice?->patient"
   title="Receipt"
   :reference="$invoice?->invoice_no"
   :meta="[

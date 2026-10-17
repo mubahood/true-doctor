@@ -3,8 +3,12 @@
     'reference' => null,     // its number, if it has one
     'meta' => [],            // label => value, printed under the reference
     'accent' => null,        // the one colour the document uses: the hospital's own, else teal
+    'patient' => null,       // who it is about: only their initials reach the verification page
 ])
 @php($brand = app(\App\Support\DocumentBrand::class)->resolve())
+{{-- The verification QR (roadmap 05 §4): a short code and a QR that open /v/{code},
+     which confirms the document is genuine without showing what it says. --}}
+@php($verification = app(\App\Services\DocumentVerifier::class)->stamp($title, $reference, $patient))
 @php($accent = $accent ?? $brand['accent'] ?? '#0e6b63')
 {{--
   Every PDF this system prints, from the outside in.
@@ -213,6 +217,10 @@
     /* DomPDF's own page counters. `enable_php` stays off — drawing a page
        number is not worth handing a template an eval(). */
     .pagenum:after { content: counter(page) " of " counter(pages); }
+
+    /* The verification QR, bottom right of every page. */
+    .verify-qr { width: 40px; height: 40px; }
+    .verify-code { font-family: "DejaVu Sans Mono", monospace; color: #1b2733; }
   </style>
 </head>
 <body>
@@ -264,14 +272,22 @@
 <footer class="sheet-foot">
   <table class="head-grid">
     <tr>
-      <td style="width:70%;">
+      <td style="width:{{ $verification ? '56' : '70' }}%;">
         @if($brand['footer']){{ $brand['footer'] }}<br>@endif
         {{ $brand['name'] }}@if(app(\App\Support\DocumentBrand::class)->oneLine())  ·  {{ app(\App\Support\DocumentBrand::class)->oneLine() }}@endif
       </td>
-      <td style="width:30%; text-align:right;">
+      <td style="width:{{ $verification ? '34' : '30' }}%; text-align:right;">
         Generated {{ now()->format('d M Y H:i') }}<br>
         Page <span class="pagenum"></span>
+        @if($verification)
+          <br>Verify at {{ preg_replace('#^https?://#', '', route('verify.form')) }} · <span class="verify-code">{{ $verification['display'] }}</span>
+        @endif
       </td>
+      @if($verification)
+        <td style="width:10%; text-align:right;">
+          <img class="verify-qr" src="{{ $verification['qr'] }}" alt="Verification code {{ $verification['display'] }}">
+        </td>
+      @endif
     </tr>
   </table>
 </footer>

@@ -1,5 +1,6 @@
 @php($set = app(\App\Support\HospitalSettings::class))
 <x-pdf.document
+  :patient="$patient"
   title="Treatment quote"
   :reference="$patient->patient_no"
   :meta="[

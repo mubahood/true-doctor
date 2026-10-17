@@ -111,6 +111,18 @@ Route::middleware(['signed', 'throttle:30,1'])->prefix('s')->group(function () {
     Route::get('r/{uuid}/{nonce}', [\App\Http\Controllers\SharedDocumentController::class, 'receipt'])->name('share.receipt');
 });
 
+// ── Patient links and document verification (roadmap 05 §4) ──────────────
+// A patient opens a result, summary, prescription or quote from a text, no login:
+// a code or their date of birth unlocks it, 5 wrong tries lock it, every open is
+// logged. /v/{code} is the page the QR on every printed document opens.
+Route::middleware('throttle:30,1')->group(function () {
+    Route::get('p/{token}', [\App\Http\Controllers\PatientLinkController::class, 'show'])->name('patient-link.show');
+    Route::post('p/{token}', [\App\Http\Controllers\PatientLinkController::class, 'unlock'])->middleware('throttle:10,1')->name('patient-link.unlock');
+    Route::get('p/{token}/document', [\App\Http\Controllers\PatientLinkController::class, 'document'])->name('patient-link.document');
+    Route::get('v', [\App\Http\Controllers\DocumentVerificationController::class, 'form'])->name('verify.form');
+    Route::get('v/{code}', [\App\Http\Controllers\DocumentVerificationController::class, 'show'])->name('verify.show');
+});
+
 /*
 |--------------------------------------------------------------------------
 | Staff authentication (single login for all back-office roles)
@@ -181,6 +193,10 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'subscribed', 'onboarding',
     Route::get('patients/{patient}/id-card', [\App\Http\Controllers\Admin\PatientController::class, 'idCard'])->name('patients.id-card');
     Route::get('patients/{patient}', \App\Livewire\Patients\Show::class)->name('patients.show');
     Route::get('patients/{patient}/dental-quote', \App\Http\Controllers\Admin\DentalQuoteController::class)->name('patients.dental-quote');
+
+    // ── Patient links (roadmap 05 §4) ──────────────────────────
+    Route::get('patient-links', \App\Livewire\PatientLinks\Index::class)->name('patient-links.index');
+    Route::get('visits/{visit}/prescription', \App\Http\Controllers\Admin\PrescriptionPdfController::class)->name('visits.prescription');
 
     // Documents (private disk — streamed download behind the Policy)
     Route::get('patients/{patient}/documents/{document}', [\App\Http\Controllers\Admin\PatientDocumentController::class, 'download'])->name('patients.documents.download');

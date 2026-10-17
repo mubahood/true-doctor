@@ -126,6 +126,8 @@ final class Navigation
                 // happens in the visit above, which registers a walk-in itself.
                 // Written diagnoses waiting for a code: the records officer's list.
                 ['label' => 'Diagnoses to code', 'icon' => 'fa-notes-medical', 'route' => 'admin.diagnoses.worklist', 'match' => ['admin.diagnoses.*'], 'can' => 'diagnoses.code'],
+                // Patient links (roadmap 05 §4): every link sent, who opened it, withdraw it.
+                ['label' => 'Patient links', 'icon' => 'fa-link', 'route' => 'admin.patient-links.index', 'match' => ['admin.patient-links.*'], 'can' => 'patients.view'],
                 ['label' => 'Patients', 'icon' => 'fa-user-injured', 'route' => 'admin.patients.index', 'match' => ['admin.patients.*'], 'can' => 'patients.view'],
             ]],
 
