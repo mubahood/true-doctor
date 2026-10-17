@@ -228,6 +228,26 @@ class Index extends Component
         $this->dispatch('toast', message: "User {$name} deleted.", type: 'success');
     }
 
+    /**
+     * A colleague lost their phone: whoever may edit their account turns
+     * two-step sign-in off for them (only an admin may do this to an admin,
+     * through the update policy). Never on your own account: that needs your
+     * password, on Account security.
+     */
+    public function resetTwoFactor(int $id): void
+    {
+        $user = $this->manageable($id);
+        $this->authorize('update', $user);
+        if ($user->is($this->actor())) {
+            $this->dispatch('toast', message: 'Turn your own off on Account security.', type: 'error');
+
+            return;
+        }
+        app(\App\Services\TwoFactorService::class)->disable($user);
+        activity('users')->performedOn($user)->causedBy($this->actor())->log('Two-step sign-in turned off by a colleague');
+        $this->dispatch('toast', message: "Two-step sign-in is off for {$user->name}.", type: 'success');
+    }
+
     private function resetForm(): void
     {
         $this->reset(['editingId', 'name', 'email', 'role', 'phone', 'bio', 'password', 'password_confirmation', 'avatar', 'remove_avatar', 'extras']);

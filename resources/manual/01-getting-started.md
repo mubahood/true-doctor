@@ -44,7 +44,7 @@ If you still cannot get in, click **Trouble signing in? WhatsApp us** on the **S
 
 Two-step sign-in adds a second check after your password: a 6-digit code from an app on your phone. A stolen password alone then cannot open your account.
 
-It is optional. Anyone can turn it on for themselves from **Account security**, and it is a good idea for owners and anyone who handles money or patient records.
+It is optional. Anyone can turn it on for themselves from **Account security**, and it is a good idea for owners and anyone who handles money or patient records. If someone loses their phone, a Hospital Admin opens their account in **User accounts** and clicks **Turn off two-step sign-in**; they then sign in with the password alone.
 
 ### Turning it on
 

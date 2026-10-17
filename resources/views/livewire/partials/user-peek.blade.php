@@ -53,6 +53,12 @@
 
     <x-ui.peek-foot>
       @can('update', $u)
+        {{-- A lost or changed phone: a colleague who manages this account turns it off; the person sets it up again if they want it. --}}
+        @if(app(\App\Services\TwoFactorService::class)->isEnabled($u) && auth()->id() !== $u->id)
+          <button type="button" class="btn-tb" wire:click="resetTwoFactor({{ $u->id }})" wire:confirm="Turn off two-step sign-in for {{ $u->name }}? They sign in with the password alone until they set it up again.">
+            <i class="fas fa-shield-halved" aria-hidden="true"></i> Turn off two-step sign-in
+          </button>
+        @endif
         <button type="button" class="btn-tb btn-tb-primary" wire:click="editPeeked">
           <i class="fas fa-pen" aria-hidden="true"></i> Edit account
         </button>

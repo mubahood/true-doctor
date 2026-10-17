@@ -246,4 +246,26 @@ class TwoFactorTest extends TestCase
         $this->withToken($mine->plainTextToken)->deleteJson('/api/v1/auth/devices/'.$tablet->accessToken->id)->assertOk();
         $this->assertSame(1, $user->tokens()->count());
     }
+
+    public function test_it_is_optional_by_default_and_an_admin_can_turn_it_off_for_a_colleague_who_lost_a_phone(): void
+    {
+        $admin = $this->admin();
+        $this->assertFalse(app(TwoFactorService::class)->mustSetUp($admin), 'nobody is forced by default');
+
+        app(\App\Support\CurrentHospital::class)->set($admin->hospital_id);
+        $colleague = User::factory()->create(['hospital_id' => $admin->hospital_id, 'role' => 'hospital_admin']);
+        $colleague->syncSpatieRole();
+        $this->enable($colleague);
+        $this->enable($admin);
+
+        \Livewire\Livewire::actingAs($admin)->test(\App\Livewire\Users\Index::class)->call('resetTwoFactor', $colleague->id)->assertHasNoErrors();
+        $this->assertFalse(app(TwoFactorService::class)->isEnabled($colleague->fresh()));
+
+        // Not your own (that needs your password), and not an admin's by someone who is not one.
+        \Livewire\Livewire::actingAs($admin)->test(\App\Livewire\Users\Index::class)->call('resetTwoFactor', $admin->id);
+        $this->assertTrue(app(TwoFactorService::class)->isEnabled($admin->fresh()));
+        $desk = User::factory()->create(['hospital_id' => $admin->hospital_id, 'role' => 'receptionist']);
+        $desk->syncSpatieRole();
+        $this->assertFalse($desk->can('update', $admin), 'the desk cannot open, let alone change, an admin account');
+    }
 }
