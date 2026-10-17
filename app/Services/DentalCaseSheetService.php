@@ -89,7 +89,7 @@ class DentalCaseSheetService
         $patient = $visit->patient()->withTrashed()->firstOrFail();
         $sections = $this->sections->sections($visit);
         $history = $this->sections->patientHistory($patient);
-        $withMoney = $viewer !== null && $viewer->can('billing.view');
+        $withMoney = $viewer !== null && $viewer->can('viewBill', $visit);
 
         $sectionRows = [];
         foreach (DentalCaseSheet::sections() as $key => $definition) {

@@ -119,7 +119,7 @@ class DentalCaseSheetTest extends TestCase
 
         $desk = $this->staff('receptionist');
         $this->actingAs($desk)->get(route('admin.visits.show', $this->visit))->assertOk()
-            ->assertSee('not shown to your role');
+            ->assertSee('You do not have access to this');
 
         Livewire::actingAs($desk)->test(CaseSheetSection::class, ['visitId' => $this->visit->id, 'section' => 'complaint'])->assertForbidden();
     }
@@ -402,6 +402,11 @@ class DentalCaseSheetTest extends TestCase
         $nurse = $this->staff('nurse');
         Livewire::actingAs($nurse)->test(CaseSheetSection::class, ['visitId' => $this->visit->id, 'section' => 'financial'])->assertForbidden();
         $this->assertNull($this->sheets()->sheet($this->visit, $nurse)['financial']);
+
+        // A dentist sees this patient's money on the visit they are treating, not the clinic's.
+        $other = $this->staff('doctor');
+        Livewire::actingAs($other)->test(CaseSheetSection::class, ['visitId' => $this->visit->id, 'section' => 'financial'])->assertForbidden();
+        $this->visit->forceFill(['doctor_user_id' => $this->dentist->id])->save();
 
         Livewire::actingAs($this->dentist)->test(CaseSheetSection::class, ['visitId' => $this->visit->id, 'section' => 'financial'])
             ->assertSee('Owes from before')

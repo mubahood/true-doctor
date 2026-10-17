@@ -41,7 +41,7 @@ class DentalCaseSheetController extends Controller
         $this->read($request, $visit);
         $definition = DentalCaseSheet::section($section);
         abort_if($definition === null, 404);
-        $this->write($request, $section);
+        $this->write($request, $visit, $section);
         $data = $request->validate([
             'data' => ['present', 'array'],
             'base_version' => ['nullable', 'integer', 'min:0'],
@@ -65,7 +65,7 @@ class DentalCaseSheetController extends Controller
     {
         $this->read($request, $visit);
         abort_if(DentalCaseSheet::section($section) === null, 404);
-        $this->write($request, $section);
+        $this->write($request, $visit, $section);
         $this->sections->markNormal($visit, $section, $request->user(), $request->filled('base_version') ? (int) $request->input('base_version') : null);
 
         return ApiResponse::success($this->payload($request, $visit), 'Normal.');
@@ -77,7 +77,7 @@ class DentalCaseSheetController extends Controller
         $this->read($request, $visit);
         $definition = DentalCaseSheet::section($section);
         abort_if($definition === null || $definition['scope'] !== 'patient', 404);
-        $this->write($request, $section);
+        $this->write($request, $visit, $section);
         $this->sections->confirmPatientHistory($visit->patient()->firstOrFail(), $section, $visit, $request->user());
 
         return ApiResponse::success($this->payload($request, $visit), 'Confirmed.');
@@ -184,13 +184,14 @@ class DentalCaseSheetController extends Controller
         abort_unless(DentalCaseSheetService::canRead($request->user()), 403, 'Your role cannot do that.');
     }
 
-    private function write(Request $request, string $section): void
+    private function write(Request $request, Visit $visit, string $section): void
     {
         $user = $request->user();
         $ok = $user->can('visits.diagnose') || ($section === 'financial' && $user->can('billing.manage'));
         abort_unless($ok, 403, 'Your role cannot do that.');
         if ($section === 'financial') {
-            abort_unless($user->can('billing.view'), 403, 'Your role cannot do that.');
+            // The money staff, and the dentist on this visit (VisitPolicy::viewBill).
+            abort_unless($user->can('viewBill', $visit), 403, 'Your role cannot do that.');
         }
     }
 

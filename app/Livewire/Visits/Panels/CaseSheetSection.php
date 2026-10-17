@@ -54,7 +54,7 @@ class CaseSheetSection extends Component
         $this->authorize('view', $this->visit);
         abort_unless(DentalCaseSheetService::canRead(auth()->user()), 403);
         if ($section === 'financial') {
-            abort_unless(auth()->user()->can('billing.view'), 403);
+            abort_unless(auth()->user()->can('viewBill', $this->visit), 403); // money staff, and the dentist on this visit
         }
     }
 

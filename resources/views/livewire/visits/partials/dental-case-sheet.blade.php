@@ -17,7 +17,7 @@
       @foreach(['complaint', 'dental_history', 'medical', 'surgical'] as $section)
         <livewire:visits.panels.case-sheet-section :visit-id="$visit->id" :section="$section" :key="'cs-'.$section.'-'.$visit->id" />
       @endforeach
-      @can('billing.view')
+      @can('viewBill', $visit)
         <livewire:visits.panels.case-sheet-section :visit-id="$visit->id" section="financial" :key="'cs-financial-'.$visit->id" />
       @endcan
     </div>
