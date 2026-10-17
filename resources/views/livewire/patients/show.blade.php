@@ -170,6 +170,16 @@
           @break
         @case('access')
           <livewire:patients.tabs.access :patient-id="$patient->id" :key="'t-access-'.$patient->id" />
+
+        {{-- Maternity and child health (docs/mother-child.md). --}}
+        @case('pregnancy')
+          <livewire:patients.tabs.pregnancy :patient-id="$patient->id" :key="'t-pregnancy-'.$patient->id" />
+          @break
+        @case('immunisation')
+          <livewire:patients.tabs.immunisation :patient-id="$patient->id" :key="'t-immunisation-'.$patient->id" />
+          @break
+        @case('growth')
+          <livewire:patients.tabs.growth :patient-id="$patient->id" :key="'t-growth-'.$patient->id" />
           @break
 
         {{-- Records: the working panels, unchanged in behaviour. --}}

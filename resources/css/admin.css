@@ -2398,3 +2398,24 @@ body.has-brand::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z-i
 .tb-sensitive-note .tb-label{color:var(--warn);}
 .tb-sensitive-note p{margin:2px 0 0;font-size:12.5px;white-space:pre-line;}
 .tb-audit-value{max-width:320px;font-size:12px;word-break:break-word;}
+
+/* ── Maternity and child health (Patients\Tabs\Pregnancy, Immunisation, Growth; Immunisations\Index) ── */
+.mc-form{display:contents;}
+.mc-fieldset{border:none;margin:8px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:4px;}
+.mc-fieldset legend{width:100%;margin-bottom:4px;}
+.mc-due{border-color:var(--br);background:var(--br-soft);}
+.mc-checklist{list-style:none;margin:0;padding:0;}
+.mc-checklist li{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--line);font-size:12px;}
+.mc-checklist li:last-child{border-bottom:none;}
+.mc-checklist li i{color:var(--mt2);}
+.mc-chart{width:100%;height:auto;display:block;max-height:280px;}
+.mc-grid{stroke:var(--line);stroke-width:1;}
+.mc-tick{fill:var(--mt2);font-size:9px;}
+.mc-ref{fill:none;stroke-width:1.2;}
+.mc-ref-3{stroke:var(--bad);}
+.mc-ref-2{stroke:var(--warn);stroke-dasharray:4 3;}
+.mc-ref-0{stroke:var(--ok);}
+.mc-child{fill:none;stroke:var(--br);stroke-width:1.6;}
+.mc-dot{fill:var(--br);stroke:var(--surface);stroke-width:1;}
+.mc-dot-danger{fill:var(--bad);}
+.mc-dot-warn{fill:var(--warn);}

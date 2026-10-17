@@ -68,6 +68,19 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
         Route::get('patient-links/{patientLink}', [\App\Http\Controllers\Api\V1\PatientLinkController::class, 'show'])->whereUuid('patientLink')->name('api.patient-links.show');
         Route::delete('patient-links/{patientLink}', [\App\Http\Controllers\Api\V1\PatientLinkController::class, 'destroy'])->whereUuid('patientLink')->name('api.patient-links.destroy');
 
+        // Maternity and child health: pregnancy, immunisation, growth (docs/api/mother-child.md).
+        Route::get('patients/{patient}/pregnancy', [\App\Http\Controllers\Api\V1\MotherChildController::class, 'pregnancy'])->name('api.pregnancy.show');
+        Route::post('patients/{patient}/pregnancies', [\App\Http\Controllers\Api\V1\MotherChildController::class, 'openPregnancy'])->name('api.pregnancy.open');
+        Route::patch('pregnancies/{pregnancy}', [\App\Http\Controllers\Api\V1\MotherChildController::class, 'updatePregnancy'])->name('api.pregnancy.update');
+        Route::post('pregnancies/{pregnancy}/contacts', [\App\Http\Controllers\Api\V1\MotherChildController::class, 'contact'])->name('api.pregnancy.contact');
+        Route::post('pregnancies/{pregnancy}/close', [\App\Http\Controllers\Api\V1\MotherChildController::class, 'close'])->name('api.pregnancy.close');
+        Route::get('immunisations/due', [\App\Http\Controllers\Api\V1\MotherChildController::class, 'due'])->name('api.immunisations.due');
+        Route::get('patients/{patient}/immunisations', [\App\Http\Controllers\Api\V1\MotherChildController::class, 'immunisations'])->name('api.immunisations.show');
+        Route::post('patients/{patient}/immunisations', [\App\Http\Controllers\Api\V1\MotherChildController::class, 'give'])->name('api.immunisations.give');
+        Route::post('immunisations/{immunisation}/void', [\App\Http\Controllers\Api\V1\MotherChildController::class, 'void'])->name('api.immunisations.void');
+        Route::get('patients/{patient}/growth', [\App\Http\Controllers\Api\V1\MotherChildController::class, 'growth'])->name('api.growth.show');
+        Route::post('patients/{patient}/growth', [\App\Http\Controllers\Api\V1\MotherChildController::class, 'measure'])->name('api.growth.record');
+
         // Coded diagnoses (docs/api/diagnoses.md).
         Route::get('diagnoses/search', [\App\Http\Controllers\Api\V1\DiagnosisController::class, 'search'])->name('api.diagnoses.search');
         Route::get('visits/{visit}/diagnoses', [\App\Http\Controllers\Api\V1\DiagnosisController::class, 'index'])->name('api.diagnoses.index');

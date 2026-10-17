@@ -30,6 +30,10 @@ class PatientSummaryController extends Controller
         if (\App\Services\DentalService::onPatient($patient, \App\Models\Hospital::find(app(\App\Support\CurrentHospital::class)->id()), $request->user())) {
             $sections[] = 'dental';
         }
+        // Maternity and child health tabs, by the same rules as the web's
+        // (docs/mother-child.md), each with its one-line state.
+        $mc = $this->motherChild($patient, $request);
+        $sections = array_merge($sections, array_keys($mc));
 
         foreach (['outstanding', 'billed_total', 'paid_total', 'card_balance'] as $key) {
             if (($summary['figures'][$key] ?? null) !== null) {
@@ -55,6 +59,31 @@ class PatientSummaryController extends Controller
             $data['aging'] = $service->aging($patient)['buckets'];
         }
 
-        return ApiResponse::success($data);
+        return ApiResponse::success($data + $mc);
+    }
+
+    /**
+     * The pregnancy, immunisation and growth sections this caller gets for
+     * this patient, keyed by section, each with its short state.
+     *
+     * @return array<string, mixed>
+     */
+    private function motherChild(Patient $patient, Request $request): array
+    {
+        $hospital = \App\Support\MotherChild\MotherChild::hospital();
+        $user = $request->user();
+        $out = [];
+
+        if (\App\Services\PregnancyService::onPatient($patient, $hospital, $user)) {
+            $out['pregnancy'] = app(\App\Services\PregnancyService::class)->brief($patient);
+        }
+        if (\App\Services\ImmunisationService::onPatient($patient, $hospital, $user)) {
+            $out['immunisation'] = \App\Services\ImmunisationService::counts(app(\App\Services\ImmunisationService::class)->card($patient));
+        }
+        if (\App\Services\GrowthService::onPatient($patient, $hospital, $user)) {
+            $out['growth'] = app(\App\Services\GrowthService::class)->assessment($patient);
+        }
+
+        return $out;
     }
 }

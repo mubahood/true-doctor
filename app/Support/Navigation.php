@@ -128,6 +128,9 @@ final class Navigation
                 ['label' => 'Diagnoses to code', 'icon' => 'fa-notes-medical', 'route' => 'admin.diagnoses.worklist', 'match' => ['admin.diagnoses.*'], 'can' => 'diagnoses.code'],
                 // Patient links (roadmap 05 §4): every link sent, who opened it, withdraw it.
                 ['label' => 'Patient links', 'icon' => 'fa-link', 'route' => 'admin.patient-links.index', 'match' => ['admin.patient-links.*'], 'can' => 'patients.view'],
+
+                // Maternity and child health: the children with a dose due today (docs/mother-child.md).
+                ['label' => 'Immunisations due', 'icon' => 'fa-syringe', 'route' => 'admin.immunisations.index', 'match' => ['admin.immunisations.*'], 'can' => 'visits.view', 'pack' => ['paediatrics', 'maternity']],
                 ['label' => 'Patients', 'icon' => 'fa-user-injured', 'route' => 'admin.patients.index', 'match' => ['admin.patients.*'], 'can' => 'patients.view'],
             ]],
 
@@ -237,6 +240,8 @@ final class Navigation
         $practice = Practice::of($user->isSuperAdmin() ? null : $user->hospital);
         $inUse = fn (array $it) => (! isset($it['edition']) || $it['edition'] === Edition::name())
             && (! isset($it['module']) || $practice->uses($it['module']))
+            // `pack`: shown only to a practice with one of these specialty packs on.
+            && (! isset($it['pack']) || array_intersect($it['pack'], $practice->packKeys()) !== [])
             && (! ($it['tenant'] ?? false) || $user->hospital_id !== null);
 
         $rendered = [];
