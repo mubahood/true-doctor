@@ -60,6 +60,12 @@ class CodedDiagnosesTest extends TestCase
         $this->assertContains('I10', $this->dx()->search('high blood pressure')->pluck('code')->all());
     }
 
+    public function test_a_suggestion_reads_the_whole_written_diagnosis(): void
+    {
+        $this->assertSame('B50.9', $this->dx()->suggest('Uncomplicated malaria, confirmed by rapid diagnostic test.')->first()->code);
+        $this->assertSame('I10', $this->dx()->suggest('Hypertension, adequately controlled on current dose.')->first()->code);
+    }
+
     public function test_the_practice_own_most_used_come_first(): void
     {
         foreach (range(1, 3) as $i) {

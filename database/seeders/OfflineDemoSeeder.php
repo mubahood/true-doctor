@@ -152,7 +152,8 @@ class OfflineDemoSeeder extends Seeder
             return Patient::limit($count)->get()->all();
         }
 
-        $first = ['Amina', 'Joseph', 'Grace', 'Moses', 'Sarah', 'David', 'Mary', 'Peter', 'Ruth', 'Samuel', 'Esther', 'John'];
+        // Each name with its sex, so a record never reads "Esther, male".
+        $first = [['Amina', 'female'], ['Joseph', 'male'], ['Grace', 'female'], ['Moses', 'male'], ['Sarah', 'female'], ['David', 'male'], ['Mary', 'female'], ['Peter', 'male'], ['Ruth', 'female'], ['Samuel', 'male'], ['Esther', 'female'], ['John', 'male']];
         $last = ['Nakato', 'Okello', 'Auma', 'Mugisha', 'Nabwire', 'Ssemakula', 'Achieng', 'Kato', 'Nalubega', 'Wanyama'];
 
         $made = [];
@@ -161,10 +162,10 @@ class OfflineDemoSeeder extends Seeder
 
         for ($i = $existing; $i < $count; $i++) {
             $made[] = $service->register([
-                'first_name' => $first[$i % count($first)],
+                'first_name' => $first[$i % count($first)][0],
                 'last_name' => $last[($i * 7) % count($last)],
                 'dob' => now()->subYears(random_int(1, 88))->subDays(random_int(0, 364))->toDateString(),
-                'sex' => ['male', 'female'][$i % 2],
+                'sex' => $first[$i % count($first)][1],
                 'phone_1' => '07'.str_pad((string) random_int(0, 99999999), 8, '0', STR_PAD_LEFT),
                 // Realistic sparsity: most patients have no allergy recorded,
                 // which is what makes the ones who do worth noticing.

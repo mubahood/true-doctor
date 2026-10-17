@@ -183,14 +183,18 @@ class DiagnosisService
         // then the longest run of its words that matches ("hypertension, adequately
         // controlled" → "hypertension"), until something matches.
         $phrases = preg_split('/\s*(?:[,.;:\/()]|\band\b|\bwith\b)\s*/iu', mb_strtolower($written)) ?: [];
+        // Every word of the whole text, to choose between codes that matched the
+        // same words ("malaria ... confirmed by RDT" is B50.9, not B54).
+        $all = array_filter(preg_split('/[^\pL\pN]+/u', mb_strtolower($written)) ?: [], fn ($w) => mb_strlen($w) >= 4);
         foreach ($phrases as $phrase) {
             $clean = (string) preg_replace('/[^\pL\pN\s-]/u', ' ', $phrase);
             $words = array_slice(array_values(array_filter(preg_split('/\s+/', trim($clean)) ?: [], fn ($w) => mb_strlen($w) >= 4)), 0, 4);
             for ($len = count($words); $len >= 1; $len--) {
                 for ($start = 0; $start + $len <= count($words); $start++) {
-                    $hits = $this->search(implode(' ', array_slice($words, $start, $len)), $hospitalId, 3);
+                    $hits = $this->search(implode(' ', array_slice($words, $start, $len)), $hospitalId, 8);
                     if ($hits->isNotEmpty()) {
-                        return $hits;
+                        return $hits->sortByDesc(fn (DiagnosisCode $d) => count(array_filter($all, fn ($w) => str_contains($d->search, $w))))
+                            ->take(3)->values();
                     }
                 }
             }
