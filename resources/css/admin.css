@@ -2351,3 +2351,6 @@ body.has-brand::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z-i
 .hmis-grid td:first-child{white-space:normal;min-width:180px;}
 .hmis-zero td{color:var(--mt);}
 .hmis-hit td{background:var(--warn-soft);font-weight:600;}
+
+/* ── Refunds and credit notes (Invoices\Show, Credits\Index) ────────── */
+.credit-form{display:contents;}

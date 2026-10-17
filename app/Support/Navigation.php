@@ -134,6 +134,8 @@ final class Navigation
                 ['key' => 'billing', 'label' => 'Billing', 'icon' => 'fa-file-invoice-dollar', 'items' => [
                     ['label' => 'Invoices', 'icon' => 'fa-file-invoice-dollar', 'route' => 'admin.invoices.index', 'match' => ['admin.invoices.*'], 'can' => 'billing.view'],
                     ['label' => "Cashier's day", 'icon' => 'fa-cash-register', 'route' => 'admin.cashier.day', 'match' => ['admin.cashier.*'], 'can' => 'billing.view'],
+                    // Refunds and credit notes (roadmap 04 §8): the approver's list.
+                    ['label' => 'Refunds and credit notes', 'icon' => 'fa-file-circle-minus', 'route' => 'admin.credits.index', 'match' => ['admin.credits.*'], 'can' => 'billing.view'],
                     ['label' => 'Insurance claims', 'icon' => 'fa-file-medical', 'route' => 'admin.insurance-claims.index', 'match' => ['admin.insurance-claims.*'], 'can' => 'insurance.view', 'module' => 'insurance'],
                 ]],
                 // Cards are money work, not a patient detail: a card desk looks

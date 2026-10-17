@@ -24,6 +24,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property numeric-string $total
  * @property numeric-string $amount_paid
  * @property numeric-string $balance
+ * @property numeric-string $credited
+ * @property numeric-string $refunded
  */
 class Invoice extends Model
 {
@@ -32,6 +34,7 @@ class Invoice extends Model
     protected $fillable = [
         'uuid', 'invoice_no', 'visit_id', 'patient_id', 'currency',
         'subtotal', 'tax_total', 'discount', 'total', 'amount_paid', 'balance',
+        'credited', 'refunded',
         'status', 'notes', 'issued_by', 'issued_at',
     ];
 
@@ -40,6 +43,7 @@ class Invoice extends Model
         return [
             'subtotal' => 'decimal:2', 'tax_total' => 'decimal:2', 'discount' => 'decimal:2',
             'total' => 'decimal:2', 'amount_paid' => 'decimal:2', 'balance' => 'decimal:2',
+            'credited' => 'decimal:2', 'refunded' => 'decimal:2',
             'status' => InvoiceStatus::class,
             'issued_at' => 'datetime',
         ];
@@ -96,6 +100,36 @@ class Invoice extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class)->latest('created_at')->latest('id');
+    }
+
+    /**
+     * Its credit notes and refunds, every state (docs/refunds.md).
+     *
+     * @return HasMany<InvoiceCredit, $this>
+     */
+    public function credits(): HasMany
+    {
+        return $this->hasMany(InvoiceCredit::class)->latest('requested_at')->latest('id');
+    }
+
+    /** What the invoice now asks for: its total less its credit notes. */
+    public function netTotal(): string
+    {
+        return bcsub((string) $this->total, (string) ($this->credited ?? '0'), 2);
+    }
+
+    /** What the hospital holds against it: paid, less refunded. */
+    public function held(): string
+    {
+        return bcsub((string) $this->amount_paid, (string) ($this->refunded ?? '0'), 2);
+    }
+
+    /** Paid beyond what the invoice now asks for: what can be refunded. */
+    public function refundable(): string
+    {
+        $over = bcsub($this->held(), $this->netTotal(), 2);
+
+        return bccomp($over, '0', 2) > 0 ? $over : '0.00';
     }
 
     public function getRouteKeyName(): string

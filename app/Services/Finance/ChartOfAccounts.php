@@ -74,6 +74,8 @@ class ChartOfAccounts
         ['4600', 'Other income', 'income', 'other_income', null, false],
         ['4610', 'Stock count gains', 'income', 'other_income', 'stock_gains', false],
         ['4900', 'Discounts allowed', 'income', 'contra_income', 'discounts', false],
+        // Money taken off an invoice after it was issued (docs/refunds.md).
+        ['4910', 'Credit notes allowed', 'income', 'contra_income', 'credit_notes', false],
         // Expenses
         ['5000', 'Cost of drugs & supplies sold', 'expense', 'cost_of_sales', 'cogs', false],
         ['5010', 'Stock losses & expiries', 'expense', 'cost_of_sales', 'stock_losses', false],

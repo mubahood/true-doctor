@@ -104,7 +104,9 @@ class BooksBackfill
     {
         return CardRecord::query()
             ->whereNull('insurance_transaction_id')
-            ->whereNotIn('id', Payment::query()->whereNotNull('card_record_id')->select('card_record_id'));
+            ->whereNotIn('id', Payment::query()->whereNotNull('card_record_id')->select('card_record_id'))
+            // A refund back onto a card is posted with the refund (docs/refunds.md).
+            ->whereNotIn('id', \App\Models\InvoiceCredit::query()->whereNotNull('card_record_id')->select('card_record_id'));
     }
 
     /** Only movements with a value; a free item moves nothing in the books. @return Builder<StockMovement> */

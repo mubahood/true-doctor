@@ -34,6 +34,8 @@ class SmokeRoutesTest extends TestCase
         'admin.patients.id-card',
         'admin.invoices.pdf',
         'admin.payments.receipt',
+        // A credit note or refund (docs/refunds.md).
+        'admin.credits.pdf',
         // The same receipt on 58/80 mm roll paper.
         'admin.payments.receipt.thermal',
         // The Ministry forms as PDF or CSV.

@@ -3,6 +3,8 @@
 namespace App\Services\Finance;
 
 use App\Enums\CardEntryType;
+use App\Enums\CreditKind;
+use App\Enums\CreditStatus;
 use App\Enums\InsuranceEntryType;
 use App\Enums\InvoiceStatus;
 use App\Enums\JournalKind;
@@ -12,6 +14,7 @@ use App\Enums\StockMovementReason;
 use App\Models\CardRecord;
 use App\Models\InsuranceTransaction;
 use App\Models\Invoice;
+use App\Models\InvoiceCredit;
 use App\Models\InvoiceItem;
 use App\Models\JournalEntry;
 use App\Models\LedgerAccount;
@@ -156,6 +159,52 @@ class Bookkeeper
                     ['account' => $this->chart->key('receivable'), 'credit' => (string) $payment->amount],
                 ],
                 $payment->reference ?? $invoice?->invoice_no, $payment->received_by);
+        });
+    }
+
+    /**
+     * A credit note or refund approved (docs/refunds.md).
+     *
+     *   Credit note   Dr credit notes allowed, tax payable (its share)   Cr receivables
+     *   Refund        Dr receivables                                      Cr the book it was paid from
+     *
+     * A credit note larger than what was still owed leaves receivables in
+     * credit — the hospital owes the patient — and the refund clears it.
+     */
+    public function creditApproved(InvoiceCredit $credit): ?JournalEntry
+    {
+        if ($credit->status !== CreditStatus::Approved) {
+            return null;
+        }
+
+        return $this->as($credit, function () use ($credit) {
+            $amount = (string) $credit->amount;
+            $receivable = $this->chart->key('receivable');
+            $invoiceNo = $credit->invoice()->first()->invoice_no ?? '';
+
+            if ($credit->kind === CreditKind::CreditNote) {
+                $tax = (string) $credit->tax_part;
+                $income = bcsub($amount, $tax, 2);
+                $lines = [];
+                if (bccomp($income, '0', 2) > 0) {
+                    $lines[] = ['account' => $this->chart->key('credit_notes'), 'debit' => $income, 'memo' => $credit->reason];
+                }
+                if (bccomp($tax, '0', 2) > 0) {
+                    $lines[] = ['account' => $this->chart->key('tax.output'), 'debit' => $tax, 'memo' => 'Tax credited'];
+                }
+                $lines[] = ['account' => $receivable, 'credit' => $amount, 'memo' => $invoiceNo];
+                $memo = 'Credit note '.$credit->number.' — '.$invoiceNo;
+            } else {
+                $method = $credit->method ?? PaymentMethod::Cash;
+                $lines = [
+                    ['account' => $receivable, 'debit' => $amount, 'memo' => $invoiceNo],
+                    ['account' => $this->chart->forMethod($method), 'credit' => $amount, 'memo' => $method->label()],
+                ];
+                $memo = 'Refund '.$credit->number.' — '.$invoiceNo;
+            }
+
+            return $this->post($credit, 'approved', $credit->decided_at, $memo, $lines,
+                $credit->number, $credit->decided_by);
         });
     }
 

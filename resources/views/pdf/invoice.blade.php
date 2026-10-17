@@ -68,13 +68,23 @@
 
     <tr class="grand"><td>Total</td><td class="r">{{ $set->format($invoice->total) }}</td></tr>
 
-    @if(bccomp((string) $invoice->amount_paid, '0', 2) > 0)
-      <tr><td>Paid</td><td class="r">− {{ $set->format($invoice->amount_paid) }}</td></tr>
+    {{-- Credit notes and refunds (docs/refunds.md). --}}
+    @if(bccomp((string) $invoice->credited, '0', 2) > 0)
+      <tr><td>Credit notes</td><td class="r">− {{ $set->format($invoice->credited) }}</td></tr>
+    @endif
+
+    @if(bccomp((string) $invoice->amount_paid, '0', 2) > 0 || bccomp((string) $invoice->credited, '0', 2) > 0)
+      @if(bccomp((string) $invoice->amount_paid, '0', 2) > 0)
+        <tr><td>Paid</td><td class="r">− {{ $set->format($invoice->amount_paid) }}</td></tr>
+      @endif
+      @if(bccomp((string) $invoice->refunded, '0', 2) > 0)
+        <tr><td>Refunded</td><td class="r">{{ $set->format($invoice->refunded) }}</td></tr>
+      @endif
       <tr><td><b>Balance due</b></td><td class="r"><b>{{ $set->format($invoice->balance) }}</b></td></tr>
     @endif
   </table>
 
   @if(bccomp((string) $invoice->balance, '0', 2) === 0)
-    <p class="foot-note"><span class="stamp ok">Paid in full</span></p>
+    <p class="foot-note"><span class="stamp ok">{{ bccomp((string) $invoice->amount_paid, '0', 2) > 0 ? 'Paid in full' : 'Settled by credit note' }}</span></p>
   @endif
 </x-pdf.document>

@@ -22,6 +22,10 @@ class InvoiceResource extends JsonResource
             'total' => $this->total,
             'amount_paid' => $this->amount_paid,
             'balance' => $this->balance,
+            // Credit notes and refunds (docs/api/refunds.md).
+            'credited' => (string) ($this->credited ?? '0.00'),
+            'refunded' => (string) ($this->refunded ?? '0.00'),
+            'refundable' => $this->resource->refundable(),
             'status' => $this->status->value,
             'items' => $this->whenLoaded('items', fn () => $this->items->map(fn ($it) => [
                 'description' => $it->description,
