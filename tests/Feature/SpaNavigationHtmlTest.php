@@ -56,6 +56,9 @@ class SpaNavigationHtmlTest extends TestCase
         'admin.insurance-providers.usage', 'admin.visits.report',
         'admin.reports.pdf', 'admin.finance.statement-pdf',
         'admin.credits.pdf',
+
+        // Data protection: the pack, and one patient's data for a request to see it.
+        'admin.compliance.document', 'admin.patients.personal-data',
     ];
 
     /**

@@ -40,6 +40,14 @@
       <li><strong>Your hospital is the controller</strong> of the patient and clinical data it enters. It decides what is collected, why, and for how long. We are its processor, acting on its instructions.</li>
       <li><strong>We are the controller</strong> of the account itself: the hospital&rsquo;s subscription, its staff logins and the billing relationship between us.</li>
     </ul>
+    <p>
+      True-Doctor is run by SOLAVIA GROUP LIMITED under Uganda&rsquo;s Data Protection and Privacy Act 2019.
+      Each hospital accepts a data processing agreement that sets out what we may and may not do with its data;
+      the version, the date and who accepted it are recorded.
+      @if(config('compliance.pdpo_registration'))
+        Our registration with the Personal Data Protection Office is number {{ config('compliance.pdpo_registration') }}.
+      @endif
+    </p>
 
     <h2 id="hospital-data">Data your hospital holds</h2>
     <p>
@@ -126,10 +134,22 @@
     <h2 id="retention">Retention, export and erasure</h2>
     <p>
       Your hospital decides how long to keep its records, subject to whatever its own
-      regulator requires. You can export your data at any time, including after a
-      subscription lapses. If you close your account and ask us to erase what remains,
-      we will, and we will tell you when it is done, including from backups as those
-      rotate out.
+      regulator requires; the system gives it a retention schedule to start from.
+      You can export your data at any time, including after a subscription lapses:
+      your administrator asks for it in Settings, and the system prepares one file
+      with a spreadsheet for every table and every uploaded document. The download
+      link works only for your administrators, stops working after two days, and
+      every download is logged. If you close your account and ask us to erase what
+      remains, we will, and we will tell you when it is done, including from backups
+      as those rotate out.
+    </p>
+    <p>
+      Each hospital also gets the documents the Act asks of it, filled in with its own
+      details: a privacy notice for patients, a procedure for patients&rsquo; requests,
+      the retention schedule, a breach procedure, an impact assessment and a checklist
+      for registering with the Personal Data Protection Office. If a breach affects a
+      hospital&rsquo;s data, we tell that hospital within 24 hours and help it notify the
+      Office and the people affected.
     </p>
 
     <h2 id="rights">If you are a patient</h2>
@@ -137,6 +157,14 @@
       Your records belong to the hospital that treated you, not to us. To see, correct
       or ask about anything held about you, contact that hospital directly. They can
       act on it immediately, and we cannot act on it without them.
+    </p>
+    <p>
+      Under the Data Protection and Privacy Act 2019 you may ask the hospital for a copy
+      of what it holds about you, to correct anything that is wrong, and to stop a use you
+      object to, such as text messages (reply STOP to any message). The hospital logs your
+      request and should answer within 30 days. If you write to us instead, we pass your
+      request to the hospital. If you are not satisfied, you may complain to the Personal
+      Data Protection Office.
     </p>
 
     <h2 id="changes">Changes and contact</h2>

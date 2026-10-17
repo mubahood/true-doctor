@@ -337,6 +337,13 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'subscribed', 'onboarding',
     Route::get('settings/messages', \App\Livewire\Settings\Messages::class)->name('settings.messages');
     Route::get('settings', \App\Livewire\Settings\Site::class)->middleware('edition:saas')->name('settings.index');
 
+    // ── Data protection: the Act's pack, patients' requests, the full export (docs/compliance/README.md) ──
+    Route::get('settings/data-protection', \App\Livewire\Settings\DataProtection::class)->name('settings.data-protection');
+    Route::get('settings/data-protection/{document}.pdf', [\App\Http\Controllers\Admin\DataProtectionController::class, 'document'])->where('document', '[a-z-]+')->name('compliance.document');
+    Route::get('settings/data-export/{token}', \App\Http\Controllers\Admin\DataExportController::class)->middleware('no-store')->name('data-exports.download');
+    Route::get('data-requests', \App\Livewire\DataRequests\Index::class)->name('data-requests.index');
+    Route::get('patients/{patient}/personal-data.{format}', [\App\Http\Controllers\Admin\DataProtectionController::class, 'patient'])->where('format', 'pdf|json')->name('patients.personal-data');
+
     // A standalone owner's own server: release, licence, updates, backups.
     Route::middleware('edition:standalone')->group(function () {
         Route::get('system', \App\Livewire\System\Index::class)->name('system.index');

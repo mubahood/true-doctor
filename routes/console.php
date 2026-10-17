@@ -123,6 +123,17 @@ Artisan::command('inspire', function () {
         ->update(['status' => 'failed', 'progress' => 'Release worker stopped unexpectedly', 'failure' => 'The build worker did not finish. Review its logs, then stage a new version.']);
 }), 'standalone-release-stale-check', 10)->when(fn () => \App\Support\Edition::isSaas());
 
+// ── Data protection: a hospital's full export (docs/compliance/README.md) ──
+// Its own short-lived worker, like the release builds: an export of a big
+// hospital can take minutes, longer than the notification worker's minute.
+// Both editions: a standalone copy has only the cron, and this is its worker.
+\Illuminate\Support\Facades\Schedule::command(
+    'queue:work data-exports --queue=exports --stop-when-empty --max-time=1750 --timeout=1700 --tries=1 --quiet'
+)->everyMinute()->name('data-export-worker')->withoutOverlapping(35)->runInBackground();
+// Expired export files are deleted; a build that died is marked failed.
+\App\Support\Scheduling\ScheduledRun::every(\Illuminate\Support\Facades\Schedule::call(fn () => app(\App\Services\Compliance\HospitalExport::class)->prune()), 'data-exports:prune', 60)
+    ->withoutOverlapping();
+
 // A job that has failed three times is kept for a week so somebody can look
 // at it, then cleared so the table does not grow without limit.
 \App\Support\Scheduling\ScheduledRun::weekly(\Illuminate\Support\Facades\Schedule::command('queue:prune-failed --hours=168'), 'queue-prune-failed', 1, '02:00');

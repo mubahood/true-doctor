@@ -33,6 +33,11 @@ final class EnumCatalogue
         \App\Enums\ClaimStatus::class,
         \App\Enums\CreditKind::class,
         \App\Enums\CreditStatus::class,
+
+        // Data protection (docs/compliance/README.md).
+        \App\Enums\DataExportStatus::class,
+        \App\Enums\DataRequestKind::class,
+        \App\Enums\DataRequestStatus::class,
         \App\Enums\DentalFinding::class,
         \App\Enums\DentalTreatmentStatus::class,
         \App\Enums\DiscountType::class,

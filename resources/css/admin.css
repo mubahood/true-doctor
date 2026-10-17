@@ -2387,3 +2387,8 @@ body.has-brand::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z-i
 
 /* ── Refunds and credit notes (Invoices\Show, Credits\Index) ────────── */
 .credit-form{display:contents;}
+
+/* ── Data protection (Settings\DataProtection, DataRequests\Index) ──── */
+.dp-agree{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;flex:1;}
+.dp-form{display:contents;}
+.dp-actions{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px;}
