@@ -22,6 +22,9 @@ class VisitController extends Controller
         // the bill, so a role without billing sees the account section as
         // figures it already has access to through the visit itself.
         $this->authorize('view', $visit);
+        // The report IS the clinical record: the desk and the cashier print
+        // the receipt and the invoice instead (docs/rbac.md).
+        $this->authorize('viewClinical', $visit);
         $patient = $visit->patient()->withTrashed()->first();
         if ($patient !== null) {
             app(\App\Services\Audit\RecordAccessLog::class)->printed($patient, auth()->user(), 'Visit report '.$visit->visit_no);

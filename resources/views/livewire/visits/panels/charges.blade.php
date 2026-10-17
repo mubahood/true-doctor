@@ -12,10 +12,12 @@
           <button type="button" class="btn-tb btn-tb-sm" wire:click="openAdd">
             <i class="fas fa-plus" aria-hidden="true"></i> Add charge
           </button>
-          <button type="button" class="btn-tb btn-tb-sm" wire:click="openDiscount">
-            <i class="fas fa-tag" aria-hidden="true"></i>
-            {{ bccomp($this->totals['discount'], '0', 2) > 0 ? 'Edit discount' : 'Add discount' }}
-          </button>
+          @can('billing.discount')
+            <button type="button" class="btn-tb btn-tb-sm" wire:click="openDiscount">
+              <i class="fas fa-tag" aria-hidden="true"></i>
+              {{ bccomp($this->totals['discount'], '0', 2) > 0 ? 'Edit discount' : 'Add discount' }}
+            </button>
+          @endcan
         @endunless
       @endcan
     </div>

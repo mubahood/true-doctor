@@ -138,9 +138,11 @@
                 </button>
 
                 {{-- The whole record, as a document to hand over. --}}
-                <a role="menuitem" href="{{ route('admin.visits.report', $c) }}" target="_blank" rel="noopener">
-                  <i class="fas fa-file-medical" aria-hidden="true"></i> Visit report (PDF)
-                </a>
+                @can('viewClinical', $c)
+                  <a role="menuitem" href="{{ route('admin.visits.report', $c) }}" target="_blank" rel="noopener">
+                    <i class="fas fa-file-medical" aria-hidden="true"></i> Visit report (PDF)
+                  </a>
+                @endcan
 
                 @if($c->isOpen())
                   @canany(['visits.create', 'visits.manage'])
@@ -167,12 +169,12 @@
                 @endif
 
                 <hr>
-                @canany(['billing.view', 'billing.manage'])
+                @can('viewBill', $c)
                   <button type="button" role="menuitem"
                           wire:click="$dispatch('visit-action', { visitId: {{ $c->id }}, section: 'bill' })">
                     <i class="fas fa-file-invoice-dollar" aria-hidden="true"></i> Bill &amp; payments
                   </button>
-                @endcanany
+                @endcan
                 <a role="menuitem" wire:navigate href="{{ route('admin.visits.show', $c) }}">
                   <i class="fas fa-folder-open" aria-hidden="true"></i> Full page
                 </a>

@@ -37,9 +37,13 @@ class NotifyUser
     public function handleStockBelowReorder(StockBelowReorder $event): void
     {
         $item = $event->item;
+        // Whoever may manage stock in THIS clinic, after its own choices in
+        // Staff and access: asked of each account, not read off the role table.
         $recipients = User::where('hospital_id', $item->hospital_id)
-            ->permission('pharmacy.manage')
-            ->get();
+            ->where('is_active', true)
+            ->get()
+            ->filter(fn (User $u) => $u->can('pharmacy.manage'))
+            ->values();
 
         $this->send($recipients, 'stock', new LowStockAlert($item));
     }

@@ -33,7 +33,67 @@ use Spatie\Permission\Traits\HasRoles;
  */
 class User extends Authenticatable implements MustVerifyEmailContract
 {
-    use HasApiTokens, HasFactory, HasRoles, MustVerifyEmail, Notifiable;
+    use HasApiTokens, HasFactory, MustVerifyEmail, Notifiable;
+    use HasRoles {
+        hasPermissionTo as protected matrixHasPermissionTo;
+        getAllPermissions as protected matrixGetAllPermissions;
+    }
+
+    /**
+     * The role matrix, adjusted by the clinic's own choices (Settings, Staff
+     * and access) and this person's extra abilities. Every check goes through
+     * here: `can()`, `@can`, Policies, the `permission:` middleware and the API.
+     *
+     * @param  string|int|\Spatie\Permission\Contracts\Permission|\BackedEnum  $permission
+     * @param  string|null  $guardName
+     */
+    public function hasPermissionTo($permission, $guardName = null): bool
+    {
+        $name = match (true) {
+            is_string($permission) => $permission,
+            $permission instanceof \BackedEnum => (string) $permission->value,
+            $permission instanceof \Spatie\Permission\Contracts\Permission => (string) $permission->getAttribute('name'),
+            default => null,
+        };
+
+        if ($name !== null) {
+            $decided = app(\App\Support\Access\PermissionResolver::class)->decide($this, $name);
+            if ($decided !== null) {
+                return $decided;
+            }
+        }
+
+        return $this->matrixHasPermissionTo($permission, $guardName);
+    }
+
+    /**
+     * Everything this person may do, after the clinic's choices: what the app
+     * is told (`capabilities.permissions`) and what the staff screen lists.
+     *
+     * @return \Illuminate\Support\Collection<int, \Spatie\Permission\Models\Permission>
+     */
+    public function getAllPermissions(): \Illuminate\Support\Collection
+    {
+        $all = $this->matrixGetAllPermissions();
+        $adjust = app(\App\Support\Access\PermissionResolver::class)->adjustments($this);
+
+        if ($adjust['strong'] === [] && $adjust['revoke'] === [] && $adjust['weak'] === []) {
+            return $all;
+        }
+
+        $resolver = app(\App\Support\Access\PermissionResolver::class);
+        $kept = $all->filter(fn ($p) => $resolver->decide($this, (string) $p->name) !== false);
+        $have = $kept->pluck('name')->all();
+        $extra = array_values(array_diff(array_keys($adjust['strong'] + $adjust['weak']), $have));
+
+        if ($extra !== []) {
+            $added = \Spatie\Permission\Models\Permission::query()->where('guard_name', 'web')->whereIn('name', $extra)->get()
+                ->filter(fn ($p) => $resolver->decide($this, (string) $p->name) === true);
+            $kept = $kept->merge($added);
+        }
+
+        return $kept->sortBy('name')->values();
+    }
 
     protected $fillable = [
         'name', 'username', 'email', 'password', 'role', 'hospital_id',

@@ -119,6 +119,20 @@
         <div class="tb-form-group">
           <label class="tb-check-group"><input type="checkbox" wire:model="is_active"> Active</label>
         </div>
+        {{-- One extra ability for one person, without a new role (Staff and access). --}}
+        @if($this->canGiveExtras())
+          <fieldset class="tb-form-group tb-access-extras">
+            <legend class="tb-label">Extra abilities for this person</legend>
+            <div class="tb-field-hint">On top of what the {{ \Illuminate\Support\Str::of((string) $role)->replace('_', ' ') }} role allows. What every {{ \Illuminate\Support\Str::of((string) $role)->replace('_', ' ') }} may do is set in <x-ui.link :href="route('admin.settings.access')">Staff and access</x-ui.link>.</div>
+            <div class="tb-access-extras-list">
+              @foreach(\App\Support\Access\Abilities::ALL as $key => $ability)
+                <label class="tb-check-group" wire:key="extra-{{ $key }}">
+                  <input type="checkbox" wire:model="extras" value="{{ $key }}"> {{ $ability['label'] }}
+                </label>
+              @endforeach
+            </div>
+          </fieldset>
+        @endif
       </div>
       <div class="tb-modal-foot">
         <button type="button" class="btn-tb btn-tb-ghost" @click="requestClose()">Cancel</button>

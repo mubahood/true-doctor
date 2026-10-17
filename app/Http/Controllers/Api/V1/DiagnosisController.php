@@ -31,6 +31,7 @@ class DiagnosisController extends Controller
     public function index(Visit $visit): JsonResponse
     {
         $this->authorize('view', $visit);
+        $this->authorize('viewClinical', $visit);
 
         return ApiResponse::success($this->diagnoses->current($visit)->map(fn (VisitDiagnosis $d) => $this->row($d))->values());
     }

@@ -75,6 +75,7 @@ class Dental extends Component
         $this->visitId = $visitId;
         $this->authorize('view', $this->patient);
         abort_unless(auth()->user()->can('treatments.view') || auth()->user()->can('visits.diagnose'), 403);
+        abort_unless(auth()->user()->can('visits.clinical'), 403);
         $this->recallOn = $this->patient->next_recall_on?->toDateString();
         // A child's mouth opens on the milk teeth; the toggle still switches.
         $this->primary = $this->patient->dob !== null && $this->patient->dob->age < 12;

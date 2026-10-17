@@ -73,7 +73,7 @@ class Actions extends Component
         'summary' => ['Summary', 'fa-circle-info', null, null],
         // Everything being done for the patient, of every kind, in one list.
         'orders' => ['Orders', 'fa-list-check', null, 'visits.panels.orders'],
-        'bill' => ['Bill', 'fa-file-invoice-dollar', 'billing.view', 'visits.panels.charges'],
+        'bill' => ['Bill', 'fa-file-invoice-dollar', 'viewBill', 'visits.panels.charges'],
         'payments' => ['Payments', 'fa-hand-holding-dollar', 'billing.view', 'visits.panels.payments'],
         'history' => ['History', 'fa-clock-rotate-left', null, null],
     ];
@@ -168,7 +168,7 @@ class Actions extends Component
 
         $out = [];
         foreach (self::SECTIONS as $key => [$label, $icon, $ability, $component]) {
-            if ($ability !== null && ! Auth::user()?->can($ability)) {
+            if ($ability !== null && ! Auth::user()?->can($ability, $visit)) {
                 continue;
             }
 

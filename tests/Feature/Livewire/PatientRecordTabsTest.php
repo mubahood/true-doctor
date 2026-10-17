@@ -55,11 +55,13 @@ class PatientRecordTabsTest extends TestCase
     {
         $always = ['overview', 'records', 'details'];
 
+        // The desk sees the visits and the money, not the clinical record;
+        // a doctor sees the clinical record, not the clinic's money (docs/rbac.md).
         $receptionist = $this->tabsOf('receptionist');
-        $this->assertEqualsCanonicalizing([...$always, 'visits', 'billing', 'clinical', 'appointments'], $receptionist);
+        $this->assertEqualsCanonicalizing([...$always, 'visits', 'billing', 'appointments'], $receptionist);
 
         $doctor = $this->tabsOf('doctor');
-        $this->assertEqualsCanonicalizing([...$always, 'visits', 'billing', 'clinical', 'appointments'], $doctor);
+        $this->assertEqualsCanonicalizing([...$always, 'visits', 'clinical', 'appointments'], $doctor);
 
         $nurse = $this->tabsOf('nurse');
         $this->assertNotContains('billing', $nurse);

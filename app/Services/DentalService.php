@@ -79,7 +79,7 @@ class DentalService
      */
     public static function onPatient(Patient $patient, ?Hospital $hospital, ?\App\Models\User $user): bool
     {
-        if ($user === null || ! self::enabledFor($hospital) || ! ($user->can('treatments.view') || $user->can('visits.diagnose'))) {
+        if ($user === null || ! self::enabledFor($hospital) || ! $user->can('visits.clinical') || ! ($user->can('treatments.view') || $user->can('visits.diagnose'))) {
             return false;
         }
 

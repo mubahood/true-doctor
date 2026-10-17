@@ -12,6 +12,7 @@ return [
     // Patient links (roadmap 05 §4): the code unlocks the link; so does the date of birth.
     'document_link' => ':clinic: your :document is ready. View it here: :link (code: :code)',
     'dental_recall' => ':clinic: it is six months since your dental check-up. Call :clinic_phone to book your next visit.',
+    'follow_up_due' => ':clinic: you are due to come back for a review. Call :clinic_phone to choose a time that suits you.',
 
     // Added when the gateway number takes replies (messaging.sms.reply_stop).
     'stop' => 'Reply STOP to stop these messages.',

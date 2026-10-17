@@ -2455,3 +2455,24 @@ body.has-brand::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z-i
 .manual-md code{font-size:12px;background:var(--surface-2);padding:0 4px;}
 .manual-md a{color:var(--br);}
 @media (max-width:900px){.manual-grid{grid-template-columns:1fr;}.manual-toc{position:static;}}
+
+/* ── A dental clinic's review, items C and D: Staff and access; Book a review ── */
+.tb-access-table th,.tb-access-table td{vertical-align:middle;}
+.tb-access-ability{min-width:220px;font-weight:400;text-align:left;}
+.tb-access-ability span{display:block;}
+.tb-access-cell{text-align:center;white-space:nowrap;min-width:72px;}
+.tb-access-cell input{width:15px;height:15px;accent-color:var(--br);cursor:pointer;}
+.tb-access-cell input:disabled{cursor:default;}
+.tb-access-cell.is-changed{background:var(--warn-soft);box-shadow:inset 0 0 0 1px var(--warn-line);}
+.tb-access-cell .tb-xs{display:block;}
+.tb-access-person{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--line);}
+.tb-access-person:last-child{border-bottom:none;}
+.tb-access-extras{border:1px solid var(--line);padding:8px 10px;margin:0 0 10px;}
+.tb-access-extras legend{padding:0 4px;}
+.tb-access-extras-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 12px;margin-top:6px;}
+.tb-review-booked{list-style:none;margin:0 0 8px;padding:0;}
+.tb-review-booked li{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:4px 0;font-size:12px;border-bottom:1px solid var(--line);}
+.tb-review-booked li i{color:var(--mt2);}
+.tb-review-form{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;}
+.tb-review-form .tb-form-group{margin-bottom:0;}
+@media (max-width:600px){.tb-access-extras-list{grid-template-columns:1fr;}}

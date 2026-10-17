@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password;
-use Spatie\Permission\Models\Role;
 
 /**
  * User accounts — the web's User accounts page (manage-users). Every security
@@ -51,14 +50,16 @@ class StaffUserController extends Controller
         $this->authorize('viewAny', User::class);
 
         $assignable = $this->staff->assignableRoles($request->user());
-        $roles = Role::with('permissions')->where('guard_name', 'web')->whereIn('name', $assignable)->get()->keyBy('name');
+        $access = app(\App\Services\AccessService::class);
 
+        // What each role may do in THIS clinic: the default matrix with the
+        // clinic's own choices from Staff and access applied.
         $out = [];
         foreach ($assignable as $key) {
             $out[] = [
                 'key' => $key,
                 'label' => (new User(['role' => $key]))->role_label,
-                'permissions' => ($roles[$key] ?? null)?->permissions->pluck('name')->sort()->values()->all() ?? [],
+                'permissions' => $access->rolePermissions($key),
             ];
         }
 
@@ -131,13 +132,17 @@ class StaffUserController extends Controller
             }
         }
 
-        $this->staff->update(
-            $account,
-            $this->staff->attributes($data),
-            $request->file('avatar'),
-            $request->boolean('remove_avatar'),
-            $data['password'] ?? null,
-        );
+        try {
+            $this->staff->update(
+                $account,
+                $this->staff->attributes($data),
+                $request->file('avatar'),
+                $request->boolean('remove_avatar'),
+                $data['password'] ?? null,
+            );
+        } catch (\DomainException $e) {
+            return $this->refused($e->getMessage(), 'role');
+        }
 
         return ApiResponse::success(new StaffUserResource($account->fresh('staffProfile.department')), "User {$account->name} updated.");
     }
@@ -179,11 +184,10 @@ class StaffUserController extends Controller
 
         try {
             $this->staff->assertNotSelf($request->user(), $account, 'delete');
+            $this->staff->delete($account);
         } catch (\DomainException $e) {
             return $this->refused($e->getMessage());
         }
-
-        $account->delete();
 
         return ApiResponse::success(null, "User {$account->name} deleted.");
     }
@@ -201,7 +205,11 @@ class StaffUserController extends Controller
             }
         }
 
-        $this->staff->setActive($account, $active);
+        try {
+            $this->staff->setActive($account, $active);
+        } catch (\DomainException $e) {
+            return $this->refused($e->getMessage(), 'is_active');
+        }
 
         return ApiResponse::success(new StaffUserResource($account->fresh()), $active ? "{$account->name} can sign in again." : "{$account->name} can no longer sign in.");
     }

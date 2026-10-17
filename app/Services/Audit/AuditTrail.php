@@ -80,6 +80,9 @@ final class AuditTrail
         Models\RadiologyStudy::class => 'Radiology study',
         // People
         Models\User::class => 'User account',
+        // Staff and access (docs/rbac.md): who changed what a role, or one person, may do.
+        Models\RoleAbility::class => 'Role access',
+        Models\UserAbility::class => 'Extra ability',
     ];
 
     public const EVENTS = [

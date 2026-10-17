@@ -106,17 +106,27 @@ class Charges extends Component
         $this->authorizeRead();
     }
 
-    /** A billing reader may look; only billing.manage may change the bill. */
+    /**
+     * Whoever sees the clinic's money may look at any bill; somebody who only
+     * puts charges on bills (a doctor, by default) at their own patients'
+     * (VisitPolicy::viewBill). Only billing.manage may change the bill.
+     */
     private function authorizeRead(): void
     {
-        $user = Auth::user();
-
-        abort_unless($user?->can('billing.view') || $user?->can('billing.manage'), 403);
+        $this->authorize('viewBill', $this->visit);
     }
 
     private function authorizeWrite(): void
     {
+        $this->authorizeRead();
         abort_unless(Auth::user()?->can('billing.manage'), 403);
+    }
+
+    /** Taking money off the bill is its own ability (Staff and access, "Give discounts"). */
+    private function authorizeDiscount(): void
+    {
+        $this->authorizeWrite();
+        abort_unless(Auth::user()?->can('billing.discount'), 403);
     }
 
     /** A sibling panel billed something (lab / radiology / dispensing). */
@@ -306,7 +316,7 @@ class Charges extends Component
 
     public function openDiscount(): void
     {
-        $this->authorizeWrite();
+        $this->authorizeDiscount();
 
         $visit = $this->visit;
         $this->discountType = ($visit->discount_type ?? DiscountType::Amount)->value;
@@ -322,7 +332,7 @@ class Charges extends Component
     {
         $visit = $this->visit;
         $this->authorize('view', $visit);
-        $this->authorizeWrite();
+        $this->authorizeDiscount();
 
         $this->validate([
             'discountType' => ['required', new \Illuminate\Validation\Rules\Enum(DiscountType::class)],

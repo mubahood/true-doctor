@@ -92,18 +92,32 @@
         </div>
       </div>
 
-      <livewire:visits.panels.vitals :visit-id="$visit->id" :key="'vitals-'.$visit->id" />
+      {{-- Vitals: the clinical team and the desk, which takes them at intake (VisitPolicy::viewVitals). --}}
+      @can('viewVitals', $visit)
+        <livewire:visits.panels.vitals :visit-id="$visit->id" :key="'vitals-'.$visit->id" />
+      @endcan
+
+      {{-- Book the review from here (Recalls and reviews due, docs/follow-up.md). --}}
+      @can('appointments.manage')
+        <livewire:visits.panels.review :visit-id="$visit->id" :key="'review-'.$visit->id" />
+      @endcan
     </div>
 
     {{-- ── Workspace panels (each #[Lazy]) ──────────────────── --}}
     <div class="tb-stack">
-      <livewire:visits.panels.clinical :visit-id="$visit->id" :key="'clinical-'.$visit->id" />
-      <livewire:visits.panels.diagnoses :visit-id="$visit->id" :key="'diagnoses-'.$visit->id" />
+      {{-- The clinical record is for the clinical team (Staff and access, docs/rbac.md):
+           the desk and the cashier see the visit, its reason and its bill. --}}
+      @can('viewClinical', $visit)
+        <livewire:visits.panels.clinical :visit-id="$visit->id" :key="'clinical-'.$visit->id" />
+        <livewire:visits.panels.diagnoses :visit-id="$visit->id" :key="'diagnoses-'.$visit->id" />
+      @else
+        <x-ui.no-access title="Clinical notes" icon="fa-notes-medical" />
+      @endcan
 
       {{-- A dental clinic charts the teeth and bills procedures on the visit (docs/dental.md).
            Elsewhere the chart waits behind a press (DentalService::chartOnVisit). --}}
       @php($dentalHospital = app(\App\Support\HospitalSettings::class)->hospital())
-      @if($visit->patient && \App\Services\DentalService::enabledFor($dentalHospital))
+      @if($visit->patient && \App\Services\DentalService::enabledFor($dentalHospital) && auth()->user()?->can('viewClinical', $visit))
         @canany(['treatments.view', 'visits.diagnose'])
           @if($dentalOpen || \App\Services\DentalService::chartOnVisit($visit, $dentalHospital))
             <livewire:patients.tabs.dental :patient-id="$visit->patient_id" :visit-id="$visit->id" :key="'dental-'.$visit->id" />
@@ -118,9 +132,9 @@
         @endcanany
       @endif
 
-      @canany(['billing.view', 'billing.manage'])
+      @can('viewBill', $visit)
         <livewire:visits.panels.charges :visit-id="$visit->id" :key="'charges-'.$visit->id" />
-      @endcanany
+      @endcan
 
       @can('lab.order')
         <livewire:visits.panels.lab-orders :visit-id="$visit->id" :key="'labs-'.$visit->id" />
@@ -134,7 +148,9 @@
         <livewire:visits.panels.dispense :visit-id="$visit->id" :key="'disp-'.$visit->id" />
       @endcan
 
-      <livewire:visits.panels.prescriptions :visit-id="$visit->id" :key="'rx-'.$visit->id" />
+      @can('viewClinical', $visit)
+        <livewire:visits.panels.prescriptions :visit-id="$visit->id" :key="'rx-'.$visit->id" />
+      @endcan
 
       <div class="tb-card">
         <div class="tb-card-header"><span class="tb-card-title">History</span></div>

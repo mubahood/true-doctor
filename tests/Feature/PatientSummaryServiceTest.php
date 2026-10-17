@@ -136,12 +136,14 @@ class PatientSummaryServiceTest extends TestCase
         }
 
         $this->assertContains('money', $roles['receptionist']);
+        $this->assertNotContains('clinical', $roles['receptionist']);
         $this->assertContains('cards', $roles['receptionist']);
         $this->assertNotContains('admissions', $roles['receptionist']);
 
         $this->assertContains('clinical', $roles['doctor']);
         $this->assertContains('admissions', $roles['doctor']);
-        $this->assertContains('money', $roles['doctor']);
+        // A doctor sees their own patients' bills on the visit, not the money (docs/rbac.md).
+        $this->assertNotContains('money', $roles['doctor']);
         $this->assertNotContains('cards', $roles['doctor']);
 
         $this->assertNotContains('money', $roles['nurse']);

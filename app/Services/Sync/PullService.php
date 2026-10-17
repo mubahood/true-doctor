@@ -293,7 +293,8 @@ class PullService
             // the device has no confirmed base for those fields, so EVERY note
             // written offline would come back contested — the three-way merge
             // has nothing to be a third side.
-            $narrative = $actor->can('visits.diagnose');
+            // And only while the clinic lets them read the record at all (Staff and access).
+            $narrative = $actor->can('visits.diagnose') && $actor->can('visits.clinical');
 
             $streams['visits'] = [
                 // Still live, or closed recently enough that somebody may still

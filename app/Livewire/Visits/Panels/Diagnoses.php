@@ -34,6 +34,7 @@ class Diagnoses extends Component
     {
         $this->visitId = $visitId;
         $this->authorize('view', $this->visit);
+        $this->authorize('viewClinical', $this->visit);
     }
 
     /** @return Collection<int, VisitDiagnosis> */

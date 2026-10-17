@@ -134,11 +134,53 @@ On the hosted service, your subscription plan sets how many staff accounts you c
 1. Click the pencil on the person's row.
 2. Change what you need. To change their role, pick a new **Role**.
 3. To reset a forgotten password, type a new one in **New password** and **Confirm password**. Leave both blank to keep the current password. After a reset, they must choose a new password the next time they sign in.
-4. Click **Save changes**.
+4. To give this one person something more than their role allows, tick it under **Extra abilities for this person**. For example, tick **Take payments** for the senior nurse who also works the till. Only the Hospital Admin sees this part.
+5. Click **Save changes**.
+
+Only a Hospital Admin can make somebody else a Hospital Admin.
 
 ### When someone leaves
 
 Edit their account and untick **Active**, then save. They can no longer sign in, but everything they did stays recorded under their name. This is usually better than deleting. You can delete an account with the bin icon, but you cannot delete your own.
+
+True-Doctor will not let you remove, switch off or change the role of the last active Hospital Admin. Make somebody else a Hospital Admin first.
+
+## Staff and access
+
+**Settings**, then **Staff and access**. This page shows your clinic's roles against what each may do, in plain words. Only the Hospital Admin can change it. Anybody else who opens it can look but not change.
+
+| Ability | What it covers |
+|---|---|
+| **See clinical notes** | Complaints, diagnoses, notes, prescriptions, the dental chart, lab and X-ray results, the visit report |
+| **Record vitals** | Temperature, blood pressure, weight and the other observations |
+| **Diagnose and prescribe** | Writing the clinical notes and the diagnosis, charting teeth, writing prescriptions |
+| **Take payments** | Adding charges to a bill, raising the invoice and receiving money |
+| **Give discounts** | Taking an amount or a percentage off a bill, with a reason |
+| **Approve refunds** | Credit notes and money given back |
+| **Change prices** | The price list |
+| **See reports and money** | All invoices, the **Cashier's day**, takings, debtors, reports and the books |
+| **Manage stock** | Stock items, receiving, adjusting and counting |
+| **Manage staff and settings** | User accounts, staff profiles and the clinic's settings |
+
+### Changing what a role may do
+
+1. Find the ability in the left column and the role across the top.
+2. Tick the box to give it to everybody in that role, or untick it to take it away. The change is saved at once and a message tells you what changed.
+3. Some abilities go together. **Record vitals** and **Diagnose and prescribe** need **See clinical notes**: ticking one of them also ticks **See clinical notes**, and unticking **See clinical notes** also unticks them.
+
+A box you have changed from the standard settings is marked. To put a role back to the standard settings, click **Standard** under its column.
+
+The **Hospital Admin** column cannot be changed. The Hospital Admin always keeps every ability, so your clinic can never lock itself out of this page.
+
+The change applies straight away on the computer and in the app. When True-Doctor is updated, your choices stay as you set them.
+
+### Extra abilities for one person
+
+The second part of the page lists the people who have something more than their role allows. You give or take these on the person's account in **User accounts**. See [Changing or resetting an account](#changing-or-resetting-an-account).
+
+### Checking who changed what
+
+Every change on this page, and every extra ability given or taken, is kept in the **Audit log** with who did it and when.
 
 ## Staff profiles
 
@@ -216,7 +258,7 @@ If the page says **Text messages are not switched on for this server yet**, clic
 ### Choosing what patients receive
 
 1. Under **What patients receive**, tick **Send text messages to patients** who agreed to them.
-2. Tick each message you want to send: **Appointment booked**, **The day before an appointment**, **Receipt when a visit is paid**, **Dental check-up due** and **A document sent by link**. Under each one you can read what the patient will receive.
+2. Tick each message you want to send: **Appointment booked**, **The day before an appointment**, **Receipt when a visit is paid**, **Dental check-up due**, **A review or check-up is due** (sent only when somebody presses **Text** on **Recalls and reviews due**) and **A document sent by link**. Under each one you can read what the patient will receive.
 3. Set the quiet hours with **Quiet from** and **Quiet until**. Nothing is sent between these hours. Messages wait until morning.
 4. Click **Save**.
 

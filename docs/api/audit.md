@@ -49,3 +49,7 @@ Another hospital's patient is 404; a caller without `manage-settings` is 403.
 ## The confidential note on a visit
 
 `GET /api/v1/visits/{uuid}` (and every visit in a list) carries only `has_sensitive_notes`: the note itself is read on the web, because the app caches visit replies unencrypted. `POST /api/v1/visits/{uuid}/clinical` accepts `sensitive_notes` (string, up to 5000, nullable). It is not part of offline sync.
+
+## The clinical record and who reads it (2026-10-17)
+
+A visit's `complaints`, `diagnosis`, `doctor_remarks`, and `has_sensitive_notes` are **omitted**, and `vitals` too unless the caller records vitals or opens visits (the desk takes them at intake), (the keys are absent) for a caller without `visits.clinical`: by default the receptionist and the accountant, and any role a clinic has switched off in Settings, Staff and access (docs/rbac.md). The same caller gets 403 on `visits/{uuid}/diagnoses`, `visits/{uuid}/prescriptions` and the dental endpoints, no `clinical`, `lab` or `imaging` section in `patients/{uuid}/summary`, and no diagnosis on its visit rows. `capabilities.permissions` in `meta` is the effective list, after the clinic's choices.

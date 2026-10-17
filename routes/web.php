@@ -375,6 +375,10 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'subscribed', 'onboarding',
     Route::get('settings/messages', \App\Livewire\Settings\Messages::class)->name('settings.messages');
     Route::get('settings', \App\Livewire\Settings\Site::class)->middleware('edition:saas')->name('settings.index');
 
+    // ── A dental clinic's review, items C and D: Staff and access (docs/rbac.md); Recalls and reviews due (docs/follow-up.md) ──
+    Route::get('settings/access', \App\Livewire\Settings\Access::class)->middleware('permission:manage-settings')->name('settings.access');
+    Route::get('recalls', \App\Livewire\Appointments\Recalls::class)->middleware('permission:appointments.view')->name('appointments.recalls');
+
     // ── Data protection: the Act's pack, patients' requests, the full export (docs/compliance/README.md) ──
     Route::get('settings/data-protection', \App\Livewire\Settings\DataProtection::class)->name('settings.data-protection');
     Route::get('settings/data-protection/{document}.pdf', [\App\Http\Controllers\Admin\DataProtectionController::class, 'document'])->where('document', '[a-z-]+')->name('compliance.document');

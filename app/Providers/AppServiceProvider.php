@@ -31,6 +31,10 @@ class AppServiceProvider extends ServiceProvider
         // never posts into an account it read yesterday.
         $this->app->scoped(\App\Services\Finance\ChartOfAccounts::class);
 
+        // A clinic's own access choices (Staff and access), read once per
+        // request or job, never kept across them (docs/rbac.md).
+        $this->app->scoped(\App\Support\Access\PermissionResolver::class);
+
         // Which currency to quote a public visitor in.
         //
         // Deliberately NOT scoped or singleton. It takes the Request in its
@@ -112,7 +116,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Coding diagnoses for the Ministry reports: whoever diagnoses, and the
         // records officer who codes what was written (docs/api/diagnoses.md).
-        \Illuminate\Support\Facades\Gate::define('diagnoses.code', fn (\App\Models\User $user) => $user->can('visits.diagnose') || $user->role === 'records_officer');
+        \Illuminate\Support\Facades\Gate::define('diagnoses.code', fn (\App\Models\User $user) => $user->can('visits.clinical') && ($user->can('visits.diagnose') || $user->role === 'records_officer'));
 
         // Printables resolve files from a folder that exists on every hosting layout.
         self::pointPdfAtAFolderThatExists();

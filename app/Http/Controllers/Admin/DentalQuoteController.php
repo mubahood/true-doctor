@@ -17,7 +17,7 @@ class DentalQuoteController extends Controller
     {
         $this->authorize('view', $patient);
         $user = request()->user();
-        abort_unless($user !== null && ($user->can('treatments.view') || $user->can('visits.diagnose')), 403);
+        abort_unless($user !== null && $user->can('visits.clinical') && ($user->can('treatments.view') || $user->can('visits.diagnose')), 403);
 
         return Pdf::loadView('pdf.dental-quote', [
             'patient' => $patient,

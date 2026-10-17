@@ -22,6 +22,8 @@ final class MessagingSettings
         'appointment_day_before' => ['The day before an appointment', true],
         'receipt' => ['Receipt when a visit is paid', true],
         'dental_recall' => ['Dental check-up due', true],
+        // Sent by staff from Recalls and reviews due (docs/follow-up.md).
+        'follow_up_due' => ['A review or check-up is due', true],
         // Patient links (roadmap 05 §4): staff send a result, summary, prescription or quote.
         'document_link' => ['A document sent by link', true],
     ];

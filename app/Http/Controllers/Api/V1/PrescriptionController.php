@@ -28,6 +28,7 @@ class PrescriptionController extends Controller
     public function index(Visit $visit): JsonResponse
     {
         $this->authorize('view', $visit);
+        $this->authorize('viewClinical', $visit);
 
         $total = $visit->prescriptions()->count();
         $prescriptions = $visit->prescriptions()
