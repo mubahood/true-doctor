@@ -91,6 +91,7 @@ class SmokeRoutesTest extends TestCase
         'plan' => Plan::class,
         'subscription' => Subscription::class,
         'purchaseOrder' => \App\Models\PurchaseOrder::class,
+        'batch' => \App\Models\ImportBatch::class,
     ];
 
     protected Hospital $hospital;
@@ -109,6 +110,8 @@ class SmokeRoutesTest extends TestCase
         $this->hospital = Hospital::where('slug', 'general-hospital-a')->firstOrFail();
         // Procurement's demo scenario (idempotent), so a purchase order page has a record to open.
         \Database\Seeders\DemoScenarios\Procurement::run($this->hospital);
+        // Import data's demo scenario, so one import's page has a record to open.
+        \Database\Seeders\DemoScenarios\Imports::run($this->hospital);
         app(CurrentHospital::class)->set($this->hospital->id);
     }
 

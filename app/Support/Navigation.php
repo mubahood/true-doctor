@@ -217,6 +217,8 @@ final class Navigation
                     ['label' => 'Hospital letterhead', 'icon' => 'fa-stamp', 'route' => 'admin.settings.hospital', 'match' => ['admin.settings.hospital']],
                     ['label' => 'Billing settings', 'icon' => 'fa-coins', 'route' => 'admin.settings.billing', 'match' => ['admin.settings.billing*']],
                     ['label' => 'Messages to patients', 'icon' => 'fa-comment-sms', 'route' => 'admin.settings.messages', 'match' => ['admin.settings.messages']],
+                    // Import data: patients, price list, stock and appointments from a spreadsheet (docs/imports.md).
+                    ['label' => 'Import data', 'icon' => 'fa-file-import', 'route' => 'admin.imports.index', 'match' => ['admin.imports.*'], 'tenant' => true],
                     // Data protection: the Act's documents, the full export, and patients' requests (docs/compliance/README.md).
                     ['label' => 'Data protection', 'icon' => 'fa-file-shield', 'route' => 'admin.settings.data-protection', 'match' => ['admin.settings.data-protection'], 'tenant' => true],
                     ['label' => 'Data requests', 'icon' => 'fa-user-shield', 'route' => 'admin.data-requests.index', 'match' => ['admin.data-requests.*'], 'tenant' => true],

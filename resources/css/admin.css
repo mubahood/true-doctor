@@ -2455,3 +2455,21 @@ body.has-brand::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z-i
 .manual-md code{font-size:12px;background:var(--surface-2);padding:0 4px;}
 .manual-md a{color:var(--br);}
 @media (max-width:900px){.manual-grid{grid-template-columns:1fr;}.manual-toc{position:static;}}
+
+/* ── Settings, Import data (Imports\Index, Imports\Show; docs/imports.md) ── */
+.imp-kinds{border:none;margin:0 0 10px;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px;}
+.imp-kind{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--line);background:var(--surface);}
+.imp-kind.is-on{border-color:var(--br);background:var(--br-soft);}
+.imp-kind-pick{display:flex;align-items:flex-start;gap:8px;flex:1;min-width:0;cursor:pointer;}
+.imp-kind-radio{margin-top:3px;}
+.imp-kind-icon{color:var(--mt);font-size:13px;margin-top:2px;width:16px;text-align:center;}
+.imp-kind.is-on .imp-kind-icon{color:var(--br);}
+.imp-kind-words{display:flex;flex-direction:column;gap:1px;min-width:0;}
+.imp-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.imp-all{display:inline-flex;gap:4px;flex-wrap:wrap;}
+.imp-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.imp-chips{display:flex;gap:6px;flex-wrap:wrap;}
+.imp-map-select{min-width:180px;}
+.imp-decide{margin-top:3px;max-width:240px;}
+.imp-problems{margin:0;padding-left:16px;color:var(--bad);}
+.imp-note{margin:6px 0 0;}

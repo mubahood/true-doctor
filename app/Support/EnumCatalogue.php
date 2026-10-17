@@ -45,6 +45,9 @@ final class EnumCatalogue
         \App\Enums\DoseSlot::class,
         \App\Enums\FinancialYearStatus::class,
         \App\Enums\HospitalStatus::class,
+        // Settings, Import data (docs/imports.md).
+        \App\Enums\ImportKind::class,
+        \App\Enums\ImportStatus::class,
         \App\Enums\InsuranceEntryType::class,
         \App\Enums\InvoiceStatus::class,
         \App\Enums\JournalKind::class,

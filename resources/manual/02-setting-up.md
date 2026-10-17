@@ -234,3 +234,69 @@ The table below lists every message with its **Status**. Use the list at the top
 This is the first place to look when a patient says they did not get a reminder.
 
 The owner can also turn on **My daily summary** on this page. See [Reports and Ministry forms](12-reports-and-ministry-forms.md).
+
+## Importing your data
+
+**Settings**, then **Import data**. If you kept your patients, prices, stock or appointments in Excel or another system, you can bring them in instead of typing them again. Only the hospital administrator can import.
+
+Import in this order: **Patients** first, then **Price list**, **Stock items** (if your practice keeps stock) and **Appointments**. Appointments are matched to patients who are already registered, so the patients must come first.
+
+Nothing is saved until you have seen every row checked and pressed **Import**.
+
+### Preparing your file
+
+1. On **Import data**, find what you are importing and click **Template**. You get an Excel file with the columns, one example row, and a second sheet called **Notes** that says what to write in each column.
+2. Copy your own list into the template, or use your own sheet as it is. Your own column names are fine: you match them in the next step.
+3. Keep the column names in the first row. Delete the example row.
+4. Save the file as an Excel workbook (.xlsx) or as CSV. An old Excel file (.xls) cannot be read: in Excel choose **File**, **Save as**, and pick **Excel Workbook (.xlsx)**.
+
+A few things are read the way they are usually written:
+
+- Dates are read day first: 03/04/1990 is 3 April 1990.
+- A year on its own, such as 1968, is read as 1 January of that year.
+- For a patient you can give the date of birth or the age ("34", or "6 months" for a baby).
+- Phone numbers can be written any way: 0772 123456 and +256772123456 are the same number.
+- Several allergies or conditions go in one cell, separated with commas. "None" means none.
+- Amounts can have commas: 25,000 is read as 25000.
+
+A file can have up to 20,000 rows. Split a bigger list into several files.
+
+### Importing a file
+
+1. Click what you are importing, for example **Patients**.
+2. Drop your file on **Your file**, or click it to choose the file.
+3. Click **Read the file**.
+4. On **Match your columns**, check which of your columns holds each thing. The system guesses from your column names ("Tel", "Phone No" and "Contact" all mean the phone). Correct anything that is wrong. Choose **Not in my sheet** for anything your file does not have. The first row of your sheet is shown beside each one so you can see that it is right.
+5. Click **Check every row**. Keep the page open while it runs.
+
+When the check is done, each row has one of these:
+
+- **Will be added**: the row is fine.
+- **Looks registered**: the row looks like a patient (or price, or item) you already have, for example the same phone number, or the same name and date of birth, or the same old file number. Choose what to do in the list beside it: **Skip**, **Add anyway** or **Update the registered one**. Updating fills in what the sheet gives and never empties anything. It never changes a patient's name, and it fills in sex and date of birth only where the record has none, because a phone shared by a family can match the wrong person. Allergies and conditions are added to what is there. To choose the same for all of them, use the buttons above the list.
+- **Has a problem**: the row cannot be saved. The reason is written beside it in plain words, for example "Only one name is given. Add the other name." These rows are left out. Fix them in your file and import just those rows again later.
+
+If the columns were wrong, click **Change columns**. If you do not want to go on, click **Throw away**. Nothing has been saved yet.
+
+6. Click **Import**. The rows are saved in small batches, so a long list takes a little while. Keep the page open. If you close it, the import pauses and carries on when you open it again from the log.
+
+### What happens to each kind
+
+- **Patients**: each gets their own patient number as if they were registered at the desk. Their **Old file number** is kept on their record, and searching for it finds them, so "PT 1043 in our old book" still finds the right person. If the sheet says they owe money (**Balance owed**), it goes on their record as a **Balance brought forward** that they pay like any other bill. It appears on their statement and on the debtors list, and in the books it is shown as money owed from before, not as income earned now.
+- **Price list**: each service is added with its price. A service you already have can be updated with the new price.
+- **Stock items**: each item is added with what is on the shelf today as opening stock. A stock item you already have can have its prices and details updated, but its quantity is not changed: count it on the stock page instead.
+- **Appointments**: only appointments from today on. The patient is found by their patient number or old file number (or by phone or name), and the doctor by their name or email as it is on their staff account. Patients are not sent a text about imported appointments.
+
+### Undoing an import
+
+If an import went wrong, you can undo it for 24 hours after it finished.
+
+1. Open the import from the log on **Import data**.
+2. Click **Undo this import**, then **Undo the import**.
+
+Undoing takes back what the import added. Anything that has been used since is kept and marked **Kept (used since)** with the reason, for example a patient who has had a visit, a price that has been charged, or stock that has been dispensed. Records the import updated keep their changes, but a balance owed that the import added to them is taken back if nothing has been paid against it.
+
+### The import log
+
+The table on **Import data** lists every import: the file, what it was, when, who did it, and how many rows were added, updated, left out or not saved. If an import was undone, it says who undid it and when. Click a file name to see every row and what happened to it.
+
+If you would rather not do it yourself, send us your file and we will import it for you as part of installation help.

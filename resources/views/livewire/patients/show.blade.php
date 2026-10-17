@@ -214,6 +214,7 @@
               <caption class="sr-only">Identity</caption>
               <tbody>
                 <tr><th scope="row">Patient no.</th><td class="mono">{{ $patient->patient_no }}</td></tr>
+                @if(filled($patient->old_file_no))<tr><th scope="row">Old file no.</th><td class="mono">{{ $patient->old_file_no }}</td></tr>@endif
                 <tr><th scope="row">Status</th><td><x-ui.badge :tone="$patient->status->badge()">{{ $patient->status->label() }}</x-ui.badge></td></tr>
                 <tr><th scope="row">Sex</th><td>{{ $patient->sex?->label() ?? '—' }}</td></tr>
                 <tr><th scope="row">Age</th><td>{{ $patient->age() !== null ? $patient->age().' yrs' : '—' }}</td></tr>

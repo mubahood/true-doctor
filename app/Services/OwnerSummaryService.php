@@ -174,6 +174,8 @@ final class OwnerSummaryService
             $leftUnpaid = $dec(Invoice::query()
                 ->where('created_at', '>=', $from)->where('created_at', '<', $to)
                 ->whereNotIn('status', [InvoiceStatus::Draft->value, InvoiceStatus::Void->value])
+                // A balance brought forward is an old debt, not today's bill left unpaid.
+                ->where('opening_balance', false)
                 ->where('balance', '>', 0)
                 ->sum('balance'));
             $owed = app(ReportService::class)->outstanding()['total'];

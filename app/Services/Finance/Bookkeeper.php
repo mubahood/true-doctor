@@ -68,6 +68,18 @@ class Bookkeeper
         }
 
         return $this->as($invoice, function () use ($invoice) {
+            // A balance brought forward from before the system (Settings,
+            // Import data) was earned in the old books, not this year: what
+            // the patient owes comes in against opening equity, as opening
+            // stock does, never as income.
+            if ($invoice->opening_balance) {
+                return $this->post($invoice, 'issued', $invoice->issued_at ?? $invoice->created_at,
+                    'Balance brought forward '.$invoice->invoice_no.$this->patientSuffix($invoice), [
+                        ['account' => $this->chart->key('receivable'), 'debit' => (string) $invoice->total, 'memo' => $invoice->invoice_no],
+                        ['account' => $this->chart->key('opening_equity'), 'credit' => (string) $invoice->total, 'memo' => 'Owed from before the system'],
+                    ], $invoice->invoice_no, $invoice->issued_by);
+            }
+
             $lines = [['account' => $this->chart->key('receivable'), 'debit' => (string) $invoice->total, 'memo' => $invoice->invoice_no]];
 
             if (bccomp((string) $invoice->discount, '0', 2) > 0) {
@@ -294,7 +306,7 @@ class Bookkeeper
             $name = $movement->stockItem()->first()->name ?? 'Stock';
 
             $other = match ($movement->reason) {
-                StockMovementReason::OpeningStock => $this->chart->key('opening_equity'),
+                StockMovementReason::OpeningStock, StockMovementReason::OpeningUndone => $this->chart->key('opening_equity'),
                 StockMovementReason::Received => $this->chart->stockCreditAccount(),
                 StockMovementReason::ReturnedToStock, StockMovementReason::Dispensed => $this->chart->key('cogs'),
                 StockMovementReason::AdjustmentIn => $this->chart->key('stock_gains'),

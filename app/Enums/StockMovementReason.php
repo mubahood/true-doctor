@@ -27,6 +27,11 @@ enum StockMovementReason: string
     case Lost = 'lost';
     case ReturnedToSupplier = 'returned_to_supplier';
 
+    // Opening stock taken back because the import that brought it in was
+    // undone (Settings, Import data). Not a loss: it comes out of the books
+    // against opening equity, exactly as it went in.
+    case OpeningUndone = 'opening_undone';
+
     public function label(): string
     {
         return match ($this) {
@@ -41,6 +46,7 @@ enum StockMovementReason: string
             self::Damaged => 'Damaged',
             self::Lost => 'Lost or stolen',
             self::ReturnedToSupplier => 'Returned to supplier',
+            self::OpeningUndone => 'Opening stock taken back',
         };
     }
 
@@ -50,7 +56,7 @@ enum StockMovementReason: string
         return match ($this) {
             self::OpeningStock, self::Received, self::ReturnedToStock, self::AdjustmentIn => 1,
             self::Dispensed, self::Wastage, self::AdjustmentOut,
-            self::Expired, self::Damaged, self::Lost, self::ReturnedToSupplier => -1,
+            self::Expired, self::Damaged, self::Lost, self::ReturnedToSupplier, self::OpeningUndone => -1,
         };
     }
 

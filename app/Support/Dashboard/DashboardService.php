@@ -520,6 +520,8 @@ class DashboardService
         // off it is waste. `toBase()` keeps the tenant and soft-delete scopes.
         $billed = $this->sumByDay(
             Invoice::where('status', '!=', InvoiceStatus::Void->value)
+                // A balance brought forward (Settings, Import data) is owed, not billed today.
+                ->where('opening_balance', false)
                 ->whereBetween('issued_at', [$from, $to])
                 ->toBase()
                 ->get(['issued_at as at', 'total as amount']),

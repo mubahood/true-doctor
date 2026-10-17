@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $id
  * @property int $hospital_id
  * @property string $patient_no
+ * @property string|null $old_file_no the number on the paper file or in the old system, kept and searchable
  * @property string $first_name
  * @property string $last_name
  * @property \Illuminate\Support\Carbon|null $dob
@@ -49,7 +50,7 @@ class Patient extends Model
     use BelongsToHospital, HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'uuid', 'patient_no', 'first_name', 'last_name', 'dob', 'sex',
+        'uuid', 'patient_no', 'old_file_no', 'first_name', 'last_name', 'dob', 'sex',
         'phone_1', 'phone_2', 'email', 'address', 'home_address', 'district_id',
         'blood_type', 'allergies', 'chronic_conditions',
         'spouse_name', 'father_name', 'mother_name',
@@ -195,6 +196,8 @@ class Patient extends Model
                     $q->orWhere('phone_1', 'like', "%{$tail}")->orWhere('phone_2', 'like', "%{$tail}");
                 }
                 $q->orWhere('patient_no', 'like', "%{$word}%")
+                    // "PT 1043 in our old book" still finds them (Settings, Import data).
+                    ->orWhere('old_file_no', 'like', "%{$word}%")
                     ->orWhere('first_name', 'like', "%{$word}%")
                     ->orWhere('last_name', 'like', "%{$word}%")
                     ->orWhere('phone_1', 'like', "%{$word}%")

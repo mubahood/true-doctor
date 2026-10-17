@@ -375,6 +375,10 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'subscribed', 'onboarding',
     Route::get('settings/messages', \App\Livewire\Settings\Messages::class)->name('settings.messages');
     Route::get('settings', \App\Livewire\Settings\Site::class)->middleware('edition:saas')->name('settings.index');
 
+    // ── Settings, Import data: a clinic's spreadsheets brought in (docs/imports.md) ──
+    Route::get('settings/import', \App\Livewire\Imports\Index::class)->name('imports.index');
+    Route::get('settings/import/{batch}', \App\Livewire\Imports\Show::class)->name('imports.show');
+
     // ── Data protection: the Act's pack, patients' requests, the full export (docs/compliance/README.md) ──
     Route::get('settings/data-protection', \App\Livewire\Settings\DataProtection::class)->name('settings.data-protection');
     Route::get('settings/data-protection/{document}.pdf', [\App\Http\Controllers\Admin\DataProtectionController::class, 'document'])->where('document', '[a-z-]+')->name('compliance.document');

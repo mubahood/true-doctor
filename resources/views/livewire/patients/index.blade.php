@@ -4,7 +4,7 @@
   <div class="tb-filter-bar tb-toolbar">
     <div class="tb-search-wrap" style="position:relative;">
       <i class="fas fa-magnifying-glass" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--mt2);font-size:12px;"></i>
-      <input type="search" wire:model.live.debounce.400ms="search" class="tb-input" placeholder="Search name, number or phone…" style="padding-left:32px;min-width:240px;">
+      <input type="search" wire:model.live.debounce.400ms="search" class="tb-input" placeholder="Search name, number, old file no. or phone…" style="padding-left:32px;min-width:240px;">
     </div>
     <select wire:model.live="statusFilter" class="tb-select">
       <option value="">All statuses</option>

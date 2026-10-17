@@ -78,6 +78,42 @@ class DuplicateFinder
     }
 
     /**
+     * The registered patient a row of an imported sheet most likely already
+     * is, by the two strong reasons only (Settings, Import data): the same
+     * phone (its last nine digits, PhoneNumber::tail), or the same name and
+     * date of birth. A similar name alone is too weak to stop a row for.
+     *
+     * @param  array{first?:?string,last?:?string,dob?:?string,phone?:?string}  $in
+     * @return array{patient:Patient,reason:string}|null
+     */
+    public function registered(array $in): ?array
+    {
+        $first = $this->clean($in['first'] ?? null);
+        $last = $this->clean($in['last'] ?? null);
+        $dob = $in['dob'] ?? null;
+        $tail = \App\Support\PhoneNumber::tail($in['phone'] ?? null);
+
+        if ($tail !== null) {
+            $hit = Patient::query()->where(fn (Builder $q) => $q
+                ->whereRaw($this->stripped('phone_1').' like ?', ["%{$tail}"])
+                ->orWhereRaw($this->stripped('phone_2').' like ?', ["%{$tail}"]))->orderBy('id')->first();
+            if ($hit !== null) {
+                return ['patient' => $hit, 'reason' => self::LABELS[self::SAME_PHONE]];
+            }
+        }
+
+        if ($first !== '' && $last !== '' && filled($dob)) {
+            $hit = Patient::query()->whereRaw('lower(first_name) = ?', [$first])->whereRaw('lower(last_name) = ?', [$last])
+                ->whereDate('dob', $dob)->orderBy('id')->first();
+            if ($hit !== null) {
+                return ['patient' => $hit, 'reason' => self::LABELS[self::SAME_NAME_DOB]];
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @param  array<int,array{0:Patient,1:string}>  $found
      * @param  Builder<Patient>  $q
      * @return array<int,array{0:Patient,1:string}>

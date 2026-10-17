@@ -30,8 +30,13 @@ use RuntimeException;
 class AppointmentService
 {
     /** @param array{patient_id:int,origin_visit_id?:int|null,doctor_user_id:int,scheduled_at:string,duration_minutes:int,room_id?:int|null,department_id?:int|null,source?:string,reason?:string|null} $data */
-    public function book(array $data, ?int $bookedBy = null): Appointment
+    public function book(array $data, ?int $bookedBy = null, bool $imported = false): Appointment
     {
+        // $imported: a booking brought in from the clinic's old diary
+        // (Settings, Import data). It was agreed with the patient before the
+        // doctor's hours were set up here, so the hours and the slot grid are
+        // not imposed on it; a clash with another booking still is. The
+        // patient already knows, so nobody is texted about it.
         if (app(CurrentHospital::class)->id() === null) {
             throw new RuntimeException('Cannot book an appointment with no resolved hospital.');
         }
@@ -64,8 +69,8 @@ class AppointmentService
             'appt:'.app(CurrentHospital::class)->id().':'.$data['doctor_user_id'].':'.$start->toDateString(), 10
         );
 
-        return $lock->block(5, fn () => DB::transaction(function () use ($data, $origin, $start, $end, $duration, $bookedBy) {
-            $this->assertBookable((int) $data['doctor_user_id'], $data['room_id'] ?? null, $start, $end);
+        return $lock->block(5, fn () => DB::transaction(function () use ($data, $origin, $start, $end, $duration, $bookedBy, $imported) {
+            $this->assertBookable((int) $data['doctor_user_id'], $data['room_id'] ?? null, $start, $end, null, ! $imported);
 
             $appointment = Appointment::create([
                 'uuid' => (string) Str::uuid(),
@@ -83,8 +88,10 @@ class AppointmentService
                 'created_by' => $bookedBy,
             ]);
 
-            $this->record($appointment, null, AppointmentStatus::Scheduled, 'Booked', $bookedBy);
-            $this->tellPatientBooked($appointment);
+            $this->record($appointment, null, AppointmentStatus::Scheduled, $imported ? 'Imported from the old diary' : 'Booked', $bookedBy);
+            if (! $imported) {
+                $this->tellPatientBooked($appointment);
+            }
 
             return $appointment;
         }));
@@ -316,7 +323,7 @@ class AppointmentService
      * active availability window, aligned to the slot grid, and not overlapping
      * any occupying booking. Assumes an open transaction — takes row locks.
      */
-    private function assertBookable(int $doctorId, ?int $roomId, Carbon $start, Carbon $end, ?int $ignoreId = null): void
+    private function assertBookable(int $doctorId, ?int $roomId, Carbon $start, Carbon $end, ?int $ignoreId = null, bool $withinHours = true): void
     {
         // Lock the doctor's windows for this weekday — serializes concurrent books.
         $windows = DoctorSchedule::where('user_id', $doctorId)
@@ -326,7 +333,7 @@ class AppointmentService
             ->get();
 
         $match = null;
-        foreach ($windows as $w) {
+        foreach ($withinHours ? $windows : [] as $w) {
             $winStart = $start->copy()->setTimeFromTimeString($w->start_time);
             $winEnd = $start->copy()->setTimeFromTimeString($w->end_time);
             if ($start < $winStart || $end > $winEnd) {
@@ -339,7 +346,7 @@ class AppointmentService
             $match = $w;
             break;
         }
-        if ($match === null) {
+        if ($match === null && $withinHours) {
             throw SlotUnavailableException::outsideAvailability();
         }
 

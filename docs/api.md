@@ -38,6 +38,8 @@ proven by `PatientApiTest::test_index_is_scoped_to_the_token_users_hospital`.
 
 - `GET/POST /api/v1/patients`, `GET/PUT/DELETE /api/v1/patients/{uuid}` — reuse `PatientService`
   + `PatientPolicy`. RBAC is identical to the panel (a role without `patients.create` gets 403).
+  `?q=` matches name, patient number, phone and the **old file number** (`old_file_no` on the
+  resource: the number from the paper file or the old system, kept by Settings, Import data).
 
 ## Tests
 

@@ -441,6 +441,93 @@ class BillingService
     }
 
     /**
+     * What a patient owed before the system, brought forward as an invoice of
+     * its own (Settings, Import data; docs/imports.md).
+     *
+     * An invoice, not a number written onto the patient, so the debt is in
+     * the ONE definition of outstanding: the patient's balance, the debtors
+     * list and the cashier all see it, and it is paid like any other bill. It
+     * has one line, no tax and no discount, sits on a visit of its own that is
+     * not an attendance, and goes into the books against opening equity
+     * rather than as this year's income (Bookkeeper::invoiceIssued).
+     */
+    public function openingBalance(Patient $patient, string $amount, ?int $by = null, ?string $note = null): Invoice
+    {
+        $amount = HospitalSettings::decimal($amount, 2);
+        if (bccomp($amount, '0', 2) <= 0) {
+            throw new RuntimeException('A balance brought forward must be more than zero.');
+        }
+
+        app(\App\Services\FinancialYearService::class)->assertPostingAllowed(Carbon::now());
+
+        return DB::transaction(function () use ($patient, $amount, $by, $note) {
+            // Every bill belongs to a visit (the database insists). This one
+            // gets a visit of its own that is called off at once: "cancelled"
+            // is how every report that counts attendances knows a visit was
+            // not one, so a clinic bringing in 400 debtors does not report 400
+            // attendances to the Ministry on the day it imported them.
+            $visits = app(VisitService::class);
+            $visit = $visits->open(['patient_id' => $patient->id, 'reason' => 'Balance brought forward from the old records'], $by);
+            $visits->cancel($visit, $by, 'Not an attendance: it carries the balance brought forward from the old records.');
+
+            $invoice = $this->createInvoiceWithNumber([
+                'visit_id' => $visit->id,
+                'patient_id' => $patient->id,
+                'currency' => $this->settings->currencyCode(),
+                'subtotal' => $amount,
+                'tax_total' => '0.00',
+                'discount' => '0.00',
+                'total' => $amount,
+                'amount_paid' => '0.00',
+                'balance' => $amount,
+                'status' => InvoiceStatus::Issued,
+                'opening_balance' => true,
+                'notes' => $note ?? 'Balance brought forward from the old records',
+                'issued_by' => $by,
+                'issued_at' => Carbon::now(),
+            ]);
+
+            $invoice->items()->create([
+                'description' => 'Balance brought forward',
+                'quantity' => '1',
+                'unit_price' => $amount,
+                'line_total' => $amount,
+                'tax_exempt' => true,
+            ]);
+
+            app(\App\Services\Finance\Bookkeeper::class)->invoiceIssued($invoice);
+
+            return $invoice;
+        });
+    }
+
+    /**
+     * Take back a balance brought forward that nothing has touched (an import
+     * undone): the invoice is voided and its entry comes back out of the
+     * books. Refused once anything was paid or credited against it.
+     */
+    public function voidOpeningBalance(Invoice $invoice): void
+    {
+        DB::transaction(function () use ($invoice) {
+            /** @var Invoice $locked */
+            $locked = Invoice::whereKey($invoice->id)->lockForUpdate()->firstOrFail();
+
+            if (! $locked->opening_balance) {
+                throw new RuntimeException('Only a balance brought forward can be taken back this way.');
+            }
+            if ($locked->status === InvoiceStatus::Void) {
+                return;
+            }
+            if (bccomp((string) $locked->amount_paid, '0', 2) !== 0 || bccomp((string) ($locked->credited ?? '0'), '0', 2) !== 0) {
+                throw new RuntimeException('Something has been paid or credited against this balance.');
+            }
+
+            $locked->update(['status' => InvoiceStatus::Void, 'balance' => '0.00']);
+            app(\App\Services\Finance\Bookkeeper::class)->invoiceVoided($locked);
+        });
+    }
+
+    /**
      * Record a payment against an invoice. Runs in a transaction with a locking
      * read on the invoice (no lost updates on concurrent payments). Rejects
      * overpayment and non-payable invoices. A card payment debits the patient's

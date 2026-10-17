@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property numeric-string $balance
  * @property numeric-string $credited
  * @property numeric-string $refunded
+ * @property bool $opening_balance a balance brought forward from before the system (Settings, Import data)
  */
 class Invoice extends Model
 {
@@ -35,7 +36,7 @@ class Invoice extends Model
         'uuid', 'invoice_no', 'visit_id', 'patient_id', 'currency',
         'subtotal', 'tax_total', 'discount', 'total', 'amount_paid', 'balance',
         'credited', 'refunded',
-        'status', 'notes', 'issued_by', 'issued_at',
+        'status', 'notes', 'issued_by', 'issued_at', 'opening_balance',
     ];
 
     protected function casts(): array
@@ -46,6 +47,7 @@ class Invoice extends Model
             'credited' => 'decimal:2', 'refunded' => 'decimal:2',
             'status' => InvoiceStatus::class,
             'issued_at' => 'datetime',
+            'opening_balance' => 'boolean',
         ];
     }
 

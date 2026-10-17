@@ -14,6 +14,8 @@ class PatientResource extends JsonResource
         return [
             'uuid' => $this->uuid,
             'patient_no' => $this->patient_no,
+            // The number on the paper file or in the old system (Settings, Import data).
+            'old_file_no' => $this->old_file_no,
             'first_name' => $this->first_name,
             'last_name' => $this->last_name,
             'full_name' => $this->full_name,

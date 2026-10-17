@@ -65,7 +65,8 @@ return [
 
     'temporary_file_upload' => [
         'disk' => null,        // Example: 'local', 's3'              | Default: 'default'
-        'rules' => ['file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'],       // Example: ['file', 'mimes:png,jpg']  | Default: ['required', 'file', 'max:12288'] (12MB)
+        // Spreadsheets for Settings, Import data (docs/imports.md); an .xlsx is a zip and is sometimes recognised as one.
+        'rules' => ['file', 'mimes:jpg,jpeg,png,webp,pdf,xlsx,xls,csv,txt,zip', 'max:10240'],       // Example: ['file', 'mimes:png,jpg']  | Default: ['required', 'file', 'max:12288'] (12MB)
         'directory' => null,   // Example: 'tmp'                      | Default: 'livewire-tmp'
         'middleware' => null,  // Example: 'throttle:5,1'             | Default: 'throttle:60,1'
         'preview_mimes' => [   // Supported file types for temporary pre-signed file URLs...

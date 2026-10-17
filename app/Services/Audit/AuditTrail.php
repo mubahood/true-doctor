@@ -80,6 +80,8 @@ final class AuditTrail
         Models\RadiologyStudy::class => 'Radiology study',
         // People
         Models\User::class => 'User account',
+        // Settings, Import data: who brought a sheet in, and who undid it (docs/imports.md)
+        Models\ImportBatch::class => 'Data import',
     ];
 
     public const EVENTS = [
