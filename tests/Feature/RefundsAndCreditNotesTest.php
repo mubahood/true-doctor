@@ -137,6 +137,23 @@ class RefundsAndCreditNotesTest extends TestCase
         $this->assertSame('55.00', $lines['receivable']['credit']);
     }
 
+    public function test_crediting_in_pieces_gives_back_all_the_tax(): void
+    {
+        $h = $this->hospital(['tax_enabled' => true, 'tax_rate' => 10]);
+        $invoice = $this->invoice(['100.00'], $h);
+        $by = $this->staff('accountant', $h);
+
+        // 36.67 × 10 / 110 = 3.3336… → 3.33 each time: three shares truncated
+        // would leave 0.01 of tax payable on an invoice credited to nothing.
+        foreach (['36.67', '36.67', '36.66'] as $amount) {
+            $this->credits->requestCreditNote($invoice->fresh(), $amount, 'Not done.', $by);
+        }
+
+        $parts = InvoiceCredit::query()->where('invoice_id', $invoice->id)->pluck('tax_part')->map(fn ($p) => (string) $p)->all();
+        $this->assertSame(['3.33', '3.33', '3.34'], $parts);
+        $this->assertSame('110.00', (string) $invoice->fresh()->credited);
+    }
+
     public function test_the_front_desk_asks_and_nothing_moves_until_it_is_approved(): void
     {
         $invoice = $this->invoice();
@@ -467,6 +484,20 @@ class RefundsAndCreditNotesTest extends TestCase
 
         $pdf = InvoiceCredit::query()->where('kind', 'refund')->firstOrFail();
         $this->get("/api/v1/credits/{$pdf->uuid}/pdf")->assertOk()->assertHeader('content-type', 'application/pdf');
+    }
+
+    public function test_the_app_must_send_an_idempotency_key_to_refund_or_credit(): void
+    {
+        $invoice = $this->invoice();
+        $this->pay($invoice, '50000.00');
+        Sanctum::actingAs($this->staff('accountant'));
+        $app = ['X-App-Version' => '9.9.9'];
+
+        $this->postJson("/api/v1/invoices/{$invoice->uuid}/credit-notes", ['amount' => 20000, 'reason' => 'Scan not done.'], $app)
+            ->assertStatus(422)->assertJsonPath('errors.Idempotency-Key.0', 'The Idempotency-Key header is required.');
+        $this->postJson("/api/v1/invoices/{$invoice->uuid}/refunds", ['amount' => 1000, 'method' => 'cash', 'reason' => 'Back.'], $app)
+            ->assertStatus(422)->assertJsonPath('errors.Idempotency-Key.0', 'The Idempotency-Key header is required.');
+        $this->assertSame(0, InvoiceCredit::query()->count());
     }
 
     public function test_the_api_approves_and_rejects_with_permission_only(): void

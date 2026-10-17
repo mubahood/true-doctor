@@ -4,7 +4,9 @@ Rules and figures: [`../refunds.md`](../refunds.md). Envelope as everywhere
 (`success, code, message, data, errors`). Every write is covered by the
 `Idempotency-Key` middleware: the app sends a key and reuses it after a lost
 reply, and a replay returns the first answer (`Idempotent-Replay: true`)
-without creating a second document.
+without creating a second document. An installed app (any request carrying `X-App-Version`)
+must send the key on `credit-notes` and `refunds`: without it the answer is
+`422` (`errors.Idempotency-Key`).
 
 ## Endpoints
 

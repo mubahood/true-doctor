@@ -220,9 +220,14 @@ class InvoiceCreditService
             if (bccomp($amount, $room, 2) > 0) {
                 throw new RuntimeException('Only '.HospitalSettings::money($room).' is left on this invoice to credit.');
             }
-            // The tax goes back in the same share it was charged.
+            // The tax goes back in the same share it was charged. The credit
+            // note that takes the invoice to nothing takes whatever tax is
+            // left, so share-by-share truncation never strands a cent in tax
+            // payable on a fully credited invoice.
             if (bccomp((string) $invoice->total, '0', 2) > 0 && bccomp((string) $invoice->tax_total, '0', 2) > 0) {
-                $taxPart = bcdiv(bcmul($amount, (string) $invoice->tax_total, 6), (string) $invoice->total, 2);
+                $taxPart = bccomp($amount, $room, 2) === 0
+                    ? bcsub((string) $invoice->tax_total, $this->taxCredited($invoice), 2)
+                    : bcdiv(bcmul($amount, (string) $invoice->tax_total, 6), (string) $invoice->total, 2);
             }
             $invoice->credited = bcadd((string) $invoice->credited, $amount, 2);
         } else {
@@ -303,6 +308,18 @@ class InvoiceCreditService
             ->where('kind', $kind->value)->where('number', 'like', $kind->prefix().'-'.$year.'-%')->count());
 
         return $kind->prefix().'-'.$year.'-'.str_pad((string) $seq, 5, '0', STR_PAD_LEFT);
+    }
+
+    /** Tax already given back by this invoice's approved credit notes. */
+    private function taxCredited(Invoice $invoice): string
+    {
+        $sum = '0.00';
+        foreach (InvoiceCredit::query()->where('invoice_id', $invoice->id)->where('kind', CreditKind::CreditNote->value)
+            ->where('status', CreditStatus::Approved->value)->pluck('tax_part') as $part) {
+            $sum = bcadd($sum, (string) $part, 2);
+        }
+
+        return $sum;
     }
 
     private function floor(string $amount): string

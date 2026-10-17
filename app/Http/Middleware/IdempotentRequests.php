@@ -127,6 +127,9 @@ class IdempotentRequests
         'api.purchase-orders.lines.store',
         'api.purchase-orders.receive',
         'api.purchase-orders.returns',
+        // A refund pays money out; a credit note moves what is owed (docs/refunds.md).
+        'api.invoices.refunds',
+        'api.invoices.credit-notes',
     ];
 
     private function keyIsRequired(Request $request): bool
