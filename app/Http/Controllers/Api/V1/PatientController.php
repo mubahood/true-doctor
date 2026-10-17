@@ -56,6 +56,8 @@ class PatientController extends Controller
     {
         $this->authorize('view', $patient);
 
+        app(\App\Services\Audit\RecordAccessLog::class)->opened($patient, request()->user());
+
         return ApiResponse::success(new PatientResource($patient));
     }
 

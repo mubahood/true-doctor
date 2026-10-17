@@ -14,8 +14,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 /**
  * One patient attendance — the hub everything a patient does hangs off:
@@ -54,7 +52,8 @@ use Spatie\Activitylog\Traits\LogsActivity;
  */
 class Visit extends Model
 {
-    use BelongsToHospital, HasFactory, LogsActivity, SoftDeletes;
+    // Changes are audited field by field by AuditObserver (docs/audit.md).
+    use BelongsToHospital, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'uuid', 'visit_no', 'patient_id', 'appointment_id', 'doctor_user_id',
@@ -63,6 +62,7 @@ class Visit extends Model
         'blood_pressure', 'vitals_recorded_at', 'doctor_remarks', 'receptionist_remarks',
         'patient_remarks', 'status', 'stage', 'outcome', 'completed_at',
         'discount_value', 'discount_type', 'discount_reason', 'discounted_by',
+        'sensitive_notes',
     ];
 
     protected function casts(): array
@@ -82,23 +82,14 @@ class Visit extends Model
             // Offline provenance. Cast because the docblock promises a Carbon,
             // and without it every ->format() on this is a fatal.
             'client_created_at' => 'datetime',
+            // The confidential note (HIV status, mental health, sexual and
+            // reproductive health): encrypted at rest, roadmap 07 §3.
+            'sensitive_notes' => 'encrypted',
         ];
     }
 
-    /** Every activity row is stamped with the tenant (activity_log.hospital_id). */
-    public function tapActivity(\Spatie\Activitylog\Models\Activity $activity, string $eventName): void
-    {
-        $activity->setAttribute('hospital_id', $this->hospital_id);
-    }
-
-    public function getActivitylogOptions(): LogOptions
-    {
-        return LogOptions::defaults()
-            ->logOnly(['visit_no', 'status', 'stage', 'outcome', 'diagnosis'])
-            ->logOnlyDirty()
-            ->dontSubmitEmptyLogs()
-            ->useLogName('visit');
-    }
+    /** Never serialised by accident; VisitResource adds it for those who may read it. */
+    protected $hidden = ['sensitive_notes'];
 
     /** @return BelongsTo<Patient, $this> */
     public function patient(): BelongsTo

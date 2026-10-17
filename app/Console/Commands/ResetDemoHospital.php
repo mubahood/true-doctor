@@ -82,6 +82,8 @@ class ResetDemoHospital extends Command
         'patient_insurances', 'patient_documents', 'patient_dependents', 'patients',
         // Offline
         'sync_conflicts', 'sync_operations', 'sync_sessions', 'device_tokens', 'devices',
+        // The audit trail of the demo's own records (docs/audit.md)
+        'record_accesses', 'activity_log',
         // Configuration the seeders rebuild
         'beds', 'wards', 'rooms', 'doctor_schedules', 'staff_profiles',
         'services', 'lab_tests', 'radiology_studies',

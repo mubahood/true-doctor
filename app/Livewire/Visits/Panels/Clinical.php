@@ -43,6 +43,13 @@ class Clinical extends Component
     public ?string $doctor_remarks = null;
 
     /**
+     * The confidential note: HIV status, mental health, sexual and
+     * reproductive health. Encrypted at rest, never offered as a phrase, and
+     * only loaded for someone who may diagnose (docs/audit.md).
+     */
+    public ?string $sensitive_notes = null;
+
+    /**
      * The panel shows what was written; writing it opens a dialog. Four text
      * areas standing open made the visit page read as a form to fill in.
      */
@@ -58,6 +65,14 @@ class Clinical extends Component
         $this->doctor_user_id = $visit->doctor_user_id;
         foreach (self::TEXT_FIELDS as $field) {
             $this->{$field} = $visit->{$field};
+        }
+        if (auth()->user()?->can('diagnose', $visit)) {
+            $this->sensitive_notes = $visit->sensitive_notes;
+            // Reading a confidential note is a read of the record (docs/audit.md).
+            $patient = $visit->patient()->withTrashed()->first();
+            if ($this->sensitive_notes !== null && $patient !== null) {
+                app(\App\Services\Audit\RecordAccessLog::class)->opened($patient, auth()->user(), null, 'Confidential note '.$visit->visit_no);
+            }
         }
     }
 
@@ -153,7 +168,7 @@ class Clinical extends Component
         $this->authorize('diagnose', $visit);
 
         $this->doctor_user_id = $this->doctor_user_id ?: null;
-        foreach (self::TEXT_FIELDS as $field) {
+        foreach ([...self::TEXT_FIELDS, 'sensitive_notes'] as $field) {
             if (is_string($this->{$field}) && trim($this->{$field}) === '') {
                 $this->{$field} = null;
             }
@@ -163,7 +178,7 @@ class Clinical extends Component
         // the intake slide-over on Visits\Index.
         $rules = array_intersect_key(
             VisitClinicalRequest::rulesFor(),
-            array_flip(array_merge(['doctor_user_id'], self::TEXT_FIELDS)),
+            array_flip(array_merge(['doctor_user_id', 'sensitive_notes'], self::TEXT_FIELDS)),
         );
 
         $service->updateClinical($visit, $this->validate($rules));

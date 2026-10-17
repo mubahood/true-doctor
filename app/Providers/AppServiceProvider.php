@@ -145,6 +145,12 @@ class AppServiceProvider extends ServiceProvider
             $model::observe(\App\Observers\SyncRevisionObserver::class);
         }
 
+        // Write audit (roadmap 07 §3, docs/audit.md): every clinical and money
+        // model, registered here so a model cannot forget to be audited.
+        foreach (array_keys(\App\Services\Audit\AuditTrail::MODELS) as $model) {
+            $model::observe(\App\Observers\AuditObserver::class);
+        }
+
         // Data plane (docs/api/plane.md): a revision per reference section, and
         // a tombstone when a listed record is deleted or closed out of a
         // worklist. Observers, not schedules - a standalone cron may run only

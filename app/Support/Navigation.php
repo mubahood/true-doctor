@@ -188,6 +188,8 @@ final class Navigation
                     // offline are not the people who administer users, and hiding
                     // it from them would leave it useful to nobody.
                     ['label' => 'Offline readiness', 'icon' => 'fa-cloud-arrow-down', 'route' => 'admin.offline.readiness', 'match' => ['admin.offline.*'], 'can' => 'access-admin'],
+                    // Audit log (roadmap 07 §3, docs/audit.md): who changed or opened what.
+                    ['label' => 'Audit log', 'icon' => 'fa-clipboard-list', 'route' => 'admin.audit.index', 'match' => ['admin.audit.*'], 'can' => 'manage-settings'],
                 ]],
 
                 ['key' => 'catalogues', 'label' => 'Catalogues', 'icon' => 'fa-book-medical', 'items' => [

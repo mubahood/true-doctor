@@ -63,6 +63,10 @@ class VisitResource extends JsonResource
             'doctor_remarks' => $this->doctor_remarks,
             'receptionist_remarks' => $this->receptionist_remarks,
             'patient_remarks' => $this->patient_remarks,
+            // The confidential note (docs/audit.md) is read on the web only:
+            // the app keeps visit replies in an unencrypted local cache, so
+            // it is told only that there is one.
+            'has_sensitive_notes' => filled($this->sensitive_notes),
             'vitals' => [
                 'temperature' => $this->temperature,
                 'blood_pressure' => $this->blood_pressure,

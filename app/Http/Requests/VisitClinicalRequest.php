@@ -39,6 +39,8 @@ class VisitClinicalRequest extends FormRequest
             'doctor_remarks' => ['nullable', 'string', 'max:2000'],
             'receptionist_remarks' => ['nullable', 'string', 'max:2000'],
             'patient_remarks' => ['nullable', 'string', 'max:2000'],
+            // The confidential note: encrypted at rest, shown only to those who diagnose.
+            'sensitive_notes' => ['nullable', 'string', 'max:5000'],
         ];
     }
 }

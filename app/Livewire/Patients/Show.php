@@ -50,6 +50,7 @@ class Show extends Component
         'appointments' => ['Appointments', 'fa-calendar-check'],
         'records' => ['Records', 'fa-folder-open'],
         'details' => ['Details', 'fa-id-badge'],
+        'access' => ['Who opened it', 'fa-user-shield'],
     ];
 
     #[Locked]
@@ -68,6 +69,9 @@ class Show extends Component
 
         $this->patient = $patient;
         $this->settleTab();
+
+        // The read audit: once per person per record in a short window (docs/audit.md).
+        app(\App\Services\Audit\RecordAccessLog::class)->opened($patient, auth()->user());
     }
 
     /** A hand-typed or stale ?tab= is settled on every request. */
@@ -122,6 +126,11 @@ class Show extends Component
         $needs = ['visits' => 'visits', 'billing' => 'money', 'clinical' => 'clinical', 'appointments' => 'appointments'];
 
         $tabs = array_filter(self::TABS, fn (string $key) => ! isset($needs[$key]) || in_array($needs[$key], $this->sections, true), ARRAY_FILTER_USE_KEY);
+
+        // The read audit is the owner's to see (docs/audit.md).
+        if (! auth()->user()?->can('manage-settings')) {
+            unset($tabs['access']);
+        }
 
         // The dental chart, next to the clinical history, where there is
         // dentistry to chart (DentalService::onPatient, docs/dental.md).
