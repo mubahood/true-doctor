@@ -67,6 +67,7 @@ final class AuditTrail
         Models\Invoice::class => 'Invoice',
         Models\InvoiceItem::class => 'Invoice line',
         Models\Payment::class => 'Payment',
+        Models\InvoiceCredit::class => 'Credit note or refund',
         Models\PatientCard::class => 'Card',
         Models\CardRecord::class => 'Card transaction',
         Models\InsuranceClaim::class => 'Insurance claim',
