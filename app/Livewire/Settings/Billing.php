@@ -54,6 +54,9 @@ class Billing extends Component
 
     public ?string $invoice_footer = null;
 
+    /** The desk's receipt printer: none, or 58 / 80 mm roll paper. */
+    public ?string $receipt_printer = null;
+
     public function mount(HospitalSettings $settings): void
     {
         $this->authorizeManage();
@@ -71,6 +74,7 @@ class Billing extends Component
         $this->consultation_fee = $billing['consultation_fee'] !== null ? (string) $billing['consultation_fee'] : null;
         $this->invoice_prefix = (string) $billing['invoice_prefix'];
         $this->invoice_footer = $billing['invoice_footer'] !== null ? (string) $billing['invoice_footer'] : null;
+        $this->receipt_printer = in_array((string) ($billing['receipt_printer'] ?? ''), ['58', '80'], true) ? (string) $billing['receipt_printer'] : null;
     }
 
     private function authorizeManage(): void
@@ -198,6 +202,7 @@ class Billing extends Component
         $this->currency_code = strtoupper(trim($this->currency_code));
         $data = $this->validate();
         $data['tax_enabled'] = $this->tax_enabled;
+        $data['receipt_printer'] = in_array((string) $this->receipt_printer, ['58', '80'], true) ? (int) $this->receipt_printer : null;
 
         $hospital = $settings->hospital();
         abort_if($hospital === null, 404, 'No hospital in context.');

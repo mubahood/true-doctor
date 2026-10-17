@@ -17,7 +17,7 @@
     $orgMark = $orgWide ?? $signInBrand->markUrl();
     $orgContact = $org ? $signInBrand->contact() : [];
   @endphp
-  <title>@yield('title', 'Staff sign in') — {{ $signInBrand->name() ?? 'True-Doctor' }}</title>
+  <title>@yield('title', 'Staff sign in') | {{ $signInBrand->name() ?? 'True-Doctor' }}</title>
   <meta name="description" content="@yield('description', 'Staff sign-in for '.($signInBrand->name() ?? 'True-Doctor hospital management').'.')">
   {{-- Sign-in, sign-up and account pages are doors, not content: never in a search result. --}}
   <meta name="robots" content="noindex, nofollow">

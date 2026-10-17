@@ -57,6 +57,11 @@ class Index extends Component
         .'inner join subscription_payments sp on sp.subscription_id = sub.id '
         .'where sub.hospital_id = s.converted_hospital_id)';
 
+    /** The trial became a working clinic: its first patient, its first paid visit (App\Support\Funnel). */
+    private const FIRST_PATIENT_EXISTS = 'exists (select 1 from hospitals fh where fh.id = s.converted_hospital_id and fh.first_patient_at is not null)';
+
+    private const FIRST_PAID_VISIT_EXISTS = 'exists (select 1 from hospitals fh where fh.id = s.converted_hospital_id and fh.first_paid_visit_at is not null)';
+
     #[Url(history: true)]
     public string $from = '';
 
@@ -226,8 +231,8 @@ class Index extends Component
     // ── The headline, and the funnel under it ────────────────────────────
 
     /**
-     * @return array{visitors:int,views:int,clicks:int,engaged:int,pricing:int,form:int,demo:int,enquiries:int,
-     *               trials:int,customers:int,rate:float,bounce:float,avg_pages:float,avg_seconds:int,returning:int,bots:int}
+     * @return array{visitors:int,views:int,clicks:int,engaged:int,pricing:int,form:int,demo:int,enquiries:int,whatsapp:int,
+     *               trials:int,first_patient:int,first_paid_visit:int,customers:int,rate:float,bounce:float,avg_pages:float,avg_seconds:int,returning:int,bots:int}
      */
     #[Computed]
     public function totals(): array
@@ -243,7 +248,10 @@ class Index extends Component
                 ->selectRaw('sum(case when s.opened_signup_at is not null then 1 else 0 end) as form')
                 ->selectRaw('sum(case when s.opened_demo_at is not null then 1 else 0 end) as demo')
                 ->selectRaw('sum(case when s.enquired_at is not null then 1 else 0 end) as enquiries')
+                ->selectRaw('sum(case when s.whatsapp_at is not null then 1 else 0 end) as whatsapp')
                 ->selectRaw('sum(case when s.converted_hospital_id is not null then 1 else 0 end) as trials')
+                ->selectRaw('sum(case when '.self::FIRST_PATIENT_EXISTS.' then 1 else 0 end) as first_patient')
+                ->selectRaw('sum(case when '.self::FIRST_PAID_VISIT_EXISTS.' then 1 else 0 end) as first_paid_visit')
                 ->selectRaw('sum(case when '.self::PAID_EXISTS.' then 1 else 0 end) as customers')
                 // Time on site for people who opened more than one page. A
                 // single-page visit has no second timestamp, and averaging
@@ -264,7 +272,10 @@ class Index extends Component
                 'form' => (int) ($row->form ?? 0),
                 'demo' => (int) ($row->demo ?? 0),
                 'enquiries' => (int) ($row->enquiries ?? 0),
+                'whatsapp' => (int) ($row->whatsapp ?? 0),
                 'trials' => (int) ($row->trials ?? 0),
+                'first_patient' => (int) ($row->first_patient ?? 0),
+                'first_paid_visit' => (int) ($row->first_paid_visit ?? 0),
                 'customers' => (int) ($row->customers ?? 0),
                 'returning' => (int) ($row->came_back ?? 0),
                 'rate' => $pct($row->trials ?? 0),
@@ -295,8 +306,12 @@ class Index extends Component
             ['Arrived', $t['visitors']],
             ['Opened a second page', $t['engaged']],
             ['Read the pricing', $t['pricing']],
+            ['Opened the demo', $t['demo']],
+            ['Talked to us on WhatsApp', $t['whatsapp']],
             ['Opened the sign-up form', $t['form']],
             ['Started a trial', $t['trials']],
+            ['Registered a first patient', $t['first_patient']],
+            ['Took a first payment', $t['first_paid_visit']],
             ['Paid', $t['customers']],
         ]);
     }

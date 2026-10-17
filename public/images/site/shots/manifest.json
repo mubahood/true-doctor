@@ -1,0 +1,104 @@
+{
+  "dashboard": {
+    "file": "dashboard.webp",
+    "w": 1600,
+    "h": 1000,
+    "kb": 61,
+    "small": {
+      "file": "dashboard-800.webp",
+      "w": 800,
+      "h": 500,
+      "kb": 24
+    }
+  },
+  "reception": {
+    "file": "reception.webp",
+    "w": 1600,
+    "h": 1135,
+    "kb": 139,
+    "small": {
+      "file": "reception-800.webp",
+      "w": 800,
+      "h": 568,
+      "kb": 58
+    }
+  },
+  "visit": {
+    "file": "visit.webp",
+    "w": 1600,
+    "h": 1435,
+    "kb": 78,
+    "small": {
+      "file": "visit-800.webp",
+      "w": 800,
+      "h": 718,
+      "kb": 32
+    }
+  },
+  "lab": {
+    "file": "lab.webp",
+    "w": 1600,
+    "h": 1292,
+    "kb": 88,
+    "small": {
+      "file": "lab-800.webp",
+      "w": 800,
+      "h": 646,
+      "kb": 36
+    }
+  },
+  "cashier": {
+    "file": "cashier.webp",
+    "w": 1600,
+    "h": 1135,
+    "kb": 103,
+    "small": {
+      "file": "cashier-800.webp",
+      "w": 800,
+      "h": 568,
+      "kb": 40
+    }
+  },
+  "ward": {
+    "file": "ward.webp",
+    "w": 1600,
+    "h": 1364,
+    "kb": 79,
+    "small": {
+      "file": "ward-800.webp",
+      "w": 800,
+      "h": 682,
+      "kb": 32
+    }
+  },
+  "dental": {
+    "file": "dental.webp",
+    "w": 1600,
+    "h": 1507,
+    "kb": 85,
+    "small": {
+      "file": "dental-800.webp",
+      "w": 800,
+      "h": 754,
+      "kb": 36
+    }
+  },
+  "phone": {
+    "file": "phone.webp",
+    "w": 480,
+    "h": 1039,
+    "kb": 29
+  },
+  "closing": {
+    "file": "closing.webp",
+    "w": 1600,
+    "h": 1077,
+    "kb": 42,
+    "small": {
+      "file": "closing-800.webp",
+      "w": 800,
+      "h": 539,
+      "kb": 17
+    }
+  }
+}

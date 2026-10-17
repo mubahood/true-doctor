@@ -92,7 +92,7 @@
     </div>
     <div class="a-panel-foot">
       Every account uses the password <span class="a-code">{{ $demoPassword }}</span>.
-      Hospitals A and B are separate tenants — sign in as one and you cannot see the other's records.
+      Kato Medical Centre (A) and Lakeview Clinic (B) are separate tenants — sign in as one and you cannot see the other's records.
     </div>
   </div>
 @endsection

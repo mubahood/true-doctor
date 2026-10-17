@@ -44,7 +44,7 @@ final class DemoPeople
             ['Faith', 'Auma', 'female', 17, 'B+'],
 
             // ── Young adults ─────────────────────────────────────────────
-            ['Sarah', 'Nakato', 'female', 19, 'O+'],
+            ['Sarah', 'Nakimuli', 'female', 19, 'O+'],
             ['Ronald', 'Mugisha', 'male', 21, 'A+'],
             ['Winnie', 'Nabukenya', 'female', 22, 'AB-'],
             ['Isaac', 'Tumusiime', 'male', 23, 'O+'],

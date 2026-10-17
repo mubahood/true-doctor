@@ -25,6 +25,10 @@ class PatientSummaryController extends Controller
 
         $sections = PatientSummaryService::sectionsFor($request->user());
         $summary = $service->summary($patient, $sections, (int) $request->query('limit', 5));
+        // The app's Dental tab, by the same rule as the web's.
+        if (\App\Services\DentalService::onPatient($patient, \App\Models\Hospital::find(app(\App\Support\CurrentHospital::class)->id()), $request->user())) {
+            $sections[] = 'dental';
+        }
 
         foreach (['outstanding', 'billed_total', 'paid_total', 'card_balance'] as $key) {
             if (($summary['figures'][$key] ?? null) !== null) {

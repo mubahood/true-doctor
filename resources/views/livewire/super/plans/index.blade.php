@@ -23,7 +23,7 @@
           </td>
           <td class="mono tb-text-right">${{ number_format((float) $plan->price, 2) }}</td>
           <td>{{ $plan->billing_cycle->label() }}</td>
-          <td class="muted tb-xs">{{ $plan->limit('max_staff') ?? '∞' }} staff · {{ $plan->limit('max_patients') ?? '∞' }} patients · {{ $plan->limit('max_beds') ?? '∞' }} beds</td>
+          <td class="muted tb-xs">{{ $plan->limit('max_staff') ?? '∞' }} staff · {{ $plan->limit('max_beds') ?? '∞' }} beds</td>
           <td class="muted tb-xs">{{ count((array) $plan->features) }}</td>
           <td class="muted">{{ $plan->subscriptions_count }}</td>
           <td><x-ui.badge :tone="$plan->is_active ? 'active' : 'neutral'">{{ $plan->is_active ? 'Active' : 'Inactive' }}</x-ui.badge></td>
@@ -63,9 +63,6 @@
           </x-ui.field>
           <x-ui.field label="Max staff" for="plan-staff" name="max_staff" hint="Blank = unlimited.">
             <input id="plan-staff" type="number" wire:model="max_staff" class="tb-input" min="1">
-          </x-ui.field>
-          <x-ui.field label="Max patients" for="plan-patients" name="max_patients" hint="Blank = unlimited.">
-            <input id="plan-patients" type="number" wire:model="max_patients" class="tb-input" min="1">
           </x-ui.field>
           <x-ui.field label="Max beds" for="plan-beds" name="max_beds" hint="Blank = unlimited.">
             <input id="plan-beds" type="number" wire:model="max_beds" class="tb-input" min="1">

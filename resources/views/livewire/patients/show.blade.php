@@ -128,7 +128,7 @@
       @endisset
       @if(array_key_exists('next_appointment', $f))
         <x-dash.stat icon="fa-calendar-check" label="Next appointment"
-                     :value="$f['next_appointment'] ? $d($f['next_appointment']['scheduled_at'], 'd M') : 'None'"
+                     :value="$f['next_appointment'] ? $d($f['next_appointment']['scheduled_at'], 'd M') : 'Not booked'"
                      :sub="$f['next_appointment'] ? $d($f['next_appointment']['scheduled_at'], 'H:i').($f['next_appointment']['doctor'] ? ' · '.$f['next_appointment']['doctor'] : '') : 'Nothing booked'" />
       @endif
     </div>
@@ -286,6 +286,16 @@
             @else
               <x-ui.badge tone="danger">No consent recorded</x-ui.badge>
             @endif
+            <div class="tb-label tb-mt-3">Text messages</div>
+            @forelse($this->consents as $c)
+              <div class="tb-small" wire:key="consent-{{ $c->id }}">
+                <x-ui.badge :tone="$c->granted ? 'success' : 'neutral'">{{ $c->granted ? 'Yes' : 'No' }}</x-ui.badge>
+                {{ $c->purpose->label() }}, by {{ $c->channel->label() }}
+                <span class="muted tb-xs">· {{ $c->recorded_at->format('d M Y') }}{{ $c->method === 'reply' ? ', replied STOP' : '' }}{{ $c->recordedBy ? ', '.$c->recordedBy->name : '' }}</span>
+              </div>
+            @empty
+              <div class="muted tb-small">Not asked yet. Edit the patient to record their answer.</div>
+            @endforelse
           </div>
         </div>
         @if($patient->notes)

@@ -100,6 +100,15 @@
       <div class="tb-form-group full">
         <label class="tb-check-group"><input type="checkbox" wire:model="consent_given" value="1"> Patient consents to data processing</label>
       </div>
+      {{-- Messages, per channel and purpose (roadmap 05 §2). The sentence is
+           what the receptionist reads out; the record keeps who and when. --}}
+      <div class="tb-form-group full msg-consent">
+        <span class="tb-label">Text messages</span>
+        <p class="muted tb-xs">Read to the patient: "May we send you messages about your visits, results and bills? And news or offers from the clinic?"</p>
+        <label class="tb-check-group"><input type="checkbox" wire:model="messaging.sms_care"> About their care, by SMS</label>
+        <label class="tb-check-group"><input type="checkbox" wire:model="messaging.whatsapp_care"> About their care, by WhatsApp</label>
+        <label class="tb-check-group"><input type="checkbox" wire:model="messaging.sms_marketing"> News and offers</label>
+      </div>
     </div>
   </div>
 </div>

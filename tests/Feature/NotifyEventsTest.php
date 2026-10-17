@@ -225,6 +225,27 @@ class NotifyEventsTest extends TestCase
         $this->assertNotNull($appt->fresh()->reminder_sent_at);
     }
 
+    public function test_on_a_utc_server_the_booking_is_read_as_the_clinics_own_time(): void
+    {
+        // The online service's clock is UTC; 09:00 in the diary is 09:00 in
+        // Kampala (WallTime). Read as UTC it became 12:00, and the "two hours
+        // before" notice came an hour after the patient had been seen.
+        Notification::fake();
+        $h = Hospital::factory()->create(['timezone' => 'Africa/Kampala']);
+        $doctor = $this->staff($h, 'doctor');
+        app(CurrentHospital::class)->set($h->id);
+        $patient = Patient::factory()->create(['hospital_id' => $h->id]);
+        Appointment::create([
+            'uuid' => (string) Str::uuid(), 'hospital_id' => $h->id, 'patient_id' => $patient->id, 'doctor_user_id' => $doctor->id,
+            'scheduled_at' => '2026-10-16 09:00:00', 'ends_at' => '2026-10-16 09:30:00', 'duration_minutes' => 30, 'source' => 'phone', 'status' => 'confirmed',
+        ]);
+        $this->travelTo(\Carbon\Carbon::parse('2026-10-16 04:30:00', 'UTC')); // 07:30 in Kampala
+
+        $this->artisan('appointments:remind')->assertExitCode(0);
+
+        Notification::assertSentTo($doctor, AppointmentReminder::class, fn ($n) => $n->kind === 'soon');
+    }
+
     public function test_two_hours_before_is_a_second_reminder_once(): void
     {
         Notification::fake();

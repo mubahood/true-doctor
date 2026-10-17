@@ -84,9 +84,32 @@ class AppointmentService
             ]);
 
             $this->record($appointment, null, AppointmentStatus::Scheduled, 'Booked', $bookedBy);
+            $this->tellPatientBooked($appointment);
 
             return $appointment;
         }));
+    }
+
+    /** "Your appointment is on…" to the patient, when it is ahead of them (roadmap 05 §3). */
+    private function tellPatientBooked(Appointment $appointment): void
+    {
+        $hospital = \App\Models\Hospital::query()->find($appointment->hospital_id);
+        $zone = $hospital ? app(ReminderService::class)->zone($hospital) : (string) config('app.timezone');
+        // The time is the clinic's wall clock as typed (WallTime): shown as is.
+        $at = $appointment->scheduled_at;
+        if (\App\Support\WallTime::at($at, $zone)->isPast()) {
+            return; // a booking written after the fact is not news to anybody
+        }
+        $appointment->loadMissing(['patient', 'doctor']);
+        if ($appointment->patient === null) {
+            return;
+        }
+
+        app(\App\Services\Messaging\PatientMessenger::class)->trySend($appointment->patient, 'appointment_booked', [
+            'doctor' => $appointment->doctor->name ?? 'the doctor',
+            'date' => $at->format('D j M'),
+            'time' => $at->format('H:i'),
+        ], 'appointment:'.$appointment->uuid.':booked');
     }
 
     /** Move an existing appointment to a new time/room, re-validating the slot. */

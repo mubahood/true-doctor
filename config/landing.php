@@ -20,14 +20,22 @@ return [
     // When the fixed pages (home, features, pricing, security...) last changed: the sitemap's lastmod.
     'site_updated' => '2026-10-17',
 
+    // The home page's "Patients hear from you" section: on by itself once this
+    // server has a live SMS gateway (config/messaging.php); true forces it.
+    'home' => [
+        'patient_messages' => false,
+    ],
+
     'practices' => [
 
         'dental-clinics' => [
             'sector' => 'dental_clinic',
             'name' => 'dental clinics',
+            'card' => 'Tooth charts, treatment plans with quotes, price ranges per procedure, and a bill that is right before the patient stands up.',
+            'icon' => 'fa-tooth',
             'updated' => '2026-10-17',
             'title' => 'Dental clinic software in Uganda | True-Doctor',
-            'description' => 'Patient records, dental price lists with ranges, treatment billing, recalls and mobile money for dental clinics. Works offline. Free 14-day trial.',
+            'description' => 'Tooth charts, treatment plans and quotes, price ranges, billing and recalls for dental clinics in Uganda. Works offline. Free 14-day trial.',
             'h1' => 'Software for dental clinics that bills every procedure.',
             'intro' => 'From the front desk to the chair to the cashier: one record per patient, a price list that matches how dentists charge, and a bill that is right before the patient stands up.',
             'sections' => [
@@ -35,6 +43,11 @@ return [
                     'heading' => 'Price ranges, the way dentists charge',
                     'body' => 'A difficult extraction is not one price. Put a range on any procedure, for example 50,000 to 80,000, and charge where this patient falls inside it. Anything outside the range is refused before it is written.',
                     'points' => ['Fillings, extractions, root canals, crowns, dentures and braces come ready in the dental price list', 'Dental X-rays are procedures at the chair, not a radiology worklist', 'Change any price; the old bills keep the price they were charged'],
+                ],
+                [
+                    'heading' => 'A tooth chart that remembers',
+                    'body' => 'Tap a tooth, then a surface, and record what you found: caries, filled, missing, to extract, crown, root canal, mobility. Nothing is overwritten, so you can see the mouth as it was at any earlier visit. Adult and child teeth, in FDI numbering.',
+                    'points' => ['A treatment plan from your own price list, tooth by tooth', 'A printed quote the patient takes home', 'Planned, accepted, in progress, done: and done is billed on the visit, once', 'The next check-up date, six months by default'],
                 ],
                 [
                     'heading' => 'The dentist who also runs the clinic',
@@ -52,18 +65,20 @@ return [
                     'points' => [],
                 ],
             ],
-            'coming' => ['A tooth chart (FDI notation) with findings per tooth and surface', 'Treatment plans from your price list, with a quote to print', 'Six-month recall messages by SMS and WhatsApp'],
+            'coming' => ['Six-month recall messages by SMS and WhatsApp', 'X-rays and photos on each tooth', 'A periodontal chart: pocket depths, bleeding and recession'],
             'faq' => [
                 ['Can I use my own price list?', 'Yes. The dental price list is a starting point. Change prices, add your own procedures and set ranges where you charge by difficulty.'],
                 ['We have one chair and two people. Is it too much?', 'No. Turn off what you do not use: wards, insurance, the laboratory. The menu shows only what your clinic does.'],
                 ['Can we have our own copy on our own server?', 'Yes. A one-off copy runs on your hosting with your name on it, and clinics already run it that way.'],
             ],
-            'shots' => ['visit', 'cashier'],
+            'shots' => ['dental', 'cashier'],
         ],
 
         'private-clinics' => [
             'sector' => 'medical_clinic',
             'name' => 'private clinics',
+            'card' => 'Forty patients a day on one record, a small lab and dispensary, and every visit paid for before it closes.',
+            'icon' => 'fa-stethoscope',
             'updated' => '2026-10-17',
             'title' => 'Clinic management software for Uganda | True-Doctor',
             'description' => 'Run a private clinic or health centre: patient records, visits, a small lab and dispensary, mobile money and debtors. Works with no internet.',
@@ -103,6 +118,8 @@ return [
         'maternity-centres' => [
             'sector' => 'maternity_centre',
             'name' => 'maternity centres',
+            'card' => 'Every antenatal visit on one record, a ward board for the night of a delivery, and a bill that grows with the stay.',
+            'icon' => 'fa-heart-pulse',
             'updated' => '2026-10-17',
             'title' => 'Maternity and birth centre software | True-Doctor',
             'description' => 'Antenatal visits, deliveries, admissions and newborn care for maternity centres in Uganda, with mobile money billing and a ward board.',
@@ -136,6 +153,8 @@ return [
         'hospitals' => [
             'sector' => 'general_hospital',
             'name' => 'hospitals',
+            'card' => 'Outpatients, wards, laboratory, imaging, pharmacy, insurers and double-entry books, each department on the same record.',
+            'icon' => 'fa-hospital',
             'updated' => '2026-10-17',
             'title' => 'Hospital management system for Uganda | True-Doctor',
             'description' => 'Outpatients, wards, theatre, laboratory, imaging, pharmacy, insurance and double-entry books in one hospital system. Works offline on Android.',
@@ -171,6 +190,19 @@ return [
             ],
             'shots' => ['ward', 'dashboard'],
         ],
+    ],
+
+    // What each real screenshot shows (scripts/site-shots.mjs), for its alt text.
+    'shots' => [
+        'dashboard' => 'The dashboard at Kato Medical Centre: open visits, appointments, beds in use, money taken today and money owed.',
+        'reception' => 'The visits list at reception, with each visit\'s stage, bill and balance.',
+        'visit' => 'A visit: the patient\'s sulfa allergy at the top, vitals, the doctor\'s notes and the bill so far.',
+        'lab' => 'The laboratory worklist with tests waiting and results entered.',
+        'cashier' => 'Invoices at the cashier, paid, part paid and waiting.',
+        'ward' => 'The ward board: every bed, who is in it and who is waiting.',
+        'dental' => 'A dental chart in FDI numbering with caries marked, a treatment plan with prices, and the next check-up date.',
+        'closing' => 'The cashier\'s day: money received by method and by person, ready to count the drawer against.',
+        'phone' => 'The same visit on a phone, with the allergy, vitals and notes.',
     ],
 
     'pages' => [

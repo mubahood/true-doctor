@@ -46,7 +46,7 @@ class MarketingSignupTest extends TestCase
             ->assertSee('Starter')
             ->assertSee('USh 49,000')
             ->assertSee('USh 149,000')
-            ->assertSee('Start 14-day trial')
+            ->assertSee('Start free for 14 days')
             ->assertSee(route('register', ['plan' => $starter->id]), false);
     }
 

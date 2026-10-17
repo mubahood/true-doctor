@@ -44,6 +44,56 @@ class DentalService
         return $hospital !== null && in_array('dental', Practice::of($hospital)->packKeys(), true);
     }
 
+    /**
+     * Whether a visit opens with the chart showing.
+     *
+     * In a dental clinic, always. In a hospital or clinic that also does
+     * dentistry, only for a dental visit (by its department) or a patient whose mouth is
+     * already charted: the chart on every malaria review is clutter, and the
+     * visit page offers it on a press instead.
+     */
+    public static function chartOnVisit(Visit $visit, ?Hospital $hospital): bool
+    {
+        if (! self::enabledFor($hospital)) {
+            return false;
+        }
+
+        if (Practice::of($hospital)->sector->key === 'dental_clinic') {
+            return true;
+        }
+
+        if (str_contains(strtolower((string) $visit->department?->name), 'dent')) {
+            return true;
+        }
+
+        return self::charted((int) $visit->patient_id);
+    }
+
+    /**
+     * Whether a patient's record shows the Dental tab to this person.
+     *
+     * A general hospital carries the dental pack by default, and a Dental tab
+     * on every patient of a hospital with no dentist is a tab nobody opens. So:
+     * a dental clinic, a hospital with a dental department, or a patient whose
+     * mouth is already charted; and only for someone who may read the chart.
+     */
+    public static function onPatient(Patient $patient, ?Hospital $hospital, ?\App\Models\User $user): bool
+    {
+        if ($user === null || ! self::enabledFor($hospital) || ! ($user->can('treatments.view') || $user->can('visits.diagnose'))) {
+            return false;
+        }
+
+        return Practice::of($hospital)->sector->key === 'dental_clinic'
+            || \App\Models\Department::query()->where('is_active', true)->where('name', 'like', '%dent%')->exists()
+            || self::charted($patient->id);
+    }
+
+    private static function charted(int $patientId): bool
+    {
+        return DentalChartEntry::query()->where('patient_id', $patientId)->exists()
+            || DentalTreatmentItem::query()->where('patient_id', $patientId)->exists();
+    }
+
     /** @return list<int> every valid FDI tooth number */
     public static function teeth(bool $primary = false): array
     {
@@ -315,7 +365,7 @@ class DentalService
         $service ??= $item->service;
         $where = $item->tooth !== null ? ' ('.$item->tooth.($item->surfaces ? ' '.$item->surfaces : '').')' : '';
 
-        return ($service?->name ?? 'Dental procedure').$where;
+        return ($service->name ?? 'Dental procedure').$where;
     }
 
     /** The newest open visit of the patient, where a finished procedure is billed. */
@@ -379,8 +429,8 @@ class DentalService
         $planned = DentalTreatmentItem::query()->whereBetween('created_at', [$from->copy()->startOfDay(), $to->copy()->endOfDay()]);
 
         return [
-            'by_dentist' => $group(fn (DentalTreatmentItem $i) => $i->doneBy?->name ?? 'Unknown'),
-            'by_procedure' => $group(fn (DentalTreatmentItem $i) => $i->service?->name ?? 'Unknown'),
+            'by_dentist' => $group(fn (DentalTreatmentItem $i) => $i->doneBy->name ?? 'Unknown'),
+            'by_procedure' => $group(fn (DentalTreatmentItem $i) => $i->service->name ?? 'Unknown'),
             'by_month' => $group(fn (DentalTreatmentItem $i) => $i->done_at?->format('Y-m') ?? ''),
             'planned' => (clone $planned)->count(),
             'accepted' => (clone $planned)->whereNotNull('accepted_at')->count(),

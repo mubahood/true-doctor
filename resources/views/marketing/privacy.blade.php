@@ -1,6 +1,6 @@
 @extends('layouts.marketing')
-@section('title', 'Privacy Policy — True-Doctor')
-@section('desc', 'How True-Doctor handles hospital, staff and patient information — who controls what, what is stored, and what you can ask for.')
+@section('title', 'Privacy policy | True-Doctor')
+@section('desc', 'How True-Doctor handles hospital, staff and patient information: who controls what, what is stored, and what you can ask for.')
 
 @section('content')
 <section>
@@ -38,7 +38,7 @@
     </p>
     <ul>
       <li><strong>Your hospital is the controller</strong> of the patient and clinical data it enters. It decides what is collected, why, and for how long. We are its processor, acting on its instructions.</li>
-      <li><strong>We are the controller</strong> of the account itself — the hospital&rsquo;s subscription, its staff logins and the billing relationship between us.</li>
+      <li><strong>We are the controller</strong> of the account itself: the hospital&rsquo;s subscription, its staff logins and the billing relationship between us.</li>
     </ul>
 
     <h2 id="hospital-data">Data your hospital holds</h2>
@@ -78,7 +78,7 @@
       <li>
         A visitor cookie, kept for 30 days, holding a random identifier. It lets us see
         which advertisement or link brought a visitor, which of our pages they opened,
-        and whether they went on to start a trial — so we know which of our adverts are
+        and whether they went on to start a trial, so we know which of our adverts are
         worth paying for.
       </li>
     </ul>
@@ -87,7 +87,7 @@
       the campaign details and click identifier in the link you followed (for example
       from a Google advert); the website that referred you; the type of device, browser
       and operating system; and the country your connection appears to be in. We do not
-      store your IP address — only a one-way keyed fingerprint of it that cannot be
+      store your IP address, only a one-way keyed fingerprint of it that cannot be
       turned back into the address. None of this is shared with anybody, except that
       when a visit leads to a sign-up or a payment, the advert&rsquo;s click identifier is
       reported back to Google so it can tell which advert worked. Records of visits
@@ -95,19 +95,19 @@
     </p>
     <p>
       To decide which currency to quote in before you have chosen, the site looks at
-      the country your network connection appears to be in — from a header your
+      the country your network connection appears to be in, from a header your
       network provider or our content delivery network supplies, and otherwise from
       your browser&rsquo;s language setting. You can override it with the switch in the footer.
     </p>
     <p>
-      Our servers keep ordinary web logs — IP address, page, time — for security and
+      Our servers keep ordinary web logs (IP address, page, time) for security and
       troubleshooting, and discard them on a rolling basis.
     </p>
 
     <h2 id="protection">How data is protected</h2>
     <ul>
       <li>Every record carries its hospital and is filtered at the database layer, not by a condition somebody has to remember to write.</li>
-      <li>Sensitive fields — card numbers, bank details and protected clinical data — are encrypted at rest.</li>
+      <li>Sensitive fields (card numbers, bank details and protected clinical data) are encrypted at rest.</li>
       <li>Access is role-based: each role sees only the records and fields its job needs.</li>
       <li>Changes to patient and visit records are logged with who made them and when, and every workflow keeps an append-only status history. Read access is not currently logged.</li>
       <li>Credentials and third-party keys live only in server configuration, never in the code.</li>
@@ -119,7 +119,7 @@
       Running the service needs a small number of suppliers: a hosting provider, an
       email delivery service for notifications, and a payment provider for
       subscriptions and for patient payments taken online. Each receives only what it
-      needs to do its job — a payment provider sees an amount and a reference, not a
+      needs to do its job: a payment provider sees an amount and a reference, not a
       clinical record. We do not share hospital data with anybody else.
     </p>
 
@@ -128,14 +128,14 @@
       Your hospital decides how long to keep its records, subject to whatever its own
       regulator requires. You can export your data at any time, including after a
       subscription lapses. If you close your account and ask us to erase what remains,
-      we will — and we will tell you when it is done, including from backups as those
+      we will, and we will tell you when it is done, including from backups as those
       rotate out.
     </p>
 
     <h2 id="rights">If you are a patient</h2>
     <p>
       Your records belong to the hospital that treated you, not to us. To see, correct
-      or ask about anything held about you, contact that hospital directly — they can
+      or ask about anything held about you, contact that hospital directly. They can
       act on it immediately, and we cannot act on it without them.
     </p>
 

@@ -287,7 +287,7 @@ class Index extends Component
         }
 
         try {
-            $service->transition($order->fresh(), LabOrderStatus::Completed, Auth::id());
+            $service->complete($order->fresh(), Auth::id());
         } catch (RuntimeException $e) {
             $this->dispatch('toast', message: $e->getMessage(), type: 'error');
 

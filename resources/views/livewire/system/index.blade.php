@@ -4,6 +4,7 @@
   <x-ui.page-header title="Licence & updates">
     <x-slot:explain>Your own copy of True-Doctor: the release it runs, what your licence covers, and the health of the things that keep it running on this server. Updates and backups run in the background through the scheduler, so this page can be left at any time.</x-slot:explain>
   </x-ui.page-header>
+  <p class="muted tb-small tb-mb-3"><x-support.link context="standalone.update" :vars="['version' => $version]">Trouble with an update, a backup or the licence? WhatsApp us</x-support.link></p>
 
   {{-- ── What is running ─────────────────────────────────────────── --}}
   <div class="tb-stats-grid">

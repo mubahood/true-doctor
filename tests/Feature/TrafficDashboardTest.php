@@ -164,6 +164,36 @@ class TrafficDashboardTest extends TestCase
         $this->assertSame(1, $t['bots']);
     }
 
+    public function test_the_funnel_runs_from_whatsapp_and_the_demo_to_a_working_clinic(): void
+    {
+        config(['support.whatsapp' => '256700111222', 'demo.enabled' => true]);
+        // The demo door opens only when there are demo accounts behind it.
+        User::factory()->create(['hospital_id' => Hospital::factory()->create()->id, 'role' => 'doctor', 'email' => 'doctor.z@test.com']);
+        $hospital = $this->aWeekOfTraffic();
+
+        // Alice tapped WhatsApp twice (counted once), and Bob opened the demo door.
+        $this->as('alice')->get('/go/whatsapp?c=site.page&p=pricing')->assertRedirect();
+        $this->as('alice')->get('/go/whatsapp')->assertRedirect();
+        $this->open('bob', '/demo');
+
+        // Alice's clinic registered its first patient and was paid for a visit.
+        \App\Support\Funnel::reached($hospital->id, 'first_patient');
+        \App\Support\Funnel::reached($hospital->id, 'first_paid_visit');
+        \App\Support\Funnel::reached($hospital->id, 'first_patient'); // a second time moves nothing
+
+        $this->actingAs($this->superAdmin());
+        $t = Livewire::test(Index::class)->instance()->totals;
+        $this->assertSame(1, $t['whatsapp']);
+        $this->assertSame(1, $t['demo']);
+        $this->assertSame(1, $t['first_patient']);
+        $this->assertSame(1, $t['first_paid_visit']);
+
+        $labels = array_column(Livewire::test(Index::class)->instance()->funnel, 'label');
+        $this->assertSame(['Arrived', 'Opened a second page', 'Read the pricing', 'Opened the demo', 'Talked to us on WhatsApp',
+            'Opened the sign-up form', 'Started a trial', 'Registered a first patient', 'Took a first payment', 'Paid'], $labels);
+        $this->assertSame(2, TrafficEvent::where('kind', 'whatsapp')->count(), 'every tap is an event; the first one is the milestone');
+    }
+
     public function test_each_ad_asset_is_credited_with_what_it_produced(): void
     {
         $this->aWeekOfTraffic();

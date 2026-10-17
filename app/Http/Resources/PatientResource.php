@@ -47,6 +47,9 @@ class PatientResource extends JsonResource
             'insurance_provider' => $this->insurance_provider,
             'insurance_member_no' => $this->insurance_member_no,
             'consent_given' => (bool) $this->consent_given,
+            // The messages they agreed to, on the record itself (not in lists: one query each).
+            'messaging' => $this->when($request->routeIs('patients.show', 'patients.update', 'patients.store'), fn () => collect(app(\App\Services\Messaging\ConsentService::class)->current($this->resource))
+                ->mapWithKeys(fn (bool $on, string $key) => [str_replace('.', '_', $key) => $on])->all()),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];
     }

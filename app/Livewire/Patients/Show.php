@@ -123,14 +123,24 @@ class Show extends Component
 
         $tabs = array_filter(self::TABS, fn (string $key) => ! isset($needs[$key]) || in_array($needs[$key], $this->sections, true), ARRAY_FILTER_USE_KEY);
 
-        // A dental clinic's chart, next to the clinical history (docs/dental.md).
-        $user = auth()->user();
-        if (\App\Services\DentalService::enabledFor(app(\App\Support\HospitalSettings::class)->hospital())
-            && ($user->can('treatments.view') || $user->can('visits.diagnose'))) {
+        // The dental chart, next to the clinical history, where there is
+        // dentistry to chart (DentalService::onPatient, docs/dental.md).
+        if (\App\Services\DentalService::onPatient($this->patient, app(\App\Support\HospitalSettings::class)->hospital(), auth()->user())) {
             $tabs = array_slice($tabs, 0, 4, true) + ['dental' => ['Dental', 'fa-tooth']] + array_slice($tabs, 4, null, true);
         }
 
         return $tabs;
+    }
+
+    /**
+     * The messaging answers in force (roadmap 05 §2), newest per channel and purpose.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\PatientConsent>
+     */
+    #[Computed]
+    public function consents(): \Illuminate\Database\Eloquent\Collection
+    {
+        return app(\App\Services\Messaging\ConsentService::class)->latest($this->patient)->load('recordedBy:id,name');
     }
 
     /** @return array<string,mixed> */

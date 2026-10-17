@@ -109,7 +109,7 @@
             <td class="muted">Cardholder</td>
             <td><x-ui.badge tone="badge-active">Active</x-ui.badge></td>
             <td class="muted">{{ $card->issuer?->name ?? '—' }}</td>
-            <td class="muted" style="text-align:right;font-size:.78rem;">The card is theirs</td>
+            <td class="muted tb-text-right tb-small">The card is theirs</td>
           </tr>
 
           @foreach($this->holders as $holder)
@@ -126,7 +126,7 @@
                 @endif
               </td>
               <td class="muted">{{ $holder->addedBy?->name ?? '—' }}</td>
-              <td style="text-align:right;">
+              <td class="tb-text-right">
                 @can('update', $card)
                   @if($holder->status->canSpend())
                     <button type="button" class="btn-tb btn-tb-ghost btn-tb-sm"
@@ -162,7 +162,7 @@
         <thead>
           <tr>
             <th>When</th><th>What</th><th>Spent on</th>
-            <th style="text-align:right;">Amount</th><th style="text-align:right;">Balance</th><th>By</th>
+            <th class="tb-text-right">Amount</th><th class="tb-text-right">Balance</th><th>By</th>
           </tr>
         </thead>
         <tbody>
@@ -176,10 +176,10 @@
                 @endif
               </td>
               <td class="muted">{{ $record->patient?->full_name ?? '—' }}</td>
-              <td style="text-align:right;" class="mono {{ $record->type === \App\Enums\CardEntryType::Credit ? 'tb-primary' : 'tb-danger' }}">
+              <td class="tb-text-right mono {{ $record->type === \App\Enums\CardEntryType::Credit ? 'tb-primary' : 'tb-danger' }}">
                 {{ $record->type === \App\Enums\CardEntryType::Credit ? '+' : '−' }}{{ \App\Support\HospitalSettings::money($record->amount) }}
               </td>
-              <td style="text-align:right;" class="mono">{{ \App\Support\HospitalSettings::money($record->balance_after) }}</td>
+              <td class="tb-text-right mono">{{ \App\Support\HospitalSettings::money($record->balance_after) }}</td>
               <td class="muted">{{ $record->createdBy?->name ?? '—' }}</td>
             </tr>
           @empty

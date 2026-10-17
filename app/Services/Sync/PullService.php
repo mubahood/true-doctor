@@ -9,6 +9,7 @@ use App\Models\Admission;
 use App\Models\Bed;
 use App\Models\Department;
 use App\Models\Device;
+use App\Models\DiagnosisCode;
 use App\Models\District;
 use App\Models\InsuranceProvider;
 use App\Models\LabOrder;
@@ -642,6 +643,14 @@ class PullService
                 'any' => ['patients.view'],
                 'rows' => fn () => District::query()->orderBy('name')
                     ->get(['id', 'name'])->map(fn (District $d) => ['id' => $d->id, 'name' => $d->name])->all(),
+            ],
+            // The diagnosis catalogue, so a device can code a visit with no signal.
+            'diagnoses' => [
+                'any' => ['visits.view'],
+                'rows' => fn () => DiagnosisCode::query()->where('is_active', true)->orderBy('code')
+                    ->get(['id', 'code', 'title', 'synonyms'])
+                    ->map(fn (DiagnosisCode $d) => ['id' => $d->id, 'code' => $d->code, 'title' => $d->title, 'synonyms' => $d->synonyms ?? []])->all(),
+                'gone' => fn (): array => DiagnosisCode::query()->where('is_active', false)->pluck('id')->map(fn ($id) => (int) $id)->all(),
             ],
             'radiology_studies' => [
                 'any' => ['radiology.view'],

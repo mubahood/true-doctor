@@ -76,7 +76,6 @@ class SuperModalTest extends TestCase
             ->set('price', '250000')
             ->set('billing_cycle', 'monthly')
             ->set('max_staff', 25)
-            ->set('max_patients', 5000)
             ->set('max_beds', 60)
             ->call('save')
             ->assertHasNoErrors()
@@ -85,7 +84,7 @@ class SuperModalTest extends TestCase
         $plan = Plan::where('name', 'Growth')->first();
         $this->assertNotNull($plan);
         $this->assertSame(25, $plan->limit('max_staff'));
-        $this->assertSame(5000, $plan->limit('max_patients'));
+        $this->assertNull($plan->limit('max_patients'), 'plans never cap patients');
         $this->assertSame(60, $plan->limit('max_beds'));
     }
 
@@ -97,14 +96,14 @@ class SuperModalTest extends TestCase
         Livewire::test(\App\Livewire\Super\Plans\Index::class)
             ->call('edit', $plan->id)
             ->assertSet('max_staff', 3)
-            ->assertSet('max_patients', 10)
             ->assertSet('max_beds', 5)
             ->set('max_staff', 7)
             ->call('save')
             ->assertHasNoErrors();
 
         $this->assertSame(7, $plan->fresh()->limit('max_staff'));
-        $this->assertSame(10, $plan->fresh()->limit('max_patients'));
+        // A patient cap left in an old plan is dropped on save, never re-written.
+        $this->assertNull($plan->fresh()->limit('max_patients'));
     }
 
     /**

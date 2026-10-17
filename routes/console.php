@@ -24,6 +24,8 @@ Artisan::command('inspire', function () {
 // Hourly, not daily: a shared host's cron can be late or skip a run, and each
 // reminder is stamped on the appointment so a run never repeats another's.
 \Illuminate\Support\Facades\Schedule::command('appointments:remind')->hourly()->withoutOverlapping(10);
+// Recall messages that fall due by the calendar, and messages stuck in sending (idempotent).
+\Illuminate\Support\Facades\Schedule::command('messages:due')->hourly()->withoutOverlapping(10);
 
 \Illuminate\Support\Facades\Schedule::call(function (): void {
     \Illuminate\Support\Facades\Cache::put('standalone:scheduler-heartbeat', now()->toIso8601String(), now()->addMinutes(5));

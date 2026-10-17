@@ -237,6 +237,17 @@ class DentalTest extends TestCase
         $this->assertSame('caries', $this->dental()->chart($this->patient)[46]['surfaces']['O']);
     }
 
+    public function test_a_child_opens_on_the_milk_teeth_and_an_adult_on_the_permanent_ones(): void
+    {
+        $child = Patient::factory()->create(['hospital_id' => $this->hospital->id, 'dob' => now()->subYears(6)->toDateString()]);
+
+        Livewire::actingAs($this->dentist)->test(Dental::class, ['patientId' => $child->id])
+            ->assertSet('primary', true)->assertSeeHtml('wire:key="tooth-55"')->assertDontSeeHtml('wire:key="tooth-18"');
+
+        Livewire::actingAs($this->dentist)->test(Dental::class, ['patientId' => $this->patient->id])
+            ->assertSet('primary', false);
+    }
+
     public function test_the_patient_page_offers_the_dental_tab_only_in_a_dental_clinic(): void
     {
         $this->actingAs($this->dentist)->get(route('admin.patients.show', $this->patient))->assertSee('ptab-dental', false);
@@ -247,6 +258,69 @@ class DentalTest extends TestCase
         $doctor->syncSpatieRole();
         $patient = Patient::factory()->create(['hospital_id' => $clinic->id]);
         $this->actingAs($doctor)->get(route('admin.patients.show', $patient))->assertDontSee('ptab-dental', false);
+    }
+
+    public function test_a_general_hospital_shows_the_dental_tab_only_where_there_is_dentistry(): void
+    {
+        $hospital = Hospital::factory()->create(['settings' => ['practice' => ['sector' => 'general_hospital']]]);
+        app(CurrentHospital::class)->set($hospital->id);
+        $doctor = User::factory()->create(['hospital_id' => $hospital->id, 'role' => 'doctor']);
+        $doctor->syncSpatieRole();
+        $patient = Patient::factory()->create(['hospital_id' => $hospital->id]);
+
+        // No dentist, nothing charted: no tab, on the web or in the app.
+        $this->assertFalse(DentalService::onPatient($patient, $hospital, $doctor));
+        \Laravel\Sanctum\Sanctum::actingAs($doctor);
+        $this->assertNotContains('dental', $this->getJson("/api/v1/patients/{$patient->uuid}/summary")->assertOk()->json('data.sections'));
+
+        // A patient already charted keeps the tab.
+        $this->dental()->record($patient, [['tooth' => 11, 'finding' => 'caries', 'surfaces' => 'M']], null, $doctor);
+        $this->assertTrue(DentalService::onPatient($patient, $hospital, $doctor));
+
+        // A hospital with a dental department shows it on everybody.
+        $other = Patient::factory()->create(['hospital_id' => $hospital->id]);
+        \App\Models\Department::factory()->create(['hospital_id' => $hospital->id, 'name' => 'Dental unit', 'is_active' => true]);
+        $this->assertTrue(DentalService::onPatient($other, $hospital, $doctor));
+        $this->assertContains('dental', $this->getJson("/api/v1/patients/{$other->uuid}/summary")->assertOk()->json('data.sections'));
+    }
+
+    public function test_the_app_prints_the_quote(): void
+    {
+        \Laravel\Sanctum\Sanctum::actingAs($this->dentist);
+        $this->get("/api/v1/patients/{$this->patient->uuid}/dental/quote")->assertOk()->assertHeader('content-type', 'application/pdf');
+
+        $nurse = User::factory()->create(['hospital_id' => $this->hospital->id, 'role' => 'receptionist']);
+        $nurse->syncSpatieRole();
+        \Laravel\Sanctum\Sanctum::actingAs($nurse);
+        $this->get("/api/v1/patients/{$this->patient->uuid}/dental/quote")->assertForbidden();
+    }
+
+    public function test_a_hospital_with_the_dental_pack_charts_on_a_visit_only_when_it_is_dental_work(): void
+    {
+        // A dental clinic: every visit opens on the chart.
+        $this->assertTrue(DentalService::chartOnVisit($this->openVisit(), $this->hospital));
+
+        $hospital = Hospital::factory()->create(['settings' => ['practice' => ['sector' => 'general_hospital', 'packs' => ['dental']]]]);
+        app(CurrentHospital::class)->set($hospital->id);
+        $doctor = User::factory()->create(['hospital_id' => $hospital->id, 'role' => 'doctor']);
+        $doctor->syncSpatieRole();
+        $patient = Patient::factory()->create(['hospital_id' => $hospital->id]);
+        $outpatient = \App\Models\Department::factory()->create(['hospital_id' => $hospital->id, 'name' => 'Outpatient']);
+        $dentistry = \App\Models\Department::factory()->create(['hospital_id' => $hospital->id, 'name' => 'Dental']);
+        $malaria = Visit::factory()->create(['hospital_id' => $hospital->id, 'patient_id' => $patient->id, 'department_id' => $outpatient->id]);
+
+        $this->assertFalse(DentalService::chartOnVisit($malaria, $hospital));
+        $this->assertTrue(DentalService::chartOnVisit(Visit::factory()->create(['hospital_id' => $hospital->id, 'patient_id' => $patient->id, 'department_id' => $dentistry->id]), $hospital));
+
+        // The malaria visit offers the chart on a press, and opens it.
+        Livewire::actingAs($doctor)->test(\App\Livewire\Visits\Show::class, ['visit' => $malaria])
+            ->assertSee('Open the chart')->assertDontSeeHtml('wire:key="tooth-11"')
+            ->set('dentalOpen', true)
+            ->assertDontSee('Open the chart');
+
+        // Once the mouth is charted, every later visit opens on it.
+        $this->dental()->record($patient, [['tooth' => 11, 'finding' => 'caries', 'surfaces' => 'M']], null, $doctor);
+        $this->assertTrue(DentalService::chartOnVisit($malaria->fresh(), $hospital));
     }
 
     public function test_an_offline_finding_syncs_once(): void

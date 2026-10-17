@@ -131,8 +131,8 @@ class LandingTrafficTest extends TestCase
     {
         $this->asBrowser()->get('/?section=wat')
             ->assertOk()
-            ->assertSee('hospital management system', false)
-            ->assertSee('replaces your paper registers');
+            ->assertSee('Hospital management system', false)
+            ->assertSee('Run your clinic from one record');
     }
 
     public function test_a_bad_module_still_reaches_the_product_page(): void

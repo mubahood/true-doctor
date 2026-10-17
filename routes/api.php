@@ -58,7 +58,15 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
         Route::post('patients/{patient}/dental/plan', [\App\Http\Controllers\Api\V1\DentalController::class, 'plan'])->name('api.dental.plan');
         Route::post('dental/plan/{item}/status', [\App\Http\Controllers\Api\V1\DentalController::class, 'status'])->name('api.dental.status');
         Route::put('patients/{patient}/recall', [\App\Http\Controllers\Api\V1\DentalController::class, 'recall'])->name('api.dental.recall');
+        Route::get('patients/{patient}/dental/quote', \App\Http\Controllers\Admin\DentalQuoteController::class)->name('api.dental.quote');
         Route::get('dental/report', [\App\Http\Controllers\Api\V1\DentalController::class, 'report'])->name('api.dental.report');
+
+        // Coded diagnoses (docs/api/diagnoses.md).
+        Route::get('diagnoses/search', [\App\Http\Controllers\Api\V1\DiagnosisController::class, 'search'])->name('api.diagnoses.search');
+        Route::get('visits/{visit}/diagnoses', [\App\Http\Controllers\Api\V1\DiagnosisController::class, 'index'])->name('api.diagnoses.index');
+        Route::post('visits/{visit}/diagnoses', [\App\Http\Controllers\Api\V1\DiagnosisController::class, 'store'])->name('api.diagnoses.store');
+        Route::patch('visits/{visit}/diagnoses/{id}', [\App\Http\Controllers\Api\V1\DiagnosisController::class, 'update'])->whereNumber('id')->name('api.diagnoses.update');
+        Route::delete('visits/{visit}/diagnoses/{id}', [\App\Http\Controllers\Api\V1\DiagnosisController::class, 'destroy'])->whereNumber('id')->name('api.diagnoses.destroy');
 
         // Crashes the app recorded, for the error list (docs/api/security.md).
         Route::post('diagnostics/errors', \App\Http\Controllers\Api\V1\ErrorReportController::class)->middleware('throttle:10,1')->name('api.diagnostics.errors');

@@ -424,6 +424,10 @@ document.addEventListener('alpine:init', () => {
             this.style = below < 240 && r.top > below
                 ? `left:${left}px;bottom:${window.innerHeight - r.top + 6}px;width:${w}px;`
                 : `left:${left}px;top:${r.bottom + 6}px;width:${w}px;`;
+            // A Livewire re-render of the row morphs the server's x-cloak back
+            // onto the popup, and x-cloak hides it for good: the menu "would not
+            // open again" after a Move to. Alpine only strips it at init.
+            this.$refs.pop.removeAttribute('x-cloak');
             this.open = true;
             window.dispatchEvent(new CustomEvent('td:menu-open', { detail: this.$el }));
         },

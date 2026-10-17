@@ -70,6 +70,16 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\Channels\LogChannel::class,
         );
 
+        // Messages to patients: Africa's Talking when configured, else the
+        // log (config/messaging.php). Going live is configuration, not code.
+        $this->app->singleton(\App\Services\Messaging\SmsTransport::class, function () {
+            $at = (array) config('messaging.sms.africastalking');
+
+            return config('messaging.sms.driver') === 'africastalking' && filled($at['username'] ?? null) && filled($at['api_key'] ?? null)
+                ? new \App\Services\Messaging\AfricasTalkingSmsTransport((string) $at['username'], (string) $at['api_key'], $at['sender_id'] ?? null, (bool) ($at['sandbox'] ?? false))
+                : new \App\Services\Messaging\LogSmsTransport;
+        });
+
         // Telescope is a dev-only dependency — register its providers only when
         // the package is actually installed (local), so production --no-dev
         // installs work without it.
@@ -100,6 +110,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Coding diagnoses for the Ministry reports: whoever diagnoses, and the
+        // records officer who codes what was written (docs/api/diagnoses.md).
+        \Illuminate\Support\Facades\Gate::define('diagnoses.code', fn (\App\Models\User $user) => $user->can('visits.diagnose') || $user->role === 'records_officer');
+
         // Printables resolve files from a folder that exists on every hosting layout.
         self::pointPdfAtAFolderThatExists();
 

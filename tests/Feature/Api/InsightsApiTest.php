@@ -256,6 +256,8 @@ class InsightsApiTest extends TestCase
             'hospital_id' => $this->h->id, 'patient_id' => $this->patient()->id, 'doctor_user_id' => $doctor->id,
         ]);
 
+        // At midday: "two hours ago" must still be today, whenever the suite runs.
+        $this->travelTo(now()->setTime(12, 0));
         $today = now()->format('Y-m-d');
         // Waiting 50 minutes, 25 minutes, and 5 minutes.
         foreach ([50, 25, 5] as $min) {

@@ -194,8 +194,14 @@ class Patient extends Model
         $words = preg_split('/\s+/', trim((string) $term), -1, PREG_SPLIT_NO_EMPTY) ?: [];
 
         foreach ($words as $word) {
-            $query->where(function (Builder $q) use ($word) {
-                $q->where('patient_no', 'like', "%{$word}%")
+            // A phone number matches however it was written (+256 7.., 07..):
+            // by the last nine digits every form of it shares.
+            $tail = preg_match('/^\+?[\d\-]{9,}$/', $word) === 1 ? \App\Support\PhoneNumber::tail($word) : null;
+            $query->where(function (Builder $q) use ($word, $tail) {
+                if ($tail !== null) {
+                    $q->orWhere('phone_1', 'like', "%{$tail}")->orWhere('phone_2', 'like', "%{$tail}");
+                }
+                $q->orWhere('patient_no', 'like', "%{$word}%")
                     ->orWhere('first_name', 'like', "%{$word}%")
                     ->orWhere('last_name', 'like', "%{$word}%")
                     ->orWhere('phone_1', 'like', "%{$word}%")

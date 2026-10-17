@@ -20,6 +20,9 @@
       @endauth
     </div>
     <p class="hero-wa"><x-support.link context="site.page" :vars="['page' => $practice]" :icon="false">Questions? WhatsApp us</x-support.link></p>
+    @if(! empty($page['shots']) && \App\Support\SiteShots::get($page['shots'][0]))
+      <figure class="frame page-shot"><x-site.shot :name="$page['shots'][0]" sizes="(max-width: 820px) 100vw, 900px" /></figure>
+    @endif
   </div>
 </section>
 

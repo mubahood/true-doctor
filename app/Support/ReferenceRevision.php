@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Bed;
 use App\Models\Department;
+use App\Models\DiagnosisCode;
 use App\Models\District;
 use App\Models\DoctorSchedule;
 use App\Models\InsuranceProvider;
@@ -74,10 +75,12 @@ final class ReferenceRevision
         'insurance_providers' => [InsuranceProvider::class => ['name', 'code', 'is_active']],
         'radiology_studies' => [RadiologyStudy::class => ['name', 'modality', 'body_part', 'price', 'is_active']],
         'districts' => [District::class => null],
+        // The diagnosis catalogue (docs/api/diagnoses.md): shared, like districts.
+        'diagnoses' => [DiagnosisCode::class => ['code', 'title', 'synonyms', 'is_active']],
     ];
 
     /** Sections with no hospital behind them. */
-    public const GLOBAL = ['districts', 'payment_methods'];
+    public const GLOBAL = ['districts', 'payment_methods', 'diagnoses'];
 
     /** Every section the server knows, in the order they are sent. @return list<string> */
     public static function sections(): array

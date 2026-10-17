@@ -125,6 +125,18 @@ class PatientHandler extends EntityHandler
             'client_created_at' => $record->client_created_at,
         ])->saveQuietly();
 
+        // The messages they agreed to at the desk, when the device asked
+        // (`messaging: {sms_care, whatsapp_care, sms_marketing}`).
+        $answers = [];
+        foreach (['sms_care', 'whatsapp_care', 'sms_marketing'] as $key) {
+            if (is_array($payload['messaging'] ?? null) && array_key_exists($key, $payload['messaging'])) {
+                $answers[str_replace('_', '.', $key)] = (bool) $payload['messaging'][$key];
+            }
+        }
+        if ($answers !== []) {
+            app(\App\Services\Messaging\ConsentService::class)->record($patient, $answers, 'app', $actor->id);
+        }
+
         return $this->accepted($patient->id, 1, ['patient_no' => $patient->patient_no]);
     }
 

@@ -3,7 +3,6 @@
 namespace App\Support;
 
 use App\Models\User;
-use Illuminate\Support\Str;
 
 /**
  * One seeded demo login, as shown on the local sign-in rail. Built from a real
@@ -27,8 +26,8 @@ final readonly class DemoAccount
             email: (string) $user->email,
             role: $user->role_label,
             tenant: $hospital?->name,
-            // "General Hospital A" → "A"; the SaaS account has no hospital.
-            tag: $hospital === null ? 'Central' : Str::of($hospital->name)->afterLast(' ')->value(),
+            // The demo's own hospital is "A", the isolation tenant "B"; the SaaS account has none.
+            tag: $hospital === null ? 'Central' : (str_ends_with((string) $user->email, '.b@test.com') ? 'B' : 'A'),
             kind: match (true) {
                 $hospital === null => 'super',
                 str_ends_with((string) $user->email, '.b@test.com') => 'b',

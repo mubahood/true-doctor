@@ -91,6 +91,24 @@ class LabService
         return $item;
     }
 
+    /**
+     * Report the results back: results entered mean the specimen was taken and
+     * run, so an order still Ordered or Collected steps through to Completed.
+     */
+    public function complete(LabOrder $order, ?int $by = null): LabOrder
+    {
+        return DB::transaction(function () use ($order, $by) {
+            foreach ([LabOrderStatus::Collected, LabOrderStatus::Processing, LabOrderStatus::Completed] as $step) {
+                $order = $order->fresh() ?? $order;
+                if ($order->status->canTransitionTo($step)) {
+                    $order = $this->transition($order, $step, $by);
+                }
+            }
+
+            return $order->status === LabOrderStatus::Completed ? $order : $this->transition($order, LabOrderStatus::Completed, $by);
+        });
+    }
+
     public function transition(LabOrder $order, LabOrderStatus $to, ?int $by = null): LabOrder
     {
         return DB::transaction(function () use ($order, $to) {

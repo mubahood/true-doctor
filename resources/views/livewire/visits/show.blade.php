@@ -2,6 +2,9 @@
   <x-ui.page-header :title="$visit->patient?->full_name ?? $visit->visit_no"
                     :crumbs="['Visits' => route('admin.visits.index'), $visit->visit_no => null]">
     <x-slot:actions>
+      @if($printer = app(\App\Support\HospitalSettings::class)->receiptPrinter())
+        <a href="{{ route('admin.visits.ticket', [$visit, 'w' => $printer]) }}" target="_blank" rel="noopener" class="btn-tb btn-tb-sm"><i class="fas fa-ticket" aria-hidden="true"></i> Queue ticket</a>
+      @endif
       <x-ui.badge :tone="$visit->stateBadge()">{{ $visit->stateLabel() }}</x-ui.badge>
     </x-slot:actions>
   </x-ui.page-header>
@@ -95,11 +98,23 @@
     {{-- ── Workspace panels (each #[Lazy]) ──────────────────── --}}
     <div class="tb-stack">
       <livewire:visits.panels.clinical :visit-id="$visit->id" :key="'clinical-'.$visit->id" />
+      <livewire:visits.panels.diagnoses :visit-id="$visit->id" :key="'diagnoses-'.$visit->id" />
 
-      {{-- A dental clinic charts the teeth and bills procedures on the visit (docs/dental.md). --}}
-      @if($visit->patient && \App\Services\DentalService::enabledFor(app(\App\Support\HospitalSettings::class)->hospital()))
+      {{-- A dental clinic charts the teeth and bills procedures on the visit (docs/dental.md).
+           Elsewhere the chart waits behind a press (DentalService::chartOnVisit). --}}
+      @php($dentalHospital = app(\App\Support\HospitalSettings::class)->hospital())
+      @if($visit->patient && \App\Services\DentalService::enabledFor($dentalHospital))
         @canany(['treatments.view', 'visits.diagnose'])
-          <livewire:patients.tabs.dental :patient-id="$visit->patient_id" :visit-id="$visit->id" :key="'dental-'.$visit->id" />
+          @if($dentalOpen || \App\Services\DentalService::chartOnVisit($visit, $dentalHospital))
+            <livewire:patients.tabs.dental :patient-id="$visit->patient_id" :visit-id="$visit->id" :key="'dental-'.$visit->id" />
+          @else
+            <div class="tb-card">
+              <div class="tb-card-header">
+                <span class="tb-card-title"><i class="fas fa-tooth" aria-hidden="true"></i> Dental chart</span>
+                <button type="button" class="btn-tb btn-tb-sm" wire:click="$set('dentalOpen', true)" wire:loading.attr="disabled" wire:target="dentalOpen">Open the chart</button>
+              </div>
+            </div>
+          @endif
         @endcanany
       @endif
 

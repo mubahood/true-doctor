@@ -23,15 +23,16 @@ class PlanSeeder extends Seeder
             [
                 'name' => 'Starter', 'slug' => 'starter', 'price' => '10000.00',
                 'description' => 'For a single clinic finding its feet',
-                'limits' => ['max_staff' => 5, 'max_patients' => 100, 'max_beds' => 10],
-                'features' => ['Up to 5 staff accounts', 'Up to 100 patients', 'Up to 10 beds', 'Email support'],
+                // Staff and beds only: patients are never limited (PlanLimit).
+                'limits' => ['max_staff' => 5, 'max_beds' => 10],
+                'features' => ['Up to 5 staff accounts', 'Unlimited patients', 'Up to 10 beds', 'Email support'],
                 'is_featured' => false,
             ],
             [
                 'name' => 'Professional', 'slug' => 'professional', 'price' => '50000.00',
                 'description' => 'For a growing hospital with several departments',
-                'limits' => ['max_staff' => 50, 'max_patients' => 1000, 'max_beds' => 100],
-                'features' => ['Up to 50 staff accounts', 'Up to 1,000 patients', 'Up to 100 beds', 'Email support'],
+                'limits' => ['max_staff' => 50, 'max_beds' => 100],
+                'features' => ['Up to 50 staff accounts', 'Unlimited patients', 'Up to 100 beds', 'Email support'],
                 'is_featured' => true,
             ],
             [

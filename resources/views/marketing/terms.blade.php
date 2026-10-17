@@ -1,5 +1,5 @@
 @extends('layouts.marketing')
-@section('title', 'Terms of Service — True-Doctor')
+@section('title', 'Terms of service | True-Doctor')
 @section('desc', 'The terms your hospital agrees to when it subscribes to True-Doctor: what the service is, what we owe each other, and what happens if either side stops.')
 
 @section('content')
@@ -47,7 +47,7 @@
     <h2 id="accounts">Accounts and access</h2>
     <p>
       Accounts are for your hospital&rsquo;s own staff and are not for sharing. Each person
-      who uses the system should have their own login — the audit trail is only worth
+      who uses the system should have their own login: the audit trail is only worth
       anything if it names a person.
     </p>
 
@@ -67,7 +67,7 @@
       <li>Use it only for lawful healthcare operations.</li>
     </ul>
     <p>
-      If you find a security problem, tell us — see the
+      If you find a security problem, tell us; see the
       <a class="link" href="{{ route('security') }}">security page</a>. Reporting one in
       good faith is not a breach of these terms.
     </p>
@@ -75,7 +75,7 @@
     <h2 id="billing">Subscriptions and payment</h2>
     <p>
       Every plan begins with a 14-day free trial. No card is taken to start it, and
-      nothing is charged if you do nothing at the end of it — the account simply
+      nothing is charged if you do nothing at the end of it. The account simply
       pauses.
     </p>
     <p>
@@ -93,7 +93,7 @@
     <p>
       Your hospital owns the records it enters. You can export them at any time,
       including while an account is paused. We do not use your clinical data for any
-      purpose other than providing the service to you — see the
+      purpose other than providing the service to you; see the
       <a class="link" href="{{ route('privacy') }}">privacy policy</a>.
     </p>
 
@@ -109,7 +109,7 @@
     <p>
       You can cancel at any time from inside your account; the subscription runs to the
       end of the period you have paid for. We may suspend or end an account for
-      non-payment or for a serious breach of the acceptable-use section above — and
+      non-payment or for a serious breach of the acceptable-use section above, and
       other than in a case of deliberate abuse, we will give you notice and a chance to
       put it right. You get your data out either way.
     </p>

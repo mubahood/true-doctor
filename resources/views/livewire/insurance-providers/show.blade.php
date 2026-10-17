@@ -107,7 +107,7 @@
         <caption class="sr-only">What each member spent between {{ $usage['from']->format('d M Y') }} and {{ $usage['to']->format('d M Y') }}</caption>
         <thead>
           <tr><th>Member</th><th>Patient no.</th><th>Member no.</th><th>Card</th>
-              <th style="text-align:right;">Movements</th><th style="text-align:right;">Spent</th></tr>
+              <th class="tb-text-right">Movements</th><th class="tb-text-right">Spent</th></tr>
         </thead>
         <tbody>
           @forelse($usage['members'] as $row)
@@ -116,8 +116,8 @@
               <td class="muted mono">{{ $row['patient_no'] }}</td>
               <td class="muted mono">{{ $row['member_no'] ?? '—' }}</td>
               <td class="muted mono">{{ $row['card'] }}</td>
-              <td style="text-align:right;" class="muted">{{ $row['entries'] }}</td>
-              <td style="text-align:right;" class="mono">{{ \App\Support\HospitalSettings::money($row['spent']) }}</td>
+              <td class="tb-text-right muted">{{ $row['entries'] }}</td>
+              <td class="tb-text-right mono">{{ \App\Support\HospitalSettings::money($row['spent']) }}</td>
             </tr>
           @empty
             <tr><td colspan="6"><x-ui.empty icon="fa-file-invoice" message="Nothing was spent on this insurer’s cards in this window." compact /></td></tr>
@@ -140,7 +140,7 @@
         <caption class="sr-only">Cards this insurer stands behind, those in debt first</caption>
         <thead>
           <tr><th>Card</th><th>Member</th><th>Member no.</th><th>Status</th>
-              <th style="text-align:right;">Balance</th><th><span class="sr-only">Actions</span></th></tr>
+              <th class="tb-text-right">Balance</th><th><span class="sr-only">Actions</span></th></tr>
         </thead>
         <tbody>
           @forelse($this->cards as $card)
@@ -151,10 +151,10 @@
               <td>{{ $card->patient?->full_name ?? '—' }}</td>
               <td class="muted mono">{{ $card->member_no ?? '—' }}</td>
               <td><x-ui.badge :tone="$card->status->badge()">{{ $card->status->label() }}</x-ui.badge></td>
-              <td style="text-align:right;" class="mono {{ bccomp((string) $card->balance, '0', 2) < 0 ? 'tb-danger' : '' }}">
+              <td class="tb-text-right mono {{ bccomp((string) $card->balance, '0', 2) < 0 ? 'tb-danger' : '' }}">
                 {{ \App\Support\HospitalSettings::money($card->balance) }}
               </td>
-              <td style="text-align:right;">
+              <td class="tb-text-right">
                 @if($this->mayManage && bccomp($card->debt(), '0', 2) > 0 && bccomp((string) $provider->float_balance, '0', 2) > 0)
                   <button type="button" class="btn-tb btn-tb-sm btn-tb-ghost" wire:click="settleOne({{ $card->id }})">
                     <i class="fas fa-money-bill-transfer" aria-hidden="true"></i> Clear
@@ -181,7 +181,7 @@
         <caption class="sr-only">Every movement of this insurer's float</caption>
         <thead>
           <tr><th>When</th><th>What</th><th>Card</th><th>Reference</th>
-              <th style="text-align:right;">Amount</th><th style="text-align:right;">Float after</th><th>By</th></tr>
+              <th class="tb-text-right">Amount</th><th class="tb-text-right">Float after</th><th>By</th></tr>
         </thead>
         <tbody>
           @forelse($this->entries as $entry)
@@ -197,10 +197,10 @@
                 @else — @endif
               </td>
               <td class="muted mono">{{ $entry->reference ?? '—' }}</td>
-              <td style="text-align:right;" class="mono {{ bccomp($entry->signedAmount(), '0', 2) < 0 ? 'tb-danger' : 'tb-primary' }}">
+              <td class="tb-text-right mono {{ bccomp($entry->signedAmount(), '0', 2) < 0 ? 'tb-danger' : 'tb-primary' }}">
                 {{ bccomp($entry->signedAmount(), '0', 2) < 0 ? '−' : '+' }}{{ \App\Support\HospitalSettings::money(ltrim($entry->signedAmount(), '-')) }}
               </td>
-              <td style="text-align:right;" class="mono">{{ \App\Support\HospitalSettings::money($entry->balance_after) }}</td>
+              <td class="tb-text-right mono">{{ \App\Support\HospitalSettings::money($entry->balance_after) }}</td>
               <td class="muted">{{ $entry->createdBy?->name ?? '—' }}</td>
             </tr>
           @empty

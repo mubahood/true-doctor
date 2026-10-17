@@ -17,7 +17,7 @@
 @endphp
 <div class="af-eyebrow">Staff access</div>
 <h1 class="af-title">Sign in</h1>
-<p class="af-sub">{{ $hereName ? $hereName.' staff only' : 'Hospital staff only' }} — enter your work email and password.</p>
+<p class="af-sub">{{ $hereName ? $hereName.' staff only' : 'Hospital staff only' }}. Enter your work email and password.</p>
 
 @if(session('status'))
   <div class="a-alert ok" role="status"><i class="fas fa-circle-check" aria-hidden="true"></i><span>{{ session('status') }}</span></div>
@@ -76,10 +76,10 @@
 
 <div class="a-alt"><x-support.link context="auth.signin" :vars="['hospital' => \App\Support\HospitalBrand::forSignIn()->name() ?? 'True-Doctor']" class="a-link">Trouble signing in? WhatsApp us</x-support.link></div>
 @if(\App\Support\Edition::isSaas())
-  <div class="a-alt">New here? <a href="{{ route('register') }}">Create your hospital</a> — 14-day free trial.</div>
+  <div class="a-alt">New here? <a href="{{ route('register') }}">Create your clinic</a>. 14 days free.</div>
 @endif
 @if(\App\Http\Controllers\Auth\AuthenticatedSessionController::demoAvailable())
-  <div class="a-alt">Just looking? <a href="{{ route('test-login') }}">Open the demonstration</a> — sample hospital, no sign-up.</div>
+  <div class="a-alt">Just looking? <a href="{{ route('demo') }}">Open the demo hospital</a>. Sample data, no sign-up.</div>
 @endif
 @if(\App\Support\Edition::isSaas())
   <div class="a-alt"><a href="{{ route('home') }}" class="a-back"><i class="fas fa-arrow-left" aria-hidden="true"></i> Back to home</a></div>

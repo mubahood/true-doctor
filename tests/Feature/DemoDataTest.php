@@ -12,6 +12,7 @@ use App\Support\CurrentHospital;
 use App\Support\PlanLimit;
 use Database\Seeders\DemoMoney;
 use Database\Seeders\DemoPeople;
+use Database\Seeders\DemoPopulationSeeder;
 use Database\Seeders\DemoSeeder;
 use Database\Seeders\PlanSeeder;
 use Database\Seeders\RbacSeeder;
@@ -52,12 +53,13 @@ class DemoDataTest extends TestCase
 
     // ── The money ────────────────────────────────────────────────────────
 
-    public function test_the_hospital_every_test_account_lands_in_uses_dollars(): void
+    public function test_the_hospital_every_test_account_lands_in_is_ugandan_and_uses_shillings(): void
     {
-        $this->assertSame('USD', $this->hospital->currency);
-        $this->assertSame('USD', $this->hospital->settings['billing']['currency_code'] ?? null);
-        $this->assertSame('$', $this->hospital->settings['billing']['currency_symbol'] ?? null);
-        $this->assertSame(2, $this->hospital->settings['billing']['decimals'] ?? null);
+        $this->assertSame('Kato Medical Centre', $this->hospital->name);
+        $this->assertSame('UGX', $this->hospital->currency);
+        $this->assertSame('UGX', $this->hospital->settings['billing']['currency_code'] ?? null);
+        $this->assertSame('USh', $this->hospital->settings['billing']['currency_symbol'] ?? null);
+        $this->assertSame(0, $this->hospital->settings['billing']['decimals'] ?? null);
     }
 
     /**
@@ -78,15 +80,18 @@ class DemoDataTest extends TestCase
      */
     public function test_nothing_is_priced_in_the_wrong_currency(): void
     {
-        // Nothing an outpatient clinic sells costs four figures in dollars.
-        $dearest = Service::where('is_active', true)->max('price');
-        $this->assertLessThan(1000, (float) $dearest, "a demo service is priced at {$dearest}");
+        // Written in shillings and read in shillings: a consultation is
+        // thousands of shillings, never twenty, never twenty million.
+        $dearest = (float) Service::where('is_active', true)->max('price');
+        $this->assertGreaterThanOrEqual(1000, $dearest, "a demo service is priced at {$dearest}: dollars read as shillings?");
+        $this->assertLessThan(10_000_000, $dearest, "a demo service is priced at {$dearest}");
 
-        $dearestTest = LabTest::where('is_active', true)->max('price');
-        $this->assertLessThan(1000, (float) $dearestTest, "a demo lab test is priced at {$dearestTest}");
+        $cheapestTest = (float) LabTest::where('is_active', true)->min('price');
+        $this->assertGreaterThanOrEqual(1000, $cheapestTest, "a demo lab test is priced at {$cheapestTest}");
 
-        $dearestBed = Bed::max('daily_charge');
-        $this->assertLessThan(1000, (float) $dearestBed, "a demo bed is {$dearestBed} a night");
+        $dearestBed = (float) Bed::max('daily_charge');
+        $this->assertGreaterThanOrEqual(1000, $dearestBed, "a demo bed is {$dearestBed} a night");
+        $this->assertLessThan(5_000_000, $dearestBed, "a demo bed is {$dearestBed} a night");
     }
 
     public function test_the_conversion_itself(): void
@@ -189,6 +194,46 @@ class DemoDataTest extends TestCase
         foreach (array_keys(DemoPeople::conditions()) as $index) {
             $this->assertLessThan($size, $index, "a condition is recorded against roster position {$index}, which does not exist");
         }
+    }
+
+    public function test_every_patient_gets_a_story_that_could_be_theirs(): void
+    {
+        // A pregnancy on an eight-year-old boy is the first thing a visiting
+        // doctor would see. presentation() and reasonFor() are pure, so every
+        // person on the roster is checked here without the minute-long seed.
+        $seeder = new DemoPopulationSeeder;
+        $story = (new \ReflectionMethod($seeder, 'presentation'))->getClosure($seeder);
+        $reason = (new \ReflectionMethod($seeder, 'reasonFor'))->getClosure($seeder);
+        $reasons = [['Antenatal review', 'female', 16, 45], ['Immunisation', null, 0, 12], ['Diabetes review', null, 30, 120]];
+
+        foreach (DemoPeople::roster() as $i => [$first, $last, $sex, $age]) {
+            $patient = new Patient(['first_name' => $first, 'last_name' => $last, 'sex' => $sex, 'dob' => now()->subYears($age)->subDays(10)->toDateString()]);
+            $case = $story($i, $patient);
+            $who = "{$first} {$last} ({$sex}, {$age})";
+
+            if ($case['reason'] === 'Antenatal review') {
+                $this->assertTrue($sex === 'female' && $age >= 16 && $age <= 45, "{$who} was given an antenatal review");
+            }
+            if ($case['department'] === 'Paediatrics') {
+                $this->assertLessThan(13, $age, "{$who} was seen in paediatrics");
+            }
+            if (in_array($case['reason'], ['Blood pressure review', 'Diabetes review'], true)) {
+                $this->assertGreaterThanOrEqual(30, $age, "{$who} was given a {$case['reason']}");
+            }
+
+            $booked = $reason($patient, $reasons, $i);
+            if ($booked === 'Antenatal review') {
+                $this->assertTrue($sex === 'female' && $age >= 16 && $age <= 45, "{$who} was booked for an antenatal review");
+            }
+        }
+    }
+
+    public function test_no_member_of_staff_shares_a_name_with_a_patient(): void
+    {
+        $patients = array_map(fn (array $p) => $p[0].' '.$p[1], DemoPeople::roster());
+        $staff = User::withoutGlobalScopes()->pluck('name')->map(fn (string $n) => preg_replace('/^Dr\.?\s+/', '', $n))->all();
+
+        $this->assertSame([], array_values(array_intersect($staff, $patients)));
     }
 
     // ── What DemoSeeder itself leaves behind ─────────────────────────────

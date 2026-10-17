@@ -4,7 +4,9 @@ namespace App\Livewire\Concerns;
 
 use App\Http\Requests\PatientRequest;
 use App\Models\Patient;
+use App\Services\Messaging\ConsentService;
 use App\Services\PatientService;
+use Livewire\Attributes\Locked;
 
 /**
  * Shared patient create/edit form state + persistence. Used by both the
@@ -67,6 +69,19 @@ trait InteractsWithPatientForm
 
     public bool $consent_given = false;
 
+    /**
+     * Messages the patient agreed to (roadmap 05 §2): about their care by SMS
+     * and by WhatsApp, on for a new patient once the desk has read them the
+     * sentence; news and offers, off. Keys are "channel_purpose".
+     *
+     * @var array<string,bool>
+     */
+    public array $messaging = ['sms_care' => true, 'whatsapp_care' => true, 'sms_marketing' => false];
+
+    /** The answers already on the record, so editing never invents a "no" nobody gave. @var array<string,bool> */
+    #[Locked]
+    public array $messagingOnFile = [];
+
     protected function fillPatientForm(Patient $p): void
     {
         $this->first_name = (string) $p->first_name;
@@ -92,6 +107,15 @@ trait InteractsWithPatientForm
         $this->insurance_member_no = $p->insurance_member_no;
         $this->notes = $p->notes;
         $this->consent_given = (bool) $p->consent_given;
+        $onFile = app(ConsentService::class)->current($p);
+        $this->messagingOnFile = [];
+        foreach (array_keys($this->messaging) as $key) {
+            $dotted = str_replace('_', '.', $key);
+            $this->messaging[$key] = $onFile[$dotted] ?? false;
+            if (array_key_exists($dotted, $onFile)) {
+                $this->messagingOnFile[$key] = $onFile[$dotted];
+            }
+        }
     }
 
     protected function resetPatientForm(): void
@@ -101,8 +125,9 @@ trait InteractsWithPatientForm
             'phone_1', 'phone_2', 'email', 'district_id', 'address', 'home_address',
             'allergies', 'chronic_conditions', 'spouse_name', 'father_name', 'mother_name',
             'emergency_contact_name', 'emergency_contact_phone',
-            'insurance_provider', 'insurance_member_no', 'notes', 'consent_given',
+            'insurance_provider', 'insurance_member_no', 'notes', 'consent_given', 'messaging',
         ]);
+        $this->messagingOnFile = [];
         $this->status = 'active';
         $this->resetErrorBag();
     }
@@ -162,8 +187,20 @@ trait InteractsWithPatientForm
 
         validator($data, (new PatientRequest)->rules())->validate();
 
-        return $patient
+        $saved = $patient
             ? $service->update($patient, $data)
             : $service->register($data, auth()->id());
+
+        // A new patient: the desk read them the sentence, so every answer is
+        // recorded. An edit: only what is already on file or newly ticked.
+        $answers = [];
+        foreach ($this->messaging as $key => $on) {
+            if ($patient === null || array_key_exists($key, $this->messagingOnFile) || $on) {
+                $answers[str_replace('_', '.', (string) $key)] = (bool) $on;
+            }
+        }
+        app(ConsentService::class)->record($saved, $answers, 'desk', auth()->id());
+
+        return $saved;
     }
 }

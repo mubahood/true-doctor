@@ -6,7 +6,7 @@
 @section('form')
 <div class="af-eyebrow">Get started</div>
 <h1 class="af-title">Create your hospital</h1>
-<p class="af-sub">Set up your workspace in under a minute — no credit card.</p>
+<p class="af-sub">Set up your clinic in under a minute. No card needed.</p>
 
 <div class="reg-trial">
   <i class="fas fa-gift" aria-hidden="true"></i>
@@ -68,7 +68,7 @@
       @error('email')
         <p class="a-err" id="email-error" role="alert"><i class="fas fa-circle-exclamation" aria-hidden="true"></i> {{ $message }}</p>
       @else
-        <div class="a-hint">This becomes your sign-in — and where your invoices go.</div>
+        <div class="a-hint">This becomes your sign-in, and where your invoices go.</div>
       @enderror
     </div>
 
@@ -178,7 +178,7 @@
 
 <div class="a-alt">Already have an account? <a href="{{ route('admin.login') }}">Sign in</a></div>
 @if(\App\Http\Controllers\Auth\AuthenticatedSessionController::demoAvailable())
-  <div class="a-alt">Rather look first? <a href="{{ route('test-login') }}">Open the demonstration</a> — no sign-up needed.</div>
+  <div class="a-alt">Rather look first? <a href="{{ route('demo') }}">Open the demo hospital</a>. No sign-up needed.</div>
 @endif
 @endsection
 

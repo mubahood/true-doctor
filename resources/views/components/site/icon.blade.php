@@ -55,6 +55,31 @@ $paths = [
     'xray' => '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M12 7v10M9 9h6M8.5 12h7M9 15h6"/>',
     'whatsapp' => '<path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9z"/><path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1"/>',
     'building' => '<rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01"/>',
+    'arrow-left' => '<path d="M19 12H5M12 19l-7-7 7-7"/>',
+    'signal' => '<path d="M2 20h.01M7 20v-4M12 20v-8M17 20V8M22 4v16"/>',
+    'spinner' => '<path d="M21 12a9 9 0 1 1-6.22-8.56"/>',
+    'certificate' => '<circle cx="12" cy="8" r="6"/><path d="M15.48 12.89 17 22l-5-3-5 3 1.52-9.11"/>',
+    'gauge' => '<path d="m12 14 4-4M3.34 19a10 10 0 1 1 17.32 0"/>',
+    'wifi' => '<path d="M12 20h.01M2 8.82a15 15 0 0 1 20 0M5 12.86a10 10 0 0 1 14 0M8.5 16.43a5 5 0 0 1 7 0"/>',
+    'bell' => '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+    'user' => '<circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/>',
+    'user-plus' => '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>',
 ];
+// Font Awesome names the older pages and the data arrays still use.
+$aliases = [
+    'fa-check' => 'check', 'fa-arrow-right' => 'arrow-right', 'fa-arrow-left' => 'arrow-left', 'fa-circle-exclamation' => 'alert',
+    'fa-circle-check' => 'ok', 'fa-whatsapp' => 'whatsapp', 'fa-lock' => 'lock', 'fa-xmark' => 'x', 'fa-user-injured' => 'user',
+    'fa-stethoscope' => 'stethoscope', 'fa-signal' => 'signal', 'fa-shield-halved' => 'shield', 'fa-right-to-bracket' => 'login',
+    'fa-phone' => 'phone', 'fa-paper-plane' => 'send', 'fa-minus' => 'minus', 'fa-list-check' => 'list', 'fa-flask' => 'flask',
+    'fa-vial' => 'flask', 'fa-vials' => 'flask', 'fa-file-invoice-dollar' => 'receipt', 'fa-file-arrow-down' => 'download', 'fa-download' => 'download',
+    'fa-envelope' => 'mail', 'fa-circle-notch' => 'spinner', 'fa-chart-line' => 'chart', 'fa-certificate' => 'certificate',
+    'fa-calendar-check' => 'calendar', 'fa-bed' => 'bed', 'fa-bars' => 'menu', 'fa-gauge-high' => 'gauge', 'fa-pills' => 'pill',
+    'fa-user-shield' => 'shield', 'fa-wifi' => 'wifi', 'fa-user-plus' => 'user-plus', 'fa-shield-heart' => 'shield', 'fa-print' => 'printer',
+    'fa-prescription-bottle-medical' => 'pill', 'fa-plug' => 'database', 'fa-money-check-dollar' => 'wallet', 'fa-mobile-screen' => 'phone-device',
+    'fa-mobile-screen-button' => 'phone-device', 'fa-key' => 'key', 'fa-id-card' => 'clipboard', 'fa-diagram-project' => 'grid',
+    'fa-calculator' => 'coins', 'fa-box-archive' => 'box', 'fa-bell' => 'bell', 'fa-tooth' => 'tooth', 'fa-hospital' => 'hospital',
+    'fa-heart-pulse' => 'heart-pulse', 'fa-x-ray' => 'xray', 'fa-users' => 'users', 'fa-building' => 'building', 'fa-clock' => 'clock',
+];
+$name = $aliases[$name] ?? $name;
 @endphp
-<svg {{ $attributes->merge(['class' => 'i']) }} width="{{ $size }}" height="{{ $size }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">{!! $paths[$name] ?? $paths['check'] !!}</svg>
+<svg {{ $attributes->merge(['class' => 'i']) }} width="{{ $size }}" height="{{ $size }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">{!! $paths[$name] ?? $paths['ok'] !!}</svg>

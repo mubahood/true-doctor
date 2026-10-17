@@ -27,6 +27,7 @@ class HospitalSettings
         'consultation_fee' => 0,
         'invoice_prefix' => 'INV',
         'invoice_footer' => null,
+        'receipt_printer' => null,          // null | 58 | 80 (mm): roll paper at the desk
     ];
 
     /** Symbol + display decimals derived from a currency code when not overridden. */
@@ -93,6 +94,14 @@ class HospitalSettings
         }
 
         return $merged;
+    }
+
+    /** The width of the desk's receipt printer in mm (58 or 80), or null when it has none. */
+    public function receiptPrinter(): ?int
+    {
+        $width = (int) ($this->billing()['receipt_printer'] ?? 0);
+
+        return in_array($width, [58, 80], true) ? $width : null;
     }
 
     public function get(string $key, mixed $default = null): mixed

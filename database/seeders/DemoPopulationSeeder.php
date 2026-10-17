@@ -11,6 +11,7 @@ use App\Enums\PatientStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\RadiologyOrderStatus;
 use App\Enums\ResultFlag;
+use App\Enums\VisitStatus;
 use App\Models\Bed;
 use App\Models\Department;
 use App\Models\District;
@@ -139,8 +140,10 @@ class DemoPopulationSeeder extends Seeder
             $this->catalogue();
             $roster = $this->register();
             $this->history($roster);
+            $this->recentWeek($roster);
             $this->appointments($roster);
             $this->standingArrangements($roster);
+            $this->dental($roster);
             $this->books();
         });
 
@@ -299,6 +302,18 @@ class DemoPopulationSeeder extends Seeder
         ] as [$name, $price]) {
             $this->sync(Service::class, ['name' => $name], [
                 'price' => $this->money($price), 'tax_exempt' => $price === 0, 'is_active' => true,
+            ]);
+        }
+
+        // The dental unit's procedures, two of them priced as ranges the way dentists charge.
+        foreach ([
+            ['Composite filling', 60000, null], ['Amalgam filling', 40000, null],
+            ['Root canal treatment (molar)', 250000, 350000], ['Porcelain crown', 450000, null],
+            ['Difficult extraction', 50000, 80000],
+        ] as [$name, $price, $max]) {
+            $this->sync(Service::class, ['name' => $name], [
+                'price' => $this->money($price), 'max_price' => $max === null ? null : $this->money($max),
+                'category' => 'Dental', 'tax_exempt' => false, 'is_active' => true,
             ]);
         }
 
@@ -588,7 +603,9 @@ class DemoPopulationSeeder extends Seeder
 
             try {
                 Carbon::setTestNow($day);
-                $this->episode($patient, $scenario, $i);
+                // One transaction per episode: a failure leaves nothing half
+                // written, and one commit is far cheaper than a hundred.
+                \Illuminate\Support\Facades\DB::transaction(fn () => $this->episode($patient, $scenario, $i));
             } catch (\Throwable $e) {
                 // One awkward episode must not cost the other sixty. Say which
                 // and carry on — a silent skip is how a demo quietly loses a
@@ -603,14 +620,60 @@ class DemoPopulationSeeder extends Seeder
         }
     }
 
+    /**
+     * The last six working days, as busy as a clinic's: nine to twelve paid
+     * outpatient visits a day, taken at the till by two people.
+     *
+     * The history above spreads the register over three months, about one
+     * visit a day, which is honest for a record but makes yesterday look like
+     * a closed clinic: a cashier's day of two payments and a dashboard chart
+     * of one bar. Returning patients come back, so the same people recur.
+     * Idempotent: a week that already has its visits is left alone.
+     *
+     * @param  list<Patient>  $roster
+     */
+    private function recentWeek(array $roster): void
+    {
+        // Somebody mid-visit cannot be opened a second one; they wait their turn.
+        $busy = Visit::whereIn('status', [VisitStatus::Pending->value, VisitStatus::Ongoing->value])->pluck('patient_id')->all();
+        $active = collect($roster)
+            ->filter(fn (Patient $p) => $p->status === PatientStatus::Active && ! in_array($p->id, $busy, true))
+            ->values();
+        if ($active->isEmpty() || Visit::where('created_at', '>=', Carbon::now()->subDays(7)->startOfDay())->count() > 40) {
+            return;
+        }
+
+        $slot = 0;
+        for ($offset = 6; $offset >= 1; $offset--) {
+            $day = Carbon::now()->subDays($offset);
+            if ($day->isSunday()) {
+                continue;
+            }
+
+            $count = 9 + ($offset % 4);
+            for ($k = 0; $k < $count; $k++, $slot++) {
+                $patient = $active[($slot * 7 + $offset) % $active->count()];
+                try {
+                    Carbon::setTestNow($day->copy()->setTime(8, 10)->addMinutes($k * 47));
+                    // The front desk takes the morning's money, accounts the afternoon's.
+                    \Illuminate\Support\Facades\DB::transaction(fn () => $this->episode($patient, 'settled', $slot + 100, $k < $count / 2 ? $this->desk : $this->cashier));
+                } catch (\Throwable $e) {
+                    $this->command->warn('DemoPopulationSeeder: a visit on '.$day->toDateString().' skipped: '.$e->getMessage());
+                } finally {
+                    Carbon::setTestNow();
+                }
+            }
+        }
+    }
+
     /** One patient's episode of care, carried as far as its scenario says. */
-    private function episode(Patient $patient, string $scenario, int $i): void
+    private function episode(Patient $patient, string $scenario, int $i, ?User $till = null): void
     {
         $visits = app(VisitService::class);
         $billing = app(BillingService::class);
         $by = $this->doctor->id;
 
-        $presentation = $this->presentation($i);
+        $presentation = $this->presentation($i, $patient);
         $department = Department::where('name', $presentation['department'])->first();
 
         $visit = $visits->open([
@@ -696,7 +759,7 @@ class DemoPopulationSeeder extends Seeder
                 PaymentMethod::MobileMoney,
                 bcdiv((string) $invoice->total, '3', 2),
                 [],
-                $this->actor($this->cashier),
+                $this->actor($till ?? $this->cashier),
             ),
             'voided' => $this->voidIt($invoice),
             'insured' => $this->claim($patient, $invoice),
@@ -706,7 +769,7 @@ class DemoPopulationSeeder extends Seeder
                 $this->methodFor($i),
                 (string) $invoice->balance,
                 [],
-                $this->actor($this->cashier),
+                $this->actor($till ?? $this->cashier),
             ),
         };
 
@@ -768,14 +831,21 @@ class DemoPopulationSeeder extends Seeder
      * for three days" tells a viewer what the field is for in a way that
      * "Consectetur adipiscing" never will.
      *
-     * @return array{department:string,reason:string,arrival:string,complaints:string,diagnosis:string,plan:string,charge:string,test:string,study:string,drug:string,dose:string}
+     * Each case says who it can honestly belong to ('for': sex or null,
+     * youngest, oldest), and a patient gets the first case from their place in
+     * the rota that fits them. Without that the rota handed an antenatal
+     * review to an eight-year-old boy, which a visiting doctor notices before
+     * anything else on the screen.
+     *
+     * @return array{department:string,for:array{0:?string,1:int,2:int},reason:string,arrival:string,complaints:string,diagnosis:string,plan:string,charge:string,test:string,study:string,drug:string,dose:string}
      */
-    private function presentation(int $i): array
+    private function presentation(int $i, Patient $patient): array
     {
         $cases = [
             [
                 'department' => 'Outpatient',
                 'reason' => 'Fever and headache',
+                'for' => [null, 0, 120],
                 'arrival' => 'Walked in at the triage desk. Temperature taken on arrival.',
                 'complaints' => 'Fever for three days with headache, joint pain and poor appetite. No vomiting.',
                 'diagnosis' => 'Uncomplicated malaria, confirmed by rapid diagnostic test.',
@@ -789,6 +859,7 @@ class DemoPopulationSeeder extends Seeder
             [
                 'department' => 'Outpatient',
                 'reason' => 'Cough and chest pain',
+                'for' => [null, 0, 120],
                 'arrival' => 'Referred by the nearby health centre with a letter.',
                 'complaints' => 'Productive cough for two weeks, worse at night. Chest pain on deep breathing. No night sweats.',
                 'diagnosis' => 'Lower respiratory tract infection. Tuberculosis screening negative.',
@@ -802,6 +873,7 @@ class DemoPopulationSeeder extends Seeder
             [
                 'department' => 'Outpatient',
                 'reason' => 'Abdominal pain',
+                'for' => [null, 16, 120],
                 'arrival' => 'Walked in. Asked to be seen by the same doctor as last time.',
                 'complaints' => 'Burning upper abdominal pain for a month, worse when hungry, relieved by food.',
                 'diagnosis' => 'Peptic ulcer disease. No alarm features on examination.',
@@ -815,6 +887,7 @@ class DemoPopulationSeeder extends Seeder
             [
                 'department' => 'Maternity',
                 'reason' => 'Antenatal review',
+                'for' => ['female', 16, 45],
                 'arrival' => 'Booked antenatal appointment. Card and previous scan brought along.',
                 'complaints' => 'Routine second-trimester review. Feeling well, fetal movements present.',
                 'diagnosis' => 'Normal singleton pregnancy at 24 weeks. Mild iron deficiency anaemia.',
@@ -828,6 +901,7 @@ class DemoPopulationSeeder extends Seeder
             [
                 'department' => 'Paediatrics',
                 'reason' => 'Diarrhoea and vomiting',
+                'for' => [null, 0, 12],
                 'arrival' => 'Brought in by the mother. Seen ahead of the queue on triage.',
                 'complaints' => 'Loose stools six times today with two episodes of vomiting. Still drinking. No blood in stool.',
                 'diagnosis' => 'Acute gastroenteritis with mild dehydration.',
@@ -841,6 +915,7 @@ class DemoPopulationSeeder extends Seeder
             [
                 'department' => 'Outpatient',
                 'reason' => 'Blood pressure review',
+                'for' => [null, 35, 120],
                 'arrival' => 'Scheduled three-month review. Own BP diary handed in at reception.',
                 'complaints' => 'Three-month review. Taking medication daily, no headaches or swelling of the legs.',
                 'diagnosis' => 'Hypertension, adequately controlled on current dose.',
@@ -854,6 +929,7 @@ class DemoPopulationSeeder extends Seeder
             [
                 'department' => 'Outpatient',
                 'reason' => 'Diabetes review',
+                'for' => [null, 30, 120],
                 'arrival' => 'Scheduled review. Fasting since last night for bloods.',
                 'complaints' => 'Passing urine frequently at night. Tired in the afternoons. Weight stable.',
                 'diagnosis' => 'Type 2 diabetes with suboptimal control (HbA1c above target).',
@@ -867,6 +943,7 @@ class DemoPopulationSeeder extends Seeder
             [
                 'department' => 'Surgery',
                 'reason' => 'Wound on the leg',
+                'for' => [null, 0, 120],
                 'arrival' => 'Walked in to the treatment room. Dressing already soaked through.',
                 'complaints' => 'Cut on the right shin from a fall four days ago. Now painful with some discharge.',
                 'diagnosis' => 'Infected laceration of the right shin. No underlying fracture on X-ray.',
@@ -880,8 +957,9 @@ class DemoPopulationSeeder extends Seeder
             [
                 'department' => 'Dental',
                 'reason' => 'Toothache',
+                'for' => [null, 12, 120],
                 'arrival' => 'Walked in first thing. In visible pain, seen ahead of the queue.',
-                'complaints' => 'Severe pain in a lower right molar for five days, keeping her awake. Face slightly swollen.',
+                'complaints' => 'Severe pain in a lower right molar for five days, worse at night. Face slightly swollen.',
                 'diagnosis' => 'Dental abscess of the lower right first molar.',
                 'plan' => 'Tooth extracted under local anaesthetic. Antibiotics and analgesia. Salt-water rinses from tomorrow.',
                 'charge' => 'Tooth extraction',
@@ -893,6 +971,7 @@ class DemoPopulationSeeder extends Seeder
             [
                 'department' => 'Outpatient',
                 'reason' => 'Difficulty in breathing',
+                'for' => [null, 5, 120],
                 'arrival' => 'Arrived by boda. Taken straight to the treatment room.',
                 'complaints' => 'Wheeze and chest tightness since last night, worse on exertion. Known asthmatic.',
                 'diagnosis' => 'Acute asthma exacerbation, moderate. Responded well to nebulisation.',
@@ -906,6 +985,7 @@ class DemoPopulationSeeder extends Seeder
             [
                 'department' => 'Eye clinic',
                 'reason' => 'Blurred vision',
+                'for' => [null, 18, 120],
                 'arrival' => 'Self-referred to the eye clinic after a community screening.',
                 'complaints' => 'Gradual blurring of distance vision over six months. No pain or redness.',
                 'diagnosis' => 'Refractive error (myopia). No diabetic retinopathy seen.',
@@ -919,6 +999,7 @@ class DemoPopulationSeeder extends Seeder
             [
                 'department' => 'Outpatient',
                 'reason' => 'Fever in a returning traveller',
+                'for' => [null, 0, 120],
                 'arrival' => 'Walked in this morning. Travel history taken at the desk.',
                 'complaints' => 'Fever and chills two days after returning from the north. Some nausea, no rash.',
                 'diagnosis' => 'Malaria, parasitaemia seen on blood slide. No features of severe disease.',
@@ -931,7 +1012,39 @@ class DemoPopulationSeeder extends Seeder
             ],
         ];
 
-        return $cases[$i % count($cases)];
+        for ($k = 0; $k < count($cases); $k++) {
+            $case = $cases[($i + $k) % count($cases)];
+            if ($this->fits($patient, ...$case['for'])) {
+                return $case;
+            }
+        }
+
+        return $cases[0]; // fever fits everybody; this line is never reached
+    }
+
+    /**
+     * The first reason from this place in the list that fits the patient.
+     *
+     * @param  list<array{0:string,1:?string,2:int,3:int}>  $reasons
+     */
+    private function reasonFor(Patient $patient, array $reasons, int $index): string
+    {
+        for ($k = 0; $k < count($reasons); $k++) {
+            [$reason, $sex, $youngest, $oldest] = $reasons[($index + $k) % count($reasons)];
+            if ($this->fits($patient, $sex, $youngest, $oldest)) {
+                return $reason;
+            }
+        }
+
+        return 'Follow-up review';
+    }
+
+    /** Whether a patient could be the subject of a case or an appointment reason. */
+    private function fits(Patient $patient, ?string $sex, int $youngest, int $oldest): bool
+    {
+        $age = $patient->dob->age ?? 30;
+
+        return ($sex === null || $patient->sex?->value === $sex) && $age >= $youngest && $age <= $oldest;
     }
 
     /** Plausible observations, varied by age so the charts are not a flat line. */
@@ -1279,10 +1392,11 @@ class DemoPopulationSeeder extends Seeder
             return;
         }
 
+        // reason, then who it can belong to (as presentation()'s 'for').
         $reasons = [
-            'Follow-up review', 'Blood pressure check', 'Antenatal review',
-            'Dressing change', 'Results review', 'Diabetes review',
-            'Immunisation', 'Post-operative review', 'Spectacles collection',
+            ['Follow-up review', null, 0, 120], ['Blood pressure check', null, 35, 120], ['Antenatal review', 'female', 16, 45],
+            ['Dressing change', null, 0, 120], ['Results review', null, 0, 120], ['Diabetes review', null, 30, 120],
+            ['Immunisation', null, 0, 12], ['Post-operative review', null, 0, 120], ['Spectacles collection', null, 6, 120],
         ];
 
         $sources = ['phone', 'walk_in', 'online', 'referral'];
@@ -1291,8 +1405,8 @@ class DemoPopulationSeeder extends Seeder
         for ($offset = -14; $offset <= 14; $offset++) {
             $day = Carbon::now()->addDays($offset);
 
-            // The doctor's windows are Monday to Friday.
-            if ($day->isWeekend()) {
+            // The doctor's windows are Monday to Saturday morning.
+            if ($day->isSunday()) {
                 continue;
             }
 
@@ -1310,7 +1424,7 @@ class DemoPopulationSeeder extends Seeder
                         'scheduled_at' => $at->toDateTimeString(),
                         'duration_minutes' => 30,
                         'source' => $sources[$index % count($sources)],
-                        'reason' => $reasons[$index % count($reasons)],
+                        'reason' => $this->reasonFor($patient, $reasons, $index),
                     ], $this->actor($this->desk));
                 } catch (\Throwable) {
                     continue; // slot taken or outside the window — try the next
@@ -1325,41 +1439,91 @@ class DemoPopulationSeeder extends Seeder
                     continue;
                 }
 
+                // Each on its own day, so the records carry that day's times.
+                $when = Carbon::parse($appointment->scheduled_at);
                 match ($index % 5) {
                     0, 1, 2 => $this->attended($appointment),
-                    3 => $service->transition($appointment, AppointmentStatus::NoShow, $this->actor($this->desk), 'Did not attend; no contact.'),
-                    default => $service->transition($appointment, AppointmentStatus::Cancelled, $this->actor($this->desk), 'Cancelled by the patient — travelling.'),
+                    3 => $this->at($when->copy()->addHours(3), fn () => $service->transition($appointment, AppointmentStatus::NoShow, $this->actor($this->desk), 'Did not attend; no contact.')),
+                    default => $this->at($when->copy()->subDay()->setTime(16, 0), fn () => $service->transition($appointment, AppointmentStatus::Cancelled, $this->actor($this->desk), 'Cancelled by the patient: travelling.')),
                 };
             }
         }
     }
 
     /**
-     * An appointment that was kept, walked through every state it passes.
+     * An appointment that was kept, walked through every state it passes,
+     * each step at the time it would have happened.
      *
      * The status graph refuses Scheduled → Completed, and rightly: an
      * appointment nobody checked in cannot have been attended. Seeding the
      * end state by jumping the graph would have produced demo records no
-     * screen in the system could have produced.
+     * screen in the system could have produced. The visit the outcome opens
+     * is then billed and paid at the desk, which closes it; left open, every
+     * past appointment sat in today's queue as a visit "opened" the moment
+     * the seeder ran.
      */
     private function attended(\App\Models\Appointment $appointment): void
     {
         $service = app(AppointmentService::class);
         $desk = $this->actor($this->desk);
+        $when = Carbon::parse($appointment->scheduled_at);
 
-        $service->transition($appointment, AppointmentStatus::Confirmed, $desk, 'Confirmed by phone the day before.');
-        $service->transition($appointment->fresh(), AppointmentStatus::CheckedIn, $desk, 'Arrived and checked in at reception.');
+        $this->at($when->copy()->subDay()->setTime(16, 30), fn () => $service->transition($appointment, AppointmentStatus::Confirmed, $desk, 'Confirmed by phone the day before.'));
+        $this->at($when->copy()->subMinutes(10), fn () => $service->transition($appointment->fresh(), AppointmentStatus::CheckedIn, $desk, 'Arrived and checked in at reception.'));
 
-        // Completed is not a status somebody sets — it is what happens when
+        // Completed is not a status somebody sets: it is what happens when
         // the write-up is saved. recordOutcome opens the visit, raises the
-        // consultation order, writes the report and closes both.
-        $service->recordOutcome(
+        // consultation order with what was done on it, and completes both.
+        $charge = Service::where('name', match ($appointment->reason) {
+            'Antenatal review' => 'Antenatal review',
+            'Dressing change' => 'Wound dressing',
+            'Blood pressure check', 'Diabetes review' => 'Specialist consultation',
+            default => 'General consultation',
+        })->first();
+
+        $order = $this->at($when->copy()->addMinutes(25), fn () => $service->recordOutcome(
             $appointment->fresh(),
             'Reviewed as planned. Symptoms settling, observations within normal limits. '
                 .'Medication continued at the same dose; next review in three months, sooner if anything changes.',
-            [],
+            $charge === null ? [] : [['id' => $charge->id]],
             $this->doctor->id,
-        );
+        ));
+
+        try {
+            $this->at($when->copy()->addMinutes(40), function () use ($order, $appointment) {
+                $visits = app(VisitService::class);
+                $billing = app(BillingService::class);
+                $cashier = $this->actor($this->cashier);
+                $visit = Visit::findOrFail($order->visit_id);
+
+                $visits->advance($visit, $this->doctor->id, 'Seen and done.');
+                $invoice = $billing->generateInvoice($visit->fresh(), '0.00', $cashier);
+                $visits->advance($visit->fresh(), $cashier, 'Invoice issued to the patient.');
+                $billing->recordPayment($invoice, $this->methodFor((int) $appointment->id), (string) $invoice->balance, [], $cashier);
+                $visits->reconcile($visit->fresh(), $this->doctor->id);
+            });
+        } catch (\Throwable $e) {
+            $this->command->warn('DemoPopulationSeeder: the bill for appointment '.$appointment->id.' was not settled: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Run $work as though the clock read $when.
+     *
+     * @template T
+     *
+     * @param  \Closure(): T  $work
+     * @return T
+     */
+    private function at(Carbon $when, \Closure $work): mixed
+    {
+        Carbon::setTestNow($when);
+
+        try {
+            return $work();
+        } finally {
+            Carbon::setTestNow();
+        }
     }
 
     // ═════════════════════════════════════════════════════════════════════
@@ -1411,9 +1575,13 @@ class DemoPopulationSeeder extends Seeder
         }
 
         // A family card: one balance, several people allowed to spend it.
-        $holder = $patients[7] ?? null;
-        $spouse = $patients[8] ?? null;
-        $child = $patients[9] ?? null;
+        // Chosen by age and sex from the whole register, not by position:
+        // position made a fourteen-year-old the holder and a fifteen-year-old
+        // the spouse.
+        $everyone = collect($roster)->filter(fn (Patient $p) => $p->status === PatientStatus::Active)->values();
+        $holder = $everyone->first(fn (Patient $p) => $this->fits($p, 'male', 30, 50));
+        $spouse = $everyone->first(fn (Patient $p) => $this->fits($p, 'female', 25, 50));
+        $child = $everyone->first(fn (Patient $p) => $this->fits($p, null, 1, 10));
 
         if ($holder !== null && $holder->cards()->count() === 0) {
             $family = $cards->issue($holder, [
@@ -1468,6 +1636,50 @@ class DemoPopulationSeeder extends Seeder
      * @param  class-string<TModel>  $model
      * @return TModel
      */
+    /**
+     * A few charted mouths and treatment plans, so the dental tab has
+     * something to show (docs/dental.md). Idempotent: a patient already
+     * charted is left alone.
+     *
+     * @param  list<Patient>  $roster
+     */
+    private function dental(array $roster): void
+    {
+        $dental = app(\App\Services\DentalService::class);
+        $doctor = $this->doctor;
+        $plans = [
+            [[['tooth' => 36, 'finding' => 'caries', 'surfaces' => 'MO'], ['tooth' => 46, 'finding' => 'filled', 'surfaces' => 'O'], ['tooth' => 18, 'finding' => 'missing'], ['tooth' => 48, 'finding' => 'to_extract']],
+                [['Composite filling', 36, 'MO', null], ['Difficult extraction', 48, null, 65000]]],
+            [[['tooth' => 11, 'finding' => 'fracture', 'surfaces' => 'I'], ['tooth' => 21, 'finding' => 'crown'], ['tooth' => 26, 'finding' => 'root_canal']],
+                [['Porcelain crown', 11, null, null]]],
+            [[['tooth' => 17, 'finding' => 'caries', 'surfaces' => 'OD'], ['tooth' => 37, 'finding' => 'caries', 'surfaces' => 'B'], ['tooth' => 36, 'finding' => 'caries', 'surfaces' => 'MOD', 'notes' => 'Deep, close to the pulp. Tender to percussion.'], ['tooth' => 31, 'finding' => 'mobility', 'mobility' => 2]],
+                [['Amalgam filling', 17, 'OD', null], ['Amalgam filling', 37, 'B', null], ['Root canal treatment (molar)', 36, null, 300000]]],
+        ];
+
+        // Adults: these are permanent teeth, and a crown or root canal on a
+        // six-year-old's chart would tell a visiting dentist the demo is wrong.
+        $patients = collect($roster)
+            ->filter(fn (Patient $p) => $p->status === PatientStatus::Active && $p->dob !== null && $p->dob->age >= 18)
+            ->values()->take(count($plans));
+        foreach ($patients as $i => $patient) {
+            if (\App\Models\DentalChartEntry::query()->where('patient_id', $patient->id)->exists()) {
+                continue;
+            }
+            [$findings, $items] = $plans[$i];
+            $dental->record($patient, $findings, null, $doctor);
+            foreach ($items as [$name, $tooth, $surfaces, $price]) {
+                $service = Service::query()->where('name', $name)->first();
+                if ($service !== null) {
+                    $item = $dental->planItem($patient, $service, $tooth, $surfaces, $price === null ? null : $this->money($price), null, null, $doctor);
+                    if ($i === 0) {
+                        $dental->transition($item, \App\Enums\DentalTreatmentStatus::Accepted, $doctor);
+                    }
+                }
+            }
+            $dental->setRecall($patient, now()->addMonthsNoOverflow(6)->startOfDay());
+        }
+    }
+
     private function make(string $model, array $lookup, array $extra)
     {
         $existing = $model::query()->where($lookup)->first();

@@ -73,8 +73,8 @@ class DemoApiTest extends TestCase
     {
         $res = $this->getJson('/api/v1/public/demo')->assertOk()
             ->assertJsonPath('data.enabled', true)
-            ->assertJsonPath('data.hospital.name', 'General Hospital A')
-            ->assertJsonPath('data.hospital.currency', 'USD');
+            ->assertJsonPath('data.hospital.name', 'Kato Medical Centre')
+            ->assertJsonPath('data.hospital.currency', 'UGX');
 
         $roles = collect($res->json('data.roles'));
         $this->assertEqualsCanonicalizing(DemoPersonas::roles(), $roles->pluck('key')->all());
@@ -126,7 +126,7 @@ class DemoApiTest extends TestCase
         $this->assertNotSame($real->id, $res->json('data.user.hospital_id'));
         $this->assertNotContains($res->json('data.user.id'), [$mine->id, $fake->id]);
         $this->assertSame('pharmacy.a@test.com', $res->json('data.user.email'));
-        $this->assertSame('General Hospital A', $res->json('data.demo.hospital'));
+        $this->assertSame('Kato Medical Centre', $res->json('data.demo.hospital'));
     }
 
     public function test_an_unseeded_staff_account_in_the_demo_hospital_is_not_used(): void
@@ -166,7 +166,7 @@ class DemoApiTest extends TestCase
             $this->withToken($res->json('data.token'))->getJson('/api/v1/meta')->assertOk()
                 ->assertJsonPath('data.demo.active', true)
                 ->assertJsonPath('data.demo.role', $role)
-                ->assertJsonPath('data.demo.hospital', 'General Hospital A')
+                ->assertJsonPath('data.demo.hospital', 'Kato Medical Centre')
                 ->assertJsonPath('data.demo.resets', false);
             $this->app['auth']->forgetGuards();
         }

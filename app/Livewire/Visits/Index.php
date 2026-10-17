@@ -145,6 +145,9 @@ class Index extends Component
 
     public bool $consent_given = false;
 
+    /** A walk-in agreed to messages about their care (SMS and WhatsApp), read out at the desk. */
+    public bool $messages_care = true;
+
     public function mount(): void
     {
         $this->authorize('viewAny', Visit::class);
@@ -456,6 +459,9 @@ class Index extends Component
 
         try {
             $visit = $service->intake($patientData, $visitData, auth()->id());
+            if ($visit->patient !== null) {
+                app(\App\Services\Messaging\ConsentService::class)->record($visit->patient, ['sms.care' => $this->messages_care, 'whatsapp.care' => $this->messages_care], 'desk', auth()->id());
+            }
             $visit = $this->recordWhatWasTaken($visit, $service);
         } catch (PlanLimitExceededException|\DomainException $e) {
             $this->dispatch('toast', message: $e->getMessage(), type: 'error');
@@ -509,7 +515,7 @@ class Index extends Component
         $this->reset([
             'patient_id', 'appointment_id', 'reason', 'complaints', 'diagnosis', 'start_now',
             'temperature', 'blood_pressure', 'pulse', 'respiratory_rate', 'spo2', 'weight', 'height',
-            'first_name', 'last_name', 'sex', 'dob', 'phone_1', 'consent_given',
+            'first_name', 'last_name', 'sex', 'dob', 'phone_1', 'consent_given', 'messages_care',
         ]);
         $this->formNonce++;
         $this->resetErrorBag();

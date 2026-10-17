@@ -73,35 +73,37 @@ class DemoSeeder extends Seeder
             }
         }
 
-        // Hospital A is the one every demonstration lands in, so it is the
-        // one that has to read naturally to anybody anywhere: USD, two
-        // decimals, tax on. B keeps a different currency and no tax, because
-        // a demo with one money format proves nothing about the money code.
-        $a = $this->hospital('General Hospital A', 'general-hospital-a', 'USD', [
-            'currency_code' => 'USD', 'currency_symbol' => '$', 'currency_position' => 'before',
-            'decimals' => 2, 'thousands_separator' => ',', 'decimal_separator' => '.',
-            'tax_enabled' => true, 'tax_label' => 'VAT', 'tax_rate' => 18,
-            'consultation_fee' => 25, 'invoice_prefix' => 'INV',
-        ]);
-        // The second tenant: local and tests only (config demo.second_tenant).
-        $b = ! config('demo.second_tenant') ? null : $this->hospital('City Clinic B', 'city-clinic-b', 'UGX', [
+        // The hospital every demonstration lands in is the one a clinic owner
+        // in Uganda recognises: a medical centre in Mukono, in shillings, with
+        // no VAT on medical services (roadmap 02 §3). The slug stays, so every
+        // configured door (DEMO_HOSPITAL) keeps finding it. B keeps a
+        // different currency, because a demo with one money format proves
+        // nothing about the money code.
+        $a = $this->hospital('Kato Medical Centre', 'general-hospital-a', 'UGX', [
             'currency_code' => 'UGX', 'currency_symbol' => 'USh', 'currency_position' => 'before',
             'decimals' => 0, 'thousands_separator' => ',', 'decimal_separator' => '.',
-            'tax_enabled' => false, 'tax_label' => 'Tax', 'tax_rate' => 0,
+            'tax_enabled' => false, 'tax_label' => 'VAT', 'tax_rate' => 0,
             'consultation_fee' => 20000, 'invoice_prefix' => 'INV',
+        ]);
+        // The second tenant: local and tests only (config demo.second_tenant).
+        $b = ! config('demo.second_tenant') ? null : $this->hospital('Lakeview Clinic B', 'city-clinic-b', 'KES', [
+            'currency_code' => 'KES', 'currency_symbol' => 'KSh', 'currency_position' => 'before',
+            'decimals' => 0, 'thousands_separator' => ',', 'decimal_separator' => '.',
+            'tax_enabled' => false, 'tax_label' => 'Tax', 'tax_rate' => 0,
+            'consultation_fee' => 500, 'invoice_prefix' => 'INV',
         ]);
 
         // Every HMS role in Hospital A.
         $roles = [
-            ['Hospital Admin A', 'admin.a@test.com', 'hospital_admin'],
-            ['Dr. Alice (Doctor)', 'doctor.a@test.com', 'doctor'],
-            ['Nancy (Nurse)', 'nurse.a@test.com', 'nurse'],
-            ['Rita (Receptionist)', 'reception.a@test.com', 'receptionist'],
-            ['Paul (Pharmacist)', 'pharmacy.a@test.com', 'pharmacist'],
-            ['Larry (Lab tech)', 'lab.a@test.com', 'lab_technician'],
-            ['Rhoda (Radiologist)', 'radiology.a@test.com', 'radiologist'],
-            ['Alex (Accountant)', 'accounts.a@test.com', 'accountant'],
-            ['Rose (Records officer)', 'records.a@test.com', 'records_officer'],
+            ['Joseph Kato', 'admin.a@test.com', 'hospital_admin'],
+            ['Dr. Sarah Nakato', 'doctor.a@test.com', 'doctor'],
+            ['Grace Akello', 'nurse.a@test.com', 'nurse'],
+            ['Ruth Namubiru', 'reception.a@test.com', 'receptionist'],
+            ['Peter Okello', 'pharmacy.a@test.com', 'pharmacist'],
+            ['Lydia Nabirye', 'lab.a@test.com', 'lab_technician'],
+            ['Dr. Robert Ssemakula', 'radiology.a@test.com', 'radiologist'],
+            ['Agnes Nansubuga', 'accounts.a@test.com', 'accountant'],
+            ['Moses Wanyama', 'records.a@test.com', 'records_officer'],
         ];
         $doctorA = null;
         foreach ($roles as [$name, $email, $role]) {
@@ -141,7 +143,7 @@ class DemoSeeder extends Seeder
                 'billing' => $billing,
                 'contact' => ['phone' => '+256 700 000 000', 'email' => Str::slug($name).'@example.test'],
                 // A general hospital shows every module and every specialty.
-                'practice' => ['sector' => 'general_hospital', 'packs' => [], 'modules' => null, 'chosen_at' => null],
+                'practice' => ['sector' => 'general_hospital', 'packs' => ['dental'], 'modules' => null, 'chosen_at' => null],
             ],
             'status' => 'active',
         ];
@@ -173,7 +175,6 @@ class DemoSeeder extends Seeder
             ->where('is_active', true)
             ->get()
             ->first(fn (\App\Models\Plan $p) => $p->limit('max_staff') === null
-                && $p->limit('max_patients') === null
                 && $p->limit('max_beds') === null)
             ?? \App\Models\Plan::firstOrCreate(['slug' => 'demo'], [
                 'name' => 'Demo', 'price' => '0.00',
@@ -270,8 +271,10 @@ class DemoSeeder extends Seeder
 
         // Patients (real generated numbers via the service's pure number builder).
         $numbers = app(PatientService::class);
-        $people = [['John', 'Doe', 'male'], ['Jane', 'Smith', 'female'], ['Peter', 'Okello', 'male']];
-        foreach ($people as $i => [$first, $last, $sex]) {
+        // With an answer on allergies each, as a desk is meant to record:
+        // one allergy (which every clinical screen then shows) and two "none".
+        $people = [['Brian', 'Mugisha', 'male', ['Sulfa drugs']], ['Florence', 'Atuhaire', 'female', ['None']], ['Isaac', 'Tumwine', 'male', ['None']]];
+        foreach ($people as $i => [$first, $last, $sex, $allergies]) {
             $no = $numbers->makeNumber($i + 1);
             if (Patient::withoutGlobalScopes()->where('hospital_id', $h->id)->where('patient_no', $no)->exists()) {
                 continue;
@@ -279,16 +282,17 @@ class DemoSeeder extends Seeder
             Patient::create([
                 'uuid' => (string) Str::uuid(), 'hospital_id' => $h->id, 'patient_no' => $no,
                 'first_name' => $first, 'last_name' => $last, 'sex' => $sex,
-                'phone_1' => '07'.rand(10000000, 99999999), 'status' => 'active', 'consent_given' => true,
+                'phone_1' => '07'.rand(10000000, 99999999), 'status' => 'active', 'consent_given' => true, 'allergies' => $allergies,
             ]);
         }
 
-        // A doctor availability window (Mon–Fri 09:00–17:00).
+        // A doctor availability window: Mon–Fri 09:00–17:00 and Saturday
+        // morning, as most clinics here keep.
         if ($doctor !== null) {
-            foreach ([1, 2, 3, 4, 5] as $weekday) {
+            foreach ([1, 2, 3, 4, 5, 6] as $weekday) {
                 \App\Models\DoctorSchedule::firstOrCreate(
                     ['hospital_id' => $h->id, 'user_id' => $doctor->id, 'weekday' => $weekday, 'start_time' => '09:00:00'],
-                    ['end_time' => '17:00:00', 'slot_minutes' => 30, 'is_active' => true, 'room_id' => null],
+                    ['end_time' => $weekday === 6 ? '13:00:00' : '17:00:00', 'slot_minutes' => 30, 'is_active' => true, 'room_id' => null],
                 );
             }
         }

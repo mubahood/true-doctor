@@ -18,14 +18,14 @@
   </div>
 
   <label class="hc-label" for="hc-answer-{{ $form }}">
-    <i class="fas fa-shield-halved" aria-hidden="true"></i> Quick check — type the characters in the picture
+    <x-site.icon name="shield" size="14" /> Quick check: type the characters in the picture
   </label>
   <div class="hc-row">
     <div class="hc-pic">
       <img src="{{ route('human-check.image', $humanId) }}" width="{{ \App\Support\HumanCheck::WIDTH }}" height="{{ \App\Support\HumanCheck::HEIGHT }}"
            alt="A picture of five letters and numbers to type into the box" data-hc-img draggable="false">
       <button type="button" class="hc-new" data-hc-new title="Can't read it? Show a new picture" aria-label="Show a new picture">
-        <i class="fas fa-rotate" aria-hidden="true"></i>
+        <x-site.icon name="sync" size="14" />
       </button>
     </div>
     <input class="hc-input @if($bad) is-bad @endif" id="hc-answer-{{ $form }}" name="human_answer" type="text"
@@ -34,7 +34,7 @@
            @if($bad) aria-invalid="true" aria-describedby="hc-error-{{ $form }}" @endif>
   </div>
   @if($bad)
-    <p class="hc-err" id="hc-error-{{ $form }}" role="alert"><i class="fas fa-circle-exclamation" aria-hidden="true"></i> {{ $message }}</p>
+    <p class="hc-err" id="hc-error-{{ $form }}" role="alert"><x-site.icon name="alert" size="14" /> {{ $message }}</p>
   @else
     <p class="hc-hint">Not case-sensitive. There is no 0, O, 1, I or L in it.</p>
   @endif

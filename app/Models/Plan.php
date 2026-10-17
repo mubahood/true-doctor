@@ -58,6 +58,11 @@ class Plan extends Model
         static::creating(function (self $plan) {
             $plan->slug ??= self::uniqueSlug($plan->name);
         });
+
+        // The public pages' price range (layouts/marketing) is cached; a price
+        // changed in the super panel must show on the next page, not in ten minutes.
+        static::saved(fn () => \Illuminate\Support\Facades\Cache::forget('site.plan-prices'));
+        static::deleted(fn () => \Illuminate\Support\Facades\Cache::forget('site.plan-prices'));
     }
 
     /** @return HasMany<Subscription, $this> */

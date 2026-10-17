@@ -30,7 +30,7 @@
     <p class="dash-flow-note">
       <i class="fas fa-lock" aria-hidden="true"></i>
       {{ $blocked }} {{ Str::plural('visit', $blocked) }}
-      {{ $blocked === 1 ? 'cannot' : 'cannot' }} move to billing — work is still open on
+      cannot move to billing yet. Work is still open on
       {{ $blocked === 1 ? 'it' : 'them' }}.
     </p>
   @endif

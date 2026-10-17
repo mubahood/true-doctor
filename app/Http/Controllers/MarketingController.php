@@ -25,9 +25,10 @@ class MarketingController extends Controller
     public function pricing(): View
     {
         return view('marketing.pricing', [
-            'plans' => Plan::where('is_active', true)->orderBy('price')->get(),
+            'plans' => Plan::where('is_active', true)->where('price', '>', 0)->orderBy('price')->get(),
             'copy' => $this->planCopy(),
             'matrix' => $this->planMatrix(),
+            'oneOff' => \App\Models\StandaloneProduct::query()->where('is_active', true)->orderBy('price_ugx')->first(),
         ]);
     }
 
@@ -51,28 +52,28 @@ class MarketingController extends Controller
                 'who' => 'A single clinic or practice finding its feet',
                 'feats' => [
                     'Patients, appointments and visits',
-                    'Billing, receipts and payments',
-                    'Field Mode for offline work',
-                    'Email support',
+                    'Billing, receipts and mobile money',
+                    'Keeps working with no network',
+                    'Help on WhatsApp',
                 ],
             ],
             'professional' => [
                 'who' => 'A busy clinic or polyclinic with several departments',
                 'feats' => [
                     'Everything in Starter',
-                    'Pharmacy, lab and radiology',
+                    'Pharmacy, laboratory and imaging',
                     'Insurance claims and patient cards',
                     'Reports and printable board papers',
-                    'Priority support',
+                    'Help on WhatsApp, answered first',
                 ],
             ],
             'enterprise' => [
-                'who' => 'A multi-department or multi-branch hospital',
+                'who' => 'A hospital with wards and many departments',
                 'feats' => [
                     'Everything in Professional',
                     'Inpatient wards, beds and per-night billing',
-                    'No limits on staff, patients or beds',
-                    'Dedicated onboarding and support',
+                    'No limit on staff or beds',
+                    'Setup with you, on a call or on site',
                 ],
             ],
         ];
@@ -197,7 +198,7 @@ class MarketingController extends Controller
             ? ['User-agent: *', 'Disallow: /']
             : ['User-agent: *', 'Allow: /',
                 'Disallow: /admin', 'Disallow: /super', 'Disallow: /account', 'Disallow: /my-licence', 'Disallow: /s/',
-                'Disallow: /field', 'Disallow: /test-login', 'Disallow: /install.php', 'Disallow: /two-factor',
+                'Disallow: /field', 'Disallow: /test-login', 'Disallow: /install.php', 'Disallow: /two-factor', 'Disallow: /go/',
                 '', 'Sitemap: '.route('sitemap')];
 
         return response(implode("\n", $lines)."\n", 200, ['Content-Type' => 'text/plain; charset=UTF-8']);

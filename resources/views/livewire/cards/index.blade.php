@@ -55,7 +55,7 @@
             <th>Insurer</th>
             <th>Status</th>
             <x-ui.th-sort field="balance" :sort-field="$sortField" :sort-dir="$sortDir" align="right">Balance</x-ui.th-sort>
-            <th style="text-align:right;">Credit limit</th>
+            <th class="tb-text-right">Credit limit</th>
             <th><span class="sr-only">Actions</span></th>
           </tr>
         </thead>
@@ -88,13 +88,13 @@
                 <x-ui.badge :tone="$card->status->badge()">{{ $card->status->label() }}</x-ui.badge>
                 @if($card->isExpired())<x-ui.badge tone="danger">Expired</x-ui.badge>@endif
               </td>
-              <td style="text-align:right;" class="mono {{ bccomp((string) $card->balance, '0', 2) < 0 ? 'tb-danger' : '' }}">
+              <td class="tb-text-right mono {{ bccomp((string) $card->balance, '0', 2) < 0 ? 'tb-danger' : '' }}">
                 {{ \App\Support\HospitalSettings::money($card->balance) }}
               </td>
-              <td style="text-align:right;" class="mono muted">
+              <td class="tb-text-right mono muted">
                 @if($card->accepts_credit){{ \App\Support\HospitalSettings::money($card->max_credit) }}@else — @endif
               </td>
-              <td style="text-align:right;" class="tb-nowrap">
+              <td class="tb-text-right tb-nowrap">
                 <button type="button" class="btn-tb btn-tb-ghost btn-tb-icon" wire:click="peek({{ $card->id }})"
                         aria-label="See card {{ $card->masked() }}"><i class="fas fa-eye" aria-hidden="true"></i></button>
                 <x-ui.actions-menu label="Actions for card {{ $card->masked() }}">

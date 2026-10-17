@@ -25,6 +25,9 @@ use Livewire\Component;
  * the plan from the clinic's own price list, and the next recall. On the
  * patient's record and, with `visitId`, on a visit (where findings and done
  * procedures attach to that visit).
+ *
+ * @property-read \App\Models\Patient $patient
+ * @property-read \App\Models\Visit|null $visit
  */
 #[Lazy]
 class Dental extends Component
@@ -73,6 +76,8 @@ class Dental extends Component
         $this->authorize('view', $this->patient);
         abort_unless(auth()->user()->can('treatments.view') || auth()->user()->can('visits.diagnose'), 403);
         $this->recallOn = $this->patient->next_recall_on?->toDateString();
+        // A child's mouth opens on the milk teeth; the toggle still switches.
+        $this->primary = $this->patient->dob !== null && $this->patient->dob->age < 12;
     }
 
     #[Computed]

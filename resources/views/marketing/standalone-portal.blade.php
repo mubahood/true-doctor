@@ -9,9 +9,9 @@
 </div></section>
 
 <section><div class="wrap own-portal">
-  @if(session('status'))<div class="notice ok" role="status"><i class="fas fa-circle-check" aria-hidden="true"></i><span>{{ session('status') }}</span></div>@endif
-  @if(session('error'))<div class="notice bad" role="alert"><i class="fas fa-circle-exclamation" aria-hidden="true"></i><span>{{ session('error') }}</span></div>@endif
-  @if($errors->any())<div class="notice bad" role="alert"><i class="fas fa-circle-exclamation" aria-hidden="true"></i><span>{{ $errors->first() }}</span></div>@endif
+  @if(session('status'))<div class="notice ok" role="status"><x-site.icon name="fa-circle-check" /><span>{{ session('status') }}</span></div>@endif
+  @if(session('error'))<div class="notice bad" role="alert"><x-site.icon name="fa-circle-exclamation" /><span>{{ session('error') }}</span></div>@endif
+  @if($errors->any())<div class="notice bad" role="alert"><x-site.icon name="fa-circle-exclamation" /><span>{{ $errors->first() }}</span></div>@endif
 
   @if(! $licence)
     <div class="formcard">
@@ -31,8 +31,8 @@
           <h2>True-Doctor {{ $release->version }}</h2>
           <p class="own-meta">Released {{ $release->published_at?->format('d M Y') }}@if($release->archive_path && is_file($release->archive_path)) · {{ number_format(filesize($release->archive_path) / 1048576, 1) }} MB @endif</p>
           <div class="ctas own-ctas">
-            <a class="btn" href="{{ route('standalone.portal.release', $release) }}"><i class="fas fa-download" aria-hidden="true"></i> Download installation file</a>
-            <a class="btn plain" href="{{ route('standalone.portal.licence') }}"><i class="fas fa-certificate" aria-hidden="true"></i> Download licence.json</a>
+            <a class="btn" href="{{ route('standalone.portal.release', $release) }}"><x-site.icon name="fa-download" /> Download installation file</a>
+            <a class="btn plain" href="{{ route('standalone.portal.licence') }}"><x-site.icon name="fa-certificate" /> Download licence.json</a>
           </div>
           <p class="own-small">SHA-256 <code>{{ $release->sha256 }}</code></p>
           @if($release->notes)<details class="own-notes"><summary>What's new in {{ $release->version }}</summary>{!! \Illuminate\Support\Str::markdown($release->notes, ['html_input' => 'escape', 'allow_unsafe_links' => false]) !!}</details>@endif
@@ -83,7 +83,7 @@
     {{-- ── The guide, right here ─────────────────────────────────── --}}
     <div class="own-card own-guide" id="guide">
       <div class="tag">Step 2 · Install</div>
-      <div class="own-guide-head"><span>The full guide — also inside the ZIP as INSTALL.md.</span><a class="btn sm plain" href="{{ route('standalone.portal.guide') }}"><i class="fas fa-file-arrow-down" aria-hidden="true"></i> INSTALL.md</a></div>
+      <div class="own-guide-head"><span>The full guide — also inside the ZIP as INSTALL.md.</span><a class="btn sm plain" href="{{ route('standalone.portal.guide') }}"><x-site.icon name="fa-file-arrow-down" /> INSTALL.md</a></div>
       <div class="own-md">{!! $guide !!}</div>
     </div>
   @endif

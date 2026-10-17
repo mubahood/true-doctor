@@ -42,6 +42,9 @@ class Show extends Component
     /** Reason captured alongside a cancellation (the only transition that takes one). */
     public ?string $cancelNote = null;
 
+    /** The dental chart, opened on a press where it does not open by itself. */
+    public bool $dentalOpen = false;
+
     public function mount(Visit $visit): void
     {
         $this->authorize('view', $visit);

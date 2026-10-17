@@ -22,6 +22,8 @@ class SpaNavigationHtmlTest extends TestCase
         'admin.logout', 'gateway.callback', 'gateway.webhook',
         // A spreadsheet of the books: a file to save, not a page to read.
         'admin.finance.export',
+        // The Ministry forms as CSV, for the district's DHIS2 entry: a file to save.
+        'admin.reports.hmis.export',
         // A standalone installation's backup: a file to keep elsewhere.
         'admin.system.backup',
         'super.releases.download',

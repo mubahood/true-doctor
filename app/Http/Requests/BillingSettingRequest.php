@@ -41,6 +41,7 @@ class BillingSettingRequest extends FormRequest
             'consultation_fee' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'invoice_prefix' => ['required', 'string', 'max:10', 'alpha_dash'],
             'invoice_footer' => ['nullable', 'string', 'max:500'],
+            'receipt_printer' => ['nullable', 'in:58,80'],
         ];
     }
 

@@ -15,7 +15,7 @@
 
   <div class="tb-card" wire:loading.class="tb-loading" wire:target="search,status"><div class="tb-table-wrap">
     <table class="tb-table">
-      <thead><tr><th class="tb-serial">#</th><th>Invoice</th><th>Patient</th><th style="text-align:right;">Total</th><th style="text-align:right;">Balance</th><th>Status</th><th>Issued</th><th></th></tr></thead>
+      <thead><tr><th class="tb-serial">#</th><th>Invoice</th><th>Patient</th><th class="tb-text-right">Total</th><th class="tb-text-right">Balance</th><th>Status</th><th>Issued</th><th></th></tr></thead>
       <tbody>
         @forelse($invoices as $inv)
           <tr wire:key="inv-{{ $inv->id }}">
@@ -23,11 +23,11 @@
             {{-- Opens the invoice over the ledger, like everywhere else. --}}
             <td class="mono"><button type="button" class="tb-rowbtn" wire:click="peek({{ $inv->id }})" title="See this invoice">{{ $inv->invoice_no }}</button></td>
             <td style="font-weight:500;">{{ $inv->patient?->full_name ?? '—' }}</td>
-            <td style="text-align:right;" class="mono">{{ \App\Support\HospitalSettings::money($inv->total) }}</td>
-            <td style="text-align:right;" class="mono">{{ \App\Support\HospitalSettings::money($inv->balance) }}</td>
+            <td class="tb-text-right mono">{{ \App\Support\HospitalSettings::money($inv->total) }}</td>
+            <td class="tb-text-right mono">{{ \App\Support\HospitalSettings::money($inv->balance) }}</td>
             <td><span class="badge-tb {{ $inv->status->badge() }}">{{ $inv->status->label() }}</span></td>
             <td class="muted">{{ $inv->issued_at?->format('d M Y') ?? '—' }}</td>
-            <td class="tb-nowrap" style="text-align:right;">
+            <td class="tb-text-right tb-nowrap">
               <button type="button" class="btn-tb btn-tb-ghost btn-tb-icon" wire:click="peek({{ $inv->id }})"
                       aria-label="See invoice {{ $inv->invoice_no }}"><i class="fas fa-eye" aria-hidden="true"></i></button>
               <x-ui.actions-menu label="Actions for invoice {{ $inv->invoice_no }}">

@@ -23,9 +23,9 @@
   <meta property="og:description" content="@yield('desc', 'One system for patients, appointments, visits, pharmacy, lab, billing and reporting.')">
   <meta property="og:url" content="{{ url()->current() }}">
   @php
-    // A page's own picture (public/images/og/<name>.png, scripts/site-og.js), else the site's.
+    // A page's own picture (public/images/og/<name>.jpg, scripts/site-og.mjs), else the site's.
     $ogName = trim($__env->yieldContent('og'));
-    $ogImage = $ogName !== '' && is_file(public_path("images/og/{$ogName}.png")) ? asset("images/og/{$ogName}.png") : asset('images/og.png');
+    $ogImage = $ogName !== '' && is_file(public_path("images/og/{$ogName}.jpg")) ? asset("images/og/{$ogName}.jpg") : asset('images/og.png');
   @endphp
   <meta property="og:image" content="{{ $ogImage }}">
   <meta property="og:image:width" content="1200">
@@ -35,29 +35,39 @@
   <meta name="twitter:description" content="@yield('desc', 'One system for patients, appointments, visits, pharmacy, lab, billing and reporting.')">
   <meta name="twitter:image" content="{{ $ogImage }}">
   @hasSection('noindex')<meta name="robots" content="noindex, nofollow">@endif
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ asset('vendor/fa/css/all.min.css') }}">
+  {{-- Inter from this server (one variable file, every weight, latin) and inline
+       SVG icons: no font CDN, no icon font, a page that stays light on a slow phone. --}}
+  <link rel="preload" href="{{ asset('fonts/inter-latin-wght.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <style>@font-face{font-family:'Inter';font-style:normal;font-weight:100 900;font-display:swap;src:url('{{ asset('fonts/inter-latin-wght.woff2') }}') format('woff2');}</style>
   @vite(['resources/css/marketing.css', 'resources/js/marketing.js'])
 
   {{-- What this is, for a search engine. One block, in the layout, so every
-       page carries it and no page carries a second contradictory copy. --}}
+       page carries it and no page carries a second contradictory copy. The
+       price range is the live plans table, converted as the pricing page is. --}}
+  @php
+    $ldPrices = \App\Support\Edition::isStandalone() ? [] : \Illuminate\Support\Facades\Cache::remember('site.plan-prices', 600,
+        fn () => \App\Models\Plan::query()->where('is_active', true)->where('price', '>', 0)->pluck('price')->map(fn ($p) => (string) $p)->all());
+    $ldAmounts = array_map(fn ($p) => \App\Support\PlatformPrice::make($p, $region->currency())->figure(), $ldPrices);
+    usort($ldAmounts, fn ($a, $b) => (float) str_replace(',', '', $a) <=> (float) str_replace(',', '', $b));
+  @endphp
   <script type="application/ld+json">
-    {!! json_encode([
+    {!! json_encode(array_filter([
       '@context' => 'https://schema.org',
       '@type' => 'SoftwareApplication',
       'name' => 'True-Doctor',
       'applicationCategory' => 'HealthApplication',
-      'operatingSystem' => 'Web',
-      'description' => 'Hospital management software: patients, appointments, visits, pharmacy, lab, radiology, inpatient care, billing and reporting on one subscription per hospital.',
+      'operatingSystem' => 'Web, Android',
+      'description' => 'Clinic and hospital software: patients, appointments, visits, pharmacy, laboratory, imaging, wards, billing and reports on one record. Keeps working with no network.',
       'url' => route('home'),
-      'offers' => [
+      'offers' => $ldAmounts === [] ? null : [
         '@type' => 'AggregateOffer',
         'priceCurrency' => $region->currency(),
+        'lowPrice' => str_replace(',', '', $ldAmounts[0]),
+        'highPrice' => str_replace(',', '', end($ldAmounts)),
+        'offerCount' => count($ldAmounts),
         'availability' => 'https://schema.org/InStock',
       ],
-    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+    ]), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
   </script>
   @php $ldSupport = \App\Support\SupportContact::current(); @endphp
   @if($ldSupport->phone() !== '')
@@ -119,7 +129,7 @@
       @auth
         <span class="hd-who desk">Signed in as <b>{{ $me->name }}</b></span>
         <a href="{{ route('admin.dashboard') }}" class="btn desk sm">
-          <i class="fas fa-gauge-high" aria-hidden="true"></i> Go to dashboard
+          <x-site.icon name="fa-gauge-high" /> Go to dashboard
         </a>
       @else
         @if($demo)<a href="{{ route('demo') }}" class="btn ghost desk sm">Try the demo</a>@endif
@@ -128,7 +138,7 @@
         <a href="{{ route('register') }}" class="btn desk sm">Sign up</a>
       @endauth
       <button class="burger" id="burger" aria-label="Open menu" aria-expanded="false" aria-controls="mmenu">
-        <i class="fas fa-bars" aria-hidden="true"></i>
+        <x-site.icon name="menu" class="b-open" /><x-site.icon name="x" class="b-close" />
       </button>
     </div>
   </div>
@@ -141,7 +151,7 @@
   <a href="{{ route('security') }}">Security</a>
   <a href="{{ route('contact') }}">Contact</a>
   @auth
-    <a href="{{ route('admin.dashboard') }}" class="btn"><i class="fas fa-gauge-high" aria-hidden="true"></i> Go to dashboard</a>
+    <a href="{{ route('admin.dashboard') }}" class="btn"><x-site.icon name="fa-gauge-high" /> Go to dashboard</a>
     <form method="POST" action="{{ route('admin.logout') }}" class="mmenu-out">
       @csrf
       <button type="submit" class="btn ghost">Sign out</button>
@@ -158,13 +168,12 @@
        rather than inside a page, because any public page can be the one
        somebody lands on afterwards. --}}
   @if(session('status'))
-    <div class="wrap" style="padding-top:22px;">
+    <div class="wrap status-wrap">
       <div class="notice ok" role="status">
-        <i class="fas fa-circle-check" aria-hidden="true"></i>
-        <div style="flex:1;">{{ session('status') }}</div>
-        <button type="button" data-dismiss aria-label="Dismiss"
-                style="border:none;background:none;cursor:pointer;color:inherit;opacity:.7;">
-          <i class="fas fa-xmark" aria-hidden="true"></i>
+        <x-site.icon name="fa-circle-check" />
+        <div class="notice-text">{{ session('status') }}</div>
+        <button type="button" class="notice-x" data-dismiss aria-label="Dismiss">
+          <x-site.icon name="fa-xmark" />
         </button>
       </div>
     </div>
@@ -177,7 +186,7 @@
   <div class="wrap">
     <div class="foot">
       <div>
-        <a href="{{ route('home') }}" class="brand"><img src="{{ asset('images/logo-icon.png') }}" alt="" style="width:26px;height:26px;"> True-Doctor</a>
+        <a href="{{ route('home') }}" class="brand"><img src="{{ asset('images/logo-icon.png') }}" alt="" width="26" height="26"> True-Doctor</a>
         <p class="blurb">One system to run your clinic or hospital: patients, clinical care, pharmacy, lab and billing, on a single subscription.</p>
       </div>
       <div>

@@ -32,7 +32,7 @@ if (burger && menu) {
         menu.classList.toggle('open', open);
         burger.setAttribute('aria-expanded', String(open));
         burger.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
-        burger.querySelector('i').className = open ? 'fas fa-xmark' : 'fas fa-bars';
+        // Which icon shows follows aria-expanded in the stylesheet.
         // The page behind a full-screen sheet must not scroll under it.
         document.body.style.overflow = open ? 'hidden' : '';
     };

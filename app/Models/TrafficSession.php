@@ -39,7 +39,7 @@ class TrafficSession extends Model
         'landing_path', 'landing_section', 'landing_module', 'landing_plan', 'referrer_host',
         'device', 'browser', 'platform', 'country', 'user_agent', 'ip_hash',
         'is_bot', 'page_views', 'visits', 'clicks', 'first_seen_at', 'last_seen_at', 'last_click_at',
-        'viewed_pricing_at', 'opened_signup_at', 'opened_demo_at', 'enquired_at',
+        'viewed_pricing_at', 'opened_signup_at', 'opened_demo_at', 'enquired_at', 'whatsapp_at',
         'converted_hospital_id', 'converted_at',
     ];
 
@@ -58,6 +58,7 @@ class TrafficSession extends Model
             'opened_signup_at' => 'datetime',
             'opened_demo_at' => 'datetime',
             'enquired_at' => 'datetime',
+            'whatsapp_at' => 'datetime',
             'converted_at' => 'datetime',
         ];
     }

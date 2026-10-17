@@ -46,7 +46,7 @@ class TrafficRecorder
     /** Paths that are not a person reading a page. */
     private const IGNORED_PREFIXES = [
         'admin', 'super', 'api', 'livewire', 'build', 'storage',
-        'gateway', 'sitemap.xml', 'robots.txt', 'up', 'field',
+        'gateway', 'sitemap.xml', 'robots.txt', 'up', 'field', 'go',
     ];
 
     /**
@@ -70,6 +70,7 @@ class TrafficRecorder
         '/pricing' => 'viewed_pricing_at',
         '/register' => 'opened_signup_at',
         '/test-login' => 'opened_demo_at',
+        '/demo' => 'opened_demo_at',
     ];
 
     /**
@@ -170,8 +171,10 @@ class TrafficRecorder
 
             $now = Carbon::now();
 
-            if ($kind === 'enquiry' && $session->enquired_at === null) {
-                $session->enquired_at = $now;
+            // The first time of each, for the funnel; every time, as an event.
+            $first = ['enquiry' => 'enquired_at', 'whatsapp' => 'whatsapp_at', 'demo_open' => 'opened_demo_at'][$kind] ?? null;
+            if ($first !== null && $session->{$first} === null) {
+                $session->{$first} = $now;
             }
 
             $session->last_seen_at = $now;

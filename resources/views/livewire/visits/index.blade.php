@@ -334,6 +334,9 @@
             <label class="tb-check-group">
               <input type="checkbox" wire:model="consent_given"> Consent given
             </label>
+            <label class="tb-check-group">
+              <input type="checkbox" wire:model="messages_care"> Texts about their care (SMS and WhatsApp)
+            </label>
           @endif
         </section>
 

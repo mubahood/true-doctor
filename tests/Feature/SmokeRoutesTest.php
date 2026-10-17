@@ -34,6 +34,10 @@ class SmokeRoutesTest extends TestCase
         'admin.patients.id-card',
         'admin.invoices.pdf',
         'admin.payments.receipt',
+        // The same receipt on 58/80 mm roll paper.
+        'admin.payments.receipt.thermal',
+        // The Ministry forms as PDF or CSV.
+        'admin.reports.hmis.export',
         'admin.lab-orders.pdf',
         'admin.radiology-orders.pdf',
         'admin.admissions.summary',

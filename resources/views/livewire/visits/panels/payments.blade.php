@@ -68,6 +68,9 @@
                   <td class="tb-text-right">
                     {{-- Opens in its own tab, so the visit stays where it is
                          while the receipt is read (docs/documents.md). --}}
+                    @if($printer = app(\App\Support\HospitalSettings::class)->receiptPrinter())
+                      <a href="{{ route('admin.payments.receipt.thermal', [$payment, 'w' => $printer]) }}" target="_blank" rel="noopener" class="btn-tb btn-tb-sm btn-tb-ghost" title="Print on the receipt printer" aria-label="Print on the receipt printer"><i class="fas fa-print" aria-hidden="true"></i></a>
+                    @endif
                     <a href="{{ route('admin.payments.receipt', $payment) }}" target="_blank" rel="noopener"
                        class="btn-tb btn-tb-sm btn-tb-ghost" title="Receipt for this payment">
                       <i class="fas fa-receipt" aria-hidden="true"></i> Receipt

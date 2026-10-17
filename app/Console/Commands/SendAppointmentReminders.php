@@ -5,8 +5,9 @@ namespace App\Console\Commands;
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Notifications\AppointmentReminder;
-use App\Services\Channels\VerificationChannel;
+use App\Services\Messaging\PatientMessenger;
 use App\Services\ReminderService;
+use App\Support\WallTime;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 
@@ -34,7 +35,7 @@ class SendAppointmentReminders extends Command
 
     private const UNTIL_HOUR = 20;
 
-    public function handle(VerificationChannel $sms, ReminderService $reminders): int
+    public function handle(ReminderService $reminders): int
     {
         $explicit = $this->option('date');
         $now = CarbonImmutable::now();
@@ -53,12 +54,13 @@ class SendAppointmentReminders extends Command
         foreach ($appointments as $appt) {
             $tz = $appt->hospital !== null ? $reminders->zone($appt->hospital) : (string) config('app.timezone');
             $local = $now->setTimezone($tz);
-            $at = CarbonImmutable::instance($appt->scheduled_at)->setTimezone($tz);
+            // The booking is the clinic's wall-clock time (WallTime), not UTC.
+            $at = WallTime::at($appt->scheduled_at, $tz);
             $awake = $local->hour >= self::FROM_HOUR && $local->hour < self::UNTIL_HOUR;
 
             if ($appt->reminder_sent_at === null && ($explicit ? $at->toDateString() === $explicit : ($awake && $at->toDateString() === $local->addDay()->toDateString()))
                 && $this->claim($appt, 'reminder_sent_at')) {
-                $this->remindDay($appt, $sms);
+                $this->remindDay($appt, $tz);
                 $day++;
             }
 
@@ -80,12 +82,16 @@ class SendAppointmentReminders extends Command
         return Appointment::withoutGlobalScopes()->whereKey($appt->getKey())->whereNull($column)->update([$column => now()]) === 1;
     }
 
-    private function remindDay(Appointment $appt, VerificationChannel $sms): void
+    private function remindDay(Appointment $appt, string $tz): void
     {
         $appt->doctor?->notify(new AppointmentReminder($appt, 'day'));
-        $phone = $appt->patient?->phone_1;
-        if ($phone) {
-            $sms->send((string) $phone, "Reminder: your appointment is on {$appt->scheduled_at->format('d M Y \a\t H:i')}.");
+
+        // The patient: through the messenger, so consent, quiet hours, credit
+        // and the message log apply (roadmap 05). Once per appointment.
+        if ($appt->patient !== null) {
+            app(PatientMessenger::class)->trySend($appt->patient, 'appointment_day_before', [
+                'time' => $appt->scheduled_at->format('H:i'),
+            ], 'appointment:'.$appt->uuid.':day_before');
         }
     }
 }

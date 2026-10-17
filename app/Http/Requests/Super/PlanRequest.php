@@ -7,7 +7,7 @@ use Illuminate\Validation\Rule;
 
 /**
  * The limit inputs are named exactly like the keys App\Support\PlanLimit reads
- * (max_staff / max_patients / max_beds) — the mismatch that made every
+ * (max_staff / max_beds) — the mismatch that made every
  * UI-edited plan unlimited (K4) is not reintroducible without renaming both.
  */
 class PlanRequest extends FormRequest
@@ -38,7 +38,6 @@ class PlanRequest extends FormRequest
             'price' => ['required', 'numeric', 'min:0'],
             'billing_cycle' => ['required', Rule::enum(\App\Enums\BillingCycle::class)],
             'max_staff' => ['nullable', 'integer', 'min:1'],
-            'max_patients' => ['nullable', 'integer', 'min:1'],
             'max_beds' => ['nullable', 'integer', 'min:1'],
             'features' => ['nullable', 'array'],
             // Nullable, not required: clicking "Add a feature" and leaving the row

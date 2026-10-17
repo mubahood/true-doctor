@@ -1,201 +1,211 @@
 @extends('layouts.marketing')
-@section('title', 'True-Doctor — Hospital management software for East Africa')
-@section('desc', 'One system for patients, appointments, visits, pharmacy, lab, radiology, inpatient care and billing. Per-hospital data isolation, a full audit trail, and it keeps working when the network does not.')
+@section('title', 'True-Doctor: clinic and hospital software that works offline')
+@section('desc', 'Patients, visits, lab, pharmacy, wards and billing on one record. Keeps working with no network. Open the live demo or start free for 14 days.')
+@section('og', 'home')
 
 @section('content')
+@php($wa = \App\Support\SupportContact::current())
 
-{{-- ── Hero ──────────────────────────────────────────────────────────
-     The patterned background is in the stylesheet (.hero::before): a tiled
-     clinical motif under a soft light, so the type never competes with the
-     texture it sits on. --}}
-<section class="hero">
+{{-- 1. Hero: what it is, the two ways in, a person to ask, and the real thing. --}}
+<section class="hero home-hero">
   <div class="wrap">
-    <div class="eyebrow">Cloud HMS for clinics and hospitals</div>
-    <h1>The <b>hospital management system</b><br>that replaces your paper registers.</h1>
-    <p class="lead">
-      Clinic management software that carries a patient from the front desk to the
-      cashier: EMR and patient records, appointments, pharmacy, lab and radiology,
-      inpatient wards and billing. One subscription, one login, per hospital — and
-      it keeps working when the network does not.
+    {{-- The ads say "Hospital Management System"; the heading a visitor lands
+         on has to say it too (LandingTrafficTest), so it leads the H1. --}}
+    <h1 data-lift><span class="h1-kicker">Hospital management system</span> Run your clinic from one record, <b>even with no network.</b></h1>
+    <p class="lead" data-lift>
+      Reception, the doctor, the lab, the pharmacy, the ward and the cashier work on the same patient record.
+      When the internet drops, the work goes on and is sent when it returns.
     </p>
-    <div class="ctas">
+    <div class="ctas" data-lift>
       @auth
-        <a href="{{ route('admin.dashboard') }}" class="btn lg">Go to your dashboard <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
-        <a href="{{ route('features') }}" class="btn ghost lg">See the modules</a>
+        <a href="{{ route('admin.dashboard') }}" class="btn lg">Go to your dashboard <x-site.icon name="arrow-right" size="16" /></a>
       @else
-        <a href="{{ route('register') }}" class="btn lg">Start a free trial <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+        <a href="{{ route('register') }}" class="btn lg">Start free for 14 days <x-site.icon name="arrow-right" size="16" /></a>
         @if($demo)
           <a href="{{ route('demo') }}" class="btn plain lg">Open the live demo</a>
         @else
-          <a href="{{ route('features') }}" class="btn plain lg">See the modules</a>
+          <a href="{{ route('walkthrough') }}" class="btn plain lg">Book a walkthrough</a>
         @endif
       @endauth
     </div>
-    <div class="trust-row">
-      <span><i class="fas fa-shield-halved" aria-hidden="true"></i> Per-hospital data isolation</span>
-      <span><i class="fas fa-lock" aria-hidden="true"></i> Encrypted sensitive records</span>
-      <span><i class="fas fa-list-check" aria-hidden="true"></i> Every change logged</span>
-    </div>
+    @if($wa->whatsappDisplay() !== '')
+      <p class="hero-wa" data-lift><x-support.link context="site.general" :icon="false">Questions? WhatsApp us on {{ $wa->whatsappDisplay() }}</x-support.link></p>
+    @endif
 
-    <x-site.product-shot />
+    <figure class="devices">
+      <div class="stage">
+        <div class="laptop">
+          <div class="frame-bar" aria-hidden="true"><i></i><i></i><i></i><span>true-doctor.online/admin</span></div>
+          <x-site.shot name="dashboard" eager sizes="(max-width: 820px) 100vw, 900px" />
+        </div>
+        <div class="handset"><x-site.shot name="phone" eager /></div>
+      </div>
+      <figcaption class="shot-cap">Real screens from our demo hospital, Kato Medical Centre. Open it yourself, no sign-up.</figcaption>
+    </figure>
   </div>
 </section>
 
-{{-- ── The journey ────────────────────────────────────────────────────
-     A workflow in the order a patient actually meets it, rather than an
-     alphabetised list of modules. What a hospital is buying is the joins
-     between these, not the boxes. --}}
+{{-- 2. A day at Kato Medical Centre: the joins between departments, shown, not listed. --}}
 <section class="band-surface">
   <div class="wrap">
     <div class="sec-head">
-      <h2>One record, from the gate to the cashier</h2>
-      <p>Each step hands the next one everything it needs. Nothing is re-typed, and nothing is reconciled at the end of the day.</p>
+      <h2>A day at Kato Medical Centre</h2>
+      <p>One record carries each patient through the day. This is what that looks like, from the front desk to the last shilling.</p>
     </div>
 
-    <div class="flow">
-      @foreach([
-        ['fa-user-plus', 'Reception', 'Registration &amp; triage', 'The patient is found or registered, given a number and a QR card, and put on the queue. Vitals are taken and attached to the visit before the doctor opens it.'],
-        ['fa-stethoscope', 'Consultation', 'The doctor', 'Complaints, examination, diagnosis and plan on one screen — with the patient&rsquo;s allergies, chronic conditions and last visit already in front of them.'],
-        ['fa-vial', 'Lab &amp; imaging', 'Orders and results', 'Ordered from inside the visit, worked on the bench, and the result comes back to the same visit. The charge is raised the moment the order is.'],
-        ['fa-pills', 'Pharmacy', 'Dispensing', 'Dispensed against the prescription, off the shelf, with the stock ledger moving in the same transaction. Low stock and near-expiry are flagged before they bite.'],
-        ['fa-bed', 'Ward', 'Admission &amp; stay', 'A stay is an order on the visit. Each night in the bed is billed the following morning at the rate in force that night — not estimated at discharge.'],
-        ['fa-file-invoice-dollar', 'Cashier', 'The bill', 'Everything charged along the way is already on the invoice. Cash, mobile money, card or an insurer&rsquo;s claim — and the visit cannot close owing money.'],
-      ] as $i => [$icon, $who, $title, $body])
-        <div class="flow-row">
-          <span class="st" aria-hidden="true"><i class="fas {{ $icon }}"></i></span>
-          <div>
-            <h3>{!! $title !!}</h3>
-            <div class="who">{!! $who !!}</div>
+    <ol class="day">
+      @foreach($day as [$time, $who, $title, $body, $shot])
+        <li class="day-step" data-reveal>
+          <div class="day-text">
+            <div class="day-time"><time>{{ $time }}</time> <span>{{ $who }}</span></div>
+            <h3>{{ $title }}</h3>
+            <p>{{ $body }}</p>
           </div>
-          <p>{!! $body !!}</p>
-        </div>
+          <div class="frame"><x-site.shot :name="$shot" /></div>
+        </li>
       @endforeach
-    </div>
+    </ol>
   </div>
 </section>
 
-{{-- ── Modules ─────────────────────────────────────────────────────── --}}
+{{-- 3. Made for your kind of practice. --}}
 <section>
   <div class="wrap">
     <div class="sec-head">
-      <h2>Everything a hospital runs on</h2>
-      <p>Switched on by plan — you are never paying for a ward module in a two-room clinic.</p>
+      <h2>Made for your kind of practice</h2>
+      <p>The same system, set up for what you do. Turn off what you do not use and the menu shows only your work.</p>
     </div>
-    <div class="grid">
-      @foreach([
-        ['fa-user-injured', 'Patients', 'Registration, medical history, dependents, documents, generated patient numbers and QR ID cards.'],
-        ['fa-calendar-check', 'Appointments', 'Doctor availability, booking with conflict detection, a check-in queue and reminders.'],
-        ['fa-stethoscope', 'Visits', 'Vitals, diagnosis and prescriptions on an enforced clinical state machine — a visit cannot skip a step.'],
-        ['fa-pills', 'Pharmacy', 'Stock with valuation, dispensing, an append-only movement ledger, low-stock and expiry alerts.'],
-        ['fa-vial', 'Lab &amp; radiology', 'Order from the visit, capture results and attachments, print a report, bill automatically.'],
-        ['fa-bed', 'Inpatient', 'Wards, beds, admissions, transfers, nursing rounds and per-night bed billing.'],
-        ['fa-file-invoice-dollar', 'Billing', 'Price lists, invoices, cash, mobile money, card and insurance — every posting inside a transaction.'],
-        ['fa-chart-line', 'Reports', 'Revenue, outstanding debt by age, bed occupancy, doctor activity and stock valuation — printable.'],
-      ] as [$icon, $title, $body])
-        <div class="card">
-          <div class="ic" aria-hidden="true"><i class="fas {{ $icon }}"></i></div>
-          <h3>{!! $title !!}</h3>
-          <p>{!! $body !!}</p>
-        </div>
+    <div class="grid practices">
+      @foreach(config('landing.practices') as $slug => $practice)
+        <a href="{{ route('for', $slug) }}" class="card" data-reveal>
+          <span class="ic" aria-hidden="true"><x-site.icon :name="$practice['icon']" size="20" /></span>
+          <h3>{{ ucfirst($practice['name']) }}</h3>
+          <p>{{ $practice['card'] }}</p>
+          <span class="card-more">See how <x-site.icon name="arrow-right" size="14" /></span>
+        </a>
       @endforeach
     </div>
-    <p style="text-align:center;margin-top:28px;">
-      <a href="{{ route('features') }}" class="btn ghost">See what each module does <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
-    </p>
   </div>
 </section>
 
-{{-- ── The differentiator ─────────────────────────────────────────────
-     Offline is the thing this system has that a generic HMS does not, and
-     it is worth a section of its own rather than a bullet in a grid. --}}
+{{-- 4. Works with no network: one honest section, what works and what waits. --}}
 <section class="band-surface">
   <div class="wrap">
-    <div class="grid two" style="align-items:center;gap:40px;">
+    <div class="offline">
       <div>
-        <div class="eyebrow">Field Mode</div>
-        <h2 style="margin:12px 0 14px;">It keeps working when the network does not.</h2>
-        <p style="color:var(--tx2);font-size:14.5px;margin-bottom:14px;">
-          An outreach clinic, a ward on a bad line, a power cut at the exchange — the
-          work does not stop for any of them. Field Mode runs from a copy of the
-          records on the device, takes registrations, vitals, notes and results
-          offline, and sends them when the connection returns.
+        <div class="eyebrow">No network</div>
+        <h2>When the signal drops, the work does not.</h2>
+        <p class="sec-body">
+          On the Android app, and in the browser in Field Mode, your team keeps working with no signal.
+          What they enter is kept on the device and sent the moment the network returns.
         </p>
-        <ul style="list-style:none;display:flex;flex-direction:column;gap:9px;">
-          @foreach([
-            'Nothing is lost and nothing is silently overwritten — a conflict is shown to a person, not guessed at.',
-            'The device holds only what that member of staff is allowed to see.',
-            'Unsent work is never deleted automatically, and the screen always says how much is waiting.',
-          ] as $point)
-            <li style="display:flex;gap:10px;font-size:13.5px;color:var(--tx2);">
-              <i class="fas fa-check" style="color:var(--ok);margin-top:4px;" aria-hidden="true"></i>
-              <span>{{ $point }}</span>
-            </li>
-          @endforeach
+        <ul class="ticks">
+          <li><x-site.icon name="check" size="16" /><span>Nothing waiting is ever deleted, and the screen always says how much is still to send.</span></li>
+          <li><x-site.icon name="check" size="16" /><span>A record sent twice on a bad line is saved once.</span></li>
+          <li><x-site.icon name="check" size="16" /><span>If two people change the same record, a person decides. Nothing is overwritten quietly.</span></li>
         </ul>
+        <p class="offline-cta"><a href="{{ route('get-app') }}" class="btn ghost">Get the Android app <x-site.icon name="arrow-right" size="16" /></a></p>
       </div>
-      <div class="stats">
-        <div class="stat"><b>0</b><span>records lost to a dropped connection</span></div>
-        <div class="stat"><b>1</b><span>sign-in for every module</span></div>
-        <div class="stat"><b>14</b><span>days free, no card</span></div>
-        <div class="stat"><b>9</b><span>staff roles, each with its own view</span></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-{{-- ── Getting started ─────────────────────────────────────────────── --}}
-<section>
-  <div class="wrap">
-    <div class="sec-head"><h2>Live in three steps</h2><p>No server to run, no spreadsheet to reconcile, no consultant to book.</p></div>
-    <div class="steps">
-      <div class="step">
-        <div class="n" aria-hidden="true">1</div>
-        <h3>Create your hospital</h3>
-        <p>Name, plan, and you are in — on a 14-day trial with every module switched on and no card taken.</p>
-      </div>
-      <div class="step">
-        <div class="n" aria-hidden="true">2</div>
-        <h3>Follow the checklist</h3>
-        <p>A guided setup fills in your departments, wards and beds, price list and staff accounts. Twenty minutes, not a project.</p>
-      </div>
-      <div class="step">
-        <div class="n" aria-hidden="true">3</div>
-        <h3>Register the first patient</h3>
-        <p>From check-in to prescription to payment — one connected record, fully audited, from the first day.</p>
+      <div class="split-card">
+        <div>
+          <h3><x-site.icon name="wifi-off" size="16" /> Works with no signal</h3>
+          <ul>
+            <li>Registering and updating patients</li>
+            <li>Vitals and the doctor's notes</li>
+            <li>Lab results</li>
+            <li>Nursing notes and doses given on the ward</li>
+          </ul>
+        </div>
+        <div>
+          <h3><x-site.icon name="wifi" size="16" /> Waits for the network</h3>
+          <ul>
+            <li>Taking payments and closing bills</li>
+            <li>Dispensing from stock</li>
+            <li>Admitting to a bed</li>
+          </ul>
+          <p>Money and stock are counted in one place, so they are never counted twice.</p>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
-{{-- ── FAQ ─────────────────────────────────────────────────────────── --}}
-<section class="band-surface">
+{{-- 5. Patients hear from you: shown only once the messages really go out. --}}
+@if($patientMessages)
+  <section>
+    <div class="wrap narrow">
+      <div class="sec-head">
+        <h2>Patients hear from you</h2>
+        <p>Text messages in your clinic's name, only to patients who said yes at the desk. You see every one, and what became of it.</p>
+      </div>
+      <ul class="ticks">
+        <li><x-site.icon name="check" size="16" /><span>The booking, with the doctor, the day and the time.</span></li>
+        <li><x-site.icon name="check" size="16" /><span>A reminder the day before, never in the night.</span></li>
+        <li><x-site.icon name="check" size="16" /><span>The receipt, with a link to open it, when the bill is paid.</span></li>
+        <li><x-site.icon name="check" size="16" /><span>The dental check-up, on the day it falls due.</span></li>
+      </ul>
+    </div>
+  </section>
+@endif
+
+{{-- 6. The price, in money a clinic thinks in. --}}
+@if($plans->isNotEmpty())
+  <section @class(['band-surface' => $patientMessages])>
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Priced for a clinic, not a corporation</h2>
+        <p>Every plan starts with 14 days free, no card. Plans are limited by staff and beds, never by patients.</p>
+      </div>
+      <div class="prices home-prices">
+        @foreach($plans as $plan)
+          @php($price = \App\Support\PlatformPrice::make($plan->price, $region->currency()))
+          <a href="{{ route('pricing', ['plan' => $plan->slug]) }}" @class(['price', 'feat' => $plan->is_featured])>
+            <div class="tag">{{ $plan->name }}</div>
+            <div class="amt">{{ $price->label() }}<small> a month</small></div>
+            <div class="alt">About {{ $price->perDay() }} a day</div>
+          </a>
+        @endforeach
+        @if($oneOff)
+          <a href="{{ route('standalone.products') }}" class="price">
+            <div class="tag">Your own copy</div>
+            <div class="amt">{{ \App\Support\PlatformPrice::make($oneOff->price_ugx, $region->currency())->label() }}<small> once</small></div>
+            <div class="alt">On your own server, with {{ $oneOff->updates_months }} months of updates</div>
+          </a>
+        @endif
+      </div>
+      <p class="center-cta"><a href="{{ route('pricing') }}" class="btn ghost">See every plan <x-site.icon name="arrow-right" size="16" /></a></p>
+    </div>
+  </section>
+@endif
+
+{{-- 7. The questions clinic owners ask first. --}}
+<section @class(['band-surface' => ! $patientMessages])>
   <div class="wrap">
-    <div class="sec-head"><h2>Questions we get asked first</h2></div>
-    <x-site.faq :items="[
-      ['Can another hospital see our patients?', 'No. Every record carries its hospital and is filtered by a scope applied at the database layer, not by a condition somebody has to remember to write. An automated isolation suite runs against that on every change.'],
-      ['What happens to our data if we stop paying?', 'A lapsed subscription keeps working through a grace period, then access pauses. Nothing is deleted, and you can export your records at any point. The data is yours.'],
-      ['Do we have to move our old records in first?', 'No. Most hospitals start with new patients from day one and let the old register retire naturally. If you do want history moved, talk to us about it before you sign up.'],
-      ['Does it work on a phone?', 'Yes. Every screen is built for a narrow window as well as a wide one, and Field Mode is designed for a tablet on a ward round.'],
-      ['How many staff accounts do we get?', 'It depends on the plan, and it is never per seat — you are not charged for adding the night nurse. See the pricing page for the limits on each.'],
-      ['Which payment methods can we take from patients?', 'Cash, mobile money, card, bank transfer, a patient&rsquo;s prepaid card, and an insurer&rsquo;s claim against an invoice. Each is recorded against the invoice it settles.'],
-    ]" />
+    <div class="sec-head"><h2>Questions clinic owners ask first</h2></div>
+    <x-site.faq :items="array_map(fn ($qa) => [e($qa[0]), e($qa[1])], $faq)" />
   </div>
 </section>
 
-{{-- ── Close ───────────────────────────────────────────────────────── --}}
-<section class="band">
+{{-- The closing band: the home page's only green one. --}}
+<section class="band band-go">
   <div class="wrap">
-    <h2>One hospital, one account, full isolation</h2>
-    <p>Start on a 14-day trial with every module switched on. No card, no call, and nothing to install.</p>
+    <h2>Start today. Ask us anything on WhatsApp.</h2>
+    <p>Fourteen days free with every module on. We set your clinic up with you, free, on WhatsApp or a call.</p>
     <div class="ctas">
       @auth
-        <a href="{{ route('admin.dashboard') }}" class="btn lg">Go to your dashboard <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+        <a href="{{ route('admin.dashboard') }}" class="btn lg">Go to your dashboard</a>
       @else
-        <a href="{{ route('register') }}" class="btn lg">Start a free trial <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+        <a href="{{ route('register') }}" class="btn lg">Start free for 14 days</a>
       @endauth
-      <a href="{{ route('contact') }}" class="btn ghost lg">Talk to us first</a>
+      <x-support.link context="site.general" class="btn ghost lg">WhatsApp us</x-support.link>
     </div>
   </div>
 </section>
 
 @endsection
+
+@push('structured-data')
+  <script type="application/ld+json">
+    {!! json_encode(['@context' => 'https://schema.org', '@type' => 'WebSite', 'name' => 'True-Doctor', 'url' => route('home')], JSON_UNESCAPED_SLASHES) !!}
+  </script>
+@endpush

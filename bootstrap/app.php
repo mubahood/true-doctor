@@ -42,6 +42,7 @@ $application = Application::configure(basePath: dirname(__DIR__))
         // authenticity is verified via the verif-hash signature in the controller.
         $middleware->validateCsrfTokens(except: [
             'gateway/flutterwave/webhook',
+            'gateway/sms/*',
         ]);
 
         $middleware->redirectGuestsTo(fn () => route('admin.login'));

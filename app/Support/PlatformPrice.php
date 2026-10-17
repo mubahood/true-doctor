@@ -94,6 +94,24 @@ final readonly class PlatformPrice
             : 'USh '.number_format($year, 0);
     }
 
+    /**
+     * About what a day costs (a month over 30 days), to two significant
+     * figures: "about USh 1,700 a day" is a price somebody can weigh against
+     * a receipt book; 1,666.67 is a sum.
+     */
+    public function perDay(): string
+    {
+        $day = $this->amount / 30;
+
+        if ($this->currency === 'USD') {
+            return '$'.number_format($day, 2);
+        }
+
+        $step = $day >= 100 ? 10 ** ((int) floor(log10($day)) - 1) : 10;
+
+        return 'USh '.number_format(round($day / $step) * $step, 0);
+    }
+
     public function isConverted(): bool
     {
         return $this->currency !== strtoupper((string) config('pricing.base_currency', 'UGX'));

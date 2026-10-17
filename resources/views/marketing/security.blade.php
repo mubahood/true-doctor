@@ -1,6 +1,6 @@
 @extends('layouts.marketing')
-@section('title', 'Security — True-Doctor')
-@section('desc', 'How patient data is isolated, encrypted, logged and access-controlled — and what we do not claim. Written for the person who has to sign off on it.')
+@section('title', 'Security and patient data | True-Doctor')
+@section('desc', 'How patient data is isolated, encrypted, logged and access-controlled, and what we do not claim. Written for the person who has to sign off on it.')
 
 @section('content')
 
@@ -10,7 +10,7 @@
     <h1>Treated as a healthcare data system.</h1>
     <p class="lead">
       Patient information is sensitive by default. The controls below are part of
-      how True-Doctor is built rather than something added once somebody asked —
+      how True-Doctor is built rather than something added once somebody asked,
       and the last section says plainly what we do not yet claim.
     </p>
   </div>
@@ -24,19 +24,19 @@
     </div>
     <div class="grid two">
       @foreach([
-        ['fa-shield-halved', 'One hospital cannot see another', 'Every record carries the hospital it belongs to, and every query is filtered by a scope applied at the database layer — not by a condition each developer has to remember. A dedicated test suite exists solely to try to read across that boundary and fail.'],
+        ['fa-shield-halved', 'One hospital cannot see another', 'Every record carries the hospital it belongs to, and every query is filtered by a scope applied at the database layer, not by a condition each developer has to remember. A dedicated test suite exists solely to try to read across that boundary and fail.'],
         ['fa-lock', 'Encryption at rest', 'Prepaid card numbers, patients&rsquo; bank details, sign-in sessions and two-step sign-in secrets are encrypted, so a copy of the data on its own does not give them up. Card numbers are additionally stored as a hash for lookup, never in the clear. Clinical notes are not yet encrypted field by field; see below.'],
         ['fa-mobile-screen-button', 'Two-step sign-in', 'Owners and administrators type a code from an authenticator app after their password, so a stolen password alone does not open the hospital. Anyone else can turn it on. Recovery codes work once, and &ldquo;sign out everywhere&rdquo; ends every other session and app at once.'],
-        ['fa-list-check', 'Changes are recorded', 'Who changed a patient&rsquo;s name, number or status, or a visit&rsquo;s status, stage, outcome or diagnosis, when, and what the value was before. Every workflow — a visit&rsquo;s stages, a claim&rsquo;s statuses, an order&rsquo;s progress, an appointment&rsquo;s attendance — keeps an append-only history that is never edited in place. Read access is not currently logged; see what we do not claim, below.'],
+        ['fa-list-check', 'Changes are recorded', 'Who changed a patient&rsquo;s name, number or status, or a visit&rsquo;s status, stage, outcome or diagnosis, when, and what the value was before. Every workflow (a visit&rsquo;s stages, a claim&rsquo;s statuses, an order&rsquo;s progress, an appointment&rsquo;s attendance) keeps an append-only history that is never edited in place. Read access is not currently logged; see what we do not claim, below.'],
         ['fa-user-shield', 'Role-based access', 'Nine roles, each with its own menu, screens and fields. A nurse cannot record a diagnosis; a cashier cannot open clinical notes. The same rules are enforced in the web panel and in the API, from one definition.'],
         ['fa-key', 'No default passwords', 'The first administrator account is created with a random password printed once to the console and a forced change on first sign-in. Staff are invited the same way. There is no shipped password to look up.'],
-        ['fa-plug', 'One hardened API', 'A single token-authenticated API — versioned, rate-limited, origin-locked, with one response envelope. No second authentication path and no legacy bypass, because the one that gets less attention is the one somebody finds.'],
+        ['fa-plug', 'One hardened API', 'A single token-authenticated API: versioned, rate-limited, origin-locked, with one response envelope. No second authentication path and no legacy bypass, because the one that gets less attention is the one somebody finds.'],
         ['fa-money-check-dollar', 'Money cannot half-move', 'Every payment, refund and stock movement runs inside a database transaction with the affected rows locked. A balance and the ledger that explains it can never disagree because something failed halfway.'],
         ...(filled(config('backup.encryption_key')) && filled(config('backup.s3.bucket')) ? [['fa-box-archive', 'Backups that are tested', 'Every night the database and the documents are encrypted and copied off the server, and 30 daily and 12 monthly copies are kept. Once a month the newest copy is restored into a separate database and checked against the live one: a backup nobody has restored does not count.']] : []),
-        ['fa-mobile-screen', 'Offline, without giving it away', 'A device holds only what that member of staff may already see, and no password is ever stored on it. The server re-checks every permission when the work is sent back — the device is never treated as trusted.'],
+        ['fa-mobile-screen', 'Offline, without giving it away', 'A device holds only what that member of staff may already see, and no password is ever stored on it. The server re-checks every permission when the work is sent back; the device is never treated as trusted.'],
       ] as [$icon, $title, $body])
                 <div class="card">
-          <div class="ic" aria-hidden="true"><i class="fas {{ $icon }}"></i></div>
+          <div class="ic" aria-hidden="true"><x-site.icon :name="$icon" /></div>
           <h3>{!! $title !!}</h3>
           <p>{!! $body !!}</p>
         </div>
@@ -61,7 +61,7 @@
         ['We do not hold your data in your country unless you ask.', '[hosting]If data residency matters to your facility, raise it before you sign up rather than after. A self-hosted copy keeps everything on your own server.'],
         ['Availability is not guaranteed by a contract.', 'We take reasonable measures to keep the service up and we tell you when it is not. There is no uptime SLA with money attached to it, and we will not pretend otherwise on a marketing page.'],
         ['Clinical notes are not encrypted field by field.', 'The database, its backups and every connection are protected, and the most sensitive financial fields are encrypted on their own. Field-level encryption of the most sensitive clinical notes (HIV status, mental health, reproductive health) is planned and not shipped.'],
-        ['We do not log who READ a record.', 'Changes are recorded with who made them and what the value was before, and every workflow keeps an append-only status history. But a member of staff opening a patient record and closing it again leaves no entry. If your regulator requires read auditing, tell us before you sign up rather than after — it is a real gap, not a wording choice.'],
+        ['We do not log who READ a record.', 'Changes are recorded with who made them and what the value was before, and every workflow keeps an append-only status history. But a member of staff opening a patient record and closing it again leaves no entry. If your regulator requires read auditing, tell us before you sign up rather than after. It is a real gap, not a wording choice.'],
       ] as [$q, $a])
         @php($a = str_replace('[hosting]', filled(config('company.hosting_location')) ? 'The online service runs on servers in '.e(config('company.hosting_location')).'. ' : 'Where the online service and its backups are hosted depends on the deployment. ', $a))
         <details>
@@ -85,7 +85,7 @@
           Email <a class="link" href="mailto:{{ $supportEmail }}">{{ $supportEmail }}</a>
           with enough detail to reproduce it. We will acknowledge within two business days
           and tell you what we are doing about it. Please do not test against a real
-          hospital&rsquo;s data — ask us and we will point you at an instance you can hit.
+          hospital&rsquo;s data. Ask us and we will point you at an instance you can hit.
         </p>
       </div>
       <p>
@@ -100,8 +100,8 @@
 <section class="band">
   <div class="wrap">
     <h2>Have a compliance question?</h2>
-    <p>We will walk your team through exactly how patient data is stored, isolated and audited — including the parts that are still on the list.</p>
-    <a href="{{ route('contact') }}" class="btn lg">Ask us <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+    <p>We will walk your team through exactly how patient data is stored, isolated and audited, including the parts that are still on the list.</p>
+    <a href="{{ route('contact') }}" class="btn lg">Ask us <x-site.icon name="fa-arrow-right" /></a>
   </div>
 </section>
 

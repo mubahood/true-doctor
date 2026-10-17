@@ -73,7 +73,7 @@
             <li><i class="fas fa-check" aria-hidden="true"></i>{{ $feature }}</li>
           @empty
             <li><i class="fas fa-check" aria-hidden="true"></i>{{ $plan->limit('max_staff') ? $plan->limit('max_staff').' staff accounts' : 'Unlimited staff' }}</li>
-            <li><i class="fas fa-check" aria-hidden="true"></i>{{ $plan->limit('max_patients') ? number_format($plan->limit('max_patients')).' patients' : 'Unlimited patients' }}</li>
+            <li><i class="fas fa-check" aria-hidden="true"></i>Unlimited patients</li>
             <li><i class="fas fa-check" aria-hidden="true"></i>{{ $plan->limit('max_beds') ? $plan->limit('max_beds').' beds' : 'Unlimited beds' }}</li>
           @endforelse
         </ul>
@@ -154,7 +154,7 @@
                 <li><i class="fas fa-check" aria-hidden="true"></i>{{ $feature }}</li>
               @empty
                 <li><i class="fas fa-check" aria-hidden="true"></i>{{ $plan->limit('max_staff') ? $plan->limit('max_staff').' staff accounts' : 'Unlimited staff' }}</li>
-                <li><i class="fas fa-check" aria-hidden="true"></i>{{ $plan->limit('max_patients') ? number_format($plan->limit('max_patients')).' patients' : 'Unlimited patients' }}</li>
+                <li><i class="fas fa-check" aria-hidden="true"></i>Unlimited patients</li>
               @endforelse
             </ul>
           </div>

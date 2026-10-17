@@ -274,10 +274,13 @@ class StandaloneOperationsTest extends TestCase
         $this->asInstalledStandalone();
         $hospital = Hospital::factory()->create();
         $this->actingAsRole('hospital_admin', $hospital);
+        config(['support.whatsapp' => '256700111222']);
 
         Livewire::test(SystemPage::class)
             ->assertSee('Licence & updates')
             ->assertSee('Missing or invalid')
+            ->assertSee('Trouble with an update, a backup or the licence? WhatsApp us')
+            ->assertSee('https://wa.me/256700111222', false)
             ->call('backupNow')
             ->assertDispatched('toast');
 

@@ -11,8 +11,8 @@
 </div></section>
 
 <section><div class="wrap">
-  @if(session('error'))<div class="notice bad" role="alert"><i class="fas fa-circle-exclamation" aria-hidden="true"></i><span>{{ session('error') }}</span></div>@endif
-  @if($errors->any())<div class="notice bad" role="alert"><i class="fas fa-circle-exclamation" aria-hidden="true"></i><span>{{ $errors->first() }}</span></div>@endif
+  @if(session('error'))<div class="notice bad" role="alert"><x-site.icon name="fa-circle-exclamation" /><span>{{ session('error') }}</span></div>@endif
+  @if($errors->any())<div class="notice bad" role="alert"><x-site.icon name="fa-circle-exclamation" /><span>{{ $errors->first() }}</span></div>@endif
 
   @if($products->isEmpty() || ! $available)
     <div class="formcard"><h2>Coming soon</h2><p>The self-hosted edition opens for sale as soon as its first verified release is published. <a href="{{ route('contact') }}">Tell us you are interested</a> and we will let you know.</p></div>
@@ -24,18 +24,18 @@
           <div class="amt">{{ \App\Support\PlatformCurrency::format($product->price_ugx) }}<small> once</small></div>
           @if($product->description)<div class="who">{{ $product->description }}</div>@endif
           <ul>
-            <li><i class="fas fa-check" aria-hidden="true"></i> Every clinical and business module</li>
-            <li><i class="fas fa-check" aria-hidden="true"></i> One organisation, on your own server</li>
-            <li><i class="fas fa-check" aria-hidden="true"></i> {{ $product->updates_months }} months of new releases{{ $product->renewal_price_ugx ? ', renewable' : '' }}</li>
-            <li><i class="fas fa-check" aria-hidden="true"></i> {{ empty($product->limits['max_staff']) ? 'Unlimited staff accounts' : 'Up to '.$product->limits['max_staff'].' staff accounts' }}</li>
-            <li><i class="fas fa-check" aria-hidden="true"></i> Download, licence and guide right after payment</li>
+            <li><x-site.icon name="fa-check" /> Every clinical and business module</li>
+            <li><x-site.icon name="fa-check" /> One organisation, on your own server</li>
+            <li><x-site.icon name="fa-check" /> {{ $product->updates_months }} months of new releases{{ $product->renewal_price_ugx ? ', renewable' : '' }}</li>
+            <li><x-site.icon name="fa-check" /> {{ empty($product->limits['max_staff']) ? 'Unlimited staff accounts' : 'Up to '.$product->limits['max_staff'].' staff accounts' }}</li>
+            <li><x-site.icon name="fa-check" /> Download, licence and guide right after payment</li>
           </ul>
           <form method="post" action="{{ route('standalone.checkout', $product) }}" class="own-form">
             @csrf
             <div class="f"><label for="buy-name-{{ $product->id }}">Your organisation's name</label><input id="buy-name-{{ $product->id }}" name="name" required maxlength="190" value="{{ old('name') }}"></div>
             <div class="f"><label for="buy-email-{{ $product->id }}">Email for your downloads</label><input id="buy-email-{{ $product->id }}" type="email" name="email" required value="{{ old('email') }}"></div>
             <div class="f"><label for="buy-domain-{{ $product->id }}">Address you will install on</label><input id="buy-domain-{{ $product->id }}" name="domain" required placeholder="hms.yourhospital.com" value="{{ old('domain') }}"><div class="hint">You can change it later from your downloads page.</div></div>
-            <button class="btn" type="submit">Pay securely <i class="fas fa-lock" aria-hidden="true"></i></button>
+            <button class="btn" type="submit">Pay securely <x-site.icon name="fa-lock" /></button>
           </form>
         </div>
       @endforeach

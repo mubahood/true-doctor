@@ -36,7 +36,8 @@ class SupportEverywhereTest extends TestCase
         foreach (['/', '/pricing', '/contact', '/features', '/security', '/privacy', '/terms'] as $path) {
             $html = $this->get($path)->assertOk()->getContent();
 
-            $this->assertStringContainsString('https://wa.me/'.self::DIGITS, $html, "{$path} has no WhatsApp link");
+            // Public buttons go through /go/whatsapp, which counts the tap and sends on to wa.me (GoWhatsappTest).
+            $this->assertTrue($this->offersWhatsapp($html), "{$path} has no WhatsApp link");
             $this->assertStringContainsString('class="wa-float"', $html, "{$path} has no floating button");
             $this->assertStringContainsString('+256 700 111 222', $html, "{$path} footer has no phone");
             $this->assertStringContainsString('help@example.test', $html, "{$path} footer has no email");
@@ -56,12 +57,18 @@ class SupportEverywhereTest extends TestCase
         foreach (['/admin/login', '/forgot-password'] as $path) {
             $this->get($path)->assertOk()->assertSee('Trouble signing in?', false)->assertSee('https://wa.me/'.self::DIGITS, false);
         }
-        $this->get('/register')->assertOk()->assertSee('name="whatsapp"', false)->assertSee('https://wa.me/'.self::DIGITS, false);
+        $register = $this->get('/register')->assertOk()->assertSee('name="whatsapp"', false)->getContent();
+        $this->assertTrue($this->offersWhatsapp($register));
+    }
+
+    private function offersWhatsapp(string $html): bool
+    {
+        return str_contains($html, 'https://wa.me/'.self::DIGITS) || str_contains($html, '/go/whatsapp');
     }
 
     public function test_the_error_page_gives_a_reference_and_the_way_to_reach_us(): void
     {
-        $this->get('/no-such-page-here')->assertNotFound()->assertSee('https://wa.me/'.self::DIGITS, false);
+        $this->assertTrue($this->offersWhatsapp($this->get('/no-such-page-here')->assertNotFound()->getContent()));
     }
 
     public function test_the_back_office_help_menu_is_on_the_screen(): void

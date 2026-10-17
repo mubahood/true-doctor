@@ -12,6 +12,7 @@ use App\Exceptions\OverpaymentException;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Patient;
 use App\Models\PatientCard;
 use App\Models\Payment;
 use App\Models\Service;
@@ -502,6 +503,9 @@ class BillingService
             $status = bccomp($newBalance, '0', 2) === 0 ? InvoiceStatus::Paid : InvoiceStatus::PartiallyPaid;
 
             $locked->update(['amount_paid' => $newPaid, 'balance' => $newBalance, 'status' => $status]);
+            if ($status === InvoiceStatus::Paid) {
+                \App\Support\Funnel::reached((int) $locked->hospital_id, 'first_paid_visit');
+            }
 
             $payment = Payment::create([
                 'uuid' => (string) Str::uuid(),
@@ -528,8 +532,40 @@ class BillingService
                 app(\App\Services\VisitService::class)->reconcile($visit, $by);
             }
 
+            if ($status === InvoiceStatus::Paid) {
+                $this->sendReceipt($locked, $payment);
+            }
+
             return $payment;
         });
+    }
+
+    /**
+     * "Thank you. Your receipt: …" to the patient once the bill is paid in
+     * full (roadmap 05 §3), with a link to the receipt that expires. Only
+     * where the hospital has messages on: the link is not made otherwise.
+     */
+    private function sendReceipt(Invoice $invoice, Payment $payment): void
+    {
+        $patient = Patient::query()->withoutGlobalScopes()->find($invoice->patient_id);
+        $hospital = \App\Models\Hospital::query()->find($invoice->hospital_id);
+        if ($patient === null || ! \App\Services\Messaging\MessagingSettings::of($hospital)->smsEnabled()) {
+            return;
+        }
+
+        try {
+            $link = app(InvoiceShareService::class)->sharePayment($payment)['url'];
+        } catch (\Throwable $e) {
+            report($e);
+
+            return;
+        }
+
+        app(\App\Services\Messaging\PatientMessenger::class)->trySend($patient, 'receipt', [
+            'amount' => HospitalSettings::money($invoice->total),
+            'invoice' => $invoice->invoice_no,
+            'link' => $link,
+        ], 'invoice:'.$invoice->uuid.':paid');
     }
 
     private function assertNoOpenInvoice(Visit $visit): void

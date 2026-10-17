@@ -1,5 +1,5 @@
 @extends('layouts.marketing')
-@section('title', 'Contact — True-Doctor')
+@section('title', 'Contact us | True-Doctor')
 @section('desc', 'Ask about a plan, request a walkthrough, or tell us about your hospital. We reply within one business day.')
 
 @section('content')
@@ -10,7 +10,7 @@
     <h1>Let&rsquo;s get your hospital set up.</h1>
     <p class="lead">
       Tell us how many staff you have and which departments you run. We will tell
-      you which plan to start on — including if that is the cheapest one — and set
+      you which plan to start on, even if that is the cheapest one, and set
       you up if you want a hand.
     </p>
   </div>
@@ -39,14 +39,14 @@
 
       @if(session('sent'))
         <div class="notice ok" role="status">
-          <i class="fas fa-circle-check" aria-hidden="true"></i>
+          <x-site.icon name="fa-circle-check" />
           <div>{{ session('sent') }}</div>
         </div>
       @endif
 
       @if($errors->any())
         <div class="notice bad" role="alert" aria-live="assertive">
-          <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
+          <x-site.icon name="fa-circle-exclamation" />
           <div>{{ $errors->count() === 1 ? $errors->first() : 'Please check the highlighted fields below.' }}</div>
         </div>
       @endif
@@ -61,7 +61,7 @@
             <input type="text" id="name" name="name" value="{{ old('name') }}" required
                    autocomplete="name" maxlength="120" class="{{ $errors->has('name') ? 'bad' : '' }}"
                    @error('name') aria-invalid="true" aria-describedby="name-e" @enderror>
-            @error('name')<p class="err" id="name-e" role="alert"><i class="fas fa-circle-exclamation" aria-hidden="true"></i> {{ $message }}</p>@enderror
+            @error('name')<p class="err" id="name-e" role="alert"><x-site.icon name="fa-circle-exclamation" /> {{ $message }}</p>@enderror
           </div>
 
           <div class="f">
@@ -70,7 +70,7 @@
                    autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" maxlength="191"
                    class="{{ $errors->has('email') ? 'bad' : '' }}"
                    @error('email') aria-invalid="true" aria-describedby="email-e" @enderror>
-            @error('email')<p class="err" id="email-e" role="alert"><i class="fas fa-circle-exclamation" aria-hidden="true"></i> {{ $message }}</p>@enderror
+            @error('email')<p class="err" id="email-e" role="alert"><x-site.icon name="fa-circle-exclamation" /> {{ $message }}</p>@enderror
           </div>
 
           <div class="f">
@@ -108,7 +108,7 @@
                       placeholder="Which departments you run, what you use now, and anything you need answered before you would consider moving."
                       @error('message') aria-invalid="true" aria-describedby="message-e" @enderror>{{ old('message') }}</textarea>
             @error('message')
-              <p class="err" id="message-e" role="alert"><i class="fas fa-circle-exclamation" aria-hidden="true"></i> {{ $message }}</p>
+              <p class="err" id="message-e" role="alert"><x-site.icon name="fa-circle-exclamation" /> {{ $message }}</p>
             @else
               <p class="hint">A sentence or two is plenty. We read every one of these.</p>
             @enderror
@@ -118,7 +118,7 @@
         <x-human-check form="contact" />
 
         <button type="submit" class="btn lg" style="width:100%;justify-content:center;" data-busy="Sending…">
-          <i class="fas fa-paper-plane" aria-hidden="true"></i> Send it
+          <x-site.icon name="fa-paper-plane" /> Send it
         </button>
 
         <p class="hint" style="text-align:center;margin-top:12px;">
@@ -135,21 +135,21 @@
     <div class="sec-head"><h2>Or reach us directly</h2></div>
     <div class="grid" style="max-width:820px;margin:0 auto;">
       <a class="card" href="mailto:{{ $supportEmail }}">
-        <div class="ic" aria-hidden="true"><i class="fas fa-envelope"></i></div>
+        <div class="ic" aria-hidden="true"><x-site.icon name="fa-envelope" /></div>
         <h3>Email</h3>
         <p>{{ $supportEmail }}<br><span style="color:var(--tx3);">Usually answered within one business day.</span></p>
       </a>
       @if($demo)
         <a class="card" href="{{ route('demo') }}">
-          <div class="ic" aria-hidden="true"><i class="fas fa-flask"></i></div>
+          <div class="ic" aria-hidden="true"><x-site.icon name="fa-flask" /></div>
           <h3>Look around first</h3>
-          <p>Open the demonstration hospital — a populated facility with real workflows in it. No sign-up, nothing to install.</p>
+          <p>Open the demonstration hospital: a populated facility with real workflows in it. No sign-up, nothing to install.</p>
         </a>
       @endif
       <div class="card">
-        <div class="ic" aria-hidden="true"><i class="fas fa-right-to-bracket"></i></div>
+        <div class="ic" aria-hidden="true"><x-site.icon name="fa-right-to-bracket" /></div>
         <h3>Already a customer?</h3>
-        <p><a class="link" style="color:var(--pri);font-weight:500;" href="{{ route('admin.login') }}">Sign in to your hospital</a> — support is reachable from inside your account, with your details already attached.</p>
+        <p><a class="link" href="{{ route('admin.login') }}">Sign in to your hospital</a>. Support is reachable from inside your account, with your details already attached.</p>
       </div>
     </div>
   </div>
@@ -165,7 +165,7 @@
     form.addEventListener('submit', () => {
       const button = form.querySelector('[type="submit"]');
       if (!button || button.disabled) return;
-      button.innerHTML = '<i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i> ' + button.dataset.busy;
+      button.innerHTML = '<x-site.icon name="fa-circle-notch" class="spin" /> ' + button.dataset.busy;
       button.disabled = true;
       button.setAttribute('aria-busy', 'true');
     });

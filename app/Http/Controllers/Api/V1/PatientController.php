@@ -40,11 +40,14 @@ class PatientController extends Controller
     {
         $this->authorize('create', Patient::class);
 
+        $messaging = $this->messaging($request);
+
         try {
             $patient = $this->service->register($request->validated(), $request->user()->id);
         } catch (\App\Exceptions\PlanLimitExceededException $e) {
             return ApiResponse::error(\App\Enums\ApiErrorCode::PlanLimit, $e->getMessage(), 403, null, null, false);
         }
+        $this->recordMessaging($patient, $messaging, $request->user()->id);
 
         return ApiResponse::success(new PatientResource($patient), 'Patient registered.', 201);
     }
@@ -72,10 +75,44 @@ class PatientController extends Controller
     public function update(PatientRequest $request, Patient $patient): JsonResponse
     {
         $this->authorize('update', $patient);
+        $messaging = $this->messaging($request);
 
         $this->service->update($patient, $request->validated());
+        $this->recordMessaging($patient, $messaging, $request->user()->id);
 
         return ApiResponse::success(new PatientResource($patient->fresh()), 'Patient updated.');
+    }
+
+    /**
+     * The messages the patient agreed to (roadmap 05 §2), sent as
+     * `messaging: {sms_care, whatsapp_care, sms_marketing}`; only the keys
+     * sent are recorded, so an app that does not ask records nothing.
+     *
+     * @return array<string,bool>
+     */
+    private function messaging(Request $request): array
+    {
+        $data = $request->validate([
+            'messaging' => ['sometimes', 'nullable', 'array'],
+            'messaging.sms_care' => ['sometimes', 'boolean'],
+            'messaging.whatsapp_care' => ['sometimes', 'boolean'],
+            'messaging.sms_marketing' => ['sometimes', 'boolean'],
+        ]);
+
+        $out = [];
+        foreach ((array) ($data['messaging'] ?? []) as $key => $on) {
+            $out[str_replace('_', '.', (string) $key)] = (bool) $on;
+        }
+
+        return $out;
+    }
+
+    /** @param  array<string,bool>  $answers */
+    private function recordMessaging(Patient $patient, array $answers, int $by): void
+    {
+        if ($answers !== []) {
+            app(\App\Services\Messaging\ConsentService::class)->record($patient, $answers, 'app', $by);
+        }
     }
 
     public function destroy(Patient $patient): JsonResponse

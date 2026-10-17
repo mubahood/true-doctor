@@ -144,7 +144,6 @@ final class Capabilities
             'updates_active' => $until === null ? null : ! $until->isPast(),
             'limits' => array_filter([
                 'max_staff' => $licence->limit('max_staff'),
-                'max_patients' => $licence->limit('max_patients'),
                 'max_beds' => $licence->limit('max_beds'),
             ], fn ($v) => $v !== null),
         ];

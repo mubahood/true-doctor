@@ -29,10 +29,13 @@ class PatientService
             throw new RuntimeException('Cannot register a patient without a resolved hospital context.');
         }
 
-        // Subscription plan may cap the number of patients (§21).
-        app(\App\Support\PlanLimit::class)->assertCanCreate('patients');
+        // No plan limit here, ever: a clinic is never stopped from
+        // registering a patient (PlanLimit, docs/decisions.md 2026-10-17).
 
-        return $this->createWithNumber($data, $registeredBy, $hospitalId);
+        $patient = $this->createWithNumber($data, $registeredBy, $hospitalId);
+        \App\Support\Funnel::reached($hospitalId, 'first_patient');
+
+        return $patient;
     }
 
     public function update(Patient $patient, array $data): Patient

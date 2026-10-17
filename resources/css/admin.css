@@ -877,6 +877,8 @@ strong,b{font-weight:600;}
   color:var(--mt2);padding:5px 10px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface);}
 .tb-table tbody td{padding:5px 10px;border-bottom:1px solid var(--line);color:var(--tx);vertical-align:middle;}
 .tb-table tbody tr:last-child td{border-bottom:none;}
+.tb-table tfoot th,.tb-table tfoot td{padding:6px 10px;border-top:1px solid var(--line-2);font-weight:600;text-align:left;color:var(--tx);}
+.tb-table tfoot th.tb-text-right,.tb-table tfoot td.tb-text-right{text-align:right;}
 .tb-table tbody tr:hover td{background:var(--surface-2);}
 .tb-table-actions{display:flex;gap:4px;align-items:center;}
 .mono{font-family:var(--font);letter-spacing:.04em;font-size:12px;}
@@ -1223,8 +1225,12 @@ template[data-td-flash]{display:none;}
 .tb-mt-2{margin-top:8px;} .tb-mt-3{margin-top:12px;} .tb-mt-4{margin-top:16px;}
 /* The bottom half of the scale was missing its small end, so `tb-mb-3` looked
    like a utility and rendered as nothing. */
+.tb-ml-auto{margin-left:auto;}
 .tb-mb-2{margin-bottom:8px;} .tb-mb-3{margin-bottom:8px;} .tb-mb-4{margin-bottom:10px;} .tb-mb-5{margin-bottom:14px;}
 .tb-text-right{text-align:right;} .tb-text-center{text-align:center;} .tb-nowrap{white-space:nowrap;}
+/* A table heading is left-aligned by default; the alignment utilities must
+   still win there, or a money column's heading sits apart from its figures. */
+.tb-table thead th.tb-text-right{text-align:right;} .tb-table thead th.tb-text-center{text-align:center;}
 .tb-flex{display:flex;align-items:center;gap:10px;flex-wrap:wrap;} .tb-flex-end{justify-content:flex-end;}
 .tb-flex-between{justify-content:space-between;width:100%;}
 .tb-grow{flex:1;min-width:0;}
@@ -2315,3 +2321,33 @@ body.has-brand::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z-i
 .tb-chip-check{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border:1px solid var(--line);font-size:12px;cursor:pointer;}
 .tb-chip-check input{margin:0;}
 .dental-recall{flex-wrap:wrap;}
+
+/* ── Messages to patients (Settings → Messages, patient form) ──────── */
+.msg-events{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-bottom:6px;}
+.msg-events.is-off{opacity:.55;}
+.msg-event{border:1px solid var(--line);padding:8px 10px;background:var(--surface-2);}
+.msg-preview{margin:6px 0 0;font-size:11.5px;line-height:1.45;color:var(--mt);}
+.msg-body{max-width:420px;font-size:11.5px;line-height:1.4;}
+.msg-buy{margin-left:10px;}
+.msg-consent .tb-check-group{margin-top:4px;}
+
+/* ── Coded diagnoses (Visits\Panels\Diagnoses, Diagnoses\Worklist) ───── */
+.dx-list{list-style:none;margin:0 0 8px;padding:0;}
+.dx-item{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--line);flex-wrap:wrap;}
+.dx-item:last-child{border-bottom:none;}
+.dx-item.is-primary .dx-title{font-weight:600;}
+.dx-code{min-width:52px;font-size:11.5px;color:var(--mt);}
+.dx-title{font-size:12.5px;}
+.dx-acts{margin-left:auto;display:flex;gap:4px;}
+.dx-pick{display:flex;align-items:center;gap:10px;margin-top:6px;}
+.dx-pick .tb-input{flex:1;min-width:0;}
+.dx-options{display:flex;flex-direction:column;gap:2px;margin-top:6px;}
+.dx-option{display:flex;gap:8px;align-items:baseline;text-align:left;padding:5px 8px;border:1px solid var(--line);background:var(--surface);font-size:12px;color:var(--tx);cursor:pointer;}
+.dx-option:hover,.dx-option:focus-visible{background:var(--surface-2);border-color:var(--line-2);}
+.dx-option .mono{min-width:52px;color:var(--mt);font-size:11.5px;}
+
+/* ── Ministry reports (Reports\Hmis) ─────────────────────────────────── */
+.hmis-grid th,.hmis-grid td{padding:4px 6px;white-space:nowrap;}
+.hmis-grid td:first-child{white-space:normal;min-width:180px;}
+.hmis-zero td{color:var(--mt);}
+.hmis-hit td{background:var(--warn-soft);font-weight:600;}

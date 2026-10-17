@@ -220,6 +220,7 @@ class SyncEngine
             'lab_items' => app(LabResultHandler::class),
             'visits' => app(VisitClinicalHandler::class),
             'dental_chart_entries' => app(Handlers\DentalChartHandler::class),
+            'visit_diagnoses' => app(Handlers\VisitDiagnosisHandler::class),
         ];
 
         return $this->handlers[$entity] ?? null;

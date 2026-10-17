@@ -27,6 +27,7 @@ final class InsightEngine
     /** @var list<class-string<InsightRule>> */
     public const RULES = [
         Rules\SetupIncomplete::class,
+        Rules\NotifiableDiseases::class,
         Rules\StockExpired::class,
         Rules\StockRunningOut::class,
         Rules\StockExpiring::class,

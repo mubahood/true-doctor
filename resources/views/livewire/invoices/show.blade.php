@@ -68,6 +68,11 @@
                   <x-ui.icon-button label="Receipt for {{ \App\Support\HospitalSettings::money($p->amount) }}"
                     icon="fa-receipt" :href="route('admin.payments.receipt', $p)" :navigate="false"
                     target="_blank" rel="noopener" />
+                  @if($printer = app(\App\Support\HospitalSettings::class)->receiptPrinter())
+                    <x-ui.icon-button label="Print on the receipt printer ({{ $printer }} mm)"
+                      icon="fa-print" :href="route('admin.payments.receipt.thermal', [$p, 'w' => $printer])" :navigate="false"
+                      target="_blank" rel="noopener" />
+                  @endif
                 </td>
               </tr>
             @empty

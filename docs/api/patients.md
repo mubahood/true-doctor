@@ -57,3 +57,7 @@ Errors: `401` no token, `403` cannot view patients, `404` unknown or another hos
 
 The statement of account as a PDF (the one the web prints), under the web's rule: `billing.view`.
 Opens inline; `Content-Type: application/pdf`.
+
+## Messaging consent
+
+`POST /api/v1/patients` and `PUT /api/v1/patients/{uuid}` take an optional `messaging` object: `{ "sms_care": true, "whatsapp_care": true, "sms_marketing": false }`. Only the keys sent are recorded (method `app`, by the signed-in person); an app that does not ask sends nothing and nothing is recorded. `GET /api/v1/patients/{uuid}` returns the answers in force under `messaging` (keys never asked are absent). An offline registration carries the same object in its `patients` create payload. See `docs/messaging.md`.

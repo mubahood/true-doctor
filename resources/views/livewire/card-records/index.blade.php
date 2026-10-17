@@ -54,7 +54,7 @@
         <thead>
           <tr>
             <th class="tb-serial">#</th><th>When</th><th>Card</th><th>Spent on</th><th>What</th>
-            <th style="text-align:right;">Amount</th><th style="text-align:right;">Balance</th><th>By</th>
+            <th class="tb-text-right">Amount</th><th class="tb-text-right">Balance</th><th>By</th>
             <th><span class="sr-only">Actions</span></th>
           </tr>
         </thead>
@@ -79,12 +79,12 @@
                   <span class="muted mono" style="font-size:.78rem;">{{ $record->reference }}</span>
                 @endif
               </td>
-              <td style="text-align:right;" class="mono {{ $record->type === \App\Enums\CardEntryType::Credit ? 'tb-primary' : 'tb-danger' }}">
+              <td class="tb-text-right mono {{ $record->type === \App\Enums\CardEntryType::Credit ? 'tb-primary' : 'tb-danger' }}">
                 {{ $record->type === \App\Enums\CardEntryType::Credit ? '+' : '−' }}{{ \App\Support\HospitalSettings::money($record->amount) }}
               </td>
-              <td style="text-align:right;" class="mono muted">{{ \App\Support\HospitalSettings::money($record->balance_after) }}</td>
+              <td class="tb-text-right mono muted">{{ \App\Support\HospitalSettings::money($record->balance_after) }}</td>
               <td class="muted">{{ $record->createdBy?->name ?? '—' }}</td>
-              <td style="text-align:right;">
+              <td class="tb-text-right">
                 <button type="button" class="btn-tb btn-tb-ghost btn-tb-icon" wire:click="peek({{ $record->id }})"
                         aria-label="See this entry"><i class="fas fa-eye" aria-hidden="true"></i></button>
               </td>

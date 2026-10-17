@@ -52,7 +52,7 @@ class PublicPagesTest extends TestCase
             $this->assertStringContainsString('<link rel="canonical" href="'.url($path).'"', $html);
             $this->assertStringContainsString('property="og:image"', $html);
             $this->assertStringContainsString('name="twitter:title"', $html);
-            $this->assertStringContainsString('https://wa.me/256700111222', $html, "{$path} offers WhatsApp");
+            $this->assertStringContainsString('/go/whatsapp', $html, "{$path} offers WhatsApp (counted on its way to wa.me)");
             $this->assertStringNotContainsStringIgnoringCase('lorem', $html);
             $this->assertStringNotContainsString('TODO', $html);
             $this->assertStringNotContainsString('—', strip_tags(preg_replace('/<script.*?<\/script>/s', '', $html) ?? ''), "{$path}: no em dashes in the words");

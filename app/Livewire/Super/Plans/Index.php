@@ -19,7 +19,7 @@ use Livewire\Component;
  * (CrudModal), authorized by PlanPolicy.
  *
  * The three caps live inside the plan's `limits` JSON under exactly the keys
- * App\Support\PlanLimit enforces — max_staff, max_patients, max_beds (K4). They
+ * App\Support\PlanLimit enforces — max_staff and max_beds (K4); patients are never capped. They
  * are not model attributes, so edit() hydrates them in fillExtra() and save()
  * folds them back into `limits` in beforeSave().
  */
@@ -29,7 +29,7 @@ class Index extends Component
     use AuthorizesRequests, CrudModal, WithTable;
 
     /** The plan limit keys this form owns, in display order. */
-    private const LIMIT_KEYS = ['max_staff', 'max_patients', 'max_beds'];
+    private const LIMIT_KEYS = ['max_staff', 'max_beds'];
 
     public string $name = '';
 
@@ -42,8 +42,6 @@ class Index extends Component
     public string $billing_cycle = 'monthly';
 
     public ?int $max_staff = null;
-
-    public ?int $max_patients = null;
 
     public ?int $max_beds = null;
 

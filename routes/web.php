@@ -33,6 +33,10 @@ Route::middleware(['edition:saas', 'landing'])->group(function () {
     Route::get('/about', [\App\Http\Controllers\PublicPageController::class, 'about'])->name('about');
     Route::get('/demo', [\App\Http\Controllers\PublicPageController::class, 'demo'])->name('demo');
 });
+// A WhatsApp button on the public site, counted on its way to wa.me (GoController).
+Route::get('/go/whatsapp', [\App\Http\Controllers\GoController::class, 'whatsapp'])
+    ->middleware(['edition:saas', 'throttle:60,1'])->name('go.whatsapp');
+
 // Walk into the demo as a role: a form POST, never a link, so no crawler or
 // prefetch can sign anybody in; the account is the server's choice.
 Route::post('/demo/{role}', [\App\Http\Controllers\PublicPageController::class, 'enterDemo'])
@@ -213,10 +217,16 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'subscribed', 'onboarding',
     Route::get('services', \App\Livewire\Services\Index::class)->name('services.index');
 
     // ── Billing: invoices + payments (Phase 1 Step 11b) ─────────
+    // The cashier's day, to close the till against (same figures as the app's).
+    Route::get('cashier/day', \App\Livewire\Billing\CashierDay::class)->name('cashier.day');
+    Route::get('cashier/day/pdf', [\App\Http\Controllers\Admin\CashierDayController::class, 'pdf'])->name('cashier.day.pdf');
     Route::get('invoices', \App\Livewire\Invoices\Index::class)->name('invoices.index');
     Route::get('invoices/{invoice}', \App\Livewire\Invoices\Show::class)->name('invoices.show');
     Route::get('invoices/{invoice}/pdf', [\App\Http\Controllers\Admin\InvoiceController::class, 'pdf'])->name('invoices.pdf');
     Route::get('payments/{payment}/receipt', [\App\Http\Controllers\Admin\PaymentController::class, 'receipt'])->name('payments.receipt');
+    // Roll paper for a receipt printer, 58 or 80 mm (?w=58).
+    Route::get('payments/{payment}/receipt/thermal', [\App\Http\Controllers\Admin\ThermalController::class, 'receipt'])->name('payments.receipt.thermal');
+    Route::get('visits/{visit}/ticket', [\App\Http\Controllers\Admin\ThermalController::class, 'ticket'])->name('visits.ticket');
     Route::post('invoices/{invoice}/pay/flutterwave', [\App\Http\Controllers\Admin\GatewayPaymentController::class, 'start'])->name('invoices.flutterwave');
 
     // ── Dispensing (Phase 2 Step 12b) ─────────────────────────
@@ -292,6 +302,10 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'subscribed', 'onboarding',
     // rather than a screen. Opens in its own tab, like every other generated
     // document here.
     Route::get('reports/pdf', [\App\Http\Controllers\Admin\ReportController::class, 'pdf'])->name('reports.pdf');
+    // The Ministry of Health forms (HMIS 105, 108, 033b) and the coding worklist they depend on.
+    Route::get('reports/hmis', \App\Livewire\Reports\Hmis::class)->name('reports.hmis');
+    Route::get('reports/hmis/{form}.{format}', [\App\Http\Controllers\Admin\HmisController::class, 'export'])->where(['form' => '105|108|033b', 'format' => 'pdf|csv'])->name('reports.hmis.export');
+    Route::get('diagnoses', \App\Livewire\Diagnoses\Worklist::class)->name('diagnoses.worklist');
 
     // ── Subscription / plan checkout (Step 21) ────────────────
     Route::get('subscription', \App\Livewire\Subscription\Index::class)->middleware('edition:saas')->name('subscription.index');
@@ -301,6 +315,7 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'subscribed', 'onboarding',
     Route::get('settings/hospital', \App\Livewire\Settings\Hospital::class)->name('settings.hospital');
     Route::get('settings/billing', \App\Livewire\Settings\Billing::class)->name('settings.billing');
     Route::get('settings/practice', \App\Livewire\Settings\Practice::class)->name('settings.practice');
+    Route::get('settings/messages', \App\Livewire\Settings\Messages::class)->name('settings.messages');
     Route::get('settings', \App\Livewire\Settings\Site::class)->middleware('edition:saas')->name('settings.index');
 
     // A standalone owner's own server: release, licence, updates, backups.
@@ -344,6 +359,7 @@ Route::prefix('super')->middleware(['edition:saas', 'auth', 'super', 'no-store']
     Route::get('products', \App\Livewire\Super\Products\Index::class)->name('products.index');
     Route::get('licences', \App\Livewire\Super\Licences\Index::class)->name('licences.index');
     Route::get('errors', \App\Livewire\Super\Errors\Index::class)->name('errors.index');
+    Route::get('messaging', \App\Livewire\Super\Messaging\Index::class)->name('messaging.index');
     Route::get('subscriptions', \App\Livewire\Super\Subscriptions\Index::class)->name('subscriptions.index');
 
     // Where the people arriving at the public site came from, and which of
@@ -357,6 +373,9 @@ Route::prefix('super')->middleware(['edition:saas', 'auth', 'super', 'no-store']
 | Payment gateways (public — no session; authenticity verified server-side)
 |--------------------------------------------------------------------------
 */
+// The SMS gateway's delivery reports and replies (STOP). A secret in the path, not a session.
+Route::post('gateway/sms/delivery/{token}', [\App\Http\Controllers\SmsWebhookController::class, 'delivery'])->middleware('throttle:240,1')->name('gateway.sms.delivery');
+Route::post('gateway/sms/inbound/{token}', [\App\Http\Controllers\SmsWebhookController::class, 'inbound'])->middleware('throttle:240,1')->name('gateway.sms.inbound');
 Route::get('gateway/flutterwave/callback', [\App\Http\Controllers\Admin\GatewayPaymentController::class, 'callback'])->name('gateway.callback');
 Route::post('gateway/flutterwave/webhook', [\App\Http\Controllers\Admin\GatewayPaymentController::class, 'webhook'])->name('gateway.webhook');
 

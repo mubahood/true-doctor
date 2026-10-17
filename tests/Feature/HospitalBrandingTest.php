@@ -274,7 +274,7 @@ class HospitalBrandingTest extends TestCase
             $page->assertSee('alt="Divine Dental Clinic"', false);
             $page->assertSee('--pri:#1C4795', false);
             $page->assertSee('Runs on True-Doctor');
-            $page->assertSee('— Divine Dental Clinic</title>', false);
+            $page->assertSee('| Divine Dental Clinic</title>', false);
         } finally {
             @unlink($marker);
         }

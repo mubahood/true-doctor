@@ -79,7 +79,7 @@ class StandaloneSmokeRoutesTest extends SmokeRoutesTest
     public function test_public_and_auth_pages_render(): void
     {
         $this->get('/')->assertRedirect(route('admin.login'));
-        $this->get(route('admin.login'))->assertOk()->assertDontSee('Create your hospital');
+        $this->get(route('admin.login'))->assertOk()->assertDontSee('Create your clinic');
 
         foreach (['/features', '/pricing', '/register', '/standalone', '/my-licence', '/contact', '/sitemap.xml'] as $online) {
             $this->get($online)->assertNotFound();

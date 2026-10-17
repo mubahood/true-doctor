@@ -86,6 +86,7 @@ final class Navigation
                     ['label' => 'Subscriptions', 'icon' => 'fa-file-invoice-dollar', 'route' => 'super.subscriptions.index', 'match' => ['super.subscriptions.*']],
                     ['label' => 'Traffic & campaigns', 'icon' => 'fa-chart-line', 'route' => 'super.traffic.index', 'match' => ['super.traffic.*']],
                     ['label' => 'Errors', 'icon' => 'fa-bug', 'route' => 'super.errors.index', 'match' => ['super.errors.*']],
+                    ['label' => 'Message credit', 'icon' => 'fa-comment-sms', 'route' => 'super.messaging.index', 'match' => ['super.messaging.*']],
                     // Platform-global config (site name, contacts) — a SaaS page, not a tenant one.
                     ['label' => 'Site settings', 'icon' => 'fa-sliders', 'route' => 'admin.settings.index', 'match' => ['admin.settings.index']],
                 ]],
@@ -123,6 +124,8 @@ final class Navigation
                 // The register, last: you open it when someone new arrives or a
                 // detail is wrong — not every time you see a patient. The day's work
                 // happens in the visit above, which registers a walk-in itself.
+                // Written diagnoses waiting for a code: the records officer's list.
+                ['label' => 'Diagnoses to code', 'icon' => 'fa-notes-medical', 'route' => 'admin.diagnoses.worklist', 'match' => ['admin.diagnoses.*'], 'can' => 'diagnoses.code'],
                 ['label' => 'Patients', 'icon' => 'fa-user-injured', 'route' => 'admin.patients.index', 'match' => ['admin.patients.*'], 'can' => 'patients.view'],
             ]],
 
@@ -130,6 +133,7 @@ final class Navigation
             ['key' => 'money', 'label' => 'Billing & finance', 'entries' => [
                 ['key' => 'billing', 'label' => 'Billing', 'icon' => 'fa-file-invoice-dollar', 'items' => [
                     ['label' => 'Invoices', 'icon' => 'fa-file-invoice-dollar', 'route' => 'admin.invoices.index', 'match' => ['admin.invoices.*'], 'can' => 'billing.view'],
+                    ['label' => "Cashier's day", 'icon' => 'fa-cash-register', 'route' => 'admin.cashier.day', 'match' => ['admin.cashier.*'], 'can' => 'billing.view'],
                     ['label' => 'Insurance claims', 'icon' => 'fa-file-medical', 'route' => 'admin.insurance-claims.index', 'match' => ['admin.insurance-claims.*'], 'can' => 'insurance.view', 'module' => 'insurance'],
                 ]],
                 // Cards are money work, not a patient detail: a card desk looks
@@ -150,7 +154,9 @@ final class Navigation
                     ['label' => 'Financial statements', 'icon' => 'fa-file-lines', 'route' => 'admin.finance.statements', 'match' => ['admin.finance.statements'], 'can' => 'finance.view', 'tenant' => true],
                     ['label' => 'Journal', 'icon' => 'fa-book', 'route' => 'admin.finance.journal', 'match' => ['admin.finance.journal'], 'can' => 'finance.view', 'tenant' => true],
                     ['label' => 'Chart of accounts', 'icon' => 'fa-list-ol', 'route' => 'admin.finance.accounts', 'match' => ['admin.finance.accounts', 'admin.finance.accounts.*'], 'can' => 'finance.view', 'tenant' => true],
-                    ['label' => 'Reports', 'icon' => 'fa-chart-line', 'route' => 'admin.reports.index', 'match' => ['admin.reports.*'], 'can' => 'reports.view'],
+                    ['label' => 'Reports', 'icon' => 'fa-chart-line', 'route' => 'admin.reports.index', 'match' => ['admin.reports.index', 'admin.reports.pdf'], 'can' => 'reports.view'],
+                    // The Ministry of Health forms, from the coded diagnoses (docs/api/diagnoses.md).
+                    ['label' => 'Ministry reports (HMIS)', 'icon' => 'fa-landmark', 'route' => 'admin.reports.hmis', 'match' => ['admin.reports.hmis*'], 'can' => 'reports.view'],
                     ['label' => 'Financial years', 'icon' => 'fa-calendar-alt', 'route' => 'admin.financial-years.index', 'match' => ['admin.financial-years.*'], 'can' => 'finance.view'],
                     ['label' => 'Finance settings', 'icon' => 'fa-sliders', 'route' => 'admin.finance.settings', 'match' => ['admin.finance.settings'], 'can' => 'finance.manage', 'tenant' => true],
                 ]],
@@ -198,6 +204,7 @@ final class Navigation
                     // What every printed document carries at the top of it.
                     ['label' => 'Hospital letterhead', 'icon' => 'fa-stamp', 'route' => 'admin.settings.hospital', 'match' => ['admin.settings.hospital']],
                     ['label' => 'Billing settings', 'icon' => 'fa-coins', 'route' => 'admin.settings.billing', 'match' => ['admin.settings.billing*']],
+                    ['label' => 'Messages to patients', 'icon' => 'fa-comment-sms', 'route' => 'admin.settings.messages', 'match' => ['admin.settings.messages']],
                     ['label' => 'Subscription', 'icon' => 'fa-star', 'route' => 'admin.subscription.index', 'match' => ['admin.subscription.*'], 'edition' => 'saas'],
                     // A standalone owner's own server: the release, the licence, updates and backups.
                     ['label' => 'Licence & updates', 'icon' => 'fa-cloud-arrow-down', 'route' => 'admin.system.index', 'match' => ['admin.system.*'], 'edition' => 'standalone'],

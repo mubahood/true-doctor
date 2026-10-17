@@ -95,7 +95,6 @@ class SuperAdminPanelTest extends TestCase
             ->set('price', '400000')
             ->set('billing_cycle', 'monthly')
             ->set('max_staff', 25)
-            ->set('max_patients', 5000)
             ->set('max_beds', 40)
             ->set('is_active', true)
             ->call('save')
@@ -104,7 +103,7 @@ class SuperAdminPanelTest extends TestCase
 
         $plan = Plan::where('name', 'Growth')->firstOrFail();
         $this->assertSame(25, $plan->limit('max_staff'));
-        $this->assertSame(5000, $plan->limit('max_patients'));
+        $this->assertNull($plan->limit('max_patients'), 'plans never cap patients');
         $this->assertSame(40, $plan->limit('max_beds'));
     }
 
