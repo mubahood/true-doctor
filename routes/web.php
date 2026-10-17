@@ -218,6 +218,8 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'subscribed', 'onboarding',
     Route::get('patients/{patient}/id-card', [\App\Http\Controllers\Admin\PatientController::class, 'idCard'])->name('patients.id-card');
     Route::get('patients/{patient}', \App\Livewire\Patients\Show::class)->name('patients.show');
     Route::get('patients/{patient}/dental-quote', \App\Http\Controllers\Admin\DentalQuoteController::class)->name('patients.dental-quote');
+    // Item A, the dental case sheet: the patient's instructions after treatment (PDF).
+    Route::get('visits/{visit}/dental-instructions', \App\Http\Controllers\Admin\DentalInstructionsController::class)->name('visits.dental-instructions');
 
     // ── Patient links (roadmap 05 §4) ──────────────────────────
     Route::get('patient-links', \App\Livewire\PatientLinks\Index::class)->name('patient-links.index');

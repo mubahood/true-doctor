@@ -228,6 +228,12 @@ class PatientSummaryService
             $alerts[] = ['key' => 'allergies', 'tone' => 'warn', 'items' => $allergies];
         }
 
+        // The red flags ticked in the medical history (docs/dental.md, "The case sheet").
+        $flags = \App\Support\Clinical\MedicalFlags::labels($patient);
+        if ($flags !== []) {
+            $alerts[] = ['key' => 'medical_flags', 'tone' => 'warn', 'items' => $flags];
+        }
+
         $chronic = array_values(array_filter((array) ($patient->chronic_conditions ?? [])));
         if ($chronic !== []) {
             $alerts[] = ['key' => 'chronic', 'tone' => 'info', 'items' => $chronic];

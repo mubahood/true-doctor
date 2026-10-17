@@ -47,7 +47,7 @@ format. Dates are ISO-8601. Allergies, chronic conditions, consent and status al
   "lab_orders": [], "imaging_orders": [], "admissions": [], "appointments": [] } }
 ```
 
-`alerts[].key` is one of `status`, `allergies`, `chronic`, `owes`, `admitted`, `no_consent`, `insurance`;
+`alerts[].key` is one of `status`, `allergies`, `medical_flags` (`items`: the red flags ticked in the medical history, see `docs/api/dental.md`), `chronic`, `owes`, `admitted`, `no_consent`, `insurance`;
 `tone` is `danger`, `warn` or `info`. `aging` bands are by when the invoice was raised, over invoices that are
 issued or part-paid with a balance left (the same definition the reports use); void invoices are never counted.
 

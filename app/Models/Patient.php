@@ -28,6 +28,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property array<int,string>|null $allergies
  * @property array<int,string>|null $chronic_conditions
  * @property \Illuminate\Support\Carbon|null $next_recall_on
+ * @property list<string>|null $medical_flags red flags from the medical history (App\Support\Clinical\MedicalFlags)
  * @property bool $consent_given
  * @property \Illuminate\Support\Carbon|null $consent_at
  * @property \Illuminate\Support\Carbon $created_at
@@ -67,6 +68,8 @@ class Patient extends Model
             'allergies' => 'array',
             'chronic_conditions' => 'array',
             'next_recall_on' => 'date',
+            // Red flags (HIV or hepatitis, pregnancy among them): encrypted like `notes`.
+            'medical_flags' => 'encrypted:array',
             'bank_details' => 'encrypted',   // C12 — sensitive at rest
             // Free text where a standing fact like HIV status gets written;
             // never searched, so it can be encrypted (roadmap 07 §3).

@@ -27,7 +27,7 @@ class VisitController extends Controller
             app(\App\Services\Audit\RecordAccessLog::class)->printed($patient, auth()->user(), 'Visit report '.$visit->visit_no);
         }
 
-        $report = $reports->assemble($visit);
+        $report = $reports->assemble($visit, auth()->user());
 
         return Pdf::loadView('pdf.visit-report', [
             'report' => $report,

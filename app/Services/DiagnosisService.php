@@ -68,9 +68,10 @@ class DiagnosisService
 
     /**
      * Code a visit. Choosing a new primary makes the old primary secondary
-     * (a correction row), so a visit never has two.
+     * (a correction row), so a visit never has two. A dental diagnosis names
+     * its tooth: the same code on two teeth is two diagnoses.
      */
-    public function add(Visit $visit, string $code, bool $primary, string $certainty = 'confirmed', ?string $note = null, ?User $by = null, ?string $uuid = null): VisitDiagnosis
+    public function add(Visit $visit, string $code, bool $primary, string $certainty = 'confirmed', ?string $note = null, ?User $by = null, ?string $uuid = null, ?int $tooth = null, ?string $surfaces = null): VisitDiagnosis
     {
         $entry = DiagnosisCode::query()->where('code', strtoupper(trim($code)))->where('is_active', true)->first();
         if ($entry === null) {
@@ -80,7 +81,11 @@ class DiagnosisService
             throw ValidationException::withMessages(['certainty' => 'Confirmed or suspected.']);
         }
 
-        return DB::transaction(function () use ($visit, $entry, $primary, $certainty, $note, $by, $uuid) {
+        if ($tooth !== null && ! DentalService::validTooth($tooth)) {
+            throw ValidationException::withMessages(['tooth' => "{$tooth} is not a tooth number."]);
+        }
+
+        return DB::transaction(function () use ($visit, $entry, $primary, $certainty, $note, $by, $uuid, $tooth, $surfaces) {
             Visit::query()->whereKey($visit->id)->lockForUpdate()->first();
 
             if ($uuid !== null && ($existing = VisitDiagnosis::query()->where('uuid', $uuid)->first()) !== null) {
@@ -88,8 +93,8 @@ class DiagnosisService
             }
 
             $current = $this->current($visit);
-            if ($current->contains(fn (VisitDiagnosis $d) => $d->code === $entry->code)) {
-                throw ValidationException::withMessages(['code' => 'This diagnosis is already on the visit.']);
+            if ($current->contains(fn (VisitDiagnosis $d) => $d->code === $entry->code && $d->tooth === $tooth)) {
+                throw ValidationException::withMessages(['code' => $tooth === null ? 'This diagnosis is already on the visit.' : "This diagnosis is already on tooth {$tooth}."]);
             }
             $primary = $primary || $current->isEmpty();
             if ($primary) {
@@ -108,6 +113,8 @@ class DiagnosisService
                 'is_primary' => $primary,
                 'certainty' => $certainty,
                 'note' => $note !== null && trim($note) !== '' ? trim($note) : null,
+                'tooth' => $tooth,
+                'surfaces' => $tooth === null ? null : DentalService::normaliseSurfaces($surfaces),
                 'recorded_by' => $by?->id,
                 'recorded_at' => Carbon::now(),
             ]);
@@ -226,7 +233,7 @@ class DiagnosisService
     private function append(VisitDiagnosis $from, array $changes, ?User $by): VisitDiagnosis
     {
         return VisitDiagnosis::query()->create(array_merge(
-            $from->only(['visit_id', 'patient_id', 'system', 'code', 'title', 'is_primary', 'certainty', 'note', 'removed']),
+            $from->only(['visit_id', 'patient_id', 'system', 'code', 'title', 'is_primary', 'certainty', 'note', 'tooth', 'surfaces', 'removed']),
             $changes,
             ['uuid' => (string) Str::uuid(), 'replaces_id' => $from->id, 'recorded_by' => $by?->id, 'recorded_at' => Carbon::now()],
         ));

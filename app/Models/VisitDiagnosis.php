@@ -23,6 +23,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool $is_primary
  * @property string $certainty confirmed · suspected
  * @property string|null $note
+ * @property int|null $tooth FDI number, when the diagnosis is of one tooth
+ * @property string|null $surfaces
  * @property int|null $replaces_id
  * @property bool $removed
  * @property int|null $recorded_by
@@ -34,11 +36,11 @@ class VisitDiagnosis extends Model
 
     public const UPDATED_AT = null;
 
-    protected $fillable = ['uuid', 'visit_id', 'patient_id', 'system', 'code', 'title', 'is_primary', 'certainty', 'note', 'replaces_id', 'removed', 'recorded_by', 'recorded_at'];
+    protected $fillable = ['uuid', 'visit_id', 'patient_id', 'system', 'code', 'title', 'is_primary', 'certainty', 'note', 'tooth', 'surfaces', 'replaces_id', 'removed', 'recorded_by', 'recorded_at'];
 
     protected function casts(): array
     {
-        return ['is_primary' => 'boolean', 'removed' => 'boolean', 'recorded_at' => 'datetime'];
+        return ['is_primary' => 'boolean', 'removed' => 'boolean', 'tooth' => 'integer', 'recorded_at' => 'datetime'];
     }
 
     /** @return BelongsTo<Visit, $this> */

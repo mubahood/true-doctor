@@ -173,6 +173,8 @@ class GeneratedDocumentTest extends TestCase
             ['insurance statement', route('admin.insurance-providers.usage', $insurer)],
             ['visit report', route('admin.visits.report', $visit)],
             ['prescription', route('admin.visits.prescription', $visit)],
+            // The dental case sheet's instructions for the patient (docs/dental.md).
+            ['instructions after treatment', route('admin.visits.dental-instructions', $visit)],
 
             ['purchase order', route('admin.purchase-orders.pdf', $purchaseOrder)],
             ['statement of account', route('admin.patients.statement', $invoice->patient)],

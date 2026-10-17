@@ -22,6 +22,12 @@
     @else
       <div class="clin-none muted tb-xs"><i class="fas fa-circle-check" aria-hidden="true"></i> No known allergies.</div>
     @endif
+    @if($alerts['medical_flags'] !== [])
+      <div class="tb-alert tb-alert-warning" role="status">
+        <i class="fas fa-hand" aria-hidden="true"></i>
+        <div><b>Check before treatment</b> @foreach($alerts['medical_flags'] as $flag)<x-ui.badge tone="warn">{{ $flag }}</x-ui.badge> @endforeach</div>
+      </div>
+    @endif
     @if($alerts['conditions'] !== [])
       <div class="tb-alert" role="status">
         <i class="fas fa-heart-pulse" aria-hidden="true"></i>
