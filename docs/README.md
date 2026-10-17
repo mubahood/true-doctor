@@ -15,7 +15,8 @@ audit, target architecture, roadmap and house rules. Then:
 | [`billing.md`](billing.md) · [`payments-gateway.md`](payments-gateway.md) · [`insurance.md`](insurance.md) · [`financial-years.md`](financial-years.md) · [`finance.md`](finance.md) | Money, and the books |
 | [`pharmacy.md`](pharmacy.md) · [`lab-radiology.md`](lab-radiology.md) · [`inpatient.md`](inpatient.md) | Pharmacy, diagnostics, IPD |
 | [`staff-org.md`](staff-org.md) · [`notifications.md`](notifications.md) · [`reports.md`](reports.md) · [`dashboards.md`](dashboards.md) | Org, notifications, reporting |
-| [`proposals/standalone-edition.md`](proposals/standalone-edition.md) | **Proposal, not built yet:** the one-off Standalone edition — edition switch, licences, releases from the super-admin panel, selling and installing |
+| [`editions.md`](editions.md) | **SaaS and one-off sales from one codebase:** how the editions differ, licences, releasing, selling, delivering a client's copy, and what the first client taught us |
+| [`proposals/standalone-edition.md`](proposals/standalone-edition.md) | The original design of the one-off Standalone edition, with its rules (built; §7.1 superseded by `standalone_products`) |
 | [`practice.md`](practice.md) | Kinds of practice: specialty packs, sector templates, modules |
 | [`onboarding.md`](onboarding.md) | Mandatory hospital setup: the required steps, the gate, the wizard |
 | [`super-admin-panel.md`](super-admin-panel.md) · [`plan-limits.md`](plan-limits.md) · [`self-onboarding.md`](self-onboarding.md) | SaaS central |
