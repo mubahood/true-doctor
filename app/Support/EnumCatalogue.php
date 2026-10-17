@@ -60,6 +60,8 @@ final class EnumCatalogue
         \App\Enums\PatientStatus::class,
         \App\Enums\PaymentMethod::class,
         \App\Enums\PregnancyStatus::class,
+
+        \App\Enums\PurchaseOrderStatus::class,
         \App\Enums\RadiologyOrderStatus::class,
         \App\Enums\ResultFlag::class,
         \App\Enums\RoomStatus::class,

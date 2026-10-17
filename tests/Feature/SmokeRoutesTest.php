@@ -55,6 +55,9 @@ class SmokeRoutesTest extends TestCase
         'admin.compliance.document',
         'admin.patients.personal-data',
         'admin.data-exports.download',
+
+        // A purchase order as a PDF (procurement).
+        'admin.purchase-orders.pdf',
     ];
 
     /** @var array<string, class-string> route parameter => model */
@@ -85,6 +88,7 @@ class SmokeRoutesTest extends TestCase
         'hospital' => Hospital::class,
         'plan' => Plan::class,
         'subscription' => Subscription::class,
+        'purchaseOrder' => \App\Models\PurchaseOrder::class,
     ];
 
     protected Hospital $hospital;
@@ -101,6 +105,8 @@ class SmokeRoutesTest extends TestCase
         $this->seed(DemoSeeder::class);
 
         $this->hospital = Hospital::where('slug', 'general-hospital-a')->firstOrFail();
+        // Procurement's demo scenario (idempotent), so a purchase order page has a record to open.
+        \Database\Seeders\DemoScenarios\Procurement::run($this->hospital);
         app(CurrentHospital::class)->set($this->hospital->id);
     }
 

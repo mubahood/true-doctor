@@ -123,6 +123,10 @@ class IdempotentRequests
         'api.insurance-providers.cards.settle',
         'api.patients.cards.store',
         'api.cards.holders.store',
+        'api.purchase-orders.store',
+        'api.purchase-orders.lines.store',
+        'api.purchase-orders.receive',
+        'api.purchase-orders.returns',
     ];
 
     private function keyIsRequired(Request $request): bool

@@ -90,6 +90,7 @@ public self-registration for the app, and starter-data imports). They share this
 Writes are safe to retry with an `Idempotency-Key` header: [`api/idempotency.md`](api/idempotency.md).
 Refunds and credit notes (ask, approve, reject, PDF): [`api/refunds.md`](api/refunds.md).
 Notifications, devices, notification preferences and upcoming reminders: [`api/notify.md`](api/notify.md).
+Suppliers, purchase orders, goods received and returns to supplier: [`api/procurement.md`](api/procurement.md).
 The app's "Try the demo" door (`GET /public/demo`, `POST /public/demo/login`, `meta.demo`; SaaS only): [`api/demo.md`](api/demo.md).
 The data plane - `GET /bootstrap`, `meta.capabilities`, `GET /search`, ETag/`304`, `?updated_since=`, tombstones (`removed`) and the
 extended error codes (`conflict`, `plan_limit`, `payload_too_large`, `device_revoked`, `licence_expired`, `maintenance`,

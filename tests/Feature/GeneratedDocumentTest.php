@@ -151,6 +151,12 @@ class GeneratedDocumentTest extends TestCase
             'start_date' => now()->toDateString(), 'instructions' => 'After food.',
         ]], null, $this->admin->id);
 
+        $purchaseOrder = app(\App\Services\ProcurementService::class)->createOrder(
+            \App\Models\Supplier::create(['name' => 'Nile Pharma Distributors', 'is_active' => true]), [],
+            [['stock_item_id' => \App\Models\StockItem::factory()->create(['hospital_id' => $this->hospital->id])->id, 'quantity' => '100', 'unit_cost' => '95']],
+            $this->admin,
+        );
+
         return [
             ['cashier day summary', route('api.cashier.day-summary.pdf', ['date' => now()->toDateString()])],
             ['ward handover', route('api.ward.handover.pdf', $handover)],
@@ -167,6 +173,8 @@ class GeneratedDocumentTest extends TestCase
             ['insurance statement', route('admin.insurance-providers.usage', $insurer)],
             ['visit report', route('admin.visits.report', $visit)],
             ['prescription', route('admin.visits.prescription', $visit)],
+
+            ['purchase order', route('admin.purchase-orders.pdf', $purchaseOrder)],
             ['statement of account', route('admin.patients.statement', $invoice->patient)],
             ['financial statement', route('admin.finance.statement-pdf', ['report' => 'income', 'preset' => 'this_month'])],
             // Data protection (docs/compliance/README.md): the pack, and one patient's data.

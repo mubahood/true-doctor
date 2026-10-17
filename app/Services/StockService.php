@@ -28,9 +28,22 @@ class StockService
      * movement keeps the pair it happened under, so a repricing today cannot
      * rewrite what last month's sales looked like.
      */
-    public function receive(StockItem $item, string $quantity, ?string $unitCost = null, ?int $by = null, ?string $note = null, ?string $salePrice = null): StockMovement
+    public function receive(StockItem $item, string $quantity, ?string $unitCost = null, ?int $by = null, ?string $note = null, ?string $salePrice = null, ?object $source = null, ?string $batchNo = null, ?string $expiryDate = null): StockMovement
     {
-        return $this->post($item, StockMovementReason::Received, $quantity, $unitCost, $by, $note, null, $salePrice);
+        return $this->post($item, StockMovementReason::Received, $quantity, $unitCost, $by, $note, $source, $salePrice,
+            $batchNo === null && $expiryDate === null ? null : ['batch_no' => $batchNo, 'expiry_date' => $expiryDate]);
+    }
+
+    /**
+     * Send stock back to the supplier it came from (procurement).
+     *
+     * Valued at what that delivery cost, not at today's price, so the payable
+     * is reduced by exactly what the delivery added to it. The item's own cost
+     * is not touched: nothing new came in.
+     */
+    public function returnToSupplier(StockItem $item, string $quantity, string $unitCost, object $source, ?int $by = null, ?string $note = null): StockMovement
+    {
+        return $this->post($item, StockMovementReason::ReturnedToSupplier, $quantity, $unitCost, $by, $note, $source);
     }
 
     public function dispenseOut(StockItem $item, string $quantity, array $opts = [], ?int $by = null): StockMovement
@@ -165,13 +178,16 @@ class StockService
         return $out;
     }
 
-    private function post(StockItem $item, StockMovementReason $reason, string $quantity, ?string $unitCost, ?int $by, ?string $note, ?object $source = null, ?string $salePrice = null): StockMovement
+    /**
+     * @param  array{batch_no:?string,expiry_date:?string}|null  $lot  the batch and expiry a delivery came with
+     */
+    private function post(StockItem $item, StockMovementReason $reason, string $quantity, ?string $unitCost, ?int $by, ?string $note, ?object $source = null, ?string $salePrice = null, ?array $lot = null): StockMovement
     {
         if (bccomp($quantity, '0', 2) <= 0) {
             throw new \RuntimeException('Quantity must be greater than zero.');
         }
 
-        return DB::transaction(function () use ($item, $reason, $quantity, $unitCost, $by, $note, $source, $salePrice) {
+        return DB::transaction(function () use ($item, $reason, $quantity, $unitCost, $by, $note, $source, $salePrice, $lot) {
             /** @var StockItem $locked */
             $locked = StockItem::whereKey($item->id)->lockForUpdate()->firstOrFail();
 
@@ -188,6 +204,9 @@ class StockService
             }
             if ($salePrice !== null && $reason->isIncoming()) {
                 $locked->sale_price = $salePrice;
+            }
+            if ($lot !== null && $reason->isIncoming()) {
+                $this->takeLot($locked, $oldQty, $lot);
             }
             $locked->current_quantity = $newQty;
             $locked->current_stock_value = bcmul($newQty, (string) $locked->cost_price, 2);
@@ -224,6 +243,34 @@ class StockService
 
             return $movement;
         });
+    }
+
+    /**
+     * Which batch and expiry the shelf shows after a delivery.
+     *
+     * An item carries one batch and one expiry, and the alerts read them, so
+     * the expiry that matters is the EARLIEST one still on the shelf. A
+     * delivery onto an empty shelf takes over; onto stock already there it
+     * takes over only if it expires sooner (or the shelf's expiry was never
+     * known). Each delivery line keeps its own batch and expiry regardless.
+     *
+     * @param  array{batch_no:?string,expiry_date:?string}  $lot
+     */
+    private function takeLot(StockItem $locked, string $oldQty, array $lot): void
+    {
+        $newExpiry = $lot['expiry_date'] ? Carbon::parse($lot['expiry_date'])->toDateString() : null;
+        $current = $locked->expiry_date?->toDateString();
+        $shelfWasEmpty = bccomp($oldQty, '0', 2) <= 0;
+
+        if ($shelfWasEmpty) {
+            $locked->forceFill(['batch_no' => $lot['batch_no'], 'expiry_date' => $newExpiry]);
+
+            return;
+        }
+
+        if ($newExpiry !== null && ($current === null || $newExpiry < $current)) {
+            $locked->forceFill(['batch_no' => $lot['batch_no'] ?? $locked->batch_no, 'expiry_date' => $newExpiry]);
+        }
     }
 
     private function notifyLowStock(StockItem $item): void

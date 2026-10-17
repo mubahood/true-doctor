@@ -50,13 +50,14 @@ the source record, under the record's own hospital (`CurrentHospital::within`):
 | Float settles a card | Insurer deposits | Patient card deposits | `InsuranceLedgerService` |
 | Float adjusted | Suspense / Insurer deposits | the other | `InsuranceLedgerService` |
 | Opening stock | Inventory | Opening balance equity | `StockService` |
-| Stock received | Inventory | Accounts payable (or the book in settings) | `StockService` |
+| Stock received | Inventory | Accounts payable (or the book in settings); a delivery against a purchase order names the supplier as the party and the GRN as the reference | `StockService` (`ProcurementService::receive`) |
 | Dispensed / returned | Cost of sales ↔ Inventory | | `StockService` |
 | Expired, damaged, lost, wastage, adjustment out | Stock losses | Inventory | `StockService` |
 | Adjustment in | Inventory | Stock count gains | `StockService` |
-| Returned to supplier | Accounts payable | Inventory | `StockService` |
 | Credit note approved | Credit notes allowed (4910); Tax payable (its share) | Patient receivables | `InvoiceCreditService` ([refunds.md](refunds.md)) |
 | Refund approved | Patient receivables | The book for its method (card: Patient card deposits) | `InvoiceCreditService` |
+
+| Returned to supplier | Accounts payable | Inventory, at the delivery's cost, supplier as the party | `StockService` (`ProcurementService::returnToSupplier`) |
 
 Stock is valued at the `unit_cost` the stock ledger keeps on every movement.
 A payment by card is posted once, with the payment: `BillingService` passes

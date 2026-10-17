@@ -309,12 +309,30 @@ class Bookkeeper
 
             $qty = rtrim(rtrim((string) $movement->quantity, '0'), '.');
 
+            // A delivery or a return names its supplier and document, so the
+            // payable says who is owed and for what (procurement).
+            $party = $this->partyOf($movement);
+
             return $this->post($movement, 'moved', $movement->created_at,
-                $movement->reason->label().' — '.$qty.' × '.$name, $lines, null, $movement->created_by);
+                $movement->reason->label().' — '.$qty.' × '.$name, $lines, $party?->ledgerReference(), $movement->created_by, $party?->ledgerParty());
         });
     }
 
     // ── Plumbing ─────────────────────────────────────────────────────────
+
+    /** The record a stock movement came from, when it can name the other side. */
+    private function partyOf(StockMovement $movement): ?\App\Models\Contracts\NamesALedgerParty
+    {
+        $type = (string) $movement->source_type;
+
+        if ($type === '' || ! is_a($type, \App\Models\Contracts\NamesALedgerParty::class, true) || ! is_a($type, Model::class, true)) {
+            return null;
+        }
+
+        $source = $type::query()->find($movement->source_id);
+
+        return $source instanceof \App\Models\Contracts\NamesALedgerParty ? $source : null;
+    }
 
     /**
      * Run a posting as the record's own hospital. A record with no hospital
