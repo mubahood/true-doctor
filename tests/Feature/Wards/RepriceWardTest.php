@@ -221,7 +221,7 @@ class RepriceWardTest extends TestCase
             ->call('edit', $ward->id)
             ->set('apply_to_beds', true)
             ->assertSee('occupied right now')
-            ->assertSee('every night already spent in them will be charged at this new rate');
+            ->assertSee('Nights already charged keep their price');
     }
 
     public function test_it_says_nothing_alarming_when_nothing_is_occupied(): void

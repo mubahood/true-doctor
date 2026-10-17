@@ -12,7 +12,7 @@
     "name": "worker"
   },
   "resources/css/admin.css": {
-    "file": "assets/admin-C_sZzv_V.css",
+    "file": "assets/admin-egoghqcq.css",
     "src": "resources/css/admin.css",
     "isEntry": true,
     "name": "admin",
@@ -30,7 +30,7 @@
     ]
   },
   "resources/css/field.css": {
-    "file": "assets/field-DX_-JWkt.css",
+    "file": "assets/field-DdKQZmqk.css",
     "src": "resources/css/field.css",
     "isEntry": true,
     "name": "field",

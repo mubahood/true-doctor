@@ -97,10 +97,11 @@
         <livewire:visits.panels.vitals :visit-id="$visit->id" :key="'vitals-'.$visit->id" />
       @endcan
 
-      {{-- Book the review from here (Recalls and reviews due, docs/follow-up.md). --}}
-      @can('appointments.manage')
+      {{-- Book the review from here (Recalls and reviews due, docs/follow-up.md). A dental
+           visit books its review from the case sheet's plan instead. --}}
+      @if(auth()->user()?->can('appointments.manage') && ! ($visit->patient && \App\Services\DentalCaseSheetService::appliesTo($visit, app(\App\Support\HospitalSettings::class)->hospital())))
         <livewire:visits.panels.review :visit-id="$visit->id" :key="'review-'.$visit->id" />
-      @endcan
+      @endif
     </div>
 
     {{-- ── Workspace panels (each #[Lazy]) ──────────────────── --}}
