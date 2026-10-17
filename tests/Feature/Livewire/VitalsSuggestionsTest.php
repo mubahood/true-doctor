@@ -210,11 +210,12 @@ class VitalsSuggestionsTest extends TestCase
     /** A reader who may not record vitals cannot use them either. */
     public function test_a_role_without_vitals_cannot_use_a_pill(): void
     {
-        $doctor = User::factory()->create(['hospital_id' => $this->hospital->id, 'role' => 'doctor']);
-        $doctor->syncSpatieRole();
-        $this->actingAs($doctor);
+        // Doctors record vitals now (a small clinic's doctor often takes them); the desk does not.
+        $desk = User::factory()->create(['hospital_id' => $this->hospital->id, 'role' => 'receptionist']);
+        $desk->syncSpatieRole();
+        $this->actingAs($desk);
 
-        $this->assertFalse($doctor->can('visits.vitals'));
+        $this->assertFalse($desk->can('visits.vitals'));
 
         $this->panel($this->visit())->call('useVital', 'temperature', '38.5')->assertForbidden();
     }
