@@ -249,6 +249,11 @@ final class StandaloneArchive
             ], true)) {
                 continue;
             }
+            // The public site's own font: a clinic's copy has no public site, and installed
+            // copies (1.0.7 and earlier) refuse any package with a folder they do not know.
+            if ($destination === 'web_root_files' && str_starts_with($path, 'web_root_files/fonts/')) {
+                continue;
+            }
             $this->addFile($entry->getPathname(), $path, $files);
         }
     }
