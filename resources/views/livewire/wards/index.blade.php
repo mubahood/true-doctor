@@ -91,10 +91,9 @@
                 <strong>{{ $impact['occupied'] }}
                   {{ Str::plural('bed', $impact['occupied']) }} {{ $impact['occupied'] === 1 ? 'is' : 'are' }}
                   occupied right now.</strong>
-                Those stays are billed when the patient is discharged, at whatever the bed costs
-                then — so every night already spent in them will be charged at this new rate, not
-                the one in force at the time. Change the beds individually if that is not what you
-                mean.
+                Nights already charged keep their price. From tonight, each of these patients is
+                charged the new rate for every further night. Change the beds individually if that
+                is not what you mean.
               </div>
             @endif
           </div>

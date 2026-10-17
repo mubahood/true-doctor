@@ -33,6 +33,14 @@ Route::middleware(['edition:saas', 'landing'])->group(function () {
     Route::get('/about', [\App\Http\Controllers\PublicPageController::class, 'about'])->name('about');
     Route::get('/demo', [\App\Http\Controllers\PublicPageController::class, 'demo'])->name('demo');
 });
+// The user manual on the public site (resources/manual; App\Support\Manual). The PDF is
+// public on the online service: a one-off buyer downloads it before installing.
+Route::middleware(['edition:saas', 'landing'])->group(function () {
+    Route::get('/manual', [\App\Http\Controllers\ManualController::class, 'index'])->name('manual.index');
+    Route::get('/manual.pdf', [\App\Http\Controllers\ManualController::class, 'pdf'])->name('manual.pdf');
+    Route::get('/manual/{slug}', [\App\Http\Controllers\ManualController::class, 'show'])->where('slug', '\d{2}-[a-z0-9-]+')->name('manual.show');
+});
+
 // Phase 2 item: the first six guides for clinic owners (config/guides.php; roadmap 02 §7, 06 §4).
 Route::middleware(['edition:saas', 'landing'])->group(function () {
     Route::get('/guides', [\App\Http\Controllers\GuideController::class, 'index'])->name('guides.index');
@@ -98,6 +106,7 @@ Route::middleware('edition:saas')->group(function () {
         ->middleware('throttle:8,60')->name('standalone.portal.renew');
     Route::post('/my-licence/domain', [\App\Http\Controllers\StandalonePurchaseController::class, 'changeDomain'])
         ->middleware('throttle:6,60')->name('standalone.portal.domain');
+    Route::get('/my-licence/receipts/{order}', \App\Http\Controllers\StandaloneReceiptController::class)->whereNumber('order')->name('standalone.portal.receipt');
     Route::get('/my-licence/releases/{release}', [\App\Http\Controllers\StandalonePurchaseController::class, 'downloadRelease'])->name('standalone.portal.release');
 
     // What an installed copy asks for: the newest release its licence may
@@ -329,6 +338,9 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'subscribed', 'onboarding',
 
     // ── Notifications (Phase 4 Step 19) ───────────────────────
     Route::get('notifications', \App\Livewire\Notifications\Index::class)->name('notifications.index');
+    // The user manual, in both editions (resources/manual).
+    Route::get('manual/pdf', [\App\Http\Controllers\ManualController::class, 'pdf'])->name('manual.pdf');
+    Route::get('manual/{slug?}', \App\Livewire\Manual\Show::class)->where('slug', '\d{2}-[a-z0-9-]+')->name('manual');
     Route::post('device-tokens', [\App\Http\Controllers\Admin\DeviceTokenController::class, 'store'])->name('device-tokens.store');
 
     // ── Reports & dashboards (Phase 4 Step 20) ────────────────

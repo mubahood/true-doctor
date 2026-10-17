@@ -38,6 +38,8 @@ class SmokeRoutesTest extends TestCase
         'admin.credits.pdf',
         // The same receipt on 58/80 mm roll paper.
         'admin.payments.receipt.thermal',
+        // The user manual: its optional chapter is a file name, opened for every role by SidebarMenuTest.
+        'admin.manual', 'admin.manual.pdf',
         // The Ministry forms as PDF or CSV.
         'admin.reports.hmis.export',
         'admin.lab-orders.pdf',

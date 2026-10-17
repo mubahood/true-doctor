@@ -40,4 +40,17 @@ class JourneyFixesTest extends TestCase
         $this->assertSame(LabOrderStatus::Completed, $done->status);
         $this->assertNotNull($done->completed_at);
     }
+
+    public function test_signing_off_a_report_completes_an_order_still_marked_ordered(): void
+    {
+        $h = Hospital::factory()->create();
+        app(CurrentHospital::class)->set($h->id);
+        $p = Patient::factory()->create(['hospital_id' => $h->id]);
+        $v = \App\Models\Visit::factory()->create(['hospital_id' => $h->id, 'patient_id' => $p->id]);
+        $order = \App\Models\RadiologyOrder::create(['uuid' => (string) \Illuminate\Support\Str::uuid(), 'hospital_id' => $h->id, 'visit_id' => $v->id, 'patient_id' => $p->id, 'status' => \App\Enums\RadiologyOrderStatus::Ordered]);
+
+        $done = app(\App\Services\RadiologyService::class)->signOff($order);
+
+        $this->assertSame(\App\Enums\RadiologyOrderStatus::Reported, $done->status);
+    }
 }

@@ -98,6 +98,10 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
         Route::post('purchase-orders/{purchaseOrder}/cancel', [\App\Http\Controllers\Api\V1\ProcurementController::class, 'cancel'])->name('api.purchase-orders.cancel');
         Route::get('purchase-orders/{purchaseOrder}/pdf', [\App\Http\Controllers\Admin\PurchaseOrderController::class, 'pdf'])->name('api.purchase-orders.pdf');
 
+        // The user manual for the phone's reader (resources/manual).
+        Route::get('manual', [\App\Http\Controllers\ManualController::class, 'apiIndex'])->name('api.manual.index');
+        Route::get('manual/{slug}', [\App\Http\Controllers\ManualController::class, 'apiShow'])->where('slug', '\d{2}-[a-z0-9-]+')->name('api.manual.show');
+
         // Coded diagnoses (docs/api/diagnoses.md).
         Route::get('diagnoses/search', [\App\Http\Controllers\Api\V1\DiagnosisController::class, 'search'])->name('api.diagnoses.search');
         Route::get('visits/{visit}/diagnoses', [\App\Http\Controllers\Api\V1\DiagnosisController::class, 'index'])->name('api.diagnoses.index');

@@ -1,5 +1,5 @@
 @extends('layouts.marketing')
-@section('title', 'Your downloads — True-Doctor')
+@section('title', 'Your downloads · True-Doctor')
 @section('desc', 'Your True-Doctor installation package, licence and setup guide.')
 @section('content')
 <section class="hero compact"><div class="wrap">
@@ -43,7 +43,7 @@
           @endif
         @else
           <h2>Your release is being prepared</h2>
-          <p>No published release is covered by this licence yet. We will email you when it is ready — or <a href="{{ route('contact') }}">contact us</a>.</p>
+          <p>No published release is covered by this licence yet. We will email you when it is ready, or <a href="{{ route('contact') }}">contact us</a>.</p>
         @endif
         @if($licence)
           <p class="own-small"><x-support.link context="standalone.install" :vars="['licence' => $licence->id]">Need help installing? WhatsApp us</x-support.link></p>
@@ -56,7 +56,7 @@
         <dl class="own-kv">
           <dt>Licensed to</dt><dd>{{ $licence->customer_name }}</dd>
           <dt>Address</dt><dd class="mono">{{ $licence->domain() }}</dd>
-          <dt>Updates until</dt><dd>{{ $licence->updates_until->format('d M Y') }}{{ $licence->updates_until->copy()->endOfDay()->isPast() ? ' — ended' : '' }}</dd>
+          <dt>Updates until</dt><dd>{{ $licence->updates_until->format('d M Y') }}{{ $licence->updates_until->copy()->endOfDay()->isPast() ? ' (ended)' : '' }}</dd>
           <dt>Licence</dt><dd class="mono own-small">{{ $licence->id }}</dd>
         </dl>
         <details class="own-notes">
@@ -67,7 +67,7 @@
               <button class="btn sm plain" type="submit">Change address</button>
             </form>
           @else
-            <p class="own-small">Changed recently — it can change again after {{ $licence->domain_changed_at?->copy()->addDays(\App\Models\StandaloneLicence::DOMAIN_CHANGE_DAYS)->format('d M Y') }}. <a href="{{ route('contact') }}">Ask us</a> if it cannot wait.</p>
+            <p class="own-small">Changed recently. It can change again after {{ $licence->domain_changed_at?->copy()->addDays(\App\Models\StandaloneLicence::DOMAIN_CHANGE_DAYS)->format('d M Y') }}. <a href="{{ route('contact') }}">Ask us</a> if it cannot wait.</p>
           @endif
         </details>
         @if($renewal)
@@ -80,10 +80,36 @@
       </div>
     </div>
 
+    {{-- ── Receipts and the manual: kept here, never only in an email ── --}}
+    <div class="own-grid">
+      <div class="own-card">
+        <div class="tag">Payments and receipts</div>
+        @if($payments->isEmpty())
+          <p class="own-small">This licence was issued by us directly (reference <span class="mono">{{ $licence->reference ?? $licence->id }}</span>). Ask us if you need a receipt.</p>
+        @else
+          <dl class="own-kv">
+            @foreach($payments as $p)
+              <dt>{{ $p->paid_at?->format('d M Y') }}</dt>
+              <dd><span class="mono">{{ $p->reference }}</span> · UGX {{ number_format((float) $p->amount_ugx) }} · <a href="{{ route('standalone.portal.receipt', $p) }}" target="_blank" rel="noopener">Receipt (PDF)</a></dd>
+            @endforeach
+          </dl>
+        @endif
+        <p class="own-small">Lost this page? Enter your email on the downloads page and a new private link is sent to you.</p>
+      </div>
+      <div class="own-card">
+        <div class="tag">User manual</div>
+        <p>How to use every part of True-Doctor, for each person on your team. It is also inside the system under <b>Help, User manual</b>.</p>
+        <div class="ctas own-ctas">
+          <a class="btn plain" href="{{ route('manual.pdf') }}" target="_blank" rel="noopener"><x-site.icon name="fa-file-pdf" /> User manual (PDF)</a>
+          <a class="btn plain" href="{{ route('manual.index') }}">Read it online</a>
+        </div>
+      </div>
+    </div>
+
     {{-- ── The guide, right here ─────────────────────────────────── --}}
     <div class="own-card own-guide" id="guide">
       <div class="tag">Step 2 · Install</div>
-      <div class="own-guide-head"><span>The full guide — also inside the ZIP as INSTALL.md.</span><a class="btn sm plain" href="{{ route('standalone.portal.guide') }}"><x-site.icon name="fa-file-arrow-down" /> INSTALL.md</a></div>
+      <div class="own-guide-head"><span>The full guide, also inside the ZIP as INSTALL.md.</span><a class="btn sm plain" href="{{ route('standalone.portal.guide') }}"><x-site.icon name="fa-file-arrow-down" /> INSTALL.md</a></div>
       <div class="own-md">{!! $guide !!}</div>
     </div>
   @endif

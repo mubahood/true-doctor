@@ -22,6 +22,9 @@
       <i class="fas fa-circle-question" aria-hidden="true"></i>
     </button>
     <div class="tb-user-dropdown" role="menu">
+      @if(\Illuminate\Support\Facades\Route::has('admin.manual'))
+        <a role="menuitem" wire:navigate href="{{ route('admin.manual') }}"><i class="fas fa-book" aria-hidden="true"></i> User manual</a>
+      @endif
       @php($guide = \App\Support\HelpGuides::linkFor(\App\Support\HelpGuides::currentRouteName()))
       <a role="menuitem" target="_blank" rel="noopener" href="{{ $guide['url'] }}"><i class="fas fa-book-open" aria-hidden="true"></i> {{ $guide['slug'] !== null ? 'Guide for this screen' : 'Guides' }}</a>
       @if($wa !== '')

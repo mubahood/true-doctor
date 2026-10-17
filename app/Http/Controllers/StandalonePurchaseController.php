@@ -74,6 +74,7 @@ class StandalonePurchaseController extends Controller
             'earlier' => $licence ? $this->entitled($licence)->where('id', '!=', $release?->id)->limit(5)->get() : collect(),
             'guide' => $licence ? $this->guideHtml() : null,
             'renewal' => $licence?->product?->renewal_price_ugx !== null && $this->sales->open() ? $licence->product : null,
+            'payments' => $licence ? \App\Models\StandaloneOrder::where('licence_id', $licence->id)->where('status', 'paid')->orderBy('paid_at')->get() : collect(),
         ]);
     }
 
@@ -174,6 +175,13 @@ class StandalonePurchaseController extends Controller
         return response()->download($release->archive_path, 'true-doctor-standalone-'.$release->version.'.zip', [
             'Cache-Control' => 'no-store, private',
         ]);
+    }
+
+    public static function licenceInSession(Request $request): ?StandaloneLicence
+    {
+        $id = $request->session()->get('standalone_licence_id');
+
+        return is_string($id) ? StandaloneLicence::whereKey($id)->where('status', 'active')->first() : null;
     }
 
     private function sessionLicence(Request $request): ?StandaloneLicence

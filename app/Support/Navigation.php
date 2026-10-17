@@ -225,6 +225,11 @@ final class Navigation
                     ['label' => 'Licence & updates', 'icon' => 'fa-cloud-arrow-down', 'route' => 'admin.system.index', 'match' => ['admin.system.*'], 'edition' => 'standalone'],
                 ]],
             ]],
+
+            // ── Help: the user manual, for everyone signed in (resources/manual). ──
+            ['key' => 'help', 'label' => 'Help', 'entries' => [
+                ['label' => 'User manual', 'icon' => 'fa-book-open', 'route' => 'admin.manual', 'match' => ['admin.manual', 'admin.manual.*']],
+            ]],
         ];
     }
 

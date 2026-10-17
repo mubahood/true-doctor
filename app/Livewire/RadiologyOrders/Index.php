@@ -241,7 +241,7 @@ class Index extends Component
         }
 
         try {
-            $service->transition($order->fresh(), RadiologyOrderStatus::Reported, Auth::id());
+            $service->signOff($order->fresh(), Auth::id());
         } catch (RuntimeException $e) {
             $this->dispatch('toast', message: $e->getMessage(), type: 'error');
 

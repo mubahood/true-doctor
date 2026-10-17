@@ -80,6 +80,24 @@ class RadiologyService
         return $order;
     }
 
+    /**
+     * Sign the report off: a report written means the study was done, so an
+     * order still Ordered or Scheduled steps through to Reported.
+     */
+    public function signOff(RadiologyOrder $order, ?int $by = null): RadiologyOrder
+    {
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($order, $by) {
+            foreach ([RadiologyOrderStatus::Scheduled, RadiologyOrderStatus::Performed, RadiologyOrderStatus::Reported] as $step) {
+                $order = $order->fresh() ?? $order;
+                if ($order->status->canTransitionTo($step)) {
+                    $order = $this->transition($order, $step, $by);
+                }
+            }
+
+            return $order->status === RadiologyOrderStatus::Reported ? $order : $this->transition($order, RadiologyOrderStatus::Reported, $by);
+        });
+    }
+
     public function transition(RadiologyOrder $order, RadiologyOrderStatus $to, ?int $by = null): RadiologyOrder
     {
         return DB::transaction(function () use ($order, $to) {

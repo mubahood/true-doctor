@@ -42,8 +42,9 @@ class StandaloneDownloadReady extends Notification implements ShouldQueue
 
         return (match ($this->reason) {
             'purchased' => $message->subject('Your True-Doctor download is ready')
-                ->line('Thank you — your payment is confirmed and your licence is ready.')
-                ->line('Your private page has the installation package, your licence file and the step-by-step setup guide, together.')
+                ->line('Thank you. Your payment is confirmed and your licence is ready.')
+                ->line('Your private page has the installation package, your licence file, the setup guide, the user manual and your receipt, together.')
+                ->line('Your receipt reference is '.($licence->reference ?? '').'. Keep this email.')
                 ->action('Open my downloads', $link)
                 ->line("New releases are included until {$until}."),
             'renewed' => $message->subject('Your True-Doctor updates are renewed')

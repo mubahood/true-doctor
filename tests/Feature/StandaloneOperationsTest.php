@@ -227,7 +227,7 @@ class StandaloneOperationsTest extends TestCase
             ->set('name', 'Clinic')->set('price', '3500000')->set('renewalPrice', '700000')
             ->set('updatesMonths', 12)->set('maxStaff', 15)->set('isActive', true)
             ->call('save')->assertHasNoErrors();
-        $product = StandaloneProduct::firstOrFail();
+        $product = StandaloneProduct::where('name', 'Clinic')->firstOrFail();
         $this->assertSame('clinic', $product->slug);
         $this->assertSame('700000.00', (string) $product->renewal_price_ugx);
 

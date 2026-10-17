@@ -31,4 +31,10 @@ class StandaloneOrder extends Model
     {
         return ['amount_ugx' => 'decimal:2', 'limits' => 'array', 'paid_at' => 'datetime'];
     }
+
+    /** @return \Illuminate\Database\Eloquent\Relations\BelongsTo<StandaloneProduct, $this> */
+    public function product(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(StandaloneProduct::class, 'product_id');
+    }
 }
