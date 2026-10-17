@@ -20,5 +20,8 @@
     @if($crumbs)<x-ui.breadcrumb :crumbs="$crumbs" />@endif
     {{ $subtitle ?? '' }}
   </div>
-  @isset($actions)<div class="tb-flex">{{ $actions }}</div>@endisset
+  <div class="tb-flex">
+    @isset($actions){{ $actions }}@endisset
+    <x-ui.help-link />
+  </div>
 </div>

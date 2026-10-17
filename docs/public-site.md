@@ -84,3 +84,9 @@ file" pointing at the last line of the view.
 
 This bit the pricing page once. The fix, and the rule: **arrays belong in the
 controller**, not in a `@php` block in a view.
+
+## Guides, and "Help" on every screen
+
+`/guides` and `/guides/{slug}` (`GuideController`, SaaS only) render the guides for clinic owners from `config/guides.php`: the first six of the twelve in roadmap 02 §7. Each is dated, signed, lists its sources and ends with one product link; the words carry no em dash (a test reads the file). They use the privacy page's article layout (`.page`), so they add no CSS, and appear in the sitemap and the footer.
+
+In the back office, `App\Support\HelpGuides::ROUTES` maps each screen (route name or prefix) to the guide that answers its question. The page header shows "Help" and the topbar's help menu "Guide for this screen", both from that one mapping; a screen without a guide links to `/guides`. On a hospital's own copy the links go to the guides online (`GUIDES_URL`, default the update server). To add a guide: add it to `config/guides.php`, then point screens at it in `ROUTES`.

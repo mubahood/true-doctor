@@ -90,6 +90,7 @@ public self-registration for the app, and starter-data imports). They share this
 Writes are safe to retry with an `Idempotency-Key` header: [`api/idempotency.md`](api/idempotency.md).
 Notifications, devices, notification preferences and upcoming reminders: [`api/notify.md`](api/notify.md).
 The app's "Try the demo" door (`GET /public/demo`, `POST /public/demo/login`, `meta.demo`; SaaS only): [`api/demo.md`](api/demo.md).
+The owner's daily summary (`GET`/`PUT /owner-summary`, hospital administrator only): [`api/owner-summary.md`](api/owner-summary.md).
 The data plane - `GET /bootstrap`, `meta.capabilities`, `GET /search`, ETag/`304`, `?updated_since=`, tombstones (`removed`) and the
 extended error codes (`conflict`, `plan_limit`, `payload_too_large`, `device_revoked`, `licence_expired`, `maintenance`,
 `retryable`/`retry_after`): [`api/plane.md`](api/plane.md).

@@ -161,6 +161,10 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
         Route::get('payments/{payment:uuid}/receipt', [\App\Http\Controllers\Admin\PaymentController::class, 'receipt'])->name('api.payments.receipt');
         Route::apiResource('invoices', InvoiceController::class)->only(['index', 'show']);
 
+        // Phase 2 item: the owner's daily summary (docs/api/owner-summary.md).
+        Route::get('owner-summary', [\App\Http\Controllers\Api\V1\OwnerSummaryController::class, 'show'])->name('api.owner-summary.show');
+        Route::put('owner-summary', [\App\Http\Controllers\Api\V1\OwnerSummaryController::class, 'update'])->name('api.owner-summary.update');
+
         // The rest of the back office, one file per area (docs/api.md).
         foreach (['care', 'pharmacy', 'finance', 'admin', 'extras', 'plane', 'notify', 'journeys'] as $area) {
             require __DIR__."/api/{$area}.php";

@@ -47,6 +47,11 @@ final class InsightEngine
         Rules\DoctorsWithoutAvailability::class,
         Rules\TrialEnding::class,
         Rules\LicenceUpdatesEnding::class,
+        // Phase 2: money leaks and follow-up (roadmap 09 §1).
+        Rules\VisitsClosedUnbilled::class,
+        Rules\LargeDiscounts::class,
+        Rules\ResultsAfterPatientLeft::class,
+        Rules\DentalRecallsDue::class,
     ];
 
     /** @return list<array<string,mixed>> */

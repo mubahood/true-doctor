@@ -26,6 +26,9 @@ Artisan::command('inspire', function () {
 \Illuminate\Support\Facades\Schedule::command('appointments:remind')->hourly()->withoutOverlapping(10);
 // Recall messages that fall due by the calendar, and messages stuck in sending (idempotent).
 \Illuminate\Support\Facades\Schedule::command('messages:due')->hourly()->withoutOverlapping(10);
+// The owner's daily summary (roadmap 09 §2): every half hour, each owner once a day at their chosen time (idempotent).
+\App\Support\Scheduling\ScheduledRun::every(\Illuminate\Support\Facades\Schedule::command('owners:daily-summary'), 'owners-daily-summary', 30)
+    ->withoutOverlapping(30);
 
 \Illuminate\Support\Facades\Schedule::call(function (): void {
     \Illuminate\Support\Facades\Cache::put('standalone:scheduler-heartbeat', now()->toIso8601String(), now()->addMinutes(5));

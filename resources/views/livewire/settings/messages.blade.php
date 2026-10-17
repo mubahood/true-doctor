@@ -59,6 +59,11 @@
     </div>
   </form>
 
+  {{-- The owner's daily summary (roadmap 09 §2) --}}
+  @if(\App\Services\OwnerSummaryService::isOwner(auth()->user()))
+    <livewire:settings.owner-summary />
+  @endif
+
   <div class="tb-filter-bar tb-toolbar">
     <select wire:model.live="status" class="tb-select" aria-label="Which messages">
       <option value="">Every message</option>

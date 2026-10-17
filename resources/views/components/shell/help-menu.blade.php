@@ -16,12 +16,14 @@
     ]);
 @endphp
 
-@if($wa !== '' || $support->phone() !== '' || $support->email() !== '')
+{{-- Always there: the guide for this screen (App\Support\HelpGuides), then whoever answers. --}}
   <div class="tb-user-menu" :class="{'open': helpMenu}" x-data="{helpMenu:false}" @click.outside="helpMenu=false" @keydown.escape="helpMenu=false">
     <button type="button" class="tb-topbar-bell" @click="helpMenu=!helpMenu" :aria-expanded="helpMenu" aria-haspopup="menu" aria-label="Help and support" title="Help and support">
       <i class="fas fa-circle-question" aria-hidden="true"></i>
     </button>
     <div class="tb-user-dropdown" role="menu">
+      @php($guide = \App\Support\HelpGuides::linkFor(\App\Support\HelpGuides::currentRouteName()))
+      <a role="menuitem" target="_blank" rel="noopener" href="{{ $guide['url'] }}"><i class="fas fa-book-open" aria-hidden="true"></i> {{ $guide['slug'] !== null ? 'Guide for this screen' : 'Guides' }}</a>
       @if($wa !== '')
         <a role="menuitem" target="_blank" rel="noopener" href="{{ $wa }}"
            x-bind:href="@js($wa).replace(@js(rawurlencode($marker)), encodeURIComponent(document.title.split(' · ')[0] || 'the system'))">
@@ -40,4 +42,3 @@
       @endif
     </div>
   </div>
-@endif
