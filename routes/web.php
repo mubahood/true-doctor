@@ -33,6 +33,12 @@ Route::middleware(['edition:saas', 'landing'])->group(function () {
     Route::get('/about', [\App\Http\Controllers\PublicPageController::class, 'about'])->name('about');
     Route::get('/demo', [\App\Http\Controllers\PublicPageController::class, 'demo'])->name('demo');
 });
+// Phase 2 item: the first six guides for clinic owners (config/guides.php; roadmap 02 §7, 06 §4).
+Route::middleware(['edition:saas', 'landing'])->group(function () {
+    Route::get('/guides', [\App\Http\Controllers\GuideController::class, 'index'])->name('guides.index');
+    Route::get('/guides/{slug}', [\App\Http\Controllers\GuideController::class, 'show'])->where('slug', '[a-z0-9-]+')->name('guides.show');
+});
+
 // A WhatsApp button on the public site, counted on its way to wa.me (GoController).
 Route::get('/go/whatsapp', [\App\Http\Controllers\GoController::class, 'whatsapp'])
     ->middleware(['edition:saas', 'throttle:60,1'])->name('go.whatsapp');

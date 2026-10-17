@@ -207,6 +207,7 @@
         <h4>Company</h4>
         <a href="{{ route('about') }}">About us</a>
         <a href="{{ route('walkthrough') }}">Book a walkthrough</a>
+        @if(Route::has('guides.index'))<a href="{{ route('guides.index') }}">Guides</a>@endif
         <a href="{{ route('contact') }}">Contact</a>
         <a href="{{ route('privacy') }}">Privacy</a>
         <a href="{{ route('terms') }}">Terms</a>

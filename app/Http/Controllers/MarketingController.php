@@ -166,6 +166,11 @@ class MarketingController extends Controller
         foreach (['walkthrough' => 'walkthrough', 'get-app' => 'get-app', 'about' => 'about'] as $key => $route) {
             $pages[] = ['loc' => route($route), 'lastmod' => config("landing.pages.{$key}.updated", $fixed), 'priority' => '0.7', 'changefreq' => 'monthly'];
         }
+        // The guides for clinic owners (config/guides.php).
+        $pages[] = ['loc' => route('guides.index'), 'lastmod' => (string) config('guides.hub.updated', $fixed), 'priority' => '0.7', 'changefreq' => 'monthly'];
+        foreach (\App\Support\HelpGuides::all() as $slug => $guide) {
+            $pages[] = ['loc' => route('guides.show', $slug), 'lastmod' => $guide['updated'] ?? $fixed, 'priority' => '0.6', 'changefreq' => 'monthly'];
+        }
         if (\App\Http\Controllers\Auth\AuthenticatedSessionController::demoAvailable()) {
             $pages[] = ['loc' => route('demo'), 'lastmod' => config('landing.pages.demo.updated', $fixed), 'priority' => '0.8', 'changefreq' => 'monthly'];
         }
@@ -182,6 +187,7 @@ class MarketingController extends Controller
             [(string) config('landing.site_updated', '2026-10-17')],
             array_column((array) config('landing.practices'), 'updated'),
             array_column((array) config('landing.pages'), 'updated'),
+            array_column((array) config('guides.guides'), 'updated'),
         ));
         rsort($dates);
 
