@@ -216,7 +216,7 @@
 
     /* DomPDF's own page counters. `enable_php` stays off — drawing a page
        number is not worth handing a template an eval(). */
-    .pagenum:after { content: counter(page) " of " counter(pages); }
+    .pagenum:after { content: counter(page); } /* dompdf cannot count the pages: "of" printed "of 0" */
 
     /* The verification QR, bottom right of every page. */
     .verify-qr { width: 40px; height: 40px; }

@@ -65,7 +65,7 @@
   </table>
 
   <p class="foot-note muted small">
-    This receipt confirms the payment above. Keep it — it is the proof of what
+    This receipt confirms the payment above. Keep it: it is the proof of what
     was paid, when, and against which invoice.
   </p>
 </x-pdf.document>
