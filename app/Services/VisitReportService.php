@@ -52,10 +52,13 @@ class VisitReportService
      *     invoice:\App\Models\Invoice|null,
      *     payments:Collection,
      *     totals:array<string,string>,
-     *     attachments:int
+     *     attachments:int,
+     *     diagnoses:Collection,
+     *     dental:array<string,mixed>|null,
+     *     chart:array<int,array<string,mixed>>|null
      * }
      */
-    public function assemble(Visit $visit): array
+    public function assemble(Visit $visit, ?\App\Models\User $reader = null): array
     {
         $visit->loadMissing([
             'patient.district',
@@ -93,7 +96,42 @@ class VisitReportService
             'payments' => $invoice === null ? collect() : $invoice->payments,
             'totals' => $this->totals($visit, $invoice),
             'attachments' => $visit->orders->sum(fn ($order) => $order->attachments->count()),
+            'diagnoses' => app(DiagnosisService::class)->current($visit),
+            // A dental visit prints as a dental case sheet; any other visit
+            // that charted teeth prints the chart (docs/dental.md).
+            'dental' => $this->dental($visit, $reader),
+            'chart' => $this->chart($visit),
         ];
+    }
+
+    /**
+     * The dental case sheet, for a dental visit and a reader who may read it
+     * (the web hides it from the desk, so the printout does too). Anyone else
+     * gets the general layout: reason, complaints and diagnosis.
+     *
+     * @return array<string,mixed>|null
+     */
+    private function dental(Visit $visit, ?\App\Models\User $reader): ?array
+    {
+        $hospital = app(HospitalSettings::class)->hospital();
+        if ($visit->patient === null || ! DentalCaseSheetService::appliesTo($visit, $hospital)
+            || ($reader !== null && ! DentalCaseSheetService::canRead($reader))) {
+            return null;
+        }
+
+        return app(DentalCaseSheetService::class)->sheet($visit, null);
+    }
+
+    /** @return array<int, array<string,mixed>>|null the chart, when this visit charted teeth outside a case sheet */
+    private function chart(Visit $visit): ?array
+    {
+        $hospital = app(HospitalSettings::class)->hospital();
+        if ($visit->patient === null || ! DentalService::enabledFor($hospital)
+            || ! \App\Models\DentalChartEntry::query()->where('visit_id', $visit->id)->exists()) {
+            return null;
+        }
+
+        return app(DentalService::class)->chart($visit->patient);
     }
 
     /**

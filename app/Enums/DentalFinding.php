@@ -48,6 +48,25 @@ enum DentalFinding: string
         };
     }
 
+    /** The letters a printed chart writes in the tooth's box, as on a paper case sheet. */
+    public function code(): string
+    {
+        return match ($this) {
+            self::Sound => '',
+            self::Caries => 'C',
+            self::Filled => 'F',
+            self::Missing => 'M',
+            self::ToExtract => 'X',
+            self::Crown => 'Cr',
+            self::Bridge => 'Br',
+            self::Implant => 'Im',
+            self::RootCanal => 'RC',
+            self::Fracture => 'Fr',
+            self::Mobility => 'Mo',
+            self::Note => 'N',
+        };
+    }
+
     /** Whether the finding is about the whole tooth (surfaces are ignored). */
     public function wholeTooth(): bool
     {

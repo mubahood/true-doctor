@@ -17,7 +17,7 @@ final class PatientAlerts
     /**
      * For an API payload: the same block, or null when there is no patient.
      *
-     * @return array{allergies: list<string>, conditions: list<string>, deceased: bool, allergies_recorded: bool}|null
+     * @return array{allergies: list<string>, conditions: list<string>, deceased: bool, allergies_recorded: bool, medical_flags: list<string>}|null
      */
     public static function forPayload(?Patient $patient): ?array
     {
@@ -25,7 +25,7 @@ final class PatientAlerts
     }
 
     /**
-     * @return array{allergies: list<string>, conditions: list<string>, deceased: bool, allergies_recorded: bool}
+     * @return array{allergies: list<string>, conditions: list<string>, deceased: bool, allergies_recorded: bool, medical_flags: list<string>}
      */
     public static function for(Patient $patient): array
     {
@@ -40,6 +40,9 @@ final class PatientAlerts
             'conditions' => $clean($patient->chronic_conditions),
             'deceased' => $patient->status === PatientStatus::Deceased,
             'allergies_recorded' => $patient->allergies !== null,
+            // Ticked in the medical history (a bleeding disorder, a heart
+            // valve, pregnancy): what to check before cutting or injecting.
+            'medical_flags' => MedicalFlags::labels($patient),
         ];
     }
 }

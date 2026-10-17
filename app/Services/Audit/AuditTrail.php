@@ -63,6 +63,9 @@ final class AuditTrail
         Models\TreatmentRecordItem::class => 'Treatment item',
         Models\DentalChartEntry::class => 'Dental finding',
         Models\DentalTreatmentItem::class => 'Dental plan item',
+        Models\CaseSheetEntry::class => 'Case sheet',
+        Models\PatientHistoryEntry::class => 'Patient history',
+        Models\DentalXray::class => 'Dental X-ray',
         // Money
         Models\Invoice::class => 'Invoice',
         Models\InvoiceItem::class => 'Invoice line',

@@ -216,6 +216,22 @@ class Visit extends Model
         };
     }
 
+    /**
+     * Where the visit is, in the words a patient or another clinic reads on
+     * paper: "At the cashier", not the internal stage "Payment".
+     */
+    public function stagePhrase(): string
+    {
+        return match (true) {
+            $this->status === VisitStatus::Pending => 'Waiting to be seen',
+            $this->status === VisitStatus::Completed => ($this->outcome ?? VisitOutcome::Closed) === VisitOutcome::Cancelled ? 'Cancelled' : 'Seen and closed',
+            $this->stage === VisitStage::Billing => 'Seen, bill being prepared',
+            $this->stage === VisitStage::Payment => 'At the cashier',
+            $this->stage === VisitStage::Completed => 'Seen and closed',
+            default => 'Being seen',
+        };
+    }
+
     public function stateBadge(): string
     {
         return match (true) {

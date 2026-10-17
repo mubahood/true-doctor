@@ -31,6 +31,8 @@ Usually the receptionist opens the visit when the patient arrives.
 
 True-Doctor gives the visit a number and confirms it at the top of the screen.
 
+If you leave the department empty, the visit takes the doctor's own department, or your clinic's department when it has only one where patients are seen (a laboratory, pharmacy or accounts department does not count). A clinic with one room never prints "No department recorded" on its reports. A hospital with several clinical departments leaves it for you to choose.
+
 A visit can also start from an appointment. See [Appointments and the queue](04-appointments-and-queue.md).
 
 ## The visits list
@@ -54,7 +56,9 @@ Click a visit number to open it. The visit opens over the list in a large window
 
 The full page shows the same visit laid out in panels: **Vitals**, **Clinical**, **Coded diagnoses**, **Bill**, **Lab orders**, **Radiology**, **Dispensing**, **Prescriptions** and **History**. Some panels appear only for the roles that use them. If your hospital has a receipt printer set up, the full page also has a **Queue ticket** button that prints the patient a slip with their number for the day, to wait until called.
 
-At the top of every visit, True-Doctor shows the patient's allergies and long-term conditions. If allergies were never recorded, it says **Allergies not recorded**. Ask the patient, then record the answer on their record, even if it is "none". If the patient is recorded as deceased, a warning says so.
+In a dental clinic, and on a visit in a dental department, the **Clinical** and **Coded diagnoses** panels are replaced by the dental case sheet: **History**, **Examination**, the dental chart, **Diagnosis**, **Treatment done today** and **Follow-up**. See [Dental](10-dental.md).
+
+At the top of every visit, True-Doctor shows the patient's allergies and long-term conditions. When the patient's medical history has a red flag ticked, such as a bleeding disorder, a heart valve or a pregnancy, it shows under **Check before treatment**. If allergies were never recorded, it says **Allergies not recorded**. Ask the patient, then record the answer on their record, even if it is "none". If the patient is recorded as deceased, a warning says so.
 
 ## Record vitals
 
@@ -183,4 +187,6 @@ Sometimes a visit is finished by mistake or cancelled at the wrong desk. The Hos
 
 The **History** section lists every change of the visit's state: when, from what to what, the note, and who did it.
 
-**Visit report** prints the whole visit as one PDF: who the patient is and their allergies, why they came, vitals, what was found, every order and its report, lab and radiology results, prescriptions and what was dispensed, any stay in hospital, and the account. Give it to a patient who is referred elsewhere.
+**Visit report** prints the whole visit as one PDF: who the patient is and their allergies, why they came, vitals, what was found with the coded diagnoses, every order and its report, lab and radiology results, prescriptions and what was dispensed, any stay in hospital, and the account. Give it to a patient who is referred elsewhere.
+
+Under the visit number the report says where the visit is in plain words: **Waiting to be seen**, **Being seen**, **Seen, bill being prepared**, **At the cashier**, **Seen and closed** or **Cancelled**. If teeth were charted on the visit, the report also prints the dental chart. A dental visit prints as a dental case sheet (see [Dental](10-dental.md)).

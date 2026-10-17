@@ -6,6 +6,7 @@
 @endphp
 <div class="tb-stack dental">
 
+  @if($part !== 'plan')
   {{-- ── The chart ──────────────────────────────────────────── --}}
   <div class="tb-card">
     <div class="tb-card-header">
@@ -101,6 +102,9 @@
     </div>
   @endif
 
+  @endif
+
+  @if($part !== 'chart')
   {{-- ── Treatment plan ──────────────────────────────────────── --}}
   <div class="tb-card">
     <div class="tb-card-header">
@@ -160,8 +164,10 @@
     </div>
   </div>
 
+  @endif
+
   {{-- ── History ─────────────────────────────────────────────── --}}
-  @if($this->history->isNotEmpty())
+  @if($part === 'all' && $this->history->isNotEmpty())
     <div class="tb-card">
       <div class="tb-card-header"><span class="tb-card-title">Chart history</span></div>
       <div class="tb-table-wrap"><table class="tb-table">

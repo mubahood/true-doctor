@@ -8,6 +8,7 @@ use App\Enums\VisitOutcome;
 use App\Enums\VisitStage;
 use App\Enums\VisitStatus;
 use App\Exceptions\InvalidVisitTransitionException;
+use App\Models\Department;
 use App\Models\Patient;
 use App\Models\Visit;
 use App\Models\VisitStatusHistory;
@@ -123,7 +124,7 @@ class VisitService
                     'appointment_id' => $data['appointment_id'] ?? null,
                     'doctor_user_id' => $data['doctor_user_id'] ?? null,
                     'receptionist_user_id' => $openedBy,
-                    'department_id' => $data['department_id'] ?? null,
+                    'department_id' => $data['department_id'] ?? $this->defaultDepartment($data['doctor_user_id'] ?? null),
                     'reason' => $data['reason'] ?? null,
                     'complaints' => $data['complaints'] ?? null,
                     // Rare at the desk but not wrong — a walk-in seen on the
@@ -158,6 +159,30 @@ class VisitService
             return $this->createWithNumber($data, $openedBy, $attempt + 1);
         }
     }
+
+    /**
+     * The department a visit opened without one belongs to: the doctor's own,
+     * else the hospital's only clinical department. A clinic with one room
+     * should never print "No department recorded"; a hospital with several
+     * leaves it to whoever routes the patient.
+     */
+    public function defaultDepartment(int|string|null $doctorId): ?int
+    {
+        if ($doctorId !== null && $doctorId !== '') {
+            $own = \App\Models\StaffProfile::query()->where('user_id', (int) $doctorId)->whereNotNull('department_id')->value('department_id');
+            if ($own !== null && Department::query()->whereKey($own)->where('is_active', true)->exists()) {
+                return (int) $own;
+            }
+        }
+
+        $clinical = Department::query()->where('is_active', true)->get(['id', 'name'])
+            ->reject(fn (Department $d) => preg_match(self::NOT_CLINICAL, (string) $d->name) === 1);
+
+        return $clinical->count() === 1 ? (int) $clinical->first()->id : null;
+    }
+
+    /** Departments a patient is not seen in: the benches, the shop and the office. */
+    private const NOT_CLINICAL = '/\b(lab\b|laborator|pharmac|dispens|radiolog|imaging|x-?ray|account|financ|cash|billing|admin\b|administration|reception|front desk|record|store|stock|optical shop|shop|kitchen|laundry|maintenance|steril|security|human resource|hr|procure|transport)/i';
 
     public function makeNumber(int $seq, Carbon $date): string
     {

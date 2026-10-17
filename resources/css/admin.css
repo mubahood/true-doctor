@@ -2473,3 +2473,25 @@ body.has-brand::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z-i
 .imp-decide{margin-top:3px;max-width:240px;}
 .imp-problems{margin:0;padding-left:16px;color:var(--bad);}
 .imp-note{margin:6px 0 0;}
+
+/* ── Item A: the dental case sheet (Visits\Panels\CaseSheetSection, DentalDiagnoses, DentalXrays, DentalFollowUp) ── */
+.cs-body{padding-top:4px;padding-bottom:4px;}
+.cs-section{padding:7px 0;border-bottom:1px solid var(--line);}
+.cs-section:last-child{border-bottom:none;}
+.cs-body .cs-section .cs-section{padding:0;border:none;}
+.cs-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:24px;}
+.cs-title{font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mt);}
+.cs-acts{margin-left:auto;display:flex;gap:4px;flex-wrap:wrap;}
+.cs-lines{display:grid;grid-template-columns:150px minmax(0,1fr);gap:2px 10px;margin:4px 0 0;}
+.cs-lines dt{font-size:11.5px;color:var(--mt);}
+.cs-lines dd{margin:0;font-size:12.5px;line-height:1.45;color:var(--tx);}
+.cs-empty{margin:2px 0 0;}
+.cs-form{display:flex;flex-direction:column;gap:8px;margin-top:6px;}
+.cs-chips{display:flex;flex-wrap:wrap;align-items:center;gap:4px;}
+.cs-chips .tb-chip-check:has(input:checked){border-color:var(--br);background:var(--br-soft);color:var(--br);font-weight:600;}
+.cs-chips .tb-pill{font-size:11.5px;}
+.cs-tooth{min-width:46px;font-size:11.5px;color:var(--mt);}
+.cs-tooth-in{margin-top:0;max-width:72px;}
+.cs-dx-pick{display:flex;flex-direction:column;gap:6px;margin-top:6px;}
+.cs-dx-pick .tb-label{margin:0;}
+@media (max-width:900px){.cs-lines{grid-template-columns:1fr;}.cs-lines dd{margin-bottom:4px;}}

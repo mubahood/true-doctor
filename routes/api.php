@@ -61,6 +61,20 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
         Route::get('patients/{patient}/dental/quote', \App\Http\Controllers\Admin\DentalQuoteController::class)->name('api.dental.quote');
         Route::get('dental/report', [\App\Http\Controllers\Api\V1\DentalController::class, 'report'])->name('api.dental.report');
 
+        // Item A, the dental case sheet on a visit (docs/api/dental.md, "The case sheet").
+        Route::prefix('visits/{visit}/dental-case-sheet')->name('api.dental.case-sheet.')->controller(\App\Http\Controllers\Api\V1\DentalCaseSheetController::class)->group(function () {
+            Route::get('/', 'show')->name('show');
+            Route::put('sections/{section}', 'section')->where('section', '[a-z_]+')->name('section');
+            Route::post('sections/{section}/normal', 'normal')->where('section', '[a-z_]+')->name('normal');
+            Route::post('history/{section}/confirm', 'confirm')->where('section', '[a-z_]+')->name('confirm');
+            Route::post('diagnoses', 'diagnose')->name('diagnose');
+            Route::delete('diagnoses/{diagnosis}', 'undiagnose')->whereUuid('diagnosis')->name('undiagnose');
+            Route::post('xrays', 'xray')->name('xray');
+            Route::post('review', 'review')->name('review');
+            Route::get('instructions', \App\Http\Controllers\Admin\DentalInstructionsController::class)->name('instructions');
+        });
+        Route::get('dental/xrays/{xray}/image', [\App\Http\Controllers\Api\V1\DentalCaseSheetController::class, 'image'])->name('api.dental.xray.image');
+
         // Patient links (roadmap 05 §4, docs/api/patient-links.md): send a result, summary,
         // prescription or quote by link; list, read the open log, withdraw.
         Route::get('patient-links', [\App\Http\Controllers\Api\V1\PatientLinkController::class, 'index'])->name('api.patient-links.index');

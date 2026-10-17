@@ -97,12 +97,17 @@
 
     {{-- ── Workspace panels (each #[Lazy]) ──────────────────── --}}
     <div class="tb-stack">
+      {{-- A dental visit gets the dental case sheet in place of the general
+           note (docs/dental.md, "The case sheet"); every other visit keeps it. --}}
+      @php($dentalHospital = app(\App\Support\HospitalSettings::class)->hospital())
+      @if($visit->patient && \App\Services\DentalCaseSheetService::appliesTo($visit, $dentalHospital))
+        @include('livewire.visits.partials.dental-case-sheet', ['visit' => $visit])
+      @else
       <livewire:visits.panels.clinical :visit-id="$visit->id" :key="'clinical-'.$visit->id" />
       <livewire:visits.panels.diagnoses :visit-id="$visit->id" :key="'diagnoses-'.$visit->id" />
 
       {{-- A dental clinic charts the teeth and bills procedures on the visit (docs/dental.md).
            Elsewhere the chart waits behind a press (DentalService::chartOnVisit). --}}
-      @php($dentalHospital = app(\App\Support\HospitalSettings::class)->hospital())
       @if($visit->patient && \App\Services\DentalService::enabledFor($dentalHospital))
         @canany(['treatments.view', 'visits.diagnose'])
           @if($dentalOpen || \App\Services\DentalService::chartOnVisit($visit, $dentalHospital))
@@ -116,6 +121,7 @@
             </div>
           @endif
         @endcanany
+      @endif
       @endif
 
       @canany(['billing.view', 'billing.manage'])

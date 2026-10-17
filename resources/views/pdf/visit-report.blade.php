@@ -15,7 +15,7 @@
   :reference="$visit->visit_no"
   :meta="[
       'Seen' => $visit->created_at->format('d M Y H:i'),
-      'Status' => $visit->stateLabel(),
+      'Stage' => $visit->stagePhrase(),
   ]">
 
   {{-- ── Who ──────────────────────────────────────────────────────── --}}
@@ -49,9 +49,11 @@
     <tbody>
       <tr>
         <td style="width:22%;" class="muted">Allergies</td>
-        <td @if(filled($patient?->allergies)) style="font-weight:bold; color:#b3261e;" @endif>
+        {{-- "None" written on the record is a record of no allergies, not an allergy (PatientAlerts). --}}
+        @php($realAllergies = $patient ? \App\Support\Clinical\PatientAlerts::for($patient)['allergies'] : [])
+        <td @if($realAllergies !== []) style="font-weight:bold; color:#b3261e;" @endif>
           {{-- Cast to an array on the model: printed as one line, never echoed as an array. --}}
-          {{ filled($patient?->allergies) ? implode(', ', (array) $patient->allergies) : 'None recorded' }}
+          {{ $realAllergies !== [] ? implode(', ', $realAllergies) : (filled($patient?->allergies) ? 'None known' : 'None recorded') }}
         </td>
         <td style="width:22%;" class="muted">Blood group</td>
         <td style="width:14%;" class="num">{{ $patient?->blood_type ?: '—' }}</td>
@@ -81,6 +83,11 @@
   </table>
 
   {{-- ── Why they came ────────────────────────────────────────────── --}}
+  {{-- A dental visit prints as the dental case sheet, under the headings a
+       dentist writes by hand (docs/dental.md). --}}
+  @if($report['dental'])
+    @include('pdf.partials.dental-case-sheet', ['sheet' => $report['dental'], 'part' => 'history'])
+  @else
   <h2>Presentation</h2>
 
   <table class="rows">
@@ -97,6 +104,7 @@
       @endif
     </tbody>
   </table>
+  @endif
 
   @if($report['hasVitals'])
     <h2>Vitals @if($visit->vitals_recorded_at)<span class="muted small" style="text-transform:none; letter-spacing:0;">taken {{ $visit->vitals_recorded_at->format('d M Y H:i') }}</span>@endif</h2>
@@ -118,16 +126,42 @@
   @endif
 
   {{-- ── What was found ───────────────────────────────────────────── --}}
-  @if(filled($visit->diagnosis) || filled($visit->doctor_remarks))
+  @if($report['dental'])
+    @include('pdf.partials.dental-case-sheet', ['sheet' => $report['dental'], 'part' => 'rest'])
+    @if(filled($visit->doctor_remarks))
+      <p class="note">{!! nl2br(e($visit->doctor_remarks)) !!}</p>
+    @endif
+  @elseif(filled($visit->diagnosis) || filled($visit->doctor_remarks) || $report['diagnoses']->isNotEmpty())
     <h2>Clinical findings</h2>
 
     @if(filled($visit->diagnosis))
       <p><span class="muted small">Diagnosis</span><br>{!! nl2br(e($visit->diagnosis)) !!}</p>
     @endif
 
+    {{-- The coded diagnoses: what the Ministry reports count. --}}
+    @if($report['diagnoses']->isNotEmpty())
+      <table class="rows">
+        <thead><tr><th style="width:14%;">Code</th><th>Diagnosis</th><th style="width:20%;"></th></tr></thead>
+        <tbody>
+          @foreach($report['diagnoses'] as $d)
+            <tr>
+              <td class="num">{{ $d->code }}</td>
+              <td>{{ $d->note && $d->tooth !== null ? $d->note : $d->title }}@if($d->tooth !== null) <span class="muted">· tooth {{ $d->tooth }}{{ $d->surfaces ? ' '.$d->surfaces : '' }}</span>@endif</td>
+              <td class="muted small">{{ $d->is_primary ? 'Primary' : '' }}{{ $d->certainty === 'suspected' ? ($d->is_primary ? ', suspected' : 'Suspected') : '' }}</td>
+            </tr>
+          @endforeach
+        </tbody>
+      </table>
+    @endif
+
     @if(filled($visit->doctor_remarks))
       <p class="note">{!! nl2br(e($visit->doctor_remarks)) !!}</p>
     @endif
+  @endif
+
+  @if(! $report['dental'] && $report['chart'])
+    <h2>Dental chart</h2>
+    @include('pdf.partials.dental-chart', ['chart' => $report['chart']])
   @endif
 
   {{-- ── What was done ────────────────────────────────────────────── --}}

@@ -61,7 +61,7 @@
         @php
           $cls = match ($alert['tone']) { 'danger' => 'tb-alert-danger', 'warn' => 'tb-alert-warning', default => '' };
           $icon = match ($alert['key']) {
-            'allergies' => 'fa-triangle-exclamation', 'chronic' => 'fa-heart-pulse', 'owes' => 'fa-coins',
+            'allergies' => 'fa-triangle-exclamation', 'medical_flags' => 'fa-hand', 'chronic' => 'fa-heart-pulse', 'owes' => 'fa-coins',
             'no_consent' => 'fa-file-signature', 'status' => 'fa-user-slash', 'admitted' => 'fa-bed', default => 'fa-shield-heart',
           };
         @endphp
@@ -71,6 +71,10 @@
             @switch($alert['key'])
               @case('allergies')
                 <b>Allergies</b>
+                @foreach($alert['items'] as $item)<x-ui.badge tone="warn">{{ $item }}</x-ui.badge>@endforeach
+                @break
+              @case('medical_flags')
+                <b>Check before treatment</b>
                 @foreach($alert['items'] as $item)<x-ui.badge tone="warn">{{ $item }}</x-ui.badge>@endforeach
                 @break
               @case('chronic')

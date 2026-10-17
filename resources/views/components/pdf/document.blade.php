@@ -214,6 +214,15 @@
 
     .foot-note { margin-top: 22px; }
 
+    /* The tooth chart of a dental case sheet (pdf/partials/dental-chart). */
+    table.odonto-pdf { width: 100%; border-collapse: collapse; margin-top: 4px; table-layout: fixed; }
+    table.odonto-pdf td { border: .5px solid #cfd8de; text-align: center; vertical-align: top; padding: 2px 1px; font-size: 7.5px; height: 24px; }
+    table.odonto-pdf td .n { font-family: "DejaVu Sans Mono", monospace; color: #6b7a86; font-size: 7px; }
+    table.odonto-pdf td.on { border: 1px solid #1b2733; font-weight: bold; }
+    table.odonto-pdf td.mid { border: none; width: 6px; }
+    table.odonto-pdf td.gap { border: none; }
+    h3.sub { font-size: 9px; text-transform: uppercase; letter-spacing: .6px; color: #6b7a86; margin: 10px 0 2px; }
+
     /* DomPDF's own page counters. `enable_php` stays off — drawing a page
        number is not worth handing a template an eval(). */
     .pagenum:after { content: counter(page); } /* dompdf cannot count the pages: "of" printed "of 0" */

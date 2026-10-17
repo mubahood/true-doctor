@@ -17,6 +17,7 @@ use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Lazy;
 use Livewire\Attributes\Locked;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 /**
@@ -39,6 +40,14 @@ class Dental extends Component
 
     #[Locked]
     public ?int $visitId = null;
+
+    /**
+     * Which part to draw: all of it (the patient's tab), or, inside the
+     * dental case sheet, the chart (Examination, hard tissues) or the plan
+     * and recall (Plan and follow-up). The parts keep each other current.
+     */
+    #[Locked]
+    public string $part = 'all';
 
     public bool $primary = false;
 
@@ -69,10 +78,11 @@ class Dental extends Component
 
     public ?string $recallOn = null;
 
-    public function mount(int $patientId, ?int $visitId = null): void
+    public function mount(int $patientId, ?int $visitId = null, string $part = 'all'): void
     {
         $this->patientId = $patientId;
         $this->visitId = $visitId;
+        $this->part = in_array($part, ['all', 'chart', 'plan'], true) ? $part : 'all';
         $this->authorize('view', $this->patient);
         abort_unless(auth()->user()->can('treatments.view') || auth()->user()->can('visits.diagnose'), 403);
         $this->recallOn = $this->patient->next_recall_on?->toDateString();
@@ -140,6 +150,18 @@ class Dental extends Component
         $this->notes = '';
         $this->planTooth = $this->tooth;
         $this->resetErrorBag();
+        // The case sheet's diagnosis picker takes the tooth chosen here.
+        if ($this->tooth !== null) {
+            $this->dispatch('dental-tooth-picked', tooth: $this->tooth);
+        }
+    }
+
+    /** Another part of the case sheet charted, planned or billed: read again. */
+    #[On('dental-changed')]
+    public function refreshDental(): void
+    {
+        unset($this->chart, $this->history, $this->plan, $this->patient);
+        $this->recallOn = $this->patient->next_recall_on?->toDateString();
     }
 
     public function record(DentalService $dental): void
@@ -169,6 +191,7 @@ class Dental extends Component
         $this->asOf = null;
         unset($this->chart, $this->history);
         $this->dispatch('toast', message: "Tooth {$this->tooth}: ".(DentalFinding::from($this->finding)->label()).' recorded.', type: 'success');
+        $this->dispatch('dental-changed');
     }
 
     public function openPlan(?int $tooth = null): void
@@ -199,6 +222,7 @@ class Dental extends Component
         $this->showPlan = false;
         unset($this->plan);
         $this->dispatch('toast', message: 'Added to the treatment plan.', type: 'success');
+        $this->dispatch('dental-changed');
     }
 
     public function move(string $uuid, string $status, DentalService $dental): void
@@ -217,6 +241,7 @@ class Dental extends Component
 
         unset($this->plan);
         $this->dispatch('toast', message: $to === DentalTreatmentStatus::Done ? 'Done, and billed on the visit.' : 'Marked '.strtolower($to->label()).'.', type: 'success');
+        $this->dispatch('dental-changed');
         if ($to === DentalTreatmentStatus::Done) {
             $this->dispatch('visit-updated');
         }
