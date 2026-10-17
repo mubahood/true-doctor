@@ -170,7 +170,7 @@
           @break
         @case('access')
           <livewire:patients.tabs.access :patient-id="$patient->id" :key="'t-access-'.$patient->id" />
-
+          @break
         {{-- Maternity and child health (docs/mother-child.md). --}}
         @case('pregnancy')
           <livewire:patients.tabs.pregnancy :patient-id="$patient->id" :key="'t-pregnancy-'.$patient->id" />
