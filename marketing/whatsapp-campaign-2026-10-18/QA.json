@@ -1,0 +1,180 @@
+{
+  "generatedAt": "2026-10-18T13:20:25.005Z",
+  "renderer": "Chromium; Inter embedded; vector device and UI mockups",
+  "statusTextSafeArea": {
+    "x": 0,
+    "y": 250,
+    "width": 1080,
+    "height": 1420
+  },
+  "artworkGrid": {
+    "margin": 72,
+    "contentHeight": 1350,
+    "statusOffset": 285,
+    "footerY": 1242
+  },
+  "results": [
+    {
+      "file": "broadcast/01-the-problem.png",
+      "width": 1080,
+      "height": 1350,
+      "checks": {
+        "fontLoaded": true,
+        "dimensions": true,
+        "headline": true,
+        "support": true,
+        "footer": true,
+        "allTextInsideCanvas": true,
+        "allStatusTextInsideSafeArea": true
+      },
+      "edgeErrors": [],
+      "safeErrors": []
+    },
+    {
+      "file": "broadcast/02-works-offline.png",
+      "width": 1080,
+      "height": 1350,
+      "checks": {
+        "fontLoaded": true,
+        "dimensions": true,
+        "headline": true,
+        "support": true,
+        "footer": true,
+        "allTextInsideCanvas": true,
+        "allStatusTextInsideSafeArea": true
+      },
+      "edgeErrors": [],
+      "safeErrors": []
+    },
+    {
+      "file": "broadcast/03-stop-money-leaks.png",
+      "width": 1080,
+      "height": 1350,
+      "checks": {
+        "fontLoaded": true,
+        "dimensions": true,
+        "headline": true,
+        "support": true,
+        "footer": true,
+        "allTextInsideCanvas": true,
+        "allStatusTextInsideSafeArea": true
+      },
+      "edgeErrors": [],
+      "safeErrors": []
+    },
+    {
+      "file": "broadcast/04-everything-in-one.png",
+      "width": 1080,
+      "height": 1350,
+      "checks": {
+        "fontLoaded": true,
+        "dimensions": true,
+        "headline": true,
+        "support": true,
+        "footer": true,
+        "allTextInsideCanvas": true,
+        "allStatusTextInsideSafeArea": true
+      },
+      "edgeErrors": [],
+      "safeErrors": []
+    },
+    {
+      "file": "broadcast/05-call-to-action.png",
+      "width": 1080,
+      "height": 1350,
+      "checks": {
+        "fontLoaded": true,
+        "dimensions": true,
+        "headline": true,
+        "support": true,
+        "footer": true,
+        "allTextInsideCanvas": true,
+        "allStatusTextInsideSafeArea": true,
+        "cta": true
+      },
+      "edgeErrors": [],
+      "safeErrors": []
+    },
+    {
+      "file": "status/01-the-problem.png",
+      "width": 1080,
+      "height": 1920,
+      "checks": {
+        "fontLoaded": true,
+        "dimensions": true,
+        "headline": true,
+        "support": true,
+        "footer": true,
+        "allTextInsideCanvas": true,
+        "allStatusTextInsideSafeArea": true
+      },
+      "edgeErrors": [],
+      "safeErrors": []
+    },
+    {
+      "file": "status/02-works-offline.png",
+      "width": 1080,
+      "height": 1920,
+      "checks": {
+        "fontLoaded": true,
+        "dimensions": true,
+        "headline": true,
+        "support": true,
+        "footer": true,
+        "allTextInsideCanvas": true,
+        "allStatusTextInsideSafeArea": true
+      },
+      "edgeErrors": [],
+      "safeErrors": []
+    },
+    {
+      "file": "status/03-stop-money-leaks.png",
+      "width": 1080,
+      "height": 1920,
+      "checks": {
+        "fontLoaded": true,
+        "dimensions": true,
+        "headline": true,
+        "support": true,
+        "footer": true,
+        "allTextInsideCanvas": true,
+        "allStatusTextInsideSafeArea": true
+      },
+      "edgeErrors": [],
+      "safeErrors": []
+    },
+    {
+      "file": "status/04-everything-in-one.png",
+      "width": 1080,
+      "height": 1920,
+      "checks": {
+        "fontLoaded": true,
+        "dimensions": true,
+        "headline": true,
+        "support": true,
+        "footer": true,
+        "allTextInsideCanvas": true,
+        "allStatusTextInsideSafeArea": true
+      },
+      "edgeErrors": [],
+      "safeErrors": []
+    },
+    {
+      "file": "status/05-call-to-action.png",
+      "width": 1080,
+      "height": 1920,
+      "checks": {
+        "fontLoaded": true,
+        "dimensions": true,
+        "headline": true,
+        "support": true,
+        "footer": true,
+        "allTextInsideCanvas": true,
+        "allStatusTextInsideSafeArea": true,
+        "cta": true
+      },
+      "edgeErrors": [],
+      "safeErrors": []
+    }
+  ]
+}
