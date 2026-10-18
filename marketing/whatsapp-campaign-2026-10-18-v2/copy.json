@@ -1,0 +1,37 @@
+[
+  {
+    "id": "01-ditch-the-paper",
+    "category": "CLINIC & HOSPITAL MANAGEMENT SYSTEM",
+    "headline": "Ditch the paper.",
+    "support": "Patients, visits, lab and billing — all in one system.",
+    "website": "true-doctor.online"
+  },
+  {
+    "id": "02-no-network",
+    "category": "CLINIC & HOSPITAL MANAGEMENT SYSTEM",
+    "headline": "No network? No problem.",
+    "support": "Works offline. Syncs when you're back.",
+    "website": "true-doctor.online"
+  },
+  {
+    "id": "03-stop-money-leaks",
+    "category": "CLINIC & HOSPITAL MANAGEMENT SYSTEM",
+    "headline": "Stop money leaks.",
+    "support": "Every visit billed. Every shilling counted.",
+    "website": "true-doctor.online"
+  },
+  {
+    "id": "04-every-department",
+    "category": "CLINIC & HOSPITAL MANAGEMENT SYSTEM",
+    "headline": "Every department. One system.",
+    "support": "Reception · Doctor · Lab · Pharmacy · Wards · Cashier",
+    "website": "true-doctor.online"
+  },
+  {
+    "id": "05-run-smarter",
+    "category": "CLINIC & HOSPITAL MANAGEMENT SYSTEM",
+    "headline": "Run your clinic smarter.",
+    "support": "Free 14-day trial. Live demo today.",
+    "website": "true-doctor.online"
+  }
+]

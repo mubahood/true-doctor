@@ -1,0 +1,212 @@
+{
+  "generatedAt": "2026-10-18T13:32:53.641Z",
+  "statusSafeArea": {
+    "y": 250,
+    "height": 1420
+  },
+  "renderer": "Chromium, embedded Inter, vector mockups",
+  "results": [
+    {
+      "file": "broadcast/01-ditch-the-paper.png",
+      "width": 1080,
+      "height": 1350,
+      "checks": {
+        "dimensions": true,
+        "font": true,
+        "headline": true,
+        "support": true,
+        "category": true,
+        "url": true,
+        "headlineWordCount": true,
+        "oneOrangeHeadlineWord": true,
+        "noPhoneNumber": true,
+        "textInsideCanvas": true,
+        "statusTextSafe": true
+      },
+      "edgeErrors": [],
+      "safeErrors": []
+    },
+    {
+      "file": "broadcast/02-no-network.png",
+      "width": 1080,
+      "height": 1350,
+      "checks": {
+        "dimensions": true,
+        "font": true,
+        "headline": true,
+        "support": true,
+        "category": true,
+        "url": true,
+        "headlineWordCount": true,
+        "oneOrangeHeadlineWord": true,
+        "noPhoneNumber": true,
+        "textInsideCanvas": true,
+        "statusTextSafe": true
+      },
+      "edgeErrors": [],
+      "safeErrors": []
+    },
+    {
+      "file": "broadcast/03-stop-money-leaks.png",
+      "width": 1080,
+      "height": 1350,
+      "checks": {
+        "dimensions": true,
+        "font": true,
+        "headline": true,
+        "support": true,
+        "category": true,
+        "url": true,
+        "headlineWordCount": true,
+        "oneOrangeHeadlineWord": true,
+        "noPhoneNumber": true,
+        "textInsideCanvas": true,
+        "statusTextSafe": true
+      },
+      "edgeErrors": [],
+      "safeErrors": []
+    },
+    {
+      "file": "broadcast/04-every-department.png",
+      "width": 1080,
+      "height": 1350,
+      "checks": {
+        "dimensions": true,
+        "font": true,
+        "headline": true,
+        "support": true,
+        "category": true,
+        "url": true,
+        "headlineWordCount": true,
+        "oneOrangeHeadlineWord": true,
+        "noPhoneNumber": true,
+        "textInsideCanvas": true,
+        "statusTextSafe": true
+      },
+      "edgeErrors": [],
+      "safeErrors": []
+    },
+    {
+      "file": "broadcast/05-run-smarter.png",
+      "width": 1080,
+      "height": 1350,
+      "checks": {
+        "dimensions": true,
+        "font": true,
+        "headline": true,
+        "support": true,
+        "category": true,
+        "url": true,
+        "headlineWordCount": true,
+        "oneOrangeHeadlineWord": true,
+        "noPhoneNumber": true,
+        "textInsideCanvas": true,
+        "statusTextSafe": true,
+        "cta": true
+      },
+      "edgeErrors": [],
+      "safeErrors": []
+    },
+    {
+      "file": "status/01-ditch-the-paper.png",
+      "width": 1080,
+      "height": 1920,
+      "checks": {
+        "dimensions": true,
+        "font": true,
+        "headline": true,
+        "support": true,
+        "category": true,
+        "url": true,
+        "headlineWordCount": true,
+        "oneOrangeHeadlineWord": true,
+        "noPhoneNumber": true,
+        "textInsideCanvas": true,
+        "statusTextSafe": true
+      },
+      "edgeErrors": [],
+      "safeErrors": []
+    },
+    {
+      "file": "status/02-no-network.png",
+      "width": 1080,
+      "height": 1920,
+      "checks": {
+        "dimensions": true,
+        "font": true,
+        "headline": true,
+        "support": true,
+        "category": true,
+        "url": true,
+        "headlineWordCount": true,
+        "oneOrangeHeadlineWord": true,
+        "noPhoneNumber": true,
+        "textInsideCanvas": true,
+        "statusTextSafe": true
+      },
+      "edgeErrors": [],
+      "safeErrors": []
+    },
+    {
+      "file": "status/03-stop-money-leaks.png",
+      "width": 1080,
+      "height": 1920,
+      "checks": {
+        "dimensions": true,
+        "font": true,
+        "headline": true,
+        "support": true,
+        "category": true,
+        "url": true,
+        "headlineWordCount": true,
+        "oneOrangeHeadlineWord": true,
+        "noPhoneNumber": true,
+        "textInsideCanvas": true,
+        "statusTextSafe": true
+      },
+      "edgeErrors": [],
+      "safeErrors": []
+    },
+    {
+      "file": "status/04-every-department.png",
+      "width": 1080,
+      "height": 1920,
+      "checks": {
+        "dimensions": true,
+        "font": true,
+        "headline": true,
+        "support": true,
+        "category": true,
+        "url": true,
+        "headlineWordCount": true,
+        "oneOrangeHeadlineWord": true,
+        "noPhoneNumber": true,
+        "textInsideCanvas": true,
+        "statusTextSafe": true
+      },
+      "edgeErrors": [],
+      "safeErrors": []
+    },
+    {
+      "file": "status/05-run-smarter.png",
+      "width": 1080,
+      "height": 1920,
+      "checks": {
+        "dimensions": true,
+        "font": true,
+        "headline": true,
+        "support": true,
+        "category": true,
+        "url": true,
+        "headlineWordCount": true,
+        "oneOrangeHeadlineWord": true,
+        "noPhoneNumber": true,
+        "textInsideCanvas": true,
+        "statusTextSafe": true,
+        "cta": true
+      },
+      "edgeErrors": [],
+      "safeErrors": []
+    }
+  ]
+}
