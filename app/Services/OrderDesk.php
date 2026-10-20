@@ -12,9 +12,12 @@ use App\Models\Order;
 use App\Models\RadiologyStudy;
 use App\Models\User;
 use App\Models\Visit;
+use App\Support\CurrentHospital;
+use App\Support\Practice\Practice;
 use App\Support\SampleCatalogue;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Exists;
 use RuntimeException;
 
 /**
@@ -57,25 +60,120 @@ final class OrderDesk
     }
 
     /**
-     * What placing each kind of work needs.
+     * The kinds of work this hospital is offered, in the order they are shown.
+     *
+     * A kind that needs a part of the system the practice does not use is
+     * left out: a dental clinic has no wards, so it is never offered an
+     * admission, and place() refuses one if it is asked anyway.
+     *
+     * @return list<OrderType>
+     */
+    public static function kinds(?Practice $practice = null): array
+    {
+        $practice ??= Practice::current();
+
+        return array_values(array_filter(OrderType::cases(), fn (OrderType $t) => self::offers($t, $practice)));
+    }
+
+    public static function offers(OrderType $type, ?Practice $practice = null): bool
+    {
+        $module = $type->module();
+
+        return $module === null || ($practice ?? Practice::current())->uses($module);
+    }
+
+    /**
+     * What the order form calls its fields. Plain statements, never questions;
+     * a dental clinic's work is a treatment and its clinician a dentist.
+     *
+     * @return array{kind:string,title:string,assignee:string}
+     */
+    public static function wording(?Practice $practice = null): array
+    {
+        $dental = ($practice ?? Practice::current())->sector->key === 'dental_clinic';
+
+        return [
+            'kind' => $dental ? 'Treatment' : 'Type',
+            'title' => 'Service',
+            'assignee' => $dental ? 'Dentist assigned' : 'Clinician assigned',
+        ];
+    }
+
+    /**
+     * The kinds offered and the words for the form, for the app's meta.
+     *
+     * @return array{kinds:list<array{value:string,label:string,icon:string,takes_title:bool}>,labels:array{kind:string,title:string,assignee:string}}
+     */
+    public static function form(?Practice $practice = null): array
+    {
+        $practice ??= Practice::current();
+
+        return [
+            'kinds' => array_map(fn (OrderType $t) => [
+                'value' => $t->value, 'label' => $t->label(), 'icon' => $t->icon(), 'takes_title' => $t->takesTitle(),
+            ], self::kinds($practice)),
+            'labels' => self::wording($practice),
+        ];
+    }
+
+    /**
+     * Who an order may be assigned to: the people who see patients here (every
+     * doctor, and anyone marked as also seeing patients), still active.
+     */
+    public static function assigneeRule(?int $hospitalId = null): Exists
+    {
+        $hospitalId ??= app(CurrentHospital::class)->id();
+
+        return Rule::exists('users', 'id')->where(fn ($q) => $q
+            ->where('hospital_id', $hospitalId)
+            ->where('is_active', true)
+            ->where(fn ($qq) => $qq->where('role', 'doctor')->orWhere('sees_patients', true)));
+    }
+
+    /** Whether a person may be given clinical work at this hospital. */
+    public static function isAssignable(int $userId, ?int $hospitalId): bool
+    {
+        return $hospitalId !== null && User::query()
+            ->whereKey($userId)
+            ->where('hospital_id', $hospitalId)
+            ->where('is_active', true)
+            ->clinicians()
+            ->exists();
+    }
+
+    /** Who a new order starts assigned to: the visit's own clinician, when there is one. */
+    public static function defaultAssignee(Visit $visit): ?int
+    {
+        $doctor = $visit->doctor_user_id;
+
+        return $doctor !== null && self::isAssignable((int) $doctor, $visit->hospital_id) ? (int) $doctor : null;
+    }
+
+    /**
+     * What placing each kind of work needs. Every id is checked inside this
+     * hospital: an `exists` rule without the filter would accept, and leak the
+     * existence of, another hospital's rows.
      *
      * @return array<string, list<mixed>>
      */
     public static function rules(OrderType $type): array
     {
+        $hospital = app(CurrentHospital::class)->id();
+        $inHospital = fn (string $table) => Rule::exists($table, 'id')->where('hospital_id', $hospital);
+
         return match ($type) {
-            OrderType::Lab => ['test_ids' => ['required', 'array', 'min:1'], 'test_ids.*' => ['integer', Rule::exists('lab_tests', 'id')], 'notes' => ['nullable', 'string', 'max:2000']],
-            OrderType::Imaging => ['study_ids' => ['required', 'array', 'min:1'], 'study_ids.*' => ['integer', Rule::exists('radiology_studies', 'id')], 'notes' => ['nullable', 'string', 'max:2000']],
+            OrderType::Lab => ['test_ids' => ['required', 'array', 'min:1'], 'test_ids.*' => ['integer', $inHospital('lab_tests')], 'notes' => ['nullable', 'string', 'max:2000']],
+            OrderType::Imaging => ['study_ids' => ['required', 'array', 'min:1'], 'study_ids.*' => ['integer', $inHospital('radiology_studies')], 'notes' => ['nullable', 'string', 'max:2000']],
             OrderType::Admission => [
                 'title' => ['required', 'string', 'max:160'],
-                'bed_id' => ['required', 'integer', 'exists:beds,id'],
-                'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
+                'bed_id' => ['required', 'integer', $inHospital('beds')],
+                'assigned_to' => ['nullable', 'integer', self::assigneeRule($hospital)],
                 'notes' => ['nullable', 'string', 'max:2000'],
             ],
             default => [
                 'title' => ['required', 'string', 'max:160'],
-                'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
-                'department_id' => ['nullable', 'integer', 'exists:departments,id'],
+                'assigned_to' => ['nullable', 'integer', self::assigneeRule($hospital)],
+                'department_id' => ['nullable', 'integer', $inHospital('departments')],
                 'notes' => ['nullable', 'string', 'max:2000'],
             ],
         };
@@ -84,7 +182,101 @@ final class OrderDesk
     /** @return array<string,string> */
     public static function messages(): array
     {
-        return ['bed_id.required' => 'Choose a bed for the patient.'];
+        return [
+            'bed_id.required' => 'Choose a bed for the patient.',
+            'title.required' => 'Say which service this is.',
+            'assigned_to.exists' => 'Choose someone who sees patients here.',
+        ];
+    }
+
+    /** The permission a kind of work asks for on top of visits.create, if any. */
+    private static function needs(OrderType $type): ?string
+    {
+        return match ($type) {
+            OrderType::Lab => 'lab.order',
+            OrderType::Imaging => 'radiology.order',
+            OrderType::Admission => 'ipd.manage',
+            default => null,
+        };
+    }
+
+    // ── Changing an order after it was placed ────────────────────────────
+
+    /**
+     * Whether this person may change this order now: they could have placed
+     * this kind of work, it is still open (neither completed nor cancelled),
+     * and so is its visit.
+     */
+    public static function canEdit(Order $order, ?User $user): bool
+    {
+        if ($user === null || ! self::canWrite($user) || ! $order->status->isOpen() || ! ($order->visit?->isOpen() ?? false)) {
+            return false;
+        }
+
+        $need = self::needs($order->type);
+
+        return $need === null || $user->can($need);
+    }
+
+    /**
+     * What a change may carry. Every field is optional; one that is absent is
+     * left as it is. Only a NEW assignee must see patients: sending back the
+     * person already on the order (a lab order's technician, say) is no change.
+     *
+     * @return array<string, list<mixed>>
+     */
+    public static function editRules(?Order $order = null): array
+    {
+        $hospital = app(CurrentHospital::class)->id();
+        $keep = $order?->assigned_to !== null ? (int) $order->assigned_to : null;
+
+        return [
+            'title' => ['sometimes', 'required', 'string', 'max:160'],
+            'notes' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'assigned_to' => ['sometimes', 'nullable', 'integer', function (string $attribute, mixed $value, \Closure $fail) use ($keep, $hospital): void {
+                if ($value === null || (int) $value === $keep) {
+                    return;
+                }
+                if (! self::isAssignable((int) $value, $hospital)) {
+                    $fail('Choose someone who sees patients here.');
+                }
+            }],
+            'service_id' => ['sometimes', 'nullable', 'integer', Rule::exists('services', 'id')->where('hospital_id', $hospital)->where('is_active', true)->withoutTrashed()],
+            // Plain decimals only: "1e3" passes `numeric` but not bcmath.
+            'quantity' => ['sometimes', 'nullable', 'decimal:0,2', 'gt:0'],
+            'unit_price' => ['sometimes', 'nullable', 'decimal:0,2', 'min:0'],
+            'lines' => ['sometimes', 'array', 'max:50'],
+            'lines.*.id' => ['required', 'integer'],
+            'lines.*.quantity' => ['required', 'decimal:0,2', 'gt:0'],
+            'lines.*.unit_price' => ['nullable', 'decimal:0,2', 'min:0'],
+        ];
+    }
+
+    /**
+     * Change an order: its service, notes, assigned clinician and, until the
+     * visit is invoiced, its charge. OrderService does the work and keeps the
+     * bill in step; this is the door, with the guards placing has.
+     *
+     * @param  array<string,mixed>  $data  validated against editRules()
+     *
+     * @throws AuthorizationException when this person could not place this kind of work
+     * @throws RuntimeException a sentence for the reader
+     */
+    public function edit(Order $order, array $data, User $by): Order
+    {
+        if (! self::canWrite($by)) {
+            throw new AuthorizationException;
+        }
+        $need = self::needs($order->type);
+        if ($need !== null && ! $by->can($need)) {
+            throw new AuthorizationException;
+        }
+
+        /** @var Visit $visit */
+        $visit = $order->visit()->firstOrFail();
+        self::assertOpen($visit);
+
+        return $this->orders->edit($order, $data, $by->id);
     }
 
     /**
@@ -99,12 +291,13 @@ final class OrderDesk
     {
         self::assertOpen($visit);
 
-        $need = match ($type) {
-            OrderType::Lab => 'lab.order',
-            OrderType::Imaging => 'radiology.order',
-            OrderType::Admission => 'ipd.manage',
-            default => null,
-        };
+        if (! self::offers($type)) {
+            throw new RuntimeException($type === OrderType::Admission
+                ? 'This practice does not admit patients, so an admission cannot be placed.'
+                : $type->label().' is not used at this practice, so it cannot be ordered.');
+        }
+
+        $need = self::needs($type);
         if ($need !== null && ! $by->can($need)) {
             throw new AuthorizationException;
         }

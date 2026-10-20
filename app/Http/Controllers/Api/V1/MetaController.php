@@ -96,6 +96,9 @@ class MetaController extends Controller
                 'two_factor_required' => app(\App\Services\TwoFactorService::class)->isRequired($user),
                 'recovery_codes_left' => app(\App\Services\TwoFactorService::class)->recoveryCodesLeft($user),
             ],
+            // The order form: the kinds of work this practice is offered (no
+            // admission without wards) and the words its fields use (docs/orders.md).
+            'orders' => \App\Services\OrderDesk::form(\App\Support\Practice\Practice::of($hospital)),
             // Who to ask for help, and the prefilled messages (docs/api/support.md).
             'support' => \App\Support\SupportContact::forHospital($hospital)->toArray(),
         ] + (Demo::isDemoUser($user) ? ['demo' => [

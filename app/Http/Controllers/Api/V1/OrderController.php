@@ -11,6 +11,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Service;
 use App\Models\StockItem;
+use App\Models\User;
 use App\Models\Visit;
 use App\Services\OrderDesk;
 use App\Services\OrderService;
@@ -44,7 +45,7 @@ class OrderController extends Controller
         $query = Order::where('visit_id', $visit->id)
             ->when(OrderType::tryFrom((string) $request->query('type')), fn ($q, $t) => $q->where('type', $t->value));
         $total = (clone $query)->count();
-        $orders = $query->with(['items', 'assignee', 'department', 'subject'])
+        $orders = $query->with(['items', 'assignee', 'department', 'subject', 'editor', 'visit'])
             ->latest('id')->limit(self::LIST_CAP)->get();
 
         $counts = Order::where('visit_id', $visit->id)->selectRaw('type, count(*) as n')->groupBy('type')->pluck('n', 'type');
@@ -62,7 +63,12 @@ class OrderController extends Controller
         $this->authorize('view', $visit);
         abort_unless(OrderDesk::canWrite($request->user()), 403);
 
-        $type = OrderType::from($request->validate(['type' => ['required', Rule::enum(OrderType::class)]])['type']);
+        // Only the kinds this practice is offered: a clinic with no wards is
+        // never offered an admission, and is refused one here.
+        $type = OrderType::from($request->validate(
+            ['type' => ['required', Rule::in(array_map(fn (OrderType $t) => $t->value, OrderDesk::kinds()))]],
+            ['type.in' => 'This practice does not offer that kind of order.'],
+        )['type']);
         $data = $request->validate(OrderDesk::rules($type), OrderDesk::messages());
 
         try {
@@ -82,6 +88,48 @@ class OrderController extends Controller
         return ApiResponse::success($this->one($order) + [
             // What cancelling would undo — money off the bill, goods back on the shelf.
             'reversal' => $this->orders->reversalPlan($order),
+        ]);
+    }
+
+    /**
+     * Change an order: its service (title), instructions, assigned clinician
+     * and, until the visit is invoiced, its charge. Every field is optional.
+     * Idempotent like every other write (Idempotency-Key).
+     */
+    public function update(Request $request, Order $order): JsonResponse
+    {
+        $this->authorize('view', $order->visit);
+        abort_unless(OrderDesk::canWrite($request->user()), 403);
+
+        $data = $request->validate(OrderDesk::editRules($order), OrderDesk::messages() + [
+            'lines.*.quantity.gt' => 'Quantity must be more than zero.',
+            'quantity.gt' => 'Quantity must be more than zero.',
+        ]);
+
+        try {
+            $this->desk->edit($order, $data, $request->user());
+        } catch (RuntimeException $e) {
+            return ApiResponse::error(ApiErrorCode::ValidationFailed, $e->getMessage(), 422);
+        }
+
+        return ApiResponse::success($this->one($order), 'Order updated.');
+    }
+
+    /** Who an order can be assigned to: the people who see patients here. */
+    public function assignees(Request $request): JsonResponse
+    {
+        abort_unless(OrderDesk::canWrite($request->user()), 403);
+
+        $q = trim((string) $request->query('q', ''));
+
+        $rows = User::currentHospital()->clinicians()->where('is_active', true)
+            ->when($q !== '', fn ($x) => $x->where('name', 'like', "%{$q}%"))
+            ->orderBy('name')->limit(OrderDesk::PICK_LIMIT)->get(['id', 'name', 'role'])
+            ->map(fn (User $u) => ['id' => (int) $u->id, 'name' => (string) $u->name, 'role' => (string) $u->role]);
+
+        return ApiResponse::success([
+            'label' => OrderDesk::wording()['assignee'],
+            'people' => $rows->values(),
         ]);
     }
 
@@ -224,6 +272,6 @@ class OrderController extends Controller
     /** @return array<string,mixed> */
     private function one(Order $order): array
     {
-        return (new OrderResource($order->fresh(['items', 'assignee', 'department', 'subject'])))->resolve();
+        return (new OrderResource($order->fresh(['items', 'assignee', 'department', 'subject', 'editor', 'visit'])))->resolve();
     }
 }

@@ -140,6 +140,12 @@ When you press **Done & bill**, True-Doctor asks you to confirm the amount, then
 
 If the patient has no open visit, you see "Open a visit for this patient first: the procedure is billed on it." Open a visit (see [Visits and consultation](05-visits-and-consultation.md)) and press **Done & bill** again. The charge then goes through the normal billing flow at the cashier (see [Billing and payments](07-billing-and-payments.md)).
 
+The procedure also appears as an order in the visit's **Orders** section. You can press **Edit order** on it to change the **Dentist assigned** or the instructions. Its charge stays the one the plan put there; to correct the quantity or a price within its range, press the pencil beside the line under **What it used**.
+
+### Orders in a dental clinic
+
+In a dental clinic the order form says **Treatment** for the kind of work, **Service** for what it is, and **Dentist assigned** for who does it. The dentist box lists only the dentists and other staff marked as seeing patients. **Admission** is not offered, because a dental clinic has no wards; the same goes for **Lab test** and **Imaging** unless your clinic has turned the laboratory or imaging on in its settings. How to place and change an order is in [Visits and consultation](05-visits-and-consultation.md).
+
 ### Giving the patient a quote
 
 Once the plan has something on it, press **Quote** on the **Treatment plan** card. A PDF opens in a new tab listing what is still to do (planned, accepted and in progress) with the total. Print it, or press **Send to patient** to send the patient a secure link to the quote (see [Patients](03-patients.md) for patient links).

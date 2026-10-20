@@ -55,6 +55,28 @@ enum OrderType: string
         };
     }
 
+    /**
+     * The switchable part of the system this kind of work needs, or null when
+     * every practice can do it. A dental clinic with no wards cannot admit, so
+     * it is never offered an admission (OrderDesk::kinds).
+     */
+    public function module(): ?string
+    {
+        return match ($this) {
+            self::Admission => 'inpatient',
+            self::Lab => 'laboratory',
+            self::Imaging => 'radiology',
+            self::Pharmacy => 'pharmacy',
+            default => null,
+        };
+    }
+
+    /** Whether the order is named in words (a title) rather than by catalogue picks. */
+    public function takesTitle(): bool
+    {
+        return $this !== self::Lab && $this !== self::Imaging;
+    }
+
     /** @return array<string, string> value => label, for a <select> */
     public static function options(): array
     {

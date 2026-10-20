@@ -43,7 +43,9 @@ class VisitOrdersPanelTest extends TestCase
         $this->hospital = Hospital::factory()->create();
         app(CurrentHospital::class)->set($this->hospital->id);
 
-        $this->doctor = User::factory()->create(['hospital_id' => $this->hospital->id, 'role' => 'hospital_admin']);
+        // An administrator who also sees patients: orders are assigned only to
+        // people who see patients, and this one is the visit's clinician.
+        $this->doctor = User::factory()->create(['hospital_id' => $this->hospital->id, 'role' => 'hospital_admin', 'sees_patients' => true]);
         $this->doctor->syncSpatieRole();
         $this->actingAs($this->doctor);
 
@@ -130,7 +132,7 @@ class VisitOrdersPanelTest extends TestCase
         $this->panel()
             ->call('openAddFromHeader')
             ->assertSet('showAdd', true)
-            ->assertSee('What kind of work?');
+            ->assertSeeHtml('tb-kind-grid');
     }
 
     public function test_a_plain_order_is_placed_with_what_it_is(): void
@@ -186,13 +188,13 @@ class VisitOrdersPanelTest extends TestCase
             ->assertSet('notes', '')
             ->assertSee('Anything else for this patient')
             ->assertSee('Add another')
-            ->assertDontSee('What kind of work?');   // the form is gone, not merely hidden
+            ->assertDontSeeHtml('tb-kind-grid');   // the form is gone, not merely hidden
     }
 
     /** "Add another" starts clean, on the same kind, still assigned to me. */
     public function test_add_another_reopens_a_clean_form_on_the_same_kind(): void
     {
-        $someone = User::factory()->create(['hospital_id' => $this->hospital->id, 'role' => 'nurse']);
+        $someone = User::factory()->create(['hospital_id' => $this->hospital->id, 'role' => 'doctor']);
 
         $panel = $this->panel()
             ->call('openAdd')
@@ -209,7 +211,7 @@ class VisitOrdersPanelTest extends TestCase
             ->assertSet('type', OrderType::Procedure->value, 'the kind was thrown away')
             ->assertSet('title', '')
             ->assertSet('assigned_to', $this->doctor->id, 'the last pick survived')
-            ->assertSee('What kind of work?');
+            ->assertSeeHtml('tb-kind-grid');
 
         $this->assertGreaterThan($before, $panel->get('formNonce'), 'the pickers were not remounted');
     }
@@ -238,7 +240,7 @@ class VisitOrdersPanelTest extends TestCase
             ->assertSet('placed', 'Order placed.')
             ->call('openAdd')
             ->assertSet('placed', null)
-            ->assertSee('What kind of work?');
+            ->assertSeeHtml('tb-kind-grid');
     }
 
     /** A refused order keeps the form, and what was typed into it. */
@@ -252,7 +254,7 @@ class VisitOrdersPanelTest extends TestCase
             ->assertHasErrors('title')
             ->assertSet('placed', null)
             ->assertSet('showAdd', true)
-            ->assertSee('What kind of work?');
+            ->assertSeeHtml('tb-kind-grid');
     }
 
     public function test_a_lab_order_asks_which_tests_and_bills_them(): void
@@ -550,8 +552,8 @@ class VisitOrdersPanelTest extends TestCase
             ->set('type', OrderType::Pharmacy->value)
             ->assertDontSee('Search the pharmacy')
             ->assertDontSee('Quantity')
-            ->assertSee('What is it?')
-            ->assertSee('Assign to')
+            ->assertSee('Service')
+            ->assertSee('Clinician assigned')
             ->assertSee('Dispense prescription')      // its own phrasings
             ->assertSee('Place order');
     }

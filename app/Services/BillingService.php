@@ -120,12 +120,14 @@ class BillingService
     /**
      * Correct a line that is already on the bill.
      *
-     * Only the quantity and the note: name and unit price are SNAPSHOTS taken
+     * The quantity and the note: name and unit price are SNAPSHOTS taken
      * when the line was raised, and a catalogue that changes its prices must
-     * not change what a patient was already charged. Adjusting the stock that
-     * a quantity change implies is OrderService's job — this is the money.
+     * not change what a patient was already charged. The one exception is a
+     * unit price the caller has already checked against a service's range
+     * (OrderService::allowedPrice). Adjusting the stock that a quantity change
+     * implies is OrderService's job; this is the money.
      */
-    public function repriceItem(OrderItem $line, string $quantity, ?string $notes, ?int $by = null): OrderItem
+    public function repriceItem(OrderItem $line, string $quantity, ?string $notes, ?int $by = null, ?string $unitPrice = null): OrderItem
     {
         $qty = \App\Support\HospitalSettings::decimal($quantity, 2);
 
@@ -133,9 +135,12 @@ class BillingService
             throw new RuntimeException('Quantity must be greater than zero.');
         }
 
+        $unit = $unitPrice !== null ? \App\Support\HospitalSettings::decimal($unitPrice, 2) : (string) $line->unit_price;
+
         $line->update([
             'quantity' => $qty,
-            'line_total' => bcmul((string) $line->unit_price, $qty, 2),
+            'unit_price' => $unit,
+            'line_total' => bcmul($unit, $qty, 2),
             'notes' => ($notes ?? '') === '' ? null : $notes,
             'updated_by' => $by,
         ]);

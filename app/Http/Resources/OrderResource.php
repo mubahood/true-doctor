@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use App\Enums\OrderItemStatus;
 use App\Enums\OrderStatus;
 use App\Models\Admission;
+use App\Services\OrderDesk;
 use App\Services\OrderService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -37,6 +38,7 @@ class OrderResource extends JsonResource
             ))),
             'can_cancel' => $this->status->canTransitionTo(OrderStatus::Cancelled),
             'assignee' => $this->whenLoaded('assignee', fn () => $this->assignee?->name),
+            'assigned_to' => $this->assigned_to !== null ? (int) $this->assigned_to : null,
             'department' => $this->whenLoaded('department', fn () => $this->department?->name),
             'notes' => $this->notes,
             'report' => $this->report,
@@ -52,10 +54,15 @@ class OrderResource extends JsonResource
                 'status' => $it->status->value,
                 'notes' => $it->notes,
             ])->values()),
-            'total' => number_format((float) $live->sum(fn ($it) => (float) $it->line_total), 2, '.', ''),
+            'total' => $live->reduce(fn (string $sum, $it) => bcadd($sum, (string) $it->line_total, 2), '0.00'),
             // The same rules the dialog shows rather than lets you discover.
             'completable' => $this->when($this->relationLoaded('items'), fn () => $order->hasEvidence()),
             'editable' => $this->when($this->relationLoaded('items'), fn () => app(OrderService::class)->itemsEditable($order)),
+            // Whether this reader may change the order itself (PATCH /orders/{uuid}).
+            'can_edit' => OrderDesk::canEdit($order, $request->user()),
+            'takes_title' => $this->type->takesTitle(),
+            'edited_by' => $this->whenLoaded('editor', fn () => $this->editor?->name),
+            'edited_at' => $this->edited_at?->toIso8601String(),
             'stay' => $stay === null ? null : ['uuid' => $stay->uuid, 'status' => $stay->status->value, 'bed' => $stay->bed?->name],
             'created_at' => $this->created_at?->toIso8601String(),
             'started_at' => $this->started_at?->toIso8601String(),

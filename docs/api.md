@@ -71,6 +71,10 @@ permission:
   `GET /api/v1/stock-items/{uuid}` — includes `is_low_stock` / `is_expired`.
 - **Lab orders** (`lab.view`): `GET /api/v1/lab-orders` (`?status=`), `GET {uuid}` — includes each
   test's result value + flag.
+- **Orders on a visit** (`visits.view` to read, `visits.create`/`visits.manage` to write): place,
+  move, cancel, report, lines, and `PATCH /api/v1/orders/{uuid}` to change one after it is placed;
+  `GET /api/v1/orders/assignees` lists who it can be assigned to. Rules and fields: `docs/orders.md`
+  ("Changing an order"). `meta.orders` carries the kinds this practice is offered and the form's labels.
 - **Invoices** (`billing.view`): `GET /api/v1/invoices` (`?status=`), `GET {uuid}` — full money
   breakdown + line items.
 

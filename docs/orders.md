@@ -379,6 +379,54 @@ order drift afterwards would silently desync the two.
 (invoices, claims); within one visit the thing is the bill, and it reads
 naturally next to Payments.
 
+### Kinds offered, words, and who does the work (2026-10-20)
+
+- **Kinds follow the practice.** `OrderType::module()` names the switchable
+  module a kind needs (admission: inpatient, lab: laboratory, imaging:
+  radiology, pharmacy: pharmacy). `OrderDesk::kinds()` offers only the kinds
+  the practice uses; `OrderDesk::place()` refuses any other, and the API's
+  `store` validates `type` against the same list. Internal paths that place
+  orders themselves (an X-ray at the chair, a dental plan item, the lab
+  service) are unaffected. The filter chips show the offered kinds plus any
+  kind already on the visit.
+- **Words.** `OrderDesk::wording()`: the kind field is "Treatment" in a
+  dental clinic and "Type" elsewhere; the title field is "Service"; the
+  assignee is "Dentist assigned" or "Clinician assigned". No question
+  headings in the form or the dialog.
+- **Assignee.** Only active staff of this hospital who see patients
+  (`role = doctor` or `sees_patients`), through `OrderDesk::assigneeRule()`
+  on place and edit, the `clinicians` picker resource, and `GET
+  /orders/assignees` for the app. A new order starts with the visit's doctor
+  when that person may be assigned.
+
+### Changing an order
+
+`OrderDesk::edit()` (door: `visits.create`/`visits.manage` plus the kind's
+own permission, open visit) calls `OrderService::edit()`, which locks the
+order and:
+
+| Field | Rule |
+|---|---|
+| `title` (Service) | Kinds named in words only; lab and imaging are named by their tests |
+| `notes`, `assigned_to` | Any time the order is open, invoiced or not |
+| `service_id`, `quantity`, `unit_price` | The order's one charge: swapped by removing the old line and adding the new one (`removeItem` / `addServiceItem`), so stock, bill and trail follow. Refused on an order with a `subject` (lab, X-ray, dental plan, stay), on more than one line, on a product line, and after invoicing |
+| `lines[]` (`id`, `quantity`, `unit_price`) | Each through `updateItem`; a price moves only inside a ranged service's range (`allowedPrice`), never on a fixed price or a product |
+
+A completed or cancelled order is refused with a sentence. The title follows
+a swapped service unless the same change wrote a new one. Every write lands on
+`orders` / `order_items`, both in `AuditTrail::MODELS`, so the log has who,
+before and after; `orders.edited_by` / `edited_at` let the dialog say
+"changed by".
+
+API: `PATCH /api/v1/orders/{uuid}` with any of `title`, `notes`,
+`assigned_to`, `service_id`, `quantity`, `unit_price`, `lines[]`. Answers the
+order (`can_edit`, `takes_title`, `assigned_to`, `edited_by`, `edited_at`
+added to it) and "Order updated."; 403 for a reader who could not place the
+kind, 404 across hospitals, 422 with the reason otherwise. Idempotent through
+`Idempotency-Key` like every write. `GET /api/v1/orders/assignees?q=` lists
+who can be assigned with the practice's label; `meta.orders` carries the
+offered kinds and the labels.
+
 ## Order of work
 
 Each stage leaves the suite green and could ship on its own.

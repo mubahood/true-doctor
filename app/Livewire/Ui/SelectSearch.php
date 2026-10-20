@@ -47,7 +47,7 @@ use Livewire\Component;
 class SelectSearch extends Component
 {
     /** Whitelisted resources — anything else is refused at mount. */
-    public const RESOURCES = ['patients', 'visits', 'doctors', 'staff', 'invoices-open', 'beds-available', 'departments', 'rooms', 'providers', 'stock-items', 'services', 'wards'];
+    public const RESOURCES = ['patients', 'visits', 'doctors', 'clinicians', 'staff', 'invoices-open', 'beds-available', 'departments', 'rooms', 'providers', 'stock-items', 'services', 'wards'];
 
     private const RESULT_LIMIT = 20;
 
@@ -209,7 +209,7 @@ class SelectSearch extends Component
         }
 
         $ids = match ($this->resource) {
-            'staff', 'doctors' => $this->mePlusRecentColleagues(),
+            'staff', 'doctors', 'clinicians' => $this->mePlusRecentColleagues(),
             'departments' => $this->busiest('department_id'),
             'stock-items' => $this->mostDispensed(),
             'services' => $this->mostCharged(),
@@ -240,10 +240,15 @@ class SelectSearch extends Component
     {
         $me = Auth::id();
         $mine = $this->resource === 'doctors' && Auth::user()?->role !== 'doctor' ? [] : array_filter([$me]);
+        // Work is given to people who see patients: an administrator who does
+        // not is not suggested for it.
+        if ($this->resource === 'clinicians' && ! Auth::user()?->seesPatients()) {
+            $mine = [];
+        }
 
         $others = User::currentHospital()
             ->where('is_active', true)
-            ->when($this->resource === 'doctors', fn ($q) => $q->clinicians())
+            ->when(in_array($this->resource, ['doctors', 'clinicians'], true), fn ($q) => $q->clinicians())
             ->when($this->scope !== null, fn ($q) => $q->whereHas('staffProfile',
                 fn ($p) => $p->where('department_id', $this->scope)))
             ->when($me !== null, fn ($q) => $q->whereKeyNot($me))
@@ -354,6 +359,22 @@ class SelectSearch extends Component
                 ->clinicians()
                 ->when($this->scope !== null && ! $this->scopeIsEmpty(), fn ($q) => $q->whereHas('staffProfile',
                     fn ($p) => $p->where('department_id', $this->scope)))
+                ->when($pinned, fn ($q) => $q->whereKey($onlyId))
+                ->when($searching, fn ($q) => $q->where(fn ($qq) => $qq
+                    ->where('name', 'like', $like)
+                    ->orWhere('email', 'like', $like)))
+                ->orderBy('name')
+                ->limit($limit)
+                ->get(['id', 'name', 'email'])
+                ->map(fn (User $u) => ['id' => (int) $u->id, 'label' => (string) $u->name, 'meta' => (string) $u->email])
+                ->values()->all(),
+
+            // Who clinical work is given to (an order's assigned clinician):
+            // the people who see patients, still working here. The same rule
+            // OrderDesk::assigneeRule validates on the server.
+            'clinicians' => User::currentHospital()
+                ->clinicians()
+                ->where('is_active', true)
                 ->when($pinned, fn ($q) => $q->whereKey($onlyId))
                 ->when($searching, fn ($q) => $q->where(fn ($qq) => $qq
                     ->where('name', 'like', $like)
