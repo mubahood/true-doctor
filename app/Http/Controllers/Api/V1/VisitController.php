@@ -19,8 +19,11 @@ use App\Http\Requests\VisitVitalsRequest;
 use App\Http\Resources\VisitResource;
 use App\Models\Patient;
 use App\Models\Visit;
+use App\Services\DentalNotesService;
 use App\Services\VisitService;
 use App\Support\ApiResponse;
+use App\Support\HospitalSettings;
+use App\Support\Practice\VisitForm;
 use App\Support\VisitPhrases;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -86,6 +89,7 @@ class VisitController extends Controller
             $request->user()->id,
         );
         $visit = $this->service->recordWhatWasTaken($visit, $data, $request->user()->id);
+        $this->writeDentalNotes($request, $visit, $data);
 
         return ApiResponse::success($this->one($visit), 'Visit opened — '.$visit->visit_no.'.', 201);
     }
@@ -111,6 +115,7 @@ class VisitController extends Controller
             return ApiResponse::error(ApiErrorCode::PlanLimit, $e->getMessage(), 403, null, null, false);
         }
         $visit = $this->service->recordWhatWasTaken($visit, $data, $request->user()->id);
+        $this->writeDentalNotes($request, $visit, $data);
 
         return ApiResponse::success($this->one($visit), 'New patient registered and visit opened — '.$visit->visit_no.'.', 201);
     }
@@ -182,7 +187,34 @@ class VisitController extends Controller
     {
         $this->authorize('create', Visit::class);
 
-        return ApiResponse::success(['reason' => VisitPhrases::reasons()] + VisitPhrases::desk());
+        // A dental clinic's form has no suggestions (VisitForm::suggests), and
+        // `form` says what the dialog asks: the vitals, a reason or not, the
+        // dental History and Oral examination.
+        $form = VisitForm::current();
+        $phrases = $form->suggests()
+            ? ['reason' => VisitPhrases::reasons()] + VisitPhrases::desk()
+            : ['reason' => [], 'complaints' => [], 'diagnosis' => []];
+
+        return ApiResponse::success($phrases + ['form' => $form->toArray()]);
+    }
+
+    /**
+     * A dental clinic's History and Oral examination, sent with the new
+     * visit: saved as its first notes for someone who writes clinical notes,
+     * on a visit written as simple notes. Anyone else's are not saved.
+     *
+     * @param  array<string,mixed>  $data
+     */
+    private function writeDentalNotes(Request $request, Visit $visit, array $data): void
+    {
+        $notes = $data['dental_notes'] ?? null;
+        $user = $request->user();
+        if (! is_array($notes) || $notes === [] || ! $user instanceof \App\Models\User || ! $user->can('diagnose', $visit)
+            || ! DentalNotesService::appliesTo($visit, app(HospitalSettings::class)->hospital())) {
+            return;
+        }
+
+        app(DentalNotesService::class)->save($visit, $notes, $user, null, null, 'dental_notes.');
     }
 
     /**

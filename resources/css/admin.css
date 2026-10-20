@@ -2516,3 +2516,6 @@ body.has-brand::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z-i
 .tb-review-form{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;}
 .tb-review-form .tb-form-group{margin-bottom:0;}
 @media (max-width:600px){.tb-access-extras-list{grid-template-columns:1fr;}}
+
+/* A dental visit's simple notes: the dialog form spans the modal body and foot (docs/dental.md, "Simple notes"). */
+.dn-form{display:contents;}

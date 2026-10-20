@@ -148,7 +148,12 @@
             @endcan
             @can('viewClinical', $visit)
               <div class="tb-vs-sub">
-                @livewire('visits.panels.clinical', ['visitId' => $visit->id, 'lazy' => false], key('vs-clinical-'.$visit->id))
+                {{-- A dental visit written as simple notes shows them in place of the general note. --}}
+                @if($visit->patient && \App\Services\DentalNotesService::appliesTo($visit, app(\App\Support\HospitalSettings::class)->hospital()) && \App\Services\DentalCaseSheetService::canRead(auth()->user()))
+                  @livewire('visits.panels.dental-notes', ['visitId' => $visit->id], key('vs-dental-notes-'.$visit->id))
+                @else
+                  @livewire('visits.panels.clinical', ['visitId' => $visit->id, 'lazy' => false], key('vs-clinical-'.$visit->id))
+                @endif
               </div>
             @else
               <div class="tb-vs-sub"><x-ui.no-access title="Clinical notes" icon="fa-notes-medical" /></div>
@@ -271,7 +276,7 @@
   {{-- ── Calling it off ────────────────────────────────────────────────
        One decision, always available while the visit is open, always with a
        reason. Nothing already recorded on the visit is touched. --}}
-  <x-ui.modal size="sm" show="showCancel" title="Cancel this visit?">
+  <x-ui.modal size="sm" show="showCancel" title="Cancel this visit">
     @if($showCancel && $visit)
       <form wire:submit="cancelVisit" style="display:contents;">
         <div class="tb-modal-body">
@@ -280,7 +285,7 @@
             Everything already recorded on it stays; its open orders keep their charges
             until each one is cancelled in turn.
           </p>
-          <x-ui.field label="Why is it being called off?" for="vs-cancel-why" name="cancelNote" required>
+          <x-ui.field label="Reason for cancelling" for="vs-cancel-why" name="cancelNote" required>
             <textarea id="vs-cancel-why" class="tb-textarea" rows="2" maxlength="255"
                       wire:model="cancelNote"
                       placeholder="Patient left · opened in error · duplicate"></textarea>
@@ -367,7 +372,7 @@
           @error('stageStatus')<div class="tb-field-error" role="alert">{{ $message }}</div>@enderror
           @error('stageStage')<div class="tb-field-error" role="alert">{{ $message }}</div>@enderror
 
-          <x-ui.field label="Why is it being changed out of order?" for="vs-state-why"
+          <x-ui.field label="Reason for the change" for="vs-state-why"
                       name="stageNote" required>
             <textarea id="vs-state-why" class="tb-textarea" rows="2" maxlength="255"
                       wire:model="stageNote"

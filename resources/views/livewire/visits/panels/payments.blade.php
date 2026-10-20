@@ -103,7 +103,7 @@
           {{-- The ways money is taken at a counter. A gateway is not one of
                them: it settles itself and is recorded once verified. --}}
           <fieldset class="tb-kinds">
-            <legend class="tb-label">How is it being paid?</legend>
+            <legend class="tb-label">Payment method</legend>
             <div class="tb-kind-grid">
               @foreach($this->methods as $case)
                 <label @class(['tb-kind', 'is-on' => $method === $case->value]) wire:key="pm-{{ $case->value }}">
@@ -128,7 +128,7 @@
             <x-ui.field label="Card" for="pay-card" name="patient_card_id" required
                         :hint="$this->cardBalance !== null ? \App\Support\HospitalSettings::money($this->cardBalance).' on the card' : null">
               @if($this->cards->isEmpty())
-                <p class="tb-small muted">This patient has no prepaid card. Issue one from their record first.</p>
+                <p class="tb-small muted">This patient has no prepaid card. Issue one from the patient's record first.</p>
               @else
                 <select id="pay-card" class="tb-select" wire:model.live="patient_card_id">
                   <option value="">— choose a card —</option>

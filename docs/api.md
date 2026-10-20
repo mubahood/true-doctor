@@ -55,7 +55,9 @@ envelope).
   machine.
 - **Visits** (`VisitService` + policy): `GET /api/v1/visits` (status filter),
   `POST` (open — returns the generated `visit_no`), `GET {uuid}`, `POST {uuid}/vitals`
-  (BMI computed), `POST {uuid}/clinical` (diagnosis — `diagnose` ability), `POST {uuid}/transition`.
+  (BMI computed; a reading not sent is left as it is), `POST {uuid}/clinical` (diagnosis — `diagnose` ability), `POST {uuid}/transition`.
+  Each visit carries `vital_signs`, the readings the hospital records (`VisitForm`); a dental
+  clinic fills `reason` from the complaint and takes `dental_notes` (docs/api/dental.md, "Simple notes").
   Each ability is authorized exactly as in the panel (nurse can take vitals but not diagnose).
 
 Pattern for every resource: thin controller → shared Service + Policy → JSON Resource →

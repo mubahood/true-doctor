@@ -9,7 +9,7 @@ Dental work is switched on by your practice type. A dental clinic has it from th
 The chart appears in two places, and it is the same chart in both.
 
 - **On the patient record:** open the patient and choose the **Dental** tab. It sits next to the clinical history.
-- **On a visit:** open the visit. In a dental clinic, and on a visit in a dental or orthodontic department, the chart is part of the dental case sheet, under **Examination** (see below). In a hospital that also does dentistry, any other visit shows the chart by itself for a patient whose teeth are already charted; otherwise you see a **Dental chart** card with an **Open the chart** button; press it when you need it.
+- **On a visit:** open the visit. In a dental clinic, and on a visit in a dental or orthodontic department, the chart is part of the dentist's notes: below **Dental notes**, or under **Examination** in the detailed case sheet (see below). In a hospital that also does dentistry, any other visit shows the chart by itself for a patient whose teeth are already charted; otherwise you see a **Dental chart** card with an **Open the chart** button; press it when you need it.
 
 Work on the visit page when the patient is in the chair. Findings recorded there are linked to that visit, and finished procedures are billed on it.
 
@@ -23,16 +23,43 @@ The **Dental** tab shows on the patient record when your clinic is a dental clin
 | Record findings and plan procedures | Doctor, Hospital Admin |
 | Accept, start, mark done or cancel a procedure | Doctor, Nurse, Hospital Admin |
 | Set the next check-up | Doctor, Nurse, Hospital Admin |
-| Write the case sheet, diagnose, record an X-ray | Doctor, Hospital Admin |
-| Read the case sheet | Doctor, Nurse, Hospital Admin |
+| Write the dental notes or the case sheet, diagnose, record an X-ray | Doctor, Hospital Admin |
+| Read the dental notes or the case sheet | Doctor, Nurse, Hospital Admin |
 | See the financial history | Doctor, Hospital Admin |
 | Book the review appointment | Doctor, Hospital Admin |
 
 A dentist signs in with the Doctor role. Other roles do not see the dental chart. The front desk sees that a dental consultation took place, but not the dentist's notes.
 
+## Dental notes
+
+A dental clinic writes each visit as **Dental notes**: plain text, no lists to tap through. This is the usual choice for a dental clinic. A hospital that also does dentistry can choose it too, and a dental clinic can choose the **Detailed case sheet** instead (below), under **Settings**, **Your practice**, **Visit form**.
+
+On the visit page, **Dental notes** shows, in this order:
+
+1. **Presenting complaint**: what the patient came with, in their own words. It is the same complaint as on the new visit form.
+2. **History**: **Medical history**, **Family history**, **Dental history** and **Surgical history**.
+3. **Oral examination**: **Hard tissues (teeth)**, **Soft tissues (gums)**, **X-ray** and **Diagnosis**.
+
+Below the notes come the dental chart, **Treatment done today**, the treatment plan and **Follow-up** with the review appointment.
+
+1. Press **Write notes** (or **Edit notes** once something is saved).
+2. Type in the boxes you need. Leave the others empty.
+3. Press **Save notes**.
+
+- The **Medical history**, **Family history** and **Surgical history** carry forward. On a new visit they start with what was saved last time, marked **History from the last visit. Not saved on this visit yet.** Read them with the patient, change what is no longer right, and press **Save notes**.
+- The **Diagnosis** is also the visit's diagnosis, so the visits list, coding and the reports show it.
+- Every save is kept as a new version, so the record shows what was written and when. If a colleague saved the notes while you had them open, True-Doctor tells you and asks you to open them again.
+- The first person who can diagnose and saves notes on a visit with no doctor becomes the visit's doctor.
+
+### The printed dental notes
+
+Press **Visit report** on the notes, or on the visits list. The report prints the **Presenting complaint**, **History** with its four headings, the blood pressure, **Oral examination** with its four headings, the dental chart and the **Treatment done**. A heading with nothing written under it is left out.
+
+A visit written before your clinic changed its choice keeps the way it was written: a visit with a case sheet still shows and prints the case sheet, and a visit with only a reason prints the reason as its presenting complaint.
+
 ## The dental case sheet
 
-In a dental clinic, and on a visit in a dental or orthodontic department, the visit page shows the **Dental consultation** in place of the general clinical notes. It follows the case sheet you would write by hand, top to bottom, in the order you work:
+A clinic that chose the **Detailed case sheet** sees the **Dental consultation** on a dental visit in place of the general clinical notes. It follows the case sheet you would write by hand, top to bottom, in the order you work:
 
 1. **History**: presenting complaint, dental history, medical history, surgical history and financial history.
 2. **Examination**: extra-oral, intra-oral soft tissues, investigations, and the dental chart as the hard tissues.

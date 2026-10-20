@@ -46,7 +46,7 @@
         $ctx = $this->context;
         $phrases = $this->phrases;
         $textFields = [
-          ['complaints', 'Complaints', 'cl-complaints', 2, 'What the patient says is wrong, in their words'],
+          ['complaints', 'Complaints', 'cl-complaints', 2, 'In the patient\'s own words'],
           ['diagnosis', 'Diagnosis', 'cl-diagnosis', 3, 'What you think it is'],
           ['doctor_remarks', "Doctor's remarks", 'cl-remarks', 2, 'The plan, and anything the next person needs'],
         ];

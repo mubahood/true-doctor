@@ -18,6 +18,7 @@ use App\Models\Ward;
 use App\Services\Finance\ChartOfAccounts;
 use App\Support\HospitalSettings;
 use App\Support\Practice\Practice;
+use App\Support\Practice\VisitForm;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -85,6 +86,32 @@ class PracticeService
         $this->chart->forget();
 
         return Practice::of($hospital);
+    }
+
+    /**
+     * How this hospital writes a visit down (App\Support\Practice\VisitForm):
+     * the vital signs it records and how a dental visit is written. Null
+     * follows the practice; anything else is the hospital's own choice. Like
+     * choosing a practice, it changes what is asked, never what was recorded.
+     *
+     * @param  list<string>|null  $vitals
+     */
+    public function chooseVisitForm(Hospital $hospital, ?array $vitals, ?string $dentalNotes): VisitForm
+    {
+        if ($dentalNotes !== null && ! array_key_exists($dentalNotes, VisitForm::DENTAL_NOTES)) {
+            throw new \DomainException('Choose simple notes or the detailed case sheet.');
+        }
+
+        $settings = $hospital->settings ?? [];
+        $settings['clinical'] = [
+            'vitals' => $vitals === null ? null : VisitForm::validVitals($vitals),
+            'dental_notes' => $dentalNotes,
+        ];
+
+        $hospital->settings = $settings;
+        $hospital->save();
+
+        return VisitForm::of($hospital);
     }
 
     /**

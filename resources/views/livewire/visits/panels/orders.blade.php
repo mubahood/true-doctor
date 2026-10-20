@@ -86,7 +86,7 @@
       <div class="tb-modal-body tb-done" x-init="delete $root.dataset.tdDirty">
         <div class="tb-done-mark"><i class="fas fa-check" aria-hidden="true"></i></div>
         <p class="tb-done-head">{{ $placed }}</p>
-        <p class="tb-done-sub">Anything else for this patient while you are here?</p>
+        <p class="tb-done-sub">Add anything else for this patient while you are here.</p>
       </div>
       <div class="tb-modal-foot">
         <button type="button" class="btn-tb btn-tb-ghost" wire:click="closeAdd">Done for now</button>
@@ -123,7 +123,7 @@
                list to unfold. Six options with icons read faster than a
                closed <select>, and the choice drives everything below it. --}}
           <fieldset class="tb-kinds">
-            <legend class="tb-label">What kind of work?</legend>
+            <legend class="tb-label">Kind of work</legend>
             <div class="tb-kind-grid">
               @foreach(\App\Enums\OrderType::cases() as $case)
                 <label @class(['tb-kind', 'is-on' => $type === $case->value]) wire:key="k-{{ $case->value }}">
@@ -170,7 +170,7 @@
               </x-ui.field>
 
             @else
-              <x-ui.field label="What is it?" for="ord-title" name="title" required>
+              <x-ui.field label="Work to do" for="ord-title" name="title" required>
                 <input id="ord-title" type="text" class="tb-input" maxlength="160" required
                        placeholder="{{ $this->titleSuggestions[0] ?? 'See Dr Alice · Wound dressing' }}"
                        wire:model="title">

@@ -151,6 +151,18 @@ class GeneratedDocumentTest extends TestCase
             'start_date' => now()->toDateString(), 'instructions' => 'After food.',
         ]], null, $this->admin->id);
 
+        // A dental visit written as simple notes prints them (docs/dental.md, "Simple notes").
+        $dentalVisit = Visit::factory()->create([
+            'hospital_id' => $this->hospital->id,
+            'patient_id' => $this->patient()->id,
+            'department_id' => \App\Models\Department::factory()->create(['hospital_id' => $this->hospital->id, 'name' => 'Dental', 'is_active' => true])->id,
+            'complaints' => 'Toothache lower left, three days.',
+            'blood_pressure' => '125/80',
+        ]);
+        app(\App\Services\DentalNotesService::class)->save($dentalVisit, [
+            'medical_history' => 'Hypertension, on amlodipine.', 'hard_tissues' => 'Deep caries 36 DO.', 'diagnosis' => 'Irreversible pulpitis 36.',
+        ], $this->admin);
+
         $purchaseOrder = app(\App\Services\ProcurementService::class)->createOrder(
             \App\Models\Supplier::create(['name' => 'Nile Pharma Distributors', 'is_active' => true]), [],
             [['stock_item_id' => \App\Models\StockItem::factory()->create(['hospital_id' => $this->hospital->id])->id, 'quantity' => '100', 'unit_cost' => '95']],
@@ -172,6 +184,7 @@ class GeneratedDocumentTest extends TestCase
             ['patient ID card', route('admin.patients.id-card', $this->patient())],
             ['insurance statement', route('admin.insurance-providers.usage', $insurer)],
             ['visit report', route('admin.visits.report', $visit)],
+            ['dental visit report', route('admin.visits.report', $dentalVisit)],
             ['prescription', route('admin.visits.prescription', $visit)],
             // The dental case sheet's instructions for the patient (docs/dental.md).
             ['instructions after treatment', route('admin.visits.dental-instructions', $visit)],

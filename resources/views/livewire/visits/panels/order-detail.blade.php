@@ -26,7 +26,7 @@
         <div class="tb-modal-body">
           <div class="tb-undo">
             <div class="tb-undo-mark"><i class="fas fa-rotate-left" aria-hidden="true"></i></div>
-            <h3>Cancel this order?</h3>
+            <h3>Cancel order</h3>
             <p class="muted">Here is everything that gets undone.</p>
           </div>
 
@@ -69,7 +69,7 @@
             </section>
           </div>
 
-          <x-ui.field label="Why is it being cancelled?" for="ord-why" name="cancelReason">
+          <x-ui.field label="Reason for cancelling" for="ord-why" name="cancelReason">
             <textarea id="ord-why" class="tb-textarea" rows="2" maxlength="500"
                       placeholder="Ordered in error · patient declined · duplicate"
                       wire:model="cancelReason"></textarea>

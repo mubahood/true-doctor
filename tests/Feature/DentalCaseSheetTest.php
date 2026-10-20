@@ -64,7 +64,8 @@ class DentalCaseSheetTest extends TestCase
         $this->seed(RbacSeeder::class);
         Livewire::withoutLazyLoading();
 
-        $this->hospital = Hospital::factory()->create(['settings' => ['practice' => ['sector' => 'dental_clinic']]]);
+        // The detailed case sheet: a dental clinic's choice since simple notes became its default (DentalNotesTest).
+        $this->hospital = Hospital::factory()->create(['settings' => ['practice' => ['sector' => 'dental_clinic'], 'clinical' => ['dental_notes' => 'detailed']]]);
         app(CurrentHospital::class)->set($this->hospital->id);
         $this->dentist = $this->staff('doctor');
         $this->patient = Patient::factory()->create([

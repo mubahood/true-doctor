@@ -79,6 +79,8 @@ Route::prefix('admin')->group(function () {
     Route::get('settings/practice', [PracticeSettingsController::class, 'show'])->name('api.admin.settings.practice.show');
     Route::match(['put', 'patch'], 'settings/practice', [PracticeSettingsController::class, 'update'])->name('api.admin.settings.practice.update');
     Route::post('settings/practice/apply', [PracticeSettingsController::class, 'apply'])->name('api.admin.settings.practice.apply');
+    // A dental clinic's visit form: the vital signs recorded, and simple notes or the detailed case sheet.
+    Route::match(['put', 'patch'], 'settings/practice/visit-form', [PracticeSettingsController::class, 'visitForm'])->name('api.admin.settings.practice.visit-form');
 
     Route::get('settings/hospital', [HospitalSettingsController::class, 'show'])->name('api.admin.settings.hospital.show');
     // POST (not PUT): the logos arrive as multipart.

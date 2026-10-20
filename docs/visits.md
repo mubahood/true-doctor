@@ -81,18 +81,25 @@ The new-visit dialog asks three questions in order, and **each answer narrows
 the next**. The order is the design, not the layout:
 
 ```
-  1 · Who is it?          registered patient, or register one now
+  1 · Patient             registered patient, or register one now
         ↓
         the patient's picker fills a brief: an open visit, a booking
         today, money still owed — all of it discovered too late otherwise
 
-  2 · Where is it going?  department FIRST, because choosing it narrows the
+  2 · Destination        department FIRST, because choosing it narrows the
         ↓                 doctor box to that department; choosing a doctor
                           first fills their department in instead
 
-  3 · Why have they come? reason, offered as the phrases this hospital
+  3 · Visit              reason, offered as the phrases this hospital
                           actually writes, its own words before the curated set
 ```
+
+Today the steps read **Patient**, **Vital signs** (only the readings the
+hospital records, `App\Support\Practice\VisitForm`; "Blood pressure" when
+that is all), **Visit** and **Status** ("Waiting" or "Being seen now"). Headings
+are statements, never questions, and never "they". A dental clinic's form has
+no reason (filled from the complaint's first words) and no suggestion pills,
+and adds **History** and **Oral examination** (docs/dental.md, "Simple notes").
 
 ### What the brief is for
 

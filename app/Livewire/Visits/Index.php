@@ -18,9 +18,11 @@ use App\Models\Invoice;
 use App\Models\Patient;
 use App\Models\Visit;
 use App\Services\BillingService;
+use App\Services\DentalNotesService;
 use App\Services\VisitService;
 use App\Support\HospitalSettings;
 use App\Support\PatientBrief;
+use App\Support\Practice\VisitForm;
 use App\Support\VisitPhrases;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -48,6 +50,7 @@ use Livewire\Component;
  * queried to render a dropdown (C4/D3/L1).
  *
  * @property-read array<string,mixed> $patientBrief
+ * @property-read VisitForm $visitForm
  * @property-read list<string> $reasonSuggestions
  * @property-read array<string,string> $sexes
  * @property-read array<string,string> $statuses
@@ -108,7 +111,7 @@ class Index extends Component
     public ?string $diagnosis = null;
 
     /**
-     * Is anybody seeing them yet?
+     * Visit status: waiting, or being seen now.
      *
      * False opens it Pending — registered at the desk, waiting. True sends it
      * through VisitService::start(), which is the ONLY thing that moves a visit
@@ -116,6 +119,15 @@ class Index extends Component
      * appearing mid-flight.
      */
     public bool $start_now = false;
+
+    /**
+     * A dental clinic's History and Oral examination (DentalNotesService),
+     * written while the visit is opened. Medical, family and surgical history
+     * start from the patient's latest.
+     *
+     * @var array<string,string|null>
+     */
+    public array $dental_notes = [];
 
     // ── Vitals, taken at the desk ──────────────────────────────
     public ?string $temperature = null;
@@ -161,6 +173,7 @@ class Index extends Component
             if ($patient !== null) {
                 $this->create();
                 $this->patient_id = $patient->id;
+                $this->carryHistory($patient->id);
             }
         }
     }
@@ -229,6 +242,10 @@ class Index extends Component
         $this->formNonce++;
         $this->resetErrorBag();
         unset($this->patientBrief, $this->reasonSuggestions);
+
+        // A new patient has no history here yet: what was carried from the
+        // patient picked on the other tab is not theirs.
+        $this->carryHistory($tab === 'existing' ? $this->patient_id : null);
     }
 
     /**
@@ -260,11 +277,61 @@ class Index extends Component
 
     // ── What each answer changes ─────────────────────────────────────────
 
-    /** A new patient means a new set of facts, and no stale appointment link. */
+    /**
+     * A new patient means a new set of facts, and no stale appointment link.
+     * Their medical, family and surgical history carry forward into the
+     * dental notes, where nothing has been typed over them yet.
+     */
     private function patientChanged(): void
     {
         $this->appointment_id = null;
         unset($this->patientBrief, $this->reasonSuggestions);
+
+        $this->carryHistory($this->patient_id);
+    }
+
+    /**
+     * The carried history in the form is this patient's: what came from the
+     * last patient and was not typed over goes, this one's comes in.
+     */
+    private function carryHistory(?int $patientId): void
+    {
+        if (! $this->writesDentalNotes()) {
+            return;
+        }
+        foreach (DentalNotesService::FIELDS as $key => $field) {
+            if ($field['carried'] && ($this->dental_notes[$key] ?? '') === ($this->carried[$key] ?? '')) {
+                $this->dental_notes[$key] = null;
+            }
+        }
+        $this->carried = $patientId === null ? [] : app(DentalNotesService::class)->carriedForward($patientId);
+        foreach ($this->carried as $key => $text) {
+            if (($this->dental_notes[$key] ?? '') === '') {
+                $this->dental_notes[$key] = $text;
+            }
+        }
+    }
+
+    /**
+     * What was carried forward into the form from the patient's last notes,
+     * so choosing another patient takes it out again.
+     *
+     * @var array<string,string>
+     */
+    #[\Livewire\Attributes\Locked]
+    public array $carried = [];
+
+    /** How this hospital writes a visit down: its vitals, and a dental clinic's notes. */
+    #[Computed]
+    public function visitForm(): VisitForm
+    {
+        return VisitForm::current();
+    }
+
+    /** The dental History and Oral examination, for someone who writes clinical notes. */
+    public function writesDentalNotes(): bool
+    {
+        return $this->visitForm->dentalVisitForm() && (auth()->user()?->can('visits.diagnose') ?? false);
     }
 
     // ── What we already know ─────────────────────────────────────────────
@@ -324,7 +391,7 @@ class Index extends Component
         $this->appointment_id = null;
     }
 
-    // ── Why they came ────────────────────────────────────────────────────
+    // ── The visit: reason, complaint, diagnosis ──────────────────────────
 
     /**
      * How this hospital writes down why someone came.
@@ -337,7 +404,7 @@ class Index extends Component
     #[Computed]
     public function reasonSuggestions(): array
     {
-        return VisitPhrases::reasons();
+        return $this->visitForm->suggests() ? VisitPhrases::reasons() : [];
     }
 
     /** Only ever a phrase that is actually on offer. */
@@ -416,6 +483,7 @@ class Index extends Component
                 $data[$k] = null;
             }
         }
+        $data = $this->notAskedHere($data);
 
         try {
             $visit = $service->open(
@@ -423,6 +491,7 @@ class Index extends Component
                 auth()->id(),
             );
             $visit = $this->recordWhatWasTaken($visit, $service);
+            $this->writeDentalNotes($visit);
         } catch (\DomainException $e) {
             $this->dispatch('toast', message: $e->getMessage(), type: 'error');
 
@@ -452,7 +521,7 @@ class Index extends Component
             }
         }
 
-        $data = $this->validate();
+        $data = $this->notAskedHere($this->validate());
 
         $patientData = array_intersect_key($data, array_flip(['first_name', 'last_name', 'sex', 'dob', 'phone_1', 'consent_given']));
         $visitData = array_intersect_key($data, array_flip(['reason', 'complaints', 'diagnosis']));
@@ -463,6 +532,7 @@ class Index extends Component
                 app(\App\Services\Messaging\ConsentService::class)->record($visit->patient, ['sms.care' => $this->messages_care, 'whatsapp.care' => $this->messages_care], 'desk', auth()->id());
             }
             $visit = $this->recordWhatWasTaken($visit, $service);
+            $this->writeDentalNotes($visit);
         } catch (PlanLimitExceededException|\DomainException $e) {
             $this->dispatch('toast', message: $e->getMessage(), type: 'error');
 
@@ -477,7 +547,38 @@ class Index extends Component
         $this->finish($visit->visit_no, $visit, 'New patient registered and visit opened');
     }
 
-    /** The vitals taken at the desk, and whether anybody is seeing them yet — VisitService decides both. */
+    /**
+     * What this practice's form does not show is not written either: a
+     * dental clinic writes its diagnosis in the Oral examination. (It has no
+     * reason box either: the reason is a linked booking's, or VisitService
+     * fills it from the complaint.)
+     *
+     * @param  array<string,mixed>  $data
+     * @return array<string,mixed>
+     */
+    private function notAskedHere(array $data): array
+    {
+        if ($this->writesDentalNotes()) {
+            $data['diagnosis'] = null;
+        }
+
+        return $data;
+    }
+
+    /** The dental History and Oral examination, saved as the visit's first notes. */
+    private function writeDentalNotes(Visit $visit): void
+    {
+        if (! $this->writesDentalNotes()) {
+            return;
+        }
+
+        $user = auth()->user();
+        if ($user instanceof \App\Models\User) {
+            app(DentalNotesService::class)->save($visit, $this->dental_notes, $user, null, null, 'dental_notes.');
+        }
+    }
+
+    /** The vitals taken at the desk, and the visit status — VisitService decides both. */
     private function recordWhatWasTaken(Visit $visit, VisitService $service): Visit
     {
         return $service->recordWhatWasTaken($visit, [
@@ -513,7 +614,7 @@ class Index extends Component
     private function resetForm(): void
     {
         $this->reset([
-            'patient_id', 'appointment_id', 'reason', 'complaints', 'diagnosis', 'start_now',
+            'patient_id', 'appointment_id', 'reason', 'complaints', 'diagnosis', 'start_now', 'dental_notes', 'carried',
             'temperature', 'blood_pressure', 'pulse', 'respiratory_rate', 'spo2', 'weight', 'height',
             'first_name', 'last_name', 'sex', 'dob', 'phone_1', 'consent_given', 'messages_care',
         ]);
@@ -551,7 +652,7 @@ class Index extends Component
     #[Computed]
     public function clinicalPhrases(): array
     {
-        return VisitPhrases::desk();
+        return $this->visitForm->suggests() ? VisitPhrases::desk() : ['complaints' => [], 'diagnosis' => []];
     }
 
     /** @return array<string, string> */

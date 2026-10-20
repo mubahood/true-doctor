@@ -4,6 +4,7 @@ namespace App\Livewire\Visits\Panels;
 
 use App\Http\Requests\VisitVitalsRequest;
 use App\Services\VisitService;
+use App\Support\Practice\VisitForm;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Lazy;
@@ -20,6 +21,8 @@ use Livewire\Component;
  * table instead of the form.
  *
  * @property-read float|null $bmi
+ * @property-read list<string> $fields
+ * @property-read string $title
  * @property-read array<string, list<array{value:string,label:string,last:bool}>> $suggestions
  */
 #[Lazy]
@@ -190,6 +193,32 @@ class Vitals extends Component
         );
     }
 
+    /**
+     * The readings this form asks for: the ones this hospital records
+     * (App\Support\Practice\VisitForm), and any already taken on this visit,
+     * so a reading recorded before the hospital changed its mind can still
+     * be corrected.
+     *
+     * @return list<string>
+     */
+    #[Computed]
+    public function fields(): array
+    {
+        $form = VisitForm::current();
+
+        return array_values(array_filter(self::FIELDS, fn (string $f) => $form->records($f)
+            || ($this->visit->{$f} !== null && trim((string) $this->visit->{$f}) !== '')));
+    }
+
+    /** "Blood pressure" when that is all this hospital records, "Vitals" otherwise. */
+    #[Computed]
+    public function title(): string
+    {
+        $form = VisitForm::current();
+
+        return count($form->vitals) === 1 ? $form->vitalsTitle() : 'Vitals';
+    }
+
     public function openForm(): void
     {
         $this->authorize('recordVitals', $this->visit);
@@ -211,7 +240,8 @@ class Vitals extends Component
             }
         }
 
-        $data = $this->validate(VisitVitalsRequest::rulesFor());
+        // Only what the form asked for: a reading it did not show is left as it is.
+        $data = $this->validate(array_intersect_key(VisitVitalsRequest::rulesFor(), array_flip($this->fields)));
 
         $service->recordVitals($visit, $data);
 
@@ -219,7 +249,7 @@ class Vitals extends Component
 
         $this->showForm = false;
 
-        $this->dispatch('toast', message: 'Vitals recorded.', type: 'success');
+        $this->dispatch('toast', message: $this->title.' recorded.', type: 'success');
         $this->dispatch('visit-updated');
     }
 

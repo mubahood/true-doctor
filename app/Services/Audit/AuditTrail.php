@@ -66,6 +66,7 @@ final class AuditTrail
         Models\CaseSheetEntry::class => 'Case sheet',
         Models\PatientHistoryEntry::class => 'Patient history',
         Models\DentalXray::class => 'Dental X-ray',
+        Models\DentalNote::class => 'Dental notes',
         // Money
         Models\Invoice::class => 'Invoice',
         Models\InvoiceItem::class => 'Invoice line',

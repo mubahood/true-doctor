@@ -75,6 +75,10 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
         });
         Route::get('dental/xrays/{xray}/image', [\App\Http\Controllers\Api\V1\DentalCaseSheetController::class, 'image'])->name('api.dental.xray.image');
 
+        // A dental clinic's simple notes on a visit: History and Oral examination as plain text (docs/api/dental.md, "Simple notes").
+        Route::get('visits/{visit}/dental-notes', [\App\Http\Controllers\Api\V1\DentalNotesController::class, 'show'])->name('api.dental.notes.show');
+        Route::put('visits/{visit}/dental-notes', [\App\Http\Controllers\Api\V1\DentalNotesController::class, 'update'])->name('api.dental.notes.update');
+
         // Patient links (roadmap 05 §4, docs/api/patient-links.md): send a result, summary,
         // prescription or quote by link; list, read the open log, withdraw.
         Route::get('patient-links', [\App\Http\Controllers\Api\V1\PatientLinkController::class, 'index'])->name('api.patient-links.index');

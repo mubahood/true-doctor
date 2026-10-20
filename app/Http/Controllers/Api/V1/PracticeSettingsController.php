@@ -10,6 +10,7 @@ use App\Support\ApiResponse;
 use App\Support\HospitalSettings;
 use App\Support\Practice\Pack;
 use App\Support\Practice\Practice;
+use App\Support\Practice\VisitForm;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -53,6 +54,31 @@ class PracticeSettingsController extends Controller
         }
 
         return ApiResponse::success($this->payload($hospital->fresh()), 'Saved — '.Practice::sector($data['sector'])->label.'.');
+    }
+
+    /**
+     * How a visit is written down: the vital signs recorded and, where the
+     * hospital does dentistry, simple notes or the detailed case sheet. A
+     * field left out keeps its value; null follows the practice again.
+     */
+    public function visitForm(Request $request): JsonResponse
+    {
+        $hospital = $this->hospital($request);
+
+        $data = $request->validate([
+            'vitals' => ['sometimes', 'nullable', 'array'],
+            'vitals.*' => ['string', Rule::in(array_keys(VisitForm::VITALS))],
+            'dental_notes' => ['sometimes', 'nullable', 'string', Rule::in(array_keys(VisitForm::DENTAL_NOTES))],
+        ]);
+
+        $now = VisitForm::of($hospital);
+        $form = $this->service->chooseVisitForm(
+            $hospital,
+            array_key_exists('vitals', $data) ? $data['vitals'] : ($now->vitalsCustomised ? $now->vitals : null),
+            array_key_exists('dental_notes', $data) ? $data['dental_notes'] : ($now->dentalNotesCustomised ? $now->dentalNotes : null),
+        );
+
+        return ApiResponse::success($this->payload($hospital->fresh()), 'Saved: '.$form->vitalsTitle().($form->dentistry ? ', '.mb_strtolower(VisitForm::DENTAL_NOTES[$form->dentalNotes]) : '').'.');
     }
 
     /** One click: everything the saved template describes that the hospital does not have yet. */
@@ -114,6 +140,10 @@ class PracticeSettingsController extends Controller
             'modules' => $practice->modules(),
             'modules_customised' => $practice->modules !== null,
             'addable_packs' => $practice->addablePacks(),
+            // How a visit is written down (App\Support\Practice\VisitForm).
+            'visit_form' => VisitForm::of($hospital)->toArray() + [
+                'catalogue' => ['vitals' => VisitForm::VITALS, 'dental_notes' => VisitForm::DENTAL_NOTES],
+            ],
             'counts' => $practice->template()->counts(),
             // What applying would add, per part (empty until a practice is chosen).
             'preview' => $practice->chosen ? $this->service->preview($practice) : [],

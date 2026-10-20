@@ -14,6 +14,7 @@ use App\Models\Visit;
 use App\Models\VisitStatusHistory;
 use App\Support\CurrentHospital;
 use App\Support\HospitalSettings;
+use App\Support\Practice\VisitForm;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -125,7 +126,11 @@ class VisitService
                     'doctor_user_id' => $data['doctor_user_id'] ?? null,
                     'receptionist_user_id' => $openedBy,
                     'department_id' => $data['department_id'] ?? $this->defaultDepartment($data['doctor_user_id'] ?? null),
-                    'reason' => $data['reason'] ?? null,
+                    // A practice that does not ask for a reason (a dental
+                    // clinic) lists the visit under the complaint's first words.
+                    'reason' => filled($data['reason'] ?? null) || blank($data['complaints'] ?? null) || VisitForm::current()->asksReason()
+                        ? ($data['reason'] ?? null)
+                        : VisitForm::reasonFrom($data['complaints']),
                     'complaints' => $data['complaints'] ?? null,
                     // Rare at the desk but not wrong — a walk-in seen on the
                     // spot. The dialog has always asked for it; it was being
@@ -189,11 +194,17 @@ class VisitService
         return 'V-'.$date->format('Ymd').'-'.str_pad((string) $seq, 3, '0', STR_PAD_LEFT);
     }
 
-    /** Record vitals and (re)compute BMI from weight (kg) and height (cm). */
+    /**
+     * Record vitals and (re)compute BMI from weight (kg) and height (cm).
+     *
+     * Only the readings given are written: a hospital that records blood
+     * pressure alone sends only that, and the weight and height already on
+     * the visit (and the BMI worked out from them) stay as they were.
+     */
     public function recordVitals(Visit $visit, array $vitals): Visit
     {
-        $weight = $vitals['weight'] ?? null;
-        $height = $vitals['height'] ?? null;
+        $weight = array_key_exists('weight', $vitals) ? $vitals['weight'] : $visit->weight;
+        $height = array_key_exists('height', $vitals) ? $vitals['height'] : $visit->height;
 
         $vitals['bmi'] = $this->computeBmi($weight !== null ? (float) $weight : null, $height !== null ? (float) $height : null);
         $vitals['vitals_recorded_at'] = Carbon::now();
@@ -218,10 +229,20 @@ class VisitService
     /** Update the clinical narrative (complaints, diagnosis, remarks). */
     public function updateClinical(Visit $visit, array $data): Visit
     {
-        $visit->fill(array_intersect_key($data, array_flip([
+        $fields = array_intersect_key($data, array_flip([
             'reason', 'complaints', 'diagnosis', 'doctor_user_id', 'department_id',
             'doctor_remarks', 'receptionist_remarks', 'patient_remarks', 'sensitive_notes',
-        ])))->save();
+        ]));
+
+        // Where the reason is the complaint's first words (a practice that
+        // does not ask for one), it follows the complaint; a reason somebody
+        // wrote, or one carried from the booking, stays.
+        if (array_key_exists('complaints', $fields) && ! array_key_exists('reason', $fields) && ! VisitForm::current()->asksReason()
+            && (blank($visit->reason) || $visit->reason === VisitForm::reasonFrom($visit->complaints))) {
+            $fields['reason'] = VisitForm::reasonFrom($fields['complaints']);
+        }
+
+        $visit->fill($fields)->save();
 
         return $visit;
     }
