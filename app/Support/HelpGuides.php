@@ -28,6 +28,10 @@ final class HelpGuides
         'admin.staff.' => 'register-a-private-clinic-in-uganda',
         'admin.users.' => 'register-a-private-clinic-in-uganda',
 
+        // Monthly reports are about the money and the register, not the Ministry's forms.
+        'admin.reports.monthly' => 'stopping-money-leaks-at-the-cashier',
+        'admin.reports.monthly.' => 'stopping-money-leaks-at-the-cashier',
+
         // The Ministry's reports.
         'admin.reports.' => 'hmis-105-explained',
         'admin.diagnoses.' => 'hmis-105-explained',

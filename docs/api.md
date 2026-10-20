@@ -91,6 +91,7 @@ The surface beyond the first resources is documented per area, next to the route
 public self-registration for the app, and starter-data imports). They share this envelope, auth and error model.
 Writes are safe to retry with an `Idempotency-Key` header: [`api/idempotency.md`](api/idempotency.md).
 Refunds and credit notes (ask, approve, reject, PDF): [`api/refunds.md`](api/refunds.md).
+Reports and the monthly reports (income, expenses, receivables, patient records; summary or detail; PDF, Excel, CSV): [`api/reports.md`](api/reports.md).
 Notifications, devices, notification preferences and upcoming reminders: [`api/notify.md`](api/notify.md).
 Suppliers, purchase orders, goods received and returns to supplier: [`api/procurement.md`](api/procurement.md).
 The app's "Try the demo" door (`GET /public/demo`, `POST /public/demo/login`, `meta.demo`; SaaS only): [`api/demo.md`](api/demo.md).

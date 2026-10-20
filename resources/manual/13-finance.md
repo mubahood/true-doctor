@@ -42,6 +42,8 @@ Use these for anything that is not a patient payment.
 6. Fill in **Paid to** and **Reference** (receipt, cheque or transaction number) if you have them.
 7. Click **Record**.
 
+Every money out is listed in the **Expenditure** report under **Monthly reports**, by kind, by account, by book and by week (see [Reports and ministry forms](12-reports-and-ministry-forms.md)).
+
 ### Money in (income not from a patient bill)
 
 1. Click **Money in**.

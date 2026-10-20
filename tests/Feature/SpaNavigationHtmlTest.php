@@ -24,6 +24,8 @@ class SpaNavigationHtmlTest extends TestCase
         'admin.finance.export',
         // The Ministry forms as CSV, for the district's DHIS2 entry: a file to save.
         'admin.reports.hmis.export',
+        // A monthly report as Excel or CSV: a file to save. Its PDF opens in a tab.
+        'admin.reports.monthly.export',
         // A standalone installation's backup: a file to keep elsewhere.
         'admin.system.backup',
         'super.releases.download',
@@ -56,6 +58,7 @@ class SpaNavigationHtmlTest extends TestCase
         'admin.insurance-providers.usage', 'admin.visits.report',
         'admin.reports.pdf', 'admin.finance.statement-pdf',
         'admin.credits.pdf',
+        'admin.reports.monthly.pdf',
 
         // Data protection: the pack, and one patient's data for a request to see it.
         'admin.compliance.document', 'admin.patients.personal-data',
