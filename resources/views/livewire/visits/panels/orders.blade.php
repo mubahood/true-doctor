@@ -94,7 +94,7 @@
       <div class="tb-modal-body tb-done" x-init="delete $root.dataset.tdDirty">
         <div class="tb-done-mark"><i class="fas fa-check" aria-hidden="true"></i></div>
         <p class="tb-done-head">{{ $placed }}</p>
-        <p class="tb-done-sub">Anything else for this patient while you are here?</p>
+        <p class="tb-done-sub">Add another order for this patient, or close.</p>
       </div>
       <div class="tb-modal-foot">
         <button type="button" class="btn-tb btn-tb-ghost" wire:click="closeAdd">Done for now</button>

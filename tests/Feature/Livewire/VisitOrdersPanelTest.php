@@ -186,7 +186,7 @@ class VisitOrdersPanelTest extends TestCase
             ->assertSet('placed', 'Order placed.')
             ->assertSet('title', '')
             ->assertSet('notes', '')
-            ->assertSee('Anything else for this patient')
+            ->assertSee('Add another order for this patient')
             ->assertSee('Add another')
             ->assertDontSeeHtml('tb-kind-grid');   // the form is gone, not merely hidden
     }
