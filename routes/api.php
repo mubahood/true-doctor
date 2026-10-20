@@ -187,12 +187,16 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
         Route::post('visits/{visit}/orders', [\App\Http\Controllers\Api\V1\OrderController::class, 'store'])->name('api.orders.store');
         Route::get('orders/catalogue', [\App\Http\Controllers\Api\V1\OrderController::class, 'catalogue'])->name('api.orders.catalogue');
         Route::get('orders/lines', [\App\Http\Controllers\Api\V1\OrderController::class, 'lines'])->name('api.orders.lines');
+        // Who an order can be assigned to: the people who see patients (before orders/{order}).
+        Route::get('orders/assignees', [\App\Http\Controllers\Api\V1\OrderController::class, 'assignees'])->name('api.orders.assignees');
         Route::get('orders/{order}', [\App\Http\Controllers\Api\V1\OrderController::class, 'show'])->name('api.orders.show');
         Route::post('orders/{order}/move', [\App\Http\Controllers\Api\V1\OrderController::class, 'move'])->name('api.orders.move');
         Route::post('orders/{order}/cancel', [\App\Http\Controllers\Api\V1\OrderController::class, 'cancel'])->name('api.orders.cancel');
         Route::put('orders/{order}/report', [\App\Http\Controllers\Api\V1\OrderController::class, 'report'])->name('api.orders.report');
         Route::post('orders/{order}/items', [\App\Http\Controllers\Api\V1\OrderController::class, 'addItem'])->name('api.orders.items.store');
         Route::delete('orders/{order}/items/{item}', [\App\Http\Controllers\Api\V1\OrderController::class, 'removeItem'])->name('api.orders.items.destroy');
+        // Editing an order after it is placed (docs/orders.md, "Changing an order").
+        Route::patch('orders/{order}', [\App\Http\Controllers\Api\V1\OrderController::class, 'update'])->name('api.orders.update');
         Route::apiResource('visits', VisitController::class)->only(['index', 'store', 'show']);
 
         // Read-only resources for integration/mobile clients

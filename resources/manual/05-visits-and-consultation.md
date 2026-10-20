@@ -102,10 +102,10 @@ An order is one piece of work for the patient: a consultation, a lab test, a sca
 ### Add an order
 
 1. Press **Add order** (in the visit window, or in the **Orders** section).
-2. Under **What kind of work?**, choose **Consultation**, **Lab test**, **Imaging**, **Pharmacy**, **Procedure** or **Admission**.
-3. For **Lab test** or **Imaging**, tick the tests or studies under **Which tests?** or **Which studies?**. Each shows its price. Type to search a long list.
-4. For other kinds, describe it in **What is it?**, for example "Wound dressing". Click a suggestion if one fits.
-5. Choose who should do it in **Assign to**, and the **Department**, if you know them.
+2. Under **Type** (called **Treatment** in a dental clinic), choose **Consultation**, **Lab test**, **Imaging**, **Pharmacy**, **Procedure** or **Admission**. Only the kinds your practice uses are offered. A practice without wards and beds is not offered **Admission**, and one without a laboratory or imaging is not offered those.
+3. For **Lab test** or **Imaging**, tick the tests or studies under **Tests** or **Studies**. Each shows its price. Type to search a long list.
+4. For other kinds, write what it is under **Service**, for example "Wound dressing". Click a suggestion if one fits.
+5. Choose who should do it in **Clinician assigned** (called **Dentist assigned** in a dental clinic), and the **Department**, if you know them. The box lists only active staff who see patients: doctors, and anyone whose account is marked as also seeing patients. It starts with the visit's own doctor.
 6. Add **Instructions** (or **Clinical notes** for lab and imaging) for the person doing the work.
 7. Press **Place order**.
 
@@ -128,9 +128,22 @@ An order's status is **Pending**, **In progress**, **Completed** or **Cancelled*
 
 An order cannot be completed with nothing on it. It needs at least a charge, a written report, or an attached file. If none is there, a note in place of the button says what is missing.
 
-To call an order off, press **Cancel order**. True-Doctor shows what will be undone: the charges that come off the bill and any products that go back on the shelf. Give a reason under **Why is it being cancelled?** and confirm, or press **Keep the order**.
+To call an order off, press **Cancel order**. True-Doctor shows what will be undone: the charges that come off the bill and any products that go back on the shelf. Give a reason under **Reason for cancelling** and confirm, or press **Keep the order**.
 
 Once the visit's invoice has been raised, the items on its orders can no longer be changed.
+
+### Change an order
+
+An order that is still **Pending** or **In progress** can be changed by anyone who could have placed that kind of order. Press the pencil beside the order in the **Orders** list, or open the order and press **Edit order**.
+
+1. Change the **Service** (what the order is called).
+2. If the order has one charge from the price list, choose another under **Price list item** and set the **Qty**. The charge on the bill changes with it, and the old charge is kept, marked removed. For a service priced as a range, set the **Price** within the range.
+3. Change the **Clinician assigned** (**Dentist assigned** in a dental clinic) or the **Instructions**.
+4. Press **Save changes**.
+
+To change the quantity or price of one line, press the pencil beside it under **What it used**, change **Qty** (and **Price**, for a service priced as a range) and press **Save**. A fixed price cannot be changed here; it comes from the price list.
+
+Once the visit is invoiced, the charges stay as they are and True-Doctor says so, but the service name, the clinician and the instructions can still be changed. A completed or cancelled order cannot be changed. An order raised by a lab request, an X-ray at the chair or a dental plan keeps the charge that record put on it. Every change is in the **Audit log**, with who made it and what it was before and after, and the order shows who last changed it.
 
 How the lab and radiology work their orders, and how results come back, is in [Lab and radiology](06-lab-and-radiology.md).
 

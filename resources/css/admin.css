@@ -2516,3 +2516,8 @@ body.has-brand::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z-i
 .tb-review-form{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;}
 .tb-review-form .tb-form-group{margin-bottom:0;}
 @media (max-width:600px){.tb-access-extras-list{grid-template-columns:1fr;}}
+
+/* Order editing (a dental clinic's request: an order can be changed after it is placed) */
+.tb-ord-edit{margin-left:auto;}
+.tb-ord-edit-form{display:contents;}
+.tb-ord-row .btn-tb-icon{margin-right:4px;}

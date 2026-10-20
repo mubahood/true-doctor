@@ -17,7 +17,7 @@
               wire:click="$set('filter', '')">
         All <b>{{ $this->counts[''] }}</b>
       </button>
-      @foreach(\App\Enums\OrderType::cases() as $case)
+      @foreach($this->chips as $case)
         <button type="button" @class(['tb-chip', 'is-on' => $filter === $case->value])
                 wire:click="$set('filter', '{{ $case->value }}')">
           <i class="fas {{ $case->icon() }}" aria-hidden="true"></i>
@@ -39,7 +39,7 @@
           <thead>
             <tr>
               <th>Order</th>
-              <th>Assigned to</th>
+              <th>{{ $this->wording['assignee'] }}</th>
               <th>Raised</th>
               <th>Status</th>
               <th class="tb-text-right">Cost</th>
@@ -62,10 +62,18 @@
                   @if($order->items->isNotEmpty())
                     <x-ui.money :amount="$order->items->where('status', '!=', \App\Enums\OrderItemStatus::Cancelled)->sum('line_total')" />
                   @else
-                    <span class="muted">—</span>
+                    <span class="muted">None</span>
                   @endif
                 </td>
-                <td class="tb-text-right"><i class="fas fa-chevron-right tb-ord-go" aria-hidden="true"></i></td>
+                <td class="tb-text-right tb-nowrap">
+                  {{-- Changing an order is one click from the list: its
+                       service, instructions, clinician and charge. --}}
+                  @if(in_array($order->id, $this->editableIds, true))
+                    <x-ui.icon-button label="Edit {{ $order->title }}" icon="fa-pen"
+                                      class="btn-tb-sm" wire:click.stop="edit({{ $order->id }})" />
+                  @endif
+                  <i class="fas fa-chevron-right tb-ord-go" aria-hidden="true"></i>
+                </td>
               </tr>
             @endforeach
           </tbody>
@@ -123,9 +131,9 @@
                list to unfold. Six options with icons read faster than a
                closed <select>, and the choice drives everything below it. --}}
           <fieldset class="tb-kinds">
-            <legend class="tb-label">What kind of work?</legend>
+            <legend class="tb-label">{{ $this->wording['kind'] }}</legend>
             <div class="tb-kind-grid">
-              @foreach(\App\Enums\OrderType::cases() as $case)
+              @foreach($this->kinds as $case)
                 <label @class(['tb-kind', 'is-on' => $type === $case->value]) wire:key="k-{{ $case->value }}">
                   <input type="radio" class="sr-only" name="order-type"
                          value="{{ $case->value }}" wire:model.live="type">
@@ -142,7 +150,7 @@
           <div class="tb-kind-body" wire:key="body-{{ $type }}">
             @if(in_array($type, [\App\Enums\OrderType::Lab->value, \App\Enums\OrderType::Imaging->value], true))
               @php($isLab = $type === \App\Enums\OrderType::Lab->value)
-              <x-ui.field :label="$isLab ? 'Which tests?' : 'Which studies?'" for="ord-pick"
+              <x-ui.field :label="$isLab ? 'Tests' : 'Studies'" for="ord-pick"
                           :name="$isLab ? 'test_ids' : 'study_ids'" required>
                 <div class="tb-search-wrap tb-mb-4">
                   <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
@@ -165,12 +173,12 @@
                   @endforelse
                 </div>
                 @if($this->catalogueTotal > count($this->catalogue))
-                  <p class="tb-pick-note">Showing {{ count($this->catalogue) }} of {{ $this->catalogueTotal }} — type to narrow.</p>
+                  <p class="tb-pick-note">Showing {{ count($this->catalogue) }} of {{ $this->catalogueTotal }}. Type to narrow.</p>
                 @endif
               </x-ui.field>
 
             @else
-              <x-ui.field label="What is it?" for="ord-title" name="title" required>
+              <x-ui.field :label="$this->wording['title']" for="ord-title" name="title" required>
                 <input id="ord-title" type="text" class="tb-input" maxlength="160" required
                        placeholder="{{ $this->titleSuggestions[0] ?? 'See Dr Alice · Wound dressing' }}"
                        wire:model="title">
@@ -213,20 +221,27 @@
             </div>
           @endif
 
-          {{-- Who and where — searched, never a list of everyone. --}}
-          <div class="tb-grid-2">
-            <x-ui.field :label="$type === \App\Enums\OrderType::Admission->value ? 'Admitting doctor' : 'Assign to'"
-                        for="ord-who" name="assigned_to">
-              <livewire:ui.select-search resource="staff" name="assigned_to"
-                                         :selected="$assigned_to" placeholder="Search staff…"
-                                         :key="'pick-who-'.$visitId.'-'.$formNonce" />
-            </x-ui.field>
-            <x-ui.field label="Department" for="ord-dept" name="department_id">
-              <livewire:ui.select-search resource="departments" name="department_id"
-                                         :selected="$department_id" placeholder="Search departments…"
-                                         :key="'pick-dept-'.$visitId.'-'.$formNonce" />
-            </x-ui.field>
-          </div>
+          {{-- Who and where, searched, never a list of everyone. Only the
+               people who see patients can be given the work; lab tests and
+               studies go to the bench, so they ask for neither. --}}
+          @php($isAdmission = $type === \App\Enums\OrderType::Admission->value)
+          @if(\App\Enums\OrderType::tryFrom((string) $type)?->takesTitle())
+            <div class="tb-grid-2">
+              <x-ui.field :label="$isAdmission ? 'Admitting doctor' : $this->wording['assignee']"
+                          for="ord-who" name="assigned_to">
+                <livewire:ui.select-search resource="clinicians" name="assigned_to"
+                                           :selected="$assigned_to" placeholder="Search clinicians…"
+                                           :key="'pick-who-'.$visitId.'-'.$formNonce" />
+              </x-ui.field>
+              @unless($isAdmission)
+                <x-ui.field label="Department" for="ord-dept" name="department_id">
+                  <livewire:ui.select-search resource="departments" name="department_id"
+                                             :selected="$department_id" placeholder="Search departments…"
+                                             :key="'pick-dept-'.$visitId.'-'.$formNonce" />
+                </x-ui.field>
+              @endunless
+            </div>
+          @endif
 
           <x-ui.field
             label="{{ in_array($type, [\App\Enums\OrderType::Lab->value, \App\Enums\OrderType::Imaging->value], true) ? 'Clinical notes' : 'Instructions' }}"

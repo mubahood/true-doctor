@@ -17,6 +17,15 @@
         @if($order->requester)
           <span class="muted">by {{ $order->requester->name }}</span>
         @endif
+        @if($order->edited_at)
+          <span class="sep">·</span>
+          <span class="muted">changed by {{ $order->editor?->name ?? 'someone' }} {{ $order->edited_at->format('d M · H:i') }}</span>
+        @endif
+        @if($this->canEditOrder && ! $confirming && ! $editingOrder)
+          <button type="button" class="btn-tb btn-tb-sm btn-tb-ghost tb-ord-edit" wire:click="startEdit">
+            <i class="fas fa-pen" aria-hidden="true"></i> Edit order
+          </button>
+        @endif
       </div>
 
       @if($confirming)
@@ -26,7 +35,7 @@
         <div class="tb-modal-body">
           <div class="tb-undo">
             <div class="tb-undo-mark"><i class="fas fa-rotate-left" aria-hidden="true"></i></div>
-            <h3>Cancel this order?</h3>
+            <h3>Cancel this order</h3>
             <p class="muted">Here is everything that gets undone.</p>
           </div>
 
@@ -69,7 +78,7 @@
             </section>
           </div>
 
-          <x-ui.field label="Why is it being cancelled?" for="ord-why" name="cancelReason">
+          <x-ui.field label="Reason for cancelling" for="ord-why" name="cancelReason">
             <textarea id="ord-why" class="tb-textarea" rows="2" maxlength="500"
                       placeholder="Ordered in error · patient declined · duplicate"
                       wire:model="cancelReason"></textarea>
@@ -86,6 +95,68 @@
             <span wire:loading wire:target="cancelOrder">Reversing…</span>
           </button>
         </div>
+
+      @elseif($editingOrder)
+        {{-- ── Changing the order ──────────────────────────────────────
+             The service, the instructions, who is doing it and, until the
+             visit is invoiced, its charge. OrderService keeps the bill in step
+             and the audit trail keeps the before and after. --}}
+        <form wire:submit="saveOrder" class="tb-ord-edit-form">
+          <div class="tb-modal-body">
+            @if($order->type->takesTitle())
+              <x-ui.field :label="$this->wording['title']" for="ord-e-title" name="editTitle" required>
+                <input id="ord-e-title" type="text" class="tb-input" maxlength="160" required wire:model="editTitle">
+              </x-ui.field>
+            @endif
+
+            @if($this->chargeSwappable)
+              <div class="tb-grid-2">
+                <x-ui.field label="Price list item" for="ord-e-svc" name="editServiceId"
+                            hint="The charge on the bill follows this.">
+                  <livewire:ui.select-search resource="services" name="editServiceId"
+                                             :selected="$editServiceId" placeholder="Search the price list…"
+                                             :key="'ord-e-svc-'.$orderId.'-'.$nonce" />
+                </x-ui.field>
+                <x-ui.field label="Qty" for="ord-e-qty" name="editServiceQty">
+                  <input id="ord-e-qty" type="number" step="any" min="0.01" class="tb-input" wire:model="editServiceQty">
+                </x-ui.field>
+              </div>
+              @if($this->editRange)
+                <x-ui.field label="Price" for="ord-e-price" name="editServicePrice"
+                            :hint="'Between '.\App\Support\HospitalSettings::money($this->editRange['from']).' and '.\App\Support\HospitalSettings::money($this->editRange['to']).'.'">
+                  <input id="ord-e-price" type="number" step="any" class="tb-input"
+                         min="{{ $this->editRange['from'] }}" max="{{ $this->editRange['to'] }}"
+                         wire:model="editServicePrice">
+                </x-ui.field>
+              @endif
+            @elseif(! $this->editable)
+              <p class="tb-small muted">This visit has been invoiced, so the charge stays as it is.</p>
+            @else
+              <p class="tb-small muted">Change the charges line by line under <b>What it used</b>.</p>
+            @endif
+
+            <x-ui.field :label="$order->type === \App\Enums\OrderType::Admission ? 'Admitting doctor' : $this->wording['assignee']"
+                        for="ord-e-who" name="editAssignee">
+              <livewire:ui.select-search resource="clinicians" name="editAssignee"
+                                         :selected="$editAssignee" placeholder="Search clinicians…"
+                                         :key="'ord-e-who-'.$orderId.'-'.$nonce" />
+            </x-ui.field>
+
+            <x-ui.field label="Instructions" for="ord-e-notes" name="editNotes">
+              <textarea id="ord-e-notes" class="tb-textarea" rows="3" maxlength="2000"
+                        placeholder="Anything the person doing this needs to know"
+                        wire:model="editNotes"></textarea>
+            </x-ui.field>
+          </div>
+
+          <div class="tb-modal-foot">
+            <button type="button" class="btn-tb btn-tb-ghost" wire:click="cancelOrderEdit">Cancel</button>
+            <button type="submit" class="btn-tb btn-tb-primary" wire:loading.attr="disabled" wire:target="saveOrder">
+              <span wire:loading.remove wire:target="saveOrder"><i class="fas fa-check" aria-hidden="true"></i> Save changes</span>
+              <span wire:loading wire:target="saveOrder">Saving…</span>
+            </button>
+          </div>
+        </form>
 
       @else
         <div class="tb-modal-body tb-ordm">
@@ -127,10 +198,10 @@
                 <x-ui.badge :tone="$stay->status->badge()">{{ $stay->status->label() }}</x-ui.badge>
               </div>
               <dl class="tb-vs-facts">
-                <div><dt>Admitted</dt><dd>{{ $stay->admitted_at?->format('d M Y · H:i') ?? '—' }}</dd></div>
+                <div><dt>Admitted</dt><dd>{{ $stay->admitted_at?->format('d M Y · H:i') ?? 'Not recorded' }}</dd></div>
                 <div><dt>Nights so far</dt><dd>{{ $stay->nights() }}</dd></div>
                 <div><dt>Nightly rate</dt><dd><x-ui.money :amount="$stay->bed?->daily_charge ?? '0'" /></dd></div>
-                <div><dt>Admitting doctor</dt><dd>{{ $stay->admittingDoctor?->name ?? '—' }}</dd></div>
+                <div><dt>Admitting doctor</dt><dd>{{ $stay->admittingDoctor?->name ?? 'Not recorded' }}</dd></div>
                 @if($stay->discharged_at)
                   <div><dt>Discharged</dt><dd>{{ $stay->discharged_at->format('d M Y · H:i') }}</dd></div>
                   <div><dt>Bed charge</dt><dd><x-ui.money :amount="$stay->bed_charge_total ?? '0'" /></dd></div>
@@ -208,6 +279,16 @@
                                 <input id="ed-qty-{{ $item->id }}" type="number" step="any" min="0.01"
                                        class="tb-input" wire:model="editQty">
                               </x-ui.field>
+                              {{-- Only a service priced as a range has a price
+                                   to choose; anything else keeps its own. --}}
+                              @if($this->lineRange)
+                                <x-ui.field label="Price" for="ed-price-{{ $item->id }}" name="editPrice"
+                                            :hint="\App\Support\HospitalSettings::money($this->lineRange['from']).' to '.\App\Support\HospitalSettings::money($this->lineRange['to'])">
+                                  <input id="ed-price-{{ $item->id }}" type="number" step="any" class="tb-input"
+                                         min="{{ $this->lineRange['from'] }}" max="{{ $this->lineRange['to'] }}"
+                                         wire:model="editPrice">
+                                </x-ui.field>
+                              @endif
                               <x-ui.field label="Note" for="ed-note-{{ $item->id }}" name="editNote">
                                 <input id="ed-note-{{ $item->id }}" type="text" maxlength="255"
                                        class="tb-input" placeholder="Why this is on the order"
@@ -344,7 +425,7 @@
                      about at the counter. --}}
                 <x-ui.field label="Note" for="oi-note" name="itemNote">
                   <input id="oi-note" type="text" class="tb-input" maxlength="255"
-                         placeholder="Why this is on the order — optional"
+                         placeholder="Why this is on the order (optional)"
                          wire:model="itemNote">
                 </x-ui.field>
               </form>
@@ -395,7 +476,7 @@
                 <i class="fas fa-cloud-arrow-up" aria-hidden="true"></i>
                 <p><button type="button" class="tb-linkish" x-on:click="$refs.input.click()">Choose files</button>
                    or drop them here</p>
-                <span class="tb-drop-hint">Results, films, consent — up to 10 MB each, kept private</span>
+                <span class="tb-drop-hint">Results, films, consent. Up to 10 MB each, kept private</span>
                 <div class="tb-drop-busy" wire:loading wire:target="files,updatedFiles">
                   <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i> Uploading…
                 </div>

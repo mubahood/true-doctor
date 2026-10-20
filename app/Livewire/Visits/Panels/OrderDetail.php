@@ -12,6 +12,7 @@ use App\Models\StockItem;
 use App\Services\OrderAttachmentService;
 use App\Services\OrderDesk;
 use App\Services\OrderService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
@@ -42,6 +43,11 @@ use Throwable;
  * @property-read array{ready:bool,blocker:?string} $completable
  * @property-read bool $editable
  * @property-read array{lines:list<array{name:string,quantity:string,amount:string}>,stock:list<array{name:string,quantity:string,unit:string}>,total:string} $plan
+ * @property-read bool $canEditOrder
+ * @property-read bool $chargeSwappable
+ * @property-read array{from:string,to:string}|null $editRange
+ * @property-read array{from:string,to:string}|null $lineRange
+ * @property-read array{kind:string,title:string,assignee:string} $wording
  */
 class OrderDetail extends Component
 {
@@ -74,6 +80,25 @@ class OrderDetail extends Component
 
     public ?string $editNote = null;
 
+    /** For a line on a service priced as a range: its corrected unit price. */
+    public ?string $editPrice = null;
+
+    /** Changing the order itself: its service, instructions, clinician and charge. */
+    public bool $editingOrder = false;
+
+    public ?string $editTitle = null;
+
+    public ?string $editNotes = null;
+
+    public ?int $editAssignee = null;
+
+    /** The order's one charge, from the price list, when it may be swapped. */
+    public ?int $editServiceId = null;
+
+    public string $editServiceQty = '1';
+
+    public ?string $editServicePrice = null;
+
     /** What was found. Autosaved as it is typed; never a Save button. */
     public ?string $report = null;
 
@@ -94,7 +119,7 @@ class OrderDetail extends Component
     public int $nonce = 0;
 
     /** The pickers a <livewire:ui.select-search> child may feed here. */
-    private const PICKERS = ['service_id', 'stock_item_id'];
+    private const PICKERS = ['service_id', 'stock_item_id', 'editAssignee', 'editServiceId'];
 
     public function mount(int $visitId): void
     {
@@ -104,7 +129,7 @@ class OrderDetail extends Component
     // ── Opening and closing ──────────────────────────────────────────────
 
     #[On('order-open')]
-    public function open(int $visitId, int $orderId): void
+    public function open(int $visitId, int $orderId, bool $edit = false): void
     {
         if ($visitId !== $this->visitId) {
             return;
@@ -121,9 +146,14 @@ class OrderDetail extends Component
 
         $this->resetForm();
         $this->cancelEdit();
+        $this->cancelOrderEdit();
         $this->confirming = false;
         $this->cancelReason = null;
         $this->show = true;
+
+        if ($edit && $this->canEditOrder) {
+            $this->startEdit();
+        }
     }
 
     public function close(): void
@@ -134,6 +164,7 @@ class OrderDetail extends Component
         $this->reset(['report', 'reportSavedAt', 'cancelReason']);
         $this->resetForm();
         $this->cancelEdit();
+        $this->cancelOrderEdit();
     }
 
     #[Computed]
@@ -142,7 +173,7 @@ class OrderDetail extends Component
         return ! $this->show || $this->orderId === null
             ? null
             : Order::where('visit_id', $this->visitId)
-                ->with(['items.stockItem', 'attachments.uploader', 'assignee', 'department', 'requester', 'subject'])
+                ->with(['items.stockItem', 'attachments.uploader', 'assignee', 'department', 'requester', 'editor', 'subject'])
                 ->find($this->orderId);
     }
 
@@ -286,7 +317,18 @@ class OrderDetail extends Component
         }
 
         $this->{$name} = $id;
-        unset($this->pickedPrice, $this->stockOnHand, $this->lineTotal, $this->pickedRange);
+        unset($this->pickedPrice, $this->stockOnHand, $this->lineTotal, $this->pickedRange, $this->editRange);
+
+        if ($name === 'editServiceId') {
+            // A ranged service starts at the bottom of its range.
+            $this->editServicePrice = $this->editRange['from'] ?? null;
+
+            return;
+        }
+        if ($name === 'editAssignee') {
+            return;
+        }
+
         // A ranged service starts at the bottom of its range.
         $this->itemPrice = $name === 'service_id' ? ($this->pickedRange['from'] ?? null) : null;
     }
@@ -299,6 +341,15 @@ class OrderDetail extends Component
         }
 
         $this->{$name} = null;
+        if ($name === 'editServiceId') {
+            $this->editServicePrice = null;
+            unset($this->editRange);
+
+            return;
+        }
+        if ($name === 'editAssignee') {
+            return;
+        }
         $this->itemPrice = null;
         unset($this->pickedPrice, $this->stockOnHand, $this->lineTotal, $this->pickedRange);
     }
@@ -365,13 +416,33 @@ class OrderDetail extends Component
         $this->editingId = $line->id;
         $this->editQty = $line->tidyQuantity();
         $this->editNote = $line->notes;
+        unset($this->lineRange);
+        $this->editPrice = $this->lineRange !== null ? (string) $line->unit_price : null;
         $this->resetErrorBag();
     }
 
     public function cancelEdit(): void
     {
-        $this->reset(['editingId', 'editQty', 'editNote']);
+        $this->reset(['editingId', 'editQty', 'editNote', 'editPrice']);
+        unset($this->lineRange);
         $this->resetErrorBag();
+    }
+
+    /**
+     * The range the line being corrected may be priced in, or null when its
+     * price is fixed.
+     *
+     * @return array{from:string,to:string}|null
+     */
+    #[Computed]
+    public function lineRange(): ?array
+    {
+        $line = $this->editingId === null ? null : $this->order?->items->firstWhere('id', $this->editingId);
+        $service = $line !== null && $line->service_id !== null ? Service::find($line->service_id) : null;
+
+        return $service !== null && $service->hasRange()
+            ? ['from' => (string) $service->price, 'to' => (string) $service->max_price]
+            : null;
     }
 
     public function saveItem(OrderService $orders): void
@@ -387,12 +458,15 @@ class OrderDetail extends Component
         $this->validate([
             'editQty' => ['required', 'numeric', 'gt:0'],
             'editNote' => ['nullable', 'string', 'max:255'],
+            'editPrice' => ['nullable', 'decimal:0,2', 'min:0'],
         ], [
             'editQty.gt' => 'Quantity must be more than zero.',
         ]);
 
+        $price = $this->lineRange !== null && $this->editPrice !== null && $this->editPrice !== '' ? (string) $this->editPrice : null;
+
         try {
-            $orders->updateItem($line, $this->editQty, $this->editNote, Auth::id());
+            $orders->updateItem($line, $this->editQty, $this->editNote, Auth::id(), $price);
         } catch (Throwable $e) {
             $this->dispatch('toast', message: $this->plainly($e), type: 'error');
 
@@ -426,6 +500,152 @@ class OrderDetail extends Component
         $this->cancelEdit();
         $this->refreshOrder();
         $this->dispatch('toast', message: 'Removed.', type: 'success');
+        $this->dispatch('visit-updated');
+    }
+
+    // ── Changing the order itself ────────────────────────────────────────
+
+    /**
+     * Whether this reader may change the order: they could have placed this
+     * kind of work, the order is still open, and so is the visit.
+     */
+    #[Computed]
+    public function canEditOrder(): bool
+    {
+        $order = $this->order;
+
+        return $order !== null
+            && $this->visit->isOpen()
+            && OrderDesk::canEdit($order, Auth::user());
+    }
+
+    /**
+     * Whether the order's charge can be swapped for another service here:
+     * not yet invoiced, not placed by another record, and one service line
+     * at most. Anything else is corrected line by line under What it used.
+     */
+    #[Computed]
+    public function chargeSwappable(): bool
+    {
+        $order = $this->order;
+        if ($order === null || $order->subject_type !== null || ! app(OrderService::class)->itemsEditable($order)) {
+            return false;
+        }
+
+        $live = $order->items->filter(fn (OrderItem $i) => $i->status->isBillable());
+
+        return $live->count() <= 1 && $live->every(fn (OrderItem $i) => $i->stock_item_id === null);
+    }
+
+    /**
+     * The range the chosen service is priced in, or null for a fixed price.
+     *
+     * @return array{from:string,to:string}|null
+     */
+    #[Computed]
+    public function editRange(): ?array
+    {
+        $service = $this->editServiceId === null ? null : Service::find($this->editServiceId);
+
+        return $service !== null && $service->hasRange()
+            ? ['from' => (string) $service->price, 'to' => (string) $service->max_price]
+            : null;
+    }
+
+    /** @return array{kind:string,title:string,assignee:string} */
+    #[Computed]
+    public function wording(): array
+    {
+        return OrderDesk::wording();
+    }
+
+    public function startEdit(): void
+    {
+        $order = $this->order;
+        abort_if($order === null, 404);
+
+        if (! $this->canEditOrder) {
+            $this->dispatch('toast', message: 'This order can no longer be changed.', type: 'error');
+
+            return;
+        }
+
+        $line = $order->items->first(fn (OrderItem $i) => $i->status->isBillable());
+
+        $this->editTitle = $order->title;
+        $this->editNotes = $order->notes;
+        $this->editAssignee = $order->assigned_to !== null ? (int) $order->assigned_to : null;
+        $this->editServiceId = $line !== null && $line->service_id !== null ? (int) $line->service_id : null;
+        $this->editServiceQty = $line !== null ? $line->tidyQuantity() : '1';
+        $this->editServicePrice = $line !== null ? (string) $line->unit_price : null;
+        $this->confirming = false;
+        $this->nonce++;
+        $this->resetErrorBag();
+        unset($this->editRange, $this->chargeSwappable);
+        $this->editingOrder = true;
+    }
+
+    public function cancelOrderEdit(): void
+    {
+        $this->editingOrder = false;
+        $this->reset(['editTitle', 'editNotes', 'editAssignee', 'editServiceId', 'editServiceQty', 'editServicePrice']);
+        unset($this->editRange);
+        $this->resetErrorBag();
+    }
+
+    public function saveOrder(OrderDesk $desk): void
+    {
+        $order = $this->order;
+        abort_if($order === null, 404);
+        abort_unless($this->canEditOrder, 403);
+
+        $takesTitle = $order->type->takesTitle();
+        $swap = $this->chargeSwappable;
+        // Only a NEW assignee is checked: a lab order already with the bench
+        // keeps its technician when someone corrects its instructions.
+        $reassigned = $this->editAssignee !== ($order->assigned_to !== null ? (int) $order->assigned_to : null);
+
+        $this->validate([
+            'editTitle' => [$takesTitle ? 'required' : 'nullable', 'string', 'max:160'],
+            'editNotes' => ['nullable', 'string', 'max:2000'],
+            'editAssignee' => $reassigned ? ['nullable', 'integer', OrderDesk::assigneeRule()] : ['nullable', 'integer'],
+            'editServiceId' => ['nullable', 'integer'],
+            'editServiceQty' => [$swap && $this->editServiceId !== null ? 'required' : 'nullable', 'decimal:0,2', 'gt:0'],
+            'editServicePrice' => ['nullable', 'decimal:0,2', 'min:0'],
+        ], [
+            'editTitle.required' => 'Say which service this is.',
+            'editAssignee.exists' => 'Choose someone who sees patients here.',
+            'editServiceQty.gt' => 'Quantity must be more than zero.',
+        ]);
+
+        $changes = ['notes' => $this->editNotes];
+        if ($reassigned) {
+            $changes['assigned_to'] = $this->editAssignee;
+        }
+        if ($takesTitle) {
+            $changes['title'] = (string) $this->editTitle;
+        }
+        if ($swap && $this->editServiceId !== null) {
+            $changes['service_id'] = $this->editServiceId;
+            $changes['quantity'] = $this->editServiceQty;
+            if ($this->editRange !== null && $this->editServicePrice !== null && $this->editServicePrice !== '') {
+                $changes['unit_price'] = (string) $this->editServicePrice;
+            }
+        }
+
+        try {
+            $desk->edit($order, $changes, Auth::user());
+        } catch (AuthorizationException) {
+            abort(403);
+        } catch (Throwable $e) {
+            $this->dispatch('toast', message: $this->plainly($e), type: 'error');
+
+            return;
+        }
+
+        $this->cancelOrderEdit();
+        $this->refreshOrder();
+        $this->dispatch('toast', message: 'Order updated.', type: 'success');
         $this->dispatch('visit-updated');
     }
 
@@ -590,7 +810,8 @@ class OrderDetail extends Component
     public function refreshOrder(): void
     {
         unset($this->visit, $this->order, $this->editable, $this->plan, $this->stay,
-            $this->completable, $this->pickedPrice, $this->stockOnHand, $this->lineTotal);
+            $this->completable, $this->pickedPrice, $this->stockOnHand, $this->lineTotal,
+            $this->canEditOrder, $this->chargeSwappable, $this->lineRange);
     }
 
     private function resetForm(): void

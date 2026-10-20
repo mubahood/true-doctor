@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon|null $report_updated_at
  * @property \Illuminate\Support\Carbon|null $started_at
  * @property \Illuminate\Support\Carbon|null $completed_at
+ * @property \Illuminate\Support\Carbon|null $edited_at
  */
 class Order extends Model implements HoldsAttachments
 {
@@ -56,6 +57,7 @@ class Order extends Model implements HoldsAttachments
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'edited_at' => 'datetime',
         ];
     }
 
@@ -97,6 +99,16 @@ class Order extends Model implements HoldsAttachments
     public function requester(): BelongsTo
     {
         return $this->belongsTo(User::class, 'requested_by');
+    }
+
+    /**
+     * Whoever last changed the order after it was placed.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function editor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'edited_by');
     }
 
     /** @return BelongsTo<Department, $this> */

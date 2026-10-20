@@ -484,7 +484,7 @@ class OrderDetailTest extends TestCase
             ->call('addItem')
             ->call('askCancel')
             ->assertSet('confirming', true)
-            ->assertSee('Cancel this order?')
+            ->assertSee('Cancel this order')
             ->assertSee('Off the bill')
             ->assertSee('Back on the shelf')
             ->assertSee('Amoxicillin 250mg');

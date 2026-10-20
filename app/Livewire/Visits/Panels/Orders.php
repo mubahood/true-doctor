@@ -32,6 +32,10 @@ use RuntimeException;
  * @property-read int $catalogueTotal
  * @property-read list<string> $titleSuggestions
  * @property-read bool $writable
+ * @property-read list<OrderType> $kinds
+ * @property-read list<OrderType> $chips
+ * @property-read list<int> $editableIds
+ * @property-read array{kind:string,title:string,assignee:string} $wording
  */
 #[Lazy]
 class Orders extends Component
@@ -130,16 +134,85 @@ class Orders extends Component
         $this->dispatch('order-open', visitId: $this->visitId, orderId: $orderId);
     }
 
+    /**
+     * Open one order straight into its edit form. The dialog checks again
+     * whether this person may change it; the list only offers the pencil.
+     */
+    public function edit(int $orderId): void
+    {
+        $this->authorize('view', $this->visit);
+
+        Order::where('visit_id', $this->visitId)->whereKey($orderId)->firstOrFail();
+
+        $this->dispatch('order-open', visitId: $this->visitId, orderId: $orderId, edit: true);
+    }
+
+    /**
+     * The orders in the list this reader may change, by id.
+     *
+     * @return list<int>
+     */
+    #[Computed]
+    public function editableIds(): array
+    {
+        if (! $this->writable) {
+            return [];
+        }
+
+        $user = Auth::user();
+
+        return $this->orders->filter(fn (Order $o) => OrderDesk::canEdit($o, $user))
+            ->map(fn (Order $o) => (int) $o->id)->values()->all();
+    }
+
+    /**
+     * The kinds of work this practice is offered. A dental clinic has no wards,
+     * so it is never offered an admission (OrderDesk::kinds).
+     *
+     * @return list<OrderType>
+     */
+    #[Computed]
+    public function kinds(): array
+    {
+        return OrderDesk::kinds();
+    }
+
+    /**
+     * The filter chips: what is offered, plus any other kind already on this
+     * visit, so an order placed some other way can still be found.
+     *
+     * @return list<OrderType>
+     */
+    #[Computed]
+    public function chips(): array
+    {
+        return array_values(array_filter(OrderType::cases(), fn (OrderType $t) => in_array($t, $this->kinds, true) || ($this->counts[$t->value] ?? 0) > 0));
+    }
+
+    /** @return array{kind:string,title:string,assignee:string} */
+    #[Computed]
+    public function wording(): array
+    {
+        return OrderDesk::wording();
+    }
+
     /** @return Collection<int,Order> */
     #[Computed]
     public function orders(): Collection
     {
-        return Order::query()
+        $orders = Order::query()
             ->where('visit_id', $this->visitId)
             ->when($this->filter !== '', fn ($q) => $q->where('type', $this->filter))
             ->with(['items', 'assignee', 'department'])
             ->latest('id')
             ->get();
+
+        // Every row is on this visit, already loaded: hand it over rather
+        // than read it again (OrderDesk::canEdit asks whether it is open).
+        $visit = $this->visit;
+        $orders->each(fn (Order $o) => $o->setRelation('visit', $visit));
+
+        return $orders;
     }
 
     /** How many of each type sit on this visit, for the filter chips. */
@@ -321,12 +394,15 @@ class Orders extends Component
 
         $this->reset(['type', 'title', 'assigned_to', 'department_id', 'notes',
             'test_ids', 'study_ids', 'ward_id', 'bed_id', 'pick']);
-        $this->type = $this->filter !== '' ? $this->filter : OrderType::Consultation->value;
+        $filtered = OrderType::tryFrom($this->filter);
+        $this->type = $filtered !== null && in_array($filtered, $this->kinds, true)
+            ? $filtered->value
+            : OrderType::Consultation->value;
 
-        // Whoever is raising the order is the likeliest person to do it, and
-        // reassigning is one click. Starting empty makes everyone pick
-        // themselves by hand, every time.
-        $this->assigned_to = Auth::id();
+        // The visit's own clinician is the likeliest person to do the work,
+        // and reassigning is one click. Someone who does not see patients is
+        // never the default: they could not be chosen in the box either.
+        $this->assigned_to = OrderDesk::defaultAssignee($this->visit);
 
         $this->placed = null;
         $this->formNonce++;
@@ -360,6 +436,13 @@ class Orders extends Component
         if ($type === null) {
             return;
         }
+        if (! OrderDesk::offers($type)) {
+            $this->addError('type', $type === OrderType::Admission
+                ? 'This practice does not admit patients. Choose another.'
+                : $type->label().' is not used at this practice. Choose another.');
+
+            return;
+        }
 
         $data = $this->validate(OrderDesk::rules($type), OrderDesk::messages());
 
@@ -391,7 +474,7 @@ class Orders extends Component
         $this->resetErrorBag();
         $this->placed = $message;
 
-        unset($this->orders, $this->counts, $this->catalogue, $this->catalogueTotal, $this->titleSuggestions);
+        unset($this->orders, $this->counts, $this->editableIds, $this->chips, $this->catalogue, $this->catalogueTotal, $this->titleSuggestions);
 
         $this->dispatch('toast', message: $message, type: 'success');
         $this->dispatch('visit-updated');
@@ -426,7 +509,7 @@ class Orders extends Component
     #[On('visit-updated')]
     public function refresh(): void
     {
-        unset($this->visit, $this->orders, $this->counts);
+        unset($this->visit, $this->orders, $this->counts, $this->editableIds, $this->chips);
     }
 
     public function render()

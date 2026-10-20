@@ -296,19 +296,20 @@ class OrderService
      * lowering it puts the difference back. Both happen in the same
      * transaction as the money, so the bill and the shelf cannot disagree.
      */
-    public function updateItem(OrderItem $line, string $quantity, ?string $notes, ?int $by = null): OrderItem
+    public function updateItem(OrderItem $line, string $quantity, ?string $notes, ?int $by = null, ?string $unitPrice = null): OrderItem
     {
         /** @var Order $order */
         $order = $line->order()->firstOrFail();
         $this->assertItemsEditable($order);
 
         if (! $line->status->isBillable()) {
-            throw new RuntimeException('That line was removed — it cannot be changed.');
+            throw new RuntimeException('That line was removed, so it cannot be changed.');
         }
 
         $qty = $this->assertQuantity($quantity);
+        $price = $this->allowedPrice($order, $line, $unitPrice);
 
-        return DB::transaction(function () use ($line, $qty, $notes, $by) {
+        return DB::transaction(function () use ($line, $qty, $notes, $by, $price) {
             $was = (string) $line->quantity;
             $delta = bcsub($qty, $was, 2);
 
@@ -329,8 +330,233 @@ class OrderService
                 }
             }
 
-            return $this->billing->repriceItem($line, $qty, $notes, $by);
+            return $this->billing->repriceItem($line, $qty, $notes, $by, $price);
         });
+    }
+
+    /**
+     * The unit price a line may be changed to, or null to keep its own.
+     *
+     * Only a service priced as a range can move, and only inside its range:
+     * the counter decides where in it this patient falls. A fixed price is the
+     * price list's, and a product is priced by the shelf, so asking either for
+     * a different amount is refused rather than quietly ignored.
+     */
+    private function allowedPrice(Order $order, OrderItem $line, ?string $asked): ?string
+    {
+        if ($asked === null || trim($asked) === '') {
+            return null;
+        }
+
+        $asked = \App\Support\HospitalSettings::decimal($asked, 2);
+        if (bccomp($asked, (string) $line->unit_price, 2) === 0) {
+            return null;
+        }
+
+        // A charge another record placed carries that record's agreed price
+        // (a planned dental procedure's quote): changing it here would make
+        // the bill and the plan disagree.
+        if ($order->subject_type !== null) {
+            throw new RuntimeException('This charge comes from another record, so its price is changed there.');
+        }
+
+        $service = $line->service_id !== null ? Service::find($line->service_id) : null;
+        if ($service === null || ! $service->hasRange()) {
+            throw new RuntimeException($line->name.' has a fixed price, so its price cannot be changed here.');
+        }
+
+        return $service->chargePrice($asked);
+    }
+
+    // ── Changing the order itself ────────────────────────────────────────
+
+    /**
+     * Change an order after it was placed: what it is (its service), the
+     * instructions, who is doing it, and its charge.
+     *
+     * Only while the work is still open: a completed order is the record of
+     * what was done, a cancelled one of what was called off. The wording and
+     * the clinician may change after the visit is invoiced; the charge may
+     * not, because the invoice already carries it. Every change lands on the
+     * order and its lines, which the audit trail records with the before and
+     * after and who made it; `edited_by` and `edited_at` say so on the order.
+     *
+     * A new price-list service replaces the order's one charge through the
+     * same path as adding and removing a line, so the bill, the shelf and the
+     * trail follow it. An order produced by another record (a lab request, a
+     * planned dental procedure, a stay) keeps its charge where that record
+     * put it; its lines are corrected one by one instead.
+     *
+     * @param  array{title?:string|null,notes?:string|null,assigned_to?:int|null,service_id?:int|null,quantity?:string|int|float|null,unit_price?:string|int|float|null,lines?:list<array{id:int,quantity:string|int|float,unit_price?:string|int|float|null}>}  $changes
+     */
+    public function edit(Order $order, array $changes, ?int $by = null): Order
+    {
+        return DB::transaction(function () use ($order, $changes, $by) {
+            /** @var Order $locked */
+            $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->status === OrderStatus::Completed) {
+                throw new RuntimeException('This order is completed, so it can no longer be changed.');
+            }
+            if ($locked->status === OrderStatus::Cancelled) {
+                throw new RuntimeException('This order was cancelled, so it can no longer be changed.');
+            }
+
+            $fields = [];
+
+            if (array_key_exists('title', $changes) && $changes['title'] !== null) {
+                $title = trim((string) $changes['title']);
+                if ($title === '') {
+                    throw new RuntimeException('An order needs to say what it is.');
+                }
+                if ($title !== $locked->title) {
+                    if (! $locked->type->takesTitle()) {
+                        throw new RuntimeException('A '.strtolower($locked->type->label()).' order is named by what was ordered, so its name cannot be changed.');
+                    }
+                    $fields['title'] = mb_substr($title, 0, 160);
+                }
+            }
+
+            if (array_key_exists('notes', $changes)) {
+                $notes = trim((string) $changes['notes']);
+                $notes = $notes === '' ? null : mb_substr($notes, 0, 2000);
+                if ($notes !== $locked->notes) {
+                    $fields['notes'] = $notes;
+                }
+            }
+
+            if (array_key_exists('assigned_to', $changes)) {
+                $who = $changes['assigned_to'] !== null ? (int) $changes['assigned_to'] : null;
+                if ($who !== ($locked->assigned_to !== null ? (int) $locked->assigned_to : null)) {
+                    if ($who !== null && ! OrderDesk::isAssignable($who, $locked->hospital_id)) {
+                        throw new RuntimeException('Choose someone who sees patients here.');
+                    }
+                    $fields['assigned_to'] = $who;
+                }
+            }
+
+            $moneyChanged = $this->editCharge($locked, $changes, $fields, $by);
+
+            if ($fields === [] && ! $moneyChanged) {
+                return $locked;
+            }
+
+            // A stay IS its order: its admitting doctor and reason are the
+            // order's clinician and instructions, so they move together.
+            $stay = $locked->subject;
+            if ($stay instanceof \App\Models\Admission) {
+                $follow = [];
+                if (array_key_exists('assigned_to', $fields)) {
+                    $follow['admitting_doctor_id'] = $fields['assigned_to'];
+                }
+                if (array_key_exists('notes', $fields)) {
+                    $follow['reason'] = $fields['notes'];
+                }
+                if ($follow !== []) {
+                    $stay->forceFill($follow)->save();
+                }
+            }
+
+            $locked->forceFill($fields + ['edited_by' => $by, 'edited_at' => now()])->save();
+
+            return $locked->fresh() ?? $locked;
+        });
+    }
+
+    /**
+     * The money half of an edit. Returns whether anything on the bill moved,
+     * and may set the title to follow a new service.
+     *
+     * @param  array<string,mixed>  $changes
+     * @param  array<string,mixed>  $fields
+     */
+    private function editCharge(Order $order, array $changes, array &$fields, ?int $by): bool
+    {
+        $serviceId = isset($changes['service_id']) ? (int) $changes['service_id'] : null;
+        $quantity = isset($changes['quantity']) && $changes['quantity'] !== '' ? (string) $changes['quantity'] : null;
+        $price = isset($changes['unit_price']) && $changes['unit_price'] !== '' ? (string) $changes['unit_price'] : null;
+        /** @var list<array{id:int,quantity:string|int|float,unit_price?:string|int|float|null}> $lines */
+        $lines = is_array($changes['lines'] ?? null) ? $changes['lines'] : [];
+
+        if ($serviceId === null && $quantity === null && $price === null && $lines === []) {
+            return false;
+        }
+
+        $live = $order->items()->where('status', '!=', OrderItemStatus::Cancelled->value)->get();
+        $moved = false;
+
+        foreach ($lines as $change) {
+            /** @var OrderItem|null $line */
+            $line = $live->firstWhere('id', (int) $change['id']);
+            if ($line === null) {
+                throw new RuntimeException('That line is not on this order.');
+            }
+            $qty = (string) $change['quantity'];
+            $unit = isset($change['unit_price']) && $change['unit_price'] !== '' ? (string) $change['unit_price'] : null;
+            if ($this->lineDiffers($line, $qty, $unit)) {
+                $this->updateItem($line, $qty, $line->notes, $by, $unit);
+                $moved = true;
+            }
+        }
+
+        if ($serviceId === null && $quantity === null && $price === null) {
+            return $moved;
+        }
+
+        // The order's one charge. Several lines, or a product, are each
+        // corrected on their own; a charge another record placed stays with it.
+        $this->assertItemsEditable($order);
+        $products = $live->filter(fn (OrderItem $i) => $i->stock_item_id !== null);
+        if ($live->count() > 1 || $products->isNotEmpty()) {
+            throw new RuntimeException('This order has more than one charge, or a product. Change each line under What it used.');
+        }
+        /** @var OrderItem|null $current */
+        $current = $live->first();
+
+        if ($serviceId !== null && (int) ($current?->service_id) !== $serviceId) {
+            if ($order->subject_type !== null) {
+                throw new RuntimeException('This order was raised from another record, so its service is changed there.');
+            }
+
+            /** @var Service|null $service */
+            $service = Service::whereKey($serviceId)->where('is_active', true)->first();
+            if ($service === null) {
+                throw new RuntimeException('That service is not on the price list.');
+            }
+            $qty = $quantity ?? ($current !== null ? (string) $current->quantity : '1');
+
+            if ($current !== null) {
+                $this->removeItem($current, $by);
+            }
+            $this->addServiceItem($order, $service, $qty, $by, $price);
+
+            // The name follows the charge unless someone has just written one.
+            if (! isset($fields['title']) && ($current === null || $order->title === $current->name || $order->title === '')) {
+                $fields['title'] = $service->name;
+            }
+
+            return true;
+        }
+
+        if ($current === null) {
+            throw new RuntimeException('This order has no charge yet. Choose a service for it.');
+        }
+
+        $qty = $quantity ?? (string) $current->quantity;
+        if (! $this->lineDiffers($current, $qty, $price)) {
+            return $moved;
+        }
+        $this->updateItem($current, $qty, $current->notes, $by, $price);
+
+        return true;
+    }
+
+    private function lineDiffers(OrderItem $line, string $quantity, ?string $price): bool
+    {
+        $qty = \App\Support\HospitalSettings::decimal($quantity, 2);
+
+        return bccomp($qty, (string) $line->quantity, 2) !== 0
+            || ($price !== null && bccomp(\App\Support\HospitalSettings::decimal($price, 2), (string) $line->unit_price, 2) !== 0);
     }
 
     /**
@@ -495,7 +721,7 @@ class OrderService
     public function assertItemsEditable(Order $order): void
     {
         if ($order->status === OrderStatus::Cancelled) {
-            throw new RuntimeException('This order was cancelled — its items cannot be changed.');
+            throw new RuntimeException('This order was cancelled, so its items cannot be changed.');
         }
 
         $invoiced = Invoice::where('visit_id', $order->visit_id)
@@ -503,7 +729,7 @@ class OrderService
             ->exists();
 
         if ($invoiced) {
-            throw new RuntimeException('This visit has been invoiced — its charges can no longer be changed.');
+            throw new RuntimeException('This visit has been invoiced, so its charges can no longer be changed.');
         }
     }
 
