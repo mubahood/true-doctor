@@ -82,10 +82,12 @@
     </tbody>
   </table>
 
-  {{-- ── Why they came ────────────────────────────────────────────── --}}
+  {{-- ── Presentation ─────────────────────────────────────────────── --}}
   {{-- A dental visit prints as the dental case sheet, under the headings a
        dentist writes by hand (docs/dental.md). --}}
-  @if($report['dental'])
+  @if($report['dentalNotes'])
+    @include('pdf.partials.dental-notes', ['notes' => $report['dentalNotes'], 'part' => 'history'])
+  @elseif($report['dental'])
     @include('pdf.partials.dental-case-sheet', ['sheet' => $report['dental'], 'part' => 'history'])
   @else
   <h2>Presentation</h2>
@@ -100,7 +102,7 @@
         <tr><td class="muted">Complaints</td><td>{!! nl2br(e($visit->complaints)) !!}</td></tr>
       @endif
       @if(filled($visit->patient_remarks))
-        <tr><td class="muted">In their own words</td><td>{!! nl2br(e($visit->patient_remarks)) !!}</td></tr>
+        <tr><td class="muted">In the patient's words</td><td>{!! nl2br(e($visit->patient_remarks)) !!}</td></tr>
       @endif
     </tbody>
   </table>
@@ -126,7 +128,12 @@
   @endif
 
   {{-- ── What was found ───────────────────────────────────────────── --}}
-  @if($report['dental'])
+  @if($report['dentalNotes'])
+    @include('pdf.partials.dental-notes', ['notes' => $report['dentalNotes'], 'part' => 'rest'])
+    @if(filled($visit->doctor_remarks))
+      <p class="note">{!! nl2br(e($visit->doctor_remarks)) !!}</p>
+    @endif
+  @elseif($report['dental'])
     @include('pdf.partials.dental-case-sheet', ['sheet' => $report['dental'], 'part' => 'rest'])
     @if(filled($visit->doctor_remarks))
       <p class="note">{!! nl2br(e($visit->doctor_remarks)) !!}</p>
@@ -159,7 +166,7 @@
     @endif
   @endif
 
-  @if(! $report['dental'] && $report['chart'])
+  @if(! $report['dental'] && ! $report['dentalNotes'] && $report['chart'])
     <h2>Dental chart</h2>
     @include('pdf.partials.dental-chart', ['chart' => $report['chart']])
   @endif

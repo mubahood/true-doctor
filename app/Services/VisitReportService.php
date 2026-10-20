@@ -55,6 +55,7 @@ class VisitReportService
      *     attachments:int,
      *     diagnoses:Collection,
      *     dental:array<string,mixed>|null,
+     *     dentalNotes:array<string,mixed>|null,
      *     chart:array<int,array<string,mixed>>|null
      * }
      */
@@ -100,6 +101,9 @@ class VisitReportService
             // A dental visit prints as a dental case sheet; any other visit
             // that charted teeth prints the chart (docs/dental.md).
             'dental' => $this->dental($visit, $reader),
+            // A dental visit written as simple notes prints them instead
+            // (docs/dental.md, "Simple notes").
+            'dentalNotes' => $this->dentalNotes($visit, $reader),
             'chart' => $this->chart($visit),
         ];
     }
@@ -115,11 +119,36 @@ class VisitReportService
     {
         $hospital = app(HospitalSettings::class)->hospital();
         if ($visit->patient === null || ! DentalCaseSheetService::appliesTo($visit, $hospital)
+            || DentalNotesService::appliesTo($visit, $hospital)
             || ($reader !== null && ! DentalCaseSheetService::canRead($reader))) {
             return null;
         }
 
         return app(DentalCaseSheetService::class)->sheet($visit, null);
+    }
+
+    /**
+     * A dental visit's simple notes, in print: the presenting complaint,
+     * History and Oral examination (only the headings written), the chart as
+     * it stood, and the treatment done today. Same reader rule as the case sheet.
+     *
+     * @return array<string,mixed>|null
+     */
+    private function dentalNotes(Visit $visit, ?\App\Models\User $reader): ?array
+    {
+        $hospital = app(HospitalSettings::class)->hospital();
+        if ($visit->patient === null || ! DentalNotesService::appliesTo($visit, $hospital)
+            || ($reader !== null && ! DentalCaseSheetService::canRead($reader))) {
+            return null;
+        }
+
+        $sheets = app(DentalCaseSheetService::class);
+
+        return app(DentalNotesService::class)->printable($visit) + [
+            // A closed visit reprints the mouth as it was when it closed.
+            'chart' => app(DentalService::class)->chart($visit->patient, $visit->isOpen() ? null : $visit->completed_at),
+            'done_today' => $sheets->doneToday($visit),
+        ];
     }
 
     /** @return array<int, array<string,mixed>>|null the chart, when this visit charted teeth outside a case sheet */

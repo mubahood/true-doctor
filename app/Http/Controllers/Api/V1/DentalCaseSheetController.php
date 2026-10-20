@@ -210,6 +210,8 @@ class DentalCaseSheetController extends Controller
         return [
             'visit_uuid' => $visit->uuid,
             'applies' => DentalCaseSheetService::appliesTo($visit, $hospital),
+            // How this visit is written: "simple" notes (GET visits/{uuid}/dental-notes) or the "detailed" case sheet.
+            'mode' => \App\Services\DentalNotesService::appliesTo($visit, $hospital) ? 'simple' : 'detailed',
             'sections' => array_values($sheet['sections']),
             'definitions' => $this->definitions(),
             'diagnosis_list' => collect(DentalCaseSheet::DIAGNOSES)->map(fn (array $d, string $k) => ['key' => $k] + $d)->values(),

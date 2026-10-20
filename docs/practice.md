@@ -46,6 +46,10 @@ already existed so none is pulled back into setup.
 current hospital's template, so every importer, `VisitPhrases`, and
 `OrderDesk` became practice-aware without changing.
 
+## The visit form
+
+`App\Support\Practice\VisitForm`, stored in `settings.clinical`, says how a visit is written down: `vitals` (which of blood pressure, temperature, pulse, respiratory rate, SpO2, weight and height the new visit form, the visit page's vitals panel and the app ask for) and `dental_notes` (`simple` or `detailed`, docs/dental.md). Null follows the practice: a dental clinic records blood pressure only and writes simple notes; every other practice records every vital and keeps the detailed case sheet. A dental clinic's form also asks no reason (it is the complaint's first words) and offers no suggestion pills. Chosen in Settings, Your practice, **Visit form** (`Settings\VisitFormSettings`) and `PUT admin/settings/practice/visit-form` (`PracticeService::chooseVisitForm`). It changes what is asked, never what was recorded: a reading already on a visit is always shown and can be corrected.
+
 ## Modules
 
 `inpatient`, `laboratory`, `radiology`, `pharmacy`, `insurance`, `cards`.

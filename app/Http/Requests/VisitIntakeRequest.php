@@ -49,10 +49,14 @@ class VisitIntakeRequest extends FormRequest
             'reason' => ['nullable', 'string', 'max:255'],
             'complaints' => ['nullable', 'string', 'max:2000'],
             'diagnosis' => ['nullable', 'string', 'max:2000'],
-            // Is anybody seeing them yet? A visit opened at the desk is
+            // Visit status: waiting, or being seen now. A visit opened at the desk is
             // Pending; one opened by the person about to see them is Ongoing,
             // and VisitService::start() writes that move into the trail.
             'start_now' => ['sometimes', 'boolean'],
+            // A dental visit's History and Oral examination, written as it is
+            // opened (DentalNotesService::FIELDS; docs/api/dental.md).
+            'dental_notes' => ['sometimes', 'nullable', 'array'],
+            'dental_notes.*' => ['nullable', 'string', 'max:2000'],
             // Vitals come from the ONE place that validates vitals, so the
             // ranges a nurse is held to at the desk are the ranges they are
             // held to in the panel.

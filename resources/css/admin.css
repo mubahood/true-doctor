@@ -2530,3 +2530,6 @@ body.has-brand::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z-i
 .tb-ord-edit{margin-left:auto;}
 .tb-ord-edit-form{display:contents;}
 .tb-ord-row .btn-tb-icon{margin-right:4px;}
+
+/* A dental visit's simple notes: the dialog form spans the modal body and foot (docs/dental.md, "Simple notes"). */
+.dn-form{display:contents;}

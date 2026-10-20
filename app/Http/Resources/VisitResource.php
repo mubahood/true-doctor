@@ -81,6 +81,9 @@ class VisitResource extends JsonResource
                 'spo2' => $this->spo2,
                 'recorded_at' => $this->vitals_recorded_at?->toIso8601String(),
             ]),
+            // The readings this hospital records (Settings, Your practice): the
+            // app's vitals form asks for these. Every reading taken is still in `vitals`.
+            'vital_signs' => \App\Support\Practice\VisitForm::current()->vitals,
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
             'completed_at' => $this->completed_at?->toIso8601String(),

@@ -224,12 +224,12 @@
 
       <div class="tb-modal-body tb-vform">
 
-        {{-- ── Who ──────────────────────────────────────────────────── --}}
+        {{-- ── Patient ──────────────────────────────────────────────────── --}}
         <section class="tb-vform-step">
-          <h4 class="tb-step-h">Who is it?</h4>
+          <h4 class="tb-step-h">Patient</h4>
 
           <fieldset class="tb-kinds tb-kinds-2">
-            <legend class="sr-only">Is the patient already registered?</legend>
+            <legend class="sr-only">Registered or new patient</legend>
             <div class="tb-kind-grid">
               <label @class(['tb-kind', 'is-on' => $tab === 'existing'])>
                 <input type="radio" class="sr-only" name="visit-source" value="existing"
@@ -269,7 +269,7 @@
                     <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
                     <span>
                       Already has an open visit — <b>{{ $brief['open_visit']['visit_no'] }}</b>
-                      ({{ $brief['open_visit']['status'] }}). Opening another splits their bill in two.
+                      ({{ $brief['open_visit']['status'] }}). Opening another splits the bill in two.
                     </span>
                     <button type="button" class="btn-tb btn-tb-sm btn-tb-ghost" wire:click="openExisting">
                       Go to it
@@ -337,68 +337,86 @@
               <input type="checkbox" wire:model="consent_given"> Consent given
             </label>
             <label class="tb-check-group">
-              <input type="checkbox" wire:model="messages_care"> Texts about their care (SMS and WhatsApp)
+              <input type="checkbox" wire:model="messages_care"> Texts about the patient's care (SMS and WhatsApp)
             </label>
           @endif
         </section>
 
-        {{-- ── How are they? ──────────────────────────────────────────
-             This was "Where is it going?" — a department and a doctor. Neither
-             belongs to a visit: the ORDERS raised on it carry the department
-             that does the work, and the doctor is recorded with the clinical
-             notes by the person who actually sees them. Reception opens a visit
-             before either is known.
-
-             What reception DOES have is the patient in front of them, so this
-             is where their vitals go.
+        {{-- ── Vital signs ────────────────────────────────────────────
+             Only the readings this hospital records (Settings, Your practice:
+             App\Support\Practice\VisitForm). A dental clinic records blood
+             pressure alone, so the step is titled "Blood pressure".
 
              NO SUGGESTION PILLS ON A VITAL, deliberately. Everywhere else in
              this system a pill saves typing; here it would put a number nobody
              measured into a clinical record. A reading is taken or it is left
              empty. --}}
+        @php($form = $this->visitForm)
+        @if($form->vitals !== [])
         <section class="tb-vform-step">
-          <h4 class="tb-step-h">How are they?<span class="tb-step-note">Leave a reading empty if it was not taken</span></h4>
+          <h4 class="tb-step-h">{{ $form->vitalsTitle() }}<span class="tb-step-note">Optional. Leave a reading empty if it was not taken</span></h4>
 
-          <div class="tb-vitals-grid">
+          <div @class(['tb-form-grid' => count($form->vitals) <= 2, 'tb-vitals-grid' => count($form->vitals) > 2])>
+            @if($form->records('temperature'))
             <x-ui.field label="Temp °C" for="v-temp" name="temperature">
               <input id="v-temp" type="number" step="0.1" min="25" max="45" wire:model="temperature"
                      class="tb-input" inputmode="decimal" placeholder="36.5">
             </x-ui.field>
+            @endif
+            @if($form->records('blood_pressure'))
             <x-ui.field label="BP mmHg" for="v-bp" name="blood_pressure">
               <input id="v-bp" type="text" wire:model="blood_pressure" class="tb-input"
                      maxlength="12" placeholder="120/80">
             </x-ui.field>
+            @endif
+            @if($form->records('pulse'))
             <x-ui.field label="Pulse bpm" for="v-pulse" name="pulse">
               <input id="v-pulse" type="number" min="20" max="300" wire:model="pulse"
                      class="tb-input" inputmode="numeric" placeholder="72">
             </x-ui.field>
+            @endif
+            @if($form->records('respiratory_rate'))
             <x-ui.field label="Resp /min" for="v-rr" name="respiratory_rate">
               <input id="v-rr" type="number" min="4" max="80" wire:model="respiratory_rate"
                      class="tb-input" inputmode="numeric" placeholder="16">
             </x-ui.field>
+            @endif
+            @if($form->records('spo2'))
             <x-ui.field label="SpO₂ %" for="v-spo2" name="spo2">
               <input id="v-spo2" type="number" min="50" max="100" wire:model="spo2"
                      class="tb-input" inputmode="numeric" placeholder="98">
             </x-ui.field>
+            @endif
+            @if($form->records('weight'))
             <x-ui.field label="Weight kg" for="v-weight" name="weight">
               <input id="v-weight" type="number" step="0.1" min="0.5" max="500" wire:model.live.debounce.500ms="weight"
                      class="tb-input" inputmode="decimal">
             </x-ui.field>
+            @endif
+            @if($form->records('height'))
             <x-ui.field label="Height cm" for="v-height" name="height">
               <input id="v-height" type="number" step="0.1" min="20" max="260" wire:model.live.debounce.500ms="height"
                      class="tb-input" inputmode="decimal">
             </x-ui.field>
+            @endif
+            @if($form->showsBmi())
             <x-ui.field label="BMI" name="bmi">
               <input type="text" class="tb-input" disabled title="Worked out from weight and height"
                      value="{{ $this->bmiPreview ?? '—' }}">
             </x-ui.field>
+            @endif
           </div>
         </section>
+        @endif
 
-        {{-- ── Why have they come? ────────────────────────────────────── --}}
+        {{-- ── Visit ─────────────────────────────────────────────────────
+             A dental clinic writes the presenting complaint and no separate
+             reason: VisitService fills the reason from the complaint's first
+             words, so the lists, the queue and the reports still show one. --}}
         <section class="tb-vform-step">
-          <h4 class="tb-step-h">Why have they come?</h4>
+          <h4 class="tb-step-h">Visit</h4>
 
+          @if($form->asksReason())
           <x-ui.field label="Reason for visit" for="v-reason" name="reason">
             <input id="v-reason" type="text" wire:model="reason" class="tb-input" maxlength="255"
                    placeholder="{{ $this->reasonSuggestions[0] ?? 'New complaint' }}">
@@ -418,10 +436,12 @@
               </div>
             @endif
           </x-ui.field>
+          @endif
 
-          <x-ui.field label="Presenting complaints" for="v-complaints" name="complaints">
+          <x-ui.field :label="$form->asksReason() ? 'Presenting complaints' : 'Presenting complaint'" for="v-complaints" name="complaints">
             <textarea id="v-complaints" wire:model="complaints" class="tb-textarea" rows="2" maxlength="2000"
-                      placeholder="What the patient says is wrong, in their words"></textarea>
+                      placeholder="In the patient's own words"></textarea>
+            @if($this->clinicalPhrases['complaints'])
             <div class="tb-picker-pills">
               @foreach($this->clinicalPhrases['complaints'] as $phrase)
                 <button type="button" @class(['tb-pill', 'is-on' => $this->hasPhrase('complaints', $phrase)])
@@ -430,15 +450,18 @@
                 </button>
               @endforeach
             </div>
+            @endif
           </x-ui.field>
 
           {{-- A diagnosis at the desk is unusual but not wrong: a walk-in seen
                by the clinician registering them arrives with one already. It
                stays optional, and the notes panel is still where it is written
-               properly. --}}
+               properly. A dental clinic writes it in the Oral examination. --}}
+          @unless($this->writesDentalNotes())
           <x-ui.field label="Diagnosis" for="v-diagnosis" name="diagnosis"
                       hint="If it is already known.">
             <textarea id="v-diagnosis" wire:model="diagnosis" class="tb-textarea" rows="2" maxlength="2000"></textarea>
+            @if($this->clinicalPhrases['diagnosis'])
             <div class="tb-picker-pills">
               @foreach($this->clinicalPhrases['diagnosis'] as $phrase)
                 <button type="button" @class(['tb-pill', 'is-on' => $this->hasPhrase('diagnosis', $phrase)])
@@ -447,20 +470,44 @@
                 </button>
               @endforeach
             </div>
+            @endif
           </x-ui.field>
+          @endunless
+        </section>
 
-          {{-- Two states, and only two: a visit is registered and waiting, or
-               somebody has begun. Everything after Ongoing is reached by
-               finishing the work, never by choosing it here (docs/visits.md). --}}
-          <x-ui.field label="Is anybody seeing them yet?" name="start_now">
+        {{-- ── A dental clinic's History and Oral examination ────────────
+             Plain text, no suggestions (DentalNotesService). Medical, family
+             and surgical history start from the patient's latest notes. --}}
+        @if($this->writesDentalNotes())
+          @foreach(\App\Services\DentalNotesService::GROUPS as $group => $groupLabel)
+            <section class="tb-vform-step" wire:key="dn-{{ $group }}">
+              <h4 class="tb-step-h">{{ $groupLabel }}@if($group === 'history' && $carried !== [])<span class="tb-step-note">Filled from the last visit. Change what is no longer right</span>@endif</h4>
+              <div class="tb-form-grid">
+                @foreach(\App\Services\DentalNotesService::keys($group) as $key)
+                  <x-ui.field :label="\App\Services\DentalNotesService::FIELDS[$key]['label']" :for="'v-dn-'.$key" :name="'dental_notes.'.$key">
+                    <textarea id="v-dn-{{ $key }}" wire:model="dental_notes.{{ $key }}" class="tb-textarea" rows="2" maxlength="2000"></textarea>
+                  </x-ui.field>
+                @endforeach
+              </div>
+            </section>
+          @endforeach
+        @endif
+
+        {{-- ── Status ──────────────────────────────────────────────────────
+             Two states, and only two: a visit is registered and waiting, or
+             somebody has begun. Everything after Ongoing is reached by
+             finishing the work, never by choosing it here (docs/visits.md). --}}
+        <section class="tb-vform-step">
+          <h4 class="tb-step-h">Status</h4>
+          <x-ui.field label="Visit status" name="start_now">
             <div class="tb-seg-cards" role="radiogroup" aria-label="Visit status">
               <label @class(['tb-seg-opt', 'is-on' => ! $start_now])>
                 <input type="radio" wire:model.live="start_now" value="0" class="sr-only">
-                <span>Pending</span><em>Registered, waiting</em>
+                <span>Waiting</span><em>Registered, not seen yet</em>
               </label>
               <label @class(['tb-seg-opt', 'is-on' => $start_now])>
                 <input type="radio" wire:model.live="start_now" value="1" class="sr-only">
-                <span>Ongoing</span><em>Being seen now</em>
+                <span>Being seen now</span><em>Opened by whoever is seeing the patient</em>
               </label>
             </div>
           </x-ui.field>

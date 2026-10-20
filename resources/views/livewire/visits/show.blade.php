@@ -112,6 +112,10 @@
       @php($dentalHospital = app(\App\Support\HospitalSettings::class)->hospital())
       @if(! auth()->user()?->can('viewClinical', $visit))
         <x-ui.no-access title="Clinical notes" icon="fa-notes-medical" />
+      @elseif($visit->patient && \App\Services\DentalNotesService::appliesTo($visit, $dentalHospital))
+        {{-- Simple notes: History and Oral examination as plain text, a dental clinic's
+             default (Settings, Your practice; docs/dental.md, "Simple notes"). --}}
+        @include('livewire.visits.partials.dental-notes', ['visit' => $visit])
       @elseif($visit->patient && \App\Services\DentalCaseSheetService::appliesTo($visit, $dentalHospital))
         @include('livewire.visits.partials.dental-case-sheet', ['visit' => $visit])
       @else

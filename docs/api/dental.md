@@ -20,6 +20,19 @@ Errors: 422 with the field (`findings.0.tooth`, `price`, `visit` when no open vi
 
 The patient summary (`GET patients/{uuid}/summary`) lists `dental` in `sections` when the record shows a Dental tab: a dental clinic, a hospital with an active dental department, or a patient already charted, for someone who may read the chart (`DentalService::onPatient`, the web uses the same rule).
 
+## Simple notes
+
+A dental visit written as simple notes (`docs/dental.md`, "Simple notes"): the presenting complaint, History and Oral examination as plain text. Reading needs `visits.clinical` and `treatments.view` or `visits.diagnose`; writing needs `visits.diagnose`. A `uuid` already used on another visit: 422 on `uuid`. Writes take an `Idempotency-Key` like every API write.
+
+| Method | Path | Body | Answer |
+|---|---|---|---|
+| GET | `visits/{uuid}/dental-notes` | | the notes (below) |
+| PUT | `visits/{uuid}/dental-notes` | `notes` {`medical_history`, `family_history`, `dental_history`, `surgical_history`, `hard_tissues`, `soft_tissues`, `xray`, `diagnosis`: text up to 2000, empty or missing clears it}, `complaints?` (the presenting complaint; the reason follows it in a dental clinic), `base_version?`, `uuid?` | the notes. A `base_version` that is no longer current: 422 on `notes`. Nothing changed: no new version |
+
+The notes: `visit_uuid`; `applies` and `mode` (`simple`, or `detailed` when the visit is written as the case sheet: use `dental-case-sheet` then); `complaints`, `reason`, `diagnosis` (the visit's; the Oral examination diagnosis is mirrored into `diagnosis`); `notes` (all eight keys, null when empty); `version` (0 before the first save); `recorded_at`, `recorded_by`; `carried[]` (the keys filled from the patient's last notes and not yet saved on this visit: medical, family and surgical history carry forward); `groups` {`history`, `examination`}; `fields[]` (`key`, `label`, `group`, `carried`) so the app draws the same form.
+
+Opening a visit (`POST visits`, `POST visits/intake`) also takes `dental_notes` {the eight keys}: saved as the visit's first notes when the visit is written as simple notes and the user has `visits.diagnose`, otherwise not saved. `GET visits/phrases` answers `form` (`vitals`, `vitals_title`, `asks_reason`, `suggests`, `dental_visit_form`, `dental_notes`) with empty suggestion lists for a dental clinic. Every visit carries `vital_signs`, the readings the hospital records. `GET visits/{uuid}/dental-case-sheet` answers `mode` too.
+
 ## The case sheet
 
 The dental case sheet of a visit (`docs/dental.md`, "The case sheet"). Reading needs `treatments.view` or `visits.diagnose`; writing needs `visits.diagnose` (the financial section also `billing.manage`); booking the review needs `appointments.manage`. Every write answers with the whole sheet, as `GET` does, so the app redraws from one shape. Writes take an `Idempotency-Key` like every API write.

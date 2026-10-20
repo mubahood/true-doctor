@@ -19,19 +19,29 @@ Other chapters pick up from here. Lab and radiology staff work on the orders you
 Usually the receptionist opens the visit when the patient arrives.
 
 1. Open **Visits** in the sidebar and press **New visit**. You can also press **New visit** on the patient's record, which chooses the patient for you.
-2. Under **Who is it?**, choose **Registered patient** and search by name, number or phone. For someone who has never been here, choose **New patient** and fill in **First name**, **Last name**, **Sex**, **Date of birth** and **Phone**, and tick **Consent given** and **Texts about their care (SMS and WhatsApp)** if the patient agrees.
+2. Under **Patient**, choose **Registered patient** and search by name, number or phone. For someone who has never been here, choose **New patient** and fill in **First name**, **Last name**, **Sex**, **Date of birth** and **Phone**, and tick **Consent given** and **Texts about the patient's care (SMS and WhatsApp)** if the patient agrees.
 3. Read the box that appears under a registered patient. It may say:
-   - **Already has an open visit**. Opening a second one splits their bill in two. Press **Go to it** to use the open one instead.
+   - **Already has an open visit**. Opening a second one splits the bill in two. Press **Go to it** to use the open one instead.
    - **Booked today at** a time. Press **This visit fulfils it** to link the visit to that appointment.
    - **Outstanding balance** from earlier visits. Raise it with the patient while they are at the desk.
-4. Under **How are they?**, type any vitals you have taken: **Temp °C**, **BP mmHg**, **Pulse bpm**, **Resp /min**, **SpO₂ %**, **Weight kg**, **Height cm**. **BMI** is worked out for you. Leave a reading empty if it was not taken.
-5. Under **Why have they come?**, write the **Reason for visit** and the **Presenting complaints**. Click a suggested phrase to add it; click again to take it out. Add a **Diagnosis** only if it is already known.
-6. Under **Is anybody seeing them yet?**, choose **Pending** (registered, waiting) or **Ongoing** (being seen now).
+4. Under **Vital signs**, type any readings you have taken: **Temp °C**, **BP mmHg**, **Pulse bpm**, **Resp /min**, **SpO₂ %**, **Weight kg**, **Height cm**. **BMI** is worked out for you. Every reading is optional: leave it empty if it was not taken. The form shows only the vital signs your clinic records (see [Setting up](02-setting-up.md), **Visit form**). A dental clinic records blood pressure only, so this part is called **Blood pressure** and holds only **BP mmHg**.
+5. Under **Visit**, write the **Reason for visit** and the **Presenting complaints**. Click a suggested phrase to add it; click again to take it out. Add a **Diagnosis** only if it is already known.
+6. Under **Status**, choose the **Visit status**: **Waiting** (registered, not seen yet) or **Being seen now**.
 7. Press **Create visit**, or **Register & create visit** for a new patient.
 
 True-Doctor gives the visit a number and confirms it at the top of the screen.
 
 If you leave the department empty, the visit takes the doctor's own department, or your clinic's department when it has only one where patients are seen (a laboratory, pharmacy or accounts department does not count). A clinic with one room never prints "No department recorded" on its reports. A hospital with several clinical departments leaves it for you to choose.
+
+### In a dental clinic
+
+A dental clinic's form is shorter and has no suggested phrases:
+
+- There is no **Reason for visit**. Write the **Presenting complaint** under **Visit**, in the patient's own words. The visit is listed under the first words of the complaint, so the visits list, the queue and the reports still show why the patient came.
+- Under **History**, write the **Medical history**, **Family history**, **Dental history** and **Surgical history**. When the patient has been seen before, the medical, family and surgical history are filled in from the last visit. Change whatever is no longer right.
+- Under **Oral examination**, write the **Hard tissues (teeth)**, **Soft tissues (gums)**, **X-ray** and **Diagnosis**. The diagnosis is also the visit's diagnosis, which coding and the reports read.
+
+**History** and **Oral examination** are shown to staff who write clinical notes (the Doctor role and the Hospital Admin). If your receptionist takes the history, give the receptionist role **Diagnose and prescribe** under **Staff and access**. Otherwise the dentist writes them on the visit page, in **Dental notes**.
 
 A visit can also start from an appointment. See [Appointments and the queue](04-appointments-and-queue.md).
 
@@ -56,7 +66,7 @@ Click a visit number to open it. The visit opens over the list in a large window
 
 The full page shows the same visit laid out in panels: **Vitals**, **Clinical**, **Coded diagnoses**, **Bill**, **Lab orders**, **Radiology**, **Dispensing**, **Prescriptions** and **History**. Some panels appear only for the roles that use them. If your hospital has a receipt printer set up, the full page also has a **Queue ticket** button that prints the patient a slip with their number for the day, to wait until called.
 
-In a dental clinic, and on a visit in a dental department, the **Clinical** and **Coded diagnoses** panels are replaced by the dental case sheet: **History**, **Examination**, the dental chart, **Diagnosis**, **Treatment done today** and **Follow-up**. See [Dental](10-dental.md).
+In a dental clinic, and on a visit in a dental department, the **Clinical** and **Coded diagnoses** panels are replaced by the dentist's notes. A dental clinic uses **Dental notes** (the presenting complaint, **History** and **Oral examination** as plain text), then the dental chart, **Treatment done today**, the treatment plan and **Follow-up**. A clinic that chose the **Detailed case sheet** sees the case sheet instead: **History**, **Examination**, the dental chart, **Diagnosis**, **Treatment done today** and **Follow-up**. See [Dental](10-dental.md).
 
 At the top of every visit, True-Doctor shows the patient's allergies and long-term conditions. When the patient's medical history has a red flag ticked, such as a bleeding disorder, a heart valve or a pregnancy, it shows under **Check before treatment**. If allergies were never recorded, it says **Allergies not recorded**. Ask the patient, then record the answer on their record, even if it is "none". If the patient is recorded as deceased, a warning says so.
 
@@ -68,6 +78,8 @@ Nurses, doctors and the Hospital Admin can record vitals.
 2. Fill in what you measured: **Temp °C**, **Blood pressure**, **Weight kg**, **Height cm**, **Pulse**, **SpO₂ %**, **Resp. rate**. Under some fields you can click a value, including the patient's last reading.
 3. Check the **BMI**, which is worked out as you type.
 4. Press **Save vitals**.
+
+The panel asks only for the vital signs your clinic records. In a dental clinic it is called **Blood pressure**: press **Record blood pressure**, type the reading and press **Save blood pressure**. A reading already taken on the visit is always shown and can still be corrected.
 
 Vitals from past visits are on the **Clinical** tab of the patient record, newest first, so you can read the trend.
 
@@ -187,7 +199,7 @@ Raising the invoice and taking payment are covered in [Billing and payments](07-
 Use this when a visit was opened in error, is a duplicate, or the patient left.
 
 1. Press **Cancel visit**.
-2. Write why under **Why is it being called off?**. A reason is required.
+2. Write why under **Reason for cancelling**. A reason is required.
 3. Press **Cancel visit** to confirm, or **Keep the visit** to go back.
 
 Everything already recorded stays on the visit. Open orders keep their charges until each one is cancelled.

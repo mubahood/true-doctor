@@ -1,12 +1,12 @@
 <div class="tb-card">
   <div class="tb-card-header">
-    <span class="tb-card-title"><i class="fas fa-heart-pulse" aria-hidden="true"></i> Vitals</span>
-    @can('recordVitals', $this->visit)
+    <span class="tb-card-title"><i class="fas fa-heart-pulse" aria-hidden="true"></i> {{ $this->title }}</span>
+    @if($this->fields !== [] && auth()->user()?->can('recordVitals', $this->visit))
       <button type="button" class="btn-tb btn-tb-sm" wire:click="openForm">
         <i class="fas {{ $this->visit->vitals_recorded_at ? 'fa-pen' : 'fa-plus' }}" aria-hidden="true"></i>
-        {{ $this->visit->vitals_recorded_at ? 'Edit vitals' : 'Record vitals' }}
+        {{ $this->visit->vitals_recorded_at ? 'Edit '.mb_strtolower($this->title) : 'Record '.mb_strtolower($this->title) }}
       </button>
-    @endcan
+    @endif
   </div>
 
   {{-- What was measured. Vitals are read far more often than written, so this
@@ -33,12 +33,12 @@
         @endforeach
       </div>
     @else
-      <x-ui.empty compact icon="fa-heart-pulse" message="No vitals recorded on this visit." />
+      <x-ui.empty compact icon="fa-heart-pulse" :message="'No '.mb_strtolower($this->title).' recorded on this visit.'" />
     @endif
   </div>
 
   {{-- ── Recording them ─────────────────────────────────────────── --}}
-  <x-ui.modal size="md" show="showForm" title="Record vitals">
+  <x-ui.modal size="md" show="showForm" :title="'Record '.mb_strtolower($this->title)">
     @if($showForm)
       <form wire:submit="save" style="display:contents;">
         <div class="tb-modal-body">
@@ -52,6 +52,8 @@
               ['spo2', 'SpO₂ %', 'v-spo2', 'number', null, null],
               ['respiratory_rate', 'Resp. rate', 'v-rr', 'number', null, null],
             ];
+            // Only the readings this hospital records (and any already taken).
+            $vitalFields = array_values(array_filter($vitalFields, fn ($f) => in_array($f[0], $this->fields, true)));
             $suggestions = $this->suggestions;
           @endphp
 
@@ -84,15 +86,17 @@
             @endforeach
           </div>
 
+          @if(in_array('weight', $this->fields, true) && in_array('height', $this->fields, true))
           <div class="tb-flex tb-mt-3">
             <span class="tb-label">BMI</span>
             <strong aria-live="polite">{{ $this->bmi !== null ? number_format($this->bmi, 2) : '—' }}</strong>
           </div>
+          @endif
         </div>
         <div class="tb-modal-foot">
           <button type="button" class="btn-tb btn-tb-ghost" wire:click="$set('showForm', false)">Cancel</button>
           <button type="submit" class="btn-tb btn-tb-primary" wire:loading.attr="disabled" wire:target="save">
-            <span wire:loading.remove wire:target="save"><i class="fas fa-check" aria-hidden="true"></i> Save vitals</span>
+            <span wire:loading.remove wire:target="save"><i class="fas fa-check" aria-hidden="true"></i> Save {{ mb_strtolower($this->title) }}</span>
             <span wire:loading wire:target="save"><i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Saving…</span>
           </button>
         </div>

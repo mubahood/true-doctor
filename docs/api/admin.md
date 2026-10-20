@@ -116,6 +116,8 @@ Device: `{uuid, label, platform, user{id,name}, state: active|stale|revoked, reg
 ### Your practice: `admin/settings/practice`
 - `GET` → `{chosen, sector, packs[], modules[], modules_customised, addable_packs[], counts{}, preview{part:{label,new,total}}, catalogue{sectors[], packs[], modules[], parts{}}}`.
 - `PUT/PATCH` `{sector*, packs[], modules[]}`: `modules` omitted or `null` means "follow the sector"; a list is the admin's own choice. Records the answers only; nothing that exists changes (`PracticeService::choose`).
+- The `GET`/`PUT` answer also carries `visit_form` `{vitals[], vitals_title, vitals_customised, shows_bmi, dental_notes, dental_notes_customised, dentistry, asks_reason, suggests, dental_visit_form, catalogue{vitals{}, dental_notes{}}}`.
+- `PUT/PATCH admin/settings/practice/visit-form` `{vitals[]?, dental_notes?}` (`simple` or `detailed`): how a visit is written down (`PracticeService::chooseVisitForm`). A field left out keeps its value; `null` follows the practice again (a dental clinic: blood pressure only and simple notes). Returns the practice payload.
 - `POST admin/settings/practice/apply` `{parts[]}` (any of `departments, services, rooms, wards, lab_tests, radiology, stock, accounts`; default all that apply): sets the hospital up from its saved template, only where something is missing (`PracticeService::apply`). 422 until a practice is chosen. Returns `{created{part:n}, total, …practice}`.
 
 ### Hospital letterhead: `admin/settings/hospital`

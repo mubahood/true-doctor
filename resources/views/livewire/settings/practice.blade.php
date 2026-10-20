@@ -8,4 +8,7 @@
       <livewire:onboarding.steps.practice :key="'settings-practice'" />
     </div>
   </div>
+
+  {{-- How a visit is written down: vital signs, and simple or detailed dental notes. --}}
+  <livewire:settings.visit-form-settings />
 </div>

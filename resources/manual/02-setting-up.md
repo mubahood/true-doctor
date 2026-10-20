@@ -62,6 +62,16 @@ What kind of practice you are decides what True-Doctor suggests everywhere: serv
 3. Under **Parts of the system you'll use**, switch on or off: **Inpatient care**, **Laboratory**, **Imaging**, **Pharmacy & stock**, **Insurance** and **Prepaid cards**. What you switch off is left out of everyone's menu. You can switch it back on at any time, and nothing is lost. Click **Use the suggested set** to go back to the usual choice for your practice.
 4. Click **This is my practice** the first time, or **Save changes** later.
 
+### Visit form
+
+Below your practice, the **Visit form** card decides how a visit is written down.
+
+1. Under **Vital signs recorded**, tick the readings your clinic takes: **Blood pressure**, **Temperature**, **Pulse**, **Respiratory rate**, **Oxygen saturation (SpO₂)**, **Weight** and **Height**. The new visit form and the visit page ask only for these. A dental clinic starts with **Blood pressure** only; every other practice starts with all of them. A reading already taken on a visit is always kept and shown.
+2. If your practice does dentistry, under **Dental notes** choose **Simple notes** (the presenting complaint, history and oral examination as plain text, the usual choice for a dental clinic) or **Detailed case sheet** (structured sections with coded diagnoses, X-rays and instructions). A visit already written keeps the way it was written.
+3. Press **Save visit form**. Press **Use the defaults for your practice** to go back to the usual choice.
+
+See [Visits and consultation](05-visits-and-consultation.md) and [Dental](10-dental.md).
+
 ### Setting up the rest in one go
 
 After you save, a box called **Set up the rest in one go** appears. It lists what your practice's starter set would add (departments, priced services, rooms, wards, lab tests, imaging studies, stock items, and accounts for the books) and how many of each you do not have yet.
