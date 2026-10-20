@@ -57,7 +57,7 @@ class OrderMigrationTest extends TestCase
      */
     private function rollBackToBeforeOrders(): void
     {
-        for ($step = 0; $step < 60 && ! Schema::hasTable('medical_services'); $step++) {
+        for ($step = 0; $step < 300 && ! Schema::hasTable('medical_services'); $step++) {
             $this->artisan('migrate:rollback', ['--step' => 1])->run();
         }
 
