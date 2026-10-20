@@ -42,6 +42,8 @@ class SmokeRoutesTest extends TestCase
         'admin.manual', 'admin.manual.pdf',
         // The Ministry forms as PDF or CSV.
         'admin.reports.hmis.export',
+        // A monthly report as PDF, Excel or CSV (opened for each report and view by MonthlyReportsTest).
+        'admin.reports.monthly.pdf', 'admin.reports.monthly.export',
         'admin.lab-orders.pdf',
         'admin.radiology-orders.pdf',
         'admin.admissions.summary',

@@ -364,6 +364,11 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'subscribed', 'onboarding',
     // The Ministry of Health forms (HMIS 105, 108, 033b) and the coding worklist they depend on.
     Route::get('reports/hmis', \App\Livewire\Reports\Hmis::class)->name('reports.hmis');
     Route::get('reports/hmis/{form}.{format}', [\App\Http\Controllers\Admin\HmisController::class, 'export'])->where(['form' => '105|108|033b', 'format' => 'pdf|csv'])->name('reports.hmis.export');
+    // Monthly reports: income, expenses, accounts receivable and patient records,
+    // as a detailed table or a summary; PDF opens in a tab, Excel and CSV download (docs/reports.md).
+    Route::get('reports/monthly', \App\Livewire\Reports\Monthly::class)->name('reports.monthly');
+    Route::get('reports/monthly/{type}/{view}.pdf', [\App\Http\Controllers\Admin\MonthlyReportController::class, 'document'])->where(['type' => 'income|expenses|receivables|patients', 'view' => 'detail|summary'])->name('reports.monthly.pdf');
+    Route::get('reports/monthly/{type}/{view}.{format}', [\App\Http\Controllers\Admin\MonthlyReportController::class, 'export'])->where(['type' => 'income|expenses|receivables|patients', 'view' => 'detail|summary', 'format' => 'xlsx|csv'])->name('reports.monthly.export');
     Route::get('diagnoses', \App\Livewire\Diagnoses\Worklist::class)->name('diagnoses.worklist');
 
     // ── Subscription / plan checkout (Step 21) ────────────────

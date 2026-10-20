@@ -215,6 +215,10 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
         Route::post('notifications/{id}/read', [\App\Http\Controllers\Api\V1\NotificationController::class, 'read'])->name('api.notifications.read');
         Route::get('reports', [\App\Http\Controllers\Api\V1\ReportController::class, 'index'])->name('api.reports.index');
         Route::get('reports/pdf', [\App\Http\Controllers\Admin\ReportController::class, 'pdf'])->name('api.reports.pdf');
+        // Monthly reports for the app: the same rows and summary as the web, and its files (docs/api/reports.md).
+        Route::get('reports/monthly', [\App\Http\Controllers\Api\V1\MonthlyReportController::class, 'index'])->name('api.reports.monthly');
+        Route::get('reports/monthly/{type}/{view}.pdf', [\App\Http\Controllers\Admin\MonthlyReportController::class, 'document'])->where(['type' => 'income|expenses|receivables|patients', 'view' => 'detail|summary'])->name('api.reports.monthly.pdf');
+        Route::get('reports/monthly/{type}/{view}.{format}', [\App\Http\Controllers\Admin\MonthlyReportController::class, 'export'])->where(['type' => 'income|expenses|receivables|patients', 'view' => 'detail|summary', 'format' => 'xlsx|csv'])->name('api.reports.monthly.export');
         Route::get('beds', [\App\Http\Controllers\Api\V1\AdmissionController::class, 'beds'])->name('api.beds.index');
         Route::post('admissions/{admission}/transfer', [\App\Http\Controllers\Api\V1\AdmissionController::class, 'transfer'])->name('api.admissions.transfer');
         Route::post('admissions/{admission}/discharge', [\App\Http\Controllers\Api\V1\AdmissionController::class, 'discharge'])->name('api.admissions.discharge');

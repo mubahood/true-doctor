@@ -167,6 +167,8 @@ final class Navigation
                     ['label' => 'Journal', 'icon' => 'fa-book', 'route' => 'admin.finance.journal', 'match' => ['admin.finance.journal'], 'can' => 'finance.view', 'tenant' => true],
                     ['label' => 'Chart of accounts', 'icon' => 'fa-list-ol', 'route' => 'admin.finance.accounts', 'match' => ['admin.finance.accounts', 'admin.finance.accounts.*'], 'can' => 'finance.view', 'tenant' => true],
                     ['label' => 'Reports', 'icon' => 'fa-chart-line', 'route' => 'admin.reports.index', 'match' => ['admin.reports.index', 'admin.reports.pdf'], 'can' => 'reports.view'],
+                    // Monthly reports: the income book, expenditure book, receivables list and patient register (docs/reports.md).
+                    ['label' => 'Monthly reports', 'icon' => 'fa-calendar-days', 'route' => 'admin.reports.monthly', 'match' => ['admin.reports.monthly*'], 'can' => 'reports.view', 'tenant' => true],
                     // The Ministry of Health forms, from the coded diagnoses (docs/api/diagnoses.md).
                     ['label' => 'Ministry reports (HMIS)', 'icon' => 'fa-landmark', 'route' => 'admin.reports.hmis', 'match' => ['admin.reports.hmis*'], 'can' => 'reports.view'],
                     ['label' => 'Financial years', 'icon' => 'fa-calendar-alt', 'route' => 'admin.financial-years.index', 'match' => ['admin.financial-years.*'], 'can' => 'finance.view'],

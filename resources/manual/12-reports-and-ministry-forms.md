@@ -1,6 +1,6 @@
 # Reports and ministry forms
 
-This chapter is for hospital owners, administrators, accountants, records officers and in-charges. It covers the **Reports** page, the Ministry of Health forms (HMIS 105, 108 and 033b), the **Diagnoses to code** list that keeps those forms complete, the suggestions True-Doctor makes about what needs attention, and the owner's daily summary.
+This chapter is for hospital owners, administrators, accountants, records officers and in-charges. It covers the **Reports** page, the **Monthly reports** (income, expenditure, accounts receivable and patient records), the Ministry of Health forms (HMIS 105, 108 and 033b), the **Diagnoses to code** list that keeps those forms complete, the suggestions True-Doctor makes about what needs attention, and the owner's daily summary.
 
 Every figure here is read from your live records: payments, invoices, visits, admissions, stock and the patient register. Nothing is typed in twice, so the better your daily records, the better your reports.
 
@@ -11,11 +11,12 @@ For the books themselves (statements, the journal and financial years), see [Fin
 | Page | Who |
 |---|---|
 | **Reports** | Hospital Admin, Accountant |
+| **Monthly reports** | Hospital Admin, Accountant |
 | **Ministry reports (HMIS)** | Hospital Admin, Accountant |
 | **Diagnoses to code** | Doctor, Records Officer, Hospital Admin |
 | **My daily summary** | Hospital Admin only, for themselves |
 
-**Reports** and **Ministry reports (HMIS)** are in the **Finance** group of the menu, under Billing and finance. **Diagnoses to code** is under Patient care.
+**Reports**, **Monthly reports** and **Ministry reports (HMIS)** are in the **Finance** group of the menu, under Billing and finance. **Diagnoses to code** is under Patient care.
 
 ## The Reports page
 
@@ -58,6 +59,61 @@ Inpatient figures only mean something if your hospital admits patients. A clinic
 ### Printing the report
 
 Press **Print report**. A PDF of the same period opens in a new tab, ready to print or attach to a board paper. The printed report lists the top 20 services instead of 10.
+
+## Monthly reports
+
+**Monthly reports** replaces the spreadsheets many clinics keep by hand: the income book, the expenditure book, the list of who owes money, and the patient register. Every figure comes from your daily records, so there is nothing to copy across.
+
+### Producing a report
+
+1. Open **Monthly reports** from the menu.
+2. Choose the report: **Income**, **Expenditure**, **Accounts receivable** or **Patient records**.
+3. Choose the month in **Month**. The page opens on this month.
+4. To report on other dates, press **Choose dates** and set **From** and **To**. Press **Whole month** to go back to a month.
+5. Choose **Detailed table** for every line, or **Summary** for the totals.
+6. Press **PDF** to open a copy on your letterhead in a new tab, ready to print. Press **Excel** or **CSV** to download it as a spreadsheet.
+
+The choice is kept in the page address, so you can bookmark a report or send the link to a colleague who also has access.
+
+A detailed table on paper is printed sideways. A very long month prints the first 1,500 lines and says how many more there are; those are in the Excel and CSV files, which always have every line. The totals on the PDF always cover the whole period.
+
+### Income
+
+Money received from patients, less money given back.
+
+- **Detailed table**: one line for each payment, with the date, the receipt number, the patient's number and name, what the bill was for, the invoice number, how it was paid, the doctor (the dentist in a dental clinic) and the amount. Each refund is a line of its own with a minus amount. Under the table are the totals for each payment method, what was received, what was refunded and the **Net income**.
+- **Summary**: totals by method, by day, by service, by doctor, the refunds and credit notes, the net income, and the same figures for the month before so you can see the change.
+
+Income for a month is exactly the cashier's day summaries for that month added together. A credit note lowers what a patient owes but no money changes hands, so it is shown beside the income and not taken off it. In **By service**, a payment is shared across the lines of the bill it paid, in proportion to each line.
+
+### Expenditure
+
+Your expenditure book: every payment out of your cash drawer, bank account and mobile money, as recorded with **Money out** in Finance (see [Finance](13-finance.md)), and stock paid for on delivery when your finance settings say deliveries are paid from a book.
+
+- **Detailed table**: one line for each account of each payment, with the date, the reference, the account, the kind of spending, who was paid, the description, the book it was paid from and the amount. The kinds are **Running expense**, **Stock purchase**, **Equipment and other assets**, **Paying a supplier**, **Paying what is owed**, **Owner drawings** and **Cost of sales**.
+- **Summary**: totals by kind, by account, by book, by week, the **Total paid out** and the **Running expenses**, and the month before.
+
+**Running expenses** are what it cost to run the clinic, such as rent, salaries and electricity. They match the running costs on the income statement. **Total paid out** also includes equipment bought, suppliers paid and the owner's drawings, which are not running costs.
+
+If a payment out was reversed, it still shows in its own month and the reversal shows as a minus line in the month it was reversed, exactly as the books read.
+
+### Accounts receivable
+
+Who owed money at the end of the period. For the month you are in, that means today.
+
+- **Detailed table**: each unpaid invoice with the patient's number, name and phone, the invoice number and date, the invoice total, what was paid, what was credited, the balance, the days outstanding and the age band: 0 to 30 days, 31 to 60, 61 to 90, and over 90.
+- **Summary**: the totals in each age band, the number of debtors, the ten largest balances, and what was collected during the period from what was owed at its start.
+
+For the month you are in, the list is exactly the debtors list. For an earlier month, each balance is worked back to the last day of that month from the payments, refunds and credit notes made since. A voided invoice is never counted.
+
+### Patient records
+
+The patient register: one line for each visit in the period.
+
+- **Detailed table**: the visit date, the patient's number, name, sex, age and phone, whether the patient is new or returning, the presenting complaint and the diagnosis (shown only to people who may read clinical notes, so not to an Accountant), the treatment done, the doctor (the dentist in a dental clinic), and what was billed, paid and still owed for that visit.
+- **Summary**: patients seen, new and returning visits, patients by sex and by age group, the top treatments, the top diagnoses (again only for people who may read clinical notes), visits by doctor, and visits per day.
+
+A patient is **New** on their first visit at your clinic and **Returning** after that, the same rule the HMIS 105 uses. The diagnosis is the coded one where there is one, otherwise what the doctor wrote. For a dental procedure on one tooth, the tooth number is shown beside the treatment. Cancelled visits are left out.
 
 ## Ministry reports (HMIS)
 
@@ -164,3 +220,4 @@ Each Hospital Admin sets their own summary. One person's choice does not affect 
 - Before submitting the 105 or 108, make sure **Missing data** is empty.
 - Check the 033b every Monday for the week just ended, and act at once on any notifiable case.
 - Use **Last month** on the Reports page for your monthly management meeting, and print it.
+- At the start of each month, print the **Summary** of each of the four **Monthly reports** for the month just ended, and keep the Excel files with your accounts.

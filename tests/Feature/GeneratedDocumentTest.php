@@ -188,6 +188,9 @@ class GeneratedDocumentTest extends TestCase
                 'from' => now()->startOfMonth()->toDateString(),
                 'to' => now()->endOfMonth()->toDateString(),
             ])],
+            // Monthly reports (docs/reports.md): a detailed table on its side, and a summary.
+            ['monthly income table', route('admin.reports.monthly.pdf', ['type' => 'income', 'view' => 'detail'])],
+            ['monthly patient records summary', route('admin.reports.monthly.pdf', ['type' => 'patients', 'view' => 'summary'])],
         ];
     }
 
