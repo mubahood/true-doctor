@@ -13,7 +13,8 @@ use Livewire\Component;
  * Settings, Your practice: how a visit is written down. Which vital signs the
  * new visit form and the visit page ask for (a dental clinic: blood pressure
  * only), and, where the hospital does dentistry, whether a dental visit takes
- * simple notes or the detailed case sheet. The same PracticeService the app's
+ * simple notes or the detailed case sheet, and what the printed visit report
+ * shows. The same PracticeService the app's
  * settings call. Changing it changes what is asked, never what was recorded.
  */
 class VisitFormSettings extends Component
@@ -22,6 +23,8 @@ class VisitFormSettings extends Component
     public array $vitals = [];
 
     public string $dentalNotes = VisitForm::DETAILED;
+
+    public string $visitReport = VisitForm::FULL;
 
     public function mount(): void
     {
@@ -34,6 +37,7 @@ class VisitFormSettings extends Component
         $form = VisitForm::of(app(HospitalSettings::class)->hospital());
         $this->vitals = $form->vitals;
         $this->dentalNotes = $form->dentalNotes;
+        $this->visitReport = $form->visitReport;
     }
 
     /** Back to what the kind of practice suggests. */
@@ -43,7 +47,7 @@ class VisitFormSettings extends Component
         $hospital = app(HospitalSettings::class)->hospital();
         abort_if($hospital === null, 404);
 
-        $service->chooseVisitForm($hospital, null, null);
+        $service->chooseVisitForm($hospital, null, null, null);
         $this->readSaved();
         $this->dispatch('toast', message: 'The visit form follows your kind of practice again.', type: 'success');
     }
@@ -58,6 +62,7 @@ class VisitFormSettings extends Component
             'vitals' => ['array'],
             'vitals.*' => ['string', 'in:'.implode(',', array_keys(VisitForm::VITALS))],
             'dentalNotes' => ['required', 'in:'.implode(',', array_keys(VisitForm::DENTAL_NOTES))],
+            'visitReport' => ['required', 'in:'.implode(',', array_keys(VisitForm::VISIT_REPORTS))],
         ]);
 
         $practice = Practice::of($hospital);
@@ -70,6 +75,7 @@ class VisitFormSettings extends Component
             $hospital,
             $vitals === VisitForm::defaultVitals($practice) ? null : $vitals,
             ! $form->dentistry || $this->dentalNotes === VisitForm::defaultDentalNotes($practice) ? null : $this->dentalNotes,
+            $this->visitReport === VisitForm::defaultVisitReport($practice) ? null : $this->visitReport,
         );
         $this->readSaved();
 

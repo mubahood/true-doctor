@@ -109,6 +109,84 @@ class VisitReportService
     }
 
     /**
+     * The patient summary (Settings, Your practice, "Visit report shows"; a
+     * dental clinic's default): what the patient takes home, and nothing of
+     * the clinic's own record. The treatment done, the dosage, the bill with
+     * its payments and balance, and the appointments still to come. No
+     * history, examination, findings, diagnosis, notes or chart.
+     *
+     * @return array{
+     *     visit:Visit,
+     *     patient:\App\Models\Patient|null,
+     *     age:?string,
+     *     treatment:list<array{name:string,tooth:string|null}>,
+     *     dosage:Collection<int,\App\Models\DoseItem>,
+     *     lines:list<array{name:string,quantity:string,amount:string}>,
+     *     invoice:\App\Models\Invoice|null,
+     *     payments:Collection<int,\App\Models\Payment>,
+     *     totals:array<string,string>,
+     *     appointments:Collection<int,\App\Models\Appointment>
+     * }
+     */
+    public function summary(Visit $visit): array
+    {
+        $visit->loadMissing([
+            'patient',
+            'doctor',
+            'prescriptions' => fn ($q) => $q->with('doseItems')->oldest('id'),
+            'invoices' => fn ($q) => $q->with(['items', 'payments'])->latest('id'),
+            'orderItems',
+        ]);
+
+        $invoice = $visit->invoices->firstWhere(fn ($i) => $i->status !== \App\Enums\InvoiceStatus::Void);
+        $billable = $visit->orderItems->filter(fn ($line) => $line->status->isBillable())->sortBy('id')->values();
+
+        // The bill: the invoice's own lines once raised, else the bill as it stands.
+        $lines = $invoice !== null
+            ? $invoice->items->map(fn ($i) => ['name' => (string) $i->description, 'quantity' => (string) $i->quantity, 'amount' => (string) $i->line_total])
+            : $billable->map(fn ($i) => ['name' => (string) $i->name, 'quantity' => (string) $i->quantity, 'amount' => (string) $i->line_total]);
+
+        // Treatment done: the dental procedures done on this visit with their
+        // teeth, else the services charged on it.
+        $treatment = [];
+        if ($visit->patient !== null && DentalService::enabledFor(app(HospitalSettings::class)->hospital())) {
+            foreach (app(DentalCaseSheetService::class)->doneToday($visit) as $done) {
+                $treatment[] = [
+                    'name' => (string) $done['procedure'],
+                    'tooth' => $done['tooth'] === null ? null : trim($done['tooth'].' '.($done['surfaces'] ?? '')),
+                ];
+            }
+        }
+        if ($treatment === []) {
+            foreach ($billable as $line) {
+                if ($line->service_id !== null) {
+                    $treatment[] = ['name' => (string) $line->name, 'tooth' => null];
+                }
+            }
+        }
+
+        $appointments = $visit->patient === null ? collect() : \App\Models\Appointment::query()
+            ->with('doctor:id,name')
+            ->where('patient_id', $visit->patient_id)
+            ->whereIn('status', [\App\Enums\AppointmentStatus::Scheduled->value, \App\Enums\AppointmentStatus::Confirmed->value])
+            ->where('scheduled_at', '>=', now())
+            ->orderBy('scheduled_at')->limit(5)->get();
+
+        return [
+            'visit' => $visit,
+            'patient' => $visit->patient,
+            'age' => $this->age($visit),
+            'treatment' => $treatment,
+            'dosage' => $visit->prescriptions->flatMap(fn ($p) => $p->doseItems)->values(),
+            'lines' => $lines->values()->all(),
+            'invoice' => $invoice,
+            'payments' => $invoice === null ? collect() : $invoice->payments->sortBy('created_at')->values(),
+            'totals' => $this->totals($visit, $invoice),
+            'appointments' => $appointments,
+        ];
+    }
+
+    /**
      * The dental case sheet, for a dental visit and a reader who may read it
      * (the web hides it from the desk, so the printout does too). Anyone else
      * gets the general layout: reason, complaints and diagnosis.

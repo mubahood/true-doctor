@@ -528,6 +528,15 @@
           @endforeach
         @endif
 
+        {{-- ── A dental clinic's dosage: optional, how the patient takes each medicine
+             (docs/pharmacy.md, "Dosage"). Dispensed and billed by the pharmacy. --}}
+        @if($this->writesDosageHere())
+          <section class="tb-vform-step" wire:key="dn-dosage">
+            <h4 class="tb-step-h">Dosage<span class="tb-step-note">Optional</span></h4>
+            @include('livewire.partials.dosage-rows', ['keep' => 0])
+          </section>
+        @endif
+
         {{-- ── Status ──────────────────────────────────────────────────────
              Two states, and only two: a visit is registered and waiting, or
              somebody has begun. Everything after Ongoing is reached by

@@ -186,6 +186,10 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
         Route::get('visits/{visit}/prescriptions', [\App\Http\Controllers\Api\V1\PrescriptionController::class, 'index'])->name('api.prescriptions.index');
         Route::post('visits/{visit}/prescriptions', [\App\Http\Controllers\Api\V1\PrescriptionController::class, 'store'])->name('api.prescriptions.store');
         Route::post('doses/{record}', [\App\Http\Controllers\Api\V1\PrescriptionController::class, 'markDose'])->name('api.doses.mark');
+        // The dosage on a visit: medicine from stock, dose, how often, days (docs/api/dosage.md).
+        Route::get('visits/{visit}/dosage', [\App\Http\Controllers\Api\V1\DosageController::class, 'index'])->name('api.dosage.index');
+        Route::post('visits/{visit}/dosage', [\App\Http\Controllers\Api\V1\DosageController::class, 'store'])->name('api.dosage.store');
+        Route::delete('visits/{visit}/dosage/{dose}', [\App\Http\Controllers\Api\V1\DosageController::class, 'destroy'])->name('api.dosage.destroy');
         // The work on a visit (OrderDesk / OrderService).
         Route::get('visits/{visit}/orders', [\App\Http\Controllers\Api\V1\OrderController::class, 'index'])->name('api.orders.index');
         Route::post('visits/{visit}/orders', [\App\Http\Controllers\Api\V1\OrderController::class, 'store'])->name('api.orders.store');

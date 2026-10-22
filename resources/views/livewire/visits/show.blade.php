@@ -157,7 +157,13 @@
       @endcan
 
       @can('viewClinical', $visit)
-        <livewire:visits.panels.prescriptions :visit-id="$visit->id" :key="'rx-'.$visit->id" />
+        {{-- A dental clinic writes the medicine as a dosage: picked from stock, the dose,
+             how often, for how many days (docs/pharmacy.md, "Dosage"). --}}
+        @if(\App\Support\Practice\VisitForm::current()->writesDosage())
+          <livewire:visits.panels.dosage :visit-id="$visit->id" :key="'dosage-'.$visit->id" />
+        @else
+          <livewire:visits.panels.prescriptions :visit-id="$visit->id" :key="'rx-'.$visit->id" />
+        @endif
       @endcan
 
       <div class="tb-card">

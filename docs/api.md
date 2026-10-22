@@ -100,6 +100,7 @@ Refunds and credit notes (ask, approve, reject, PDF): [`api/refunds.md`](api/ref
 Reports and the monthly reports (income, expenses, receivables, patient records; summary or detail; PDF, Excel, CSV): [`api/reports.md`](api/reports.md).
 Notifications, devices, notification preferences and upcoming reminders: [`api/notify.md`](api/notify.md).
 Suppliers, purchase orders, goods received and returns to supplier: [`api/procurement.md`](api/procurement.md).
+The dosage on a visit (medicine from stock, dose, how often, days; `GET`/`POST`/`DELETE visits/{uuid}/dosage`): [`api/dosage.md`](api/dosage.md).
 The app's "Try the demo" door (`GET /public/demo`, `POST /public/demo/login`, `meta.demo`; SaaS only): [`api/demo.md`](api/demo.md).
 The owner's daily summary (`GET`/`PUT /owner-summary`, hospital administrator only): [`api/owner-summary.md`](api/owner-summary.md).
 The data plane - `GET /bootstrap`, `meta.capabilities`, `GET /search`, ETag/`304`, `?updated_since=`, tombstones (`removed`) and the

@@ -47,7 +47,7 @@ use Livewire\Component;
 class SelectSearch extends Component
 {
     /** Whitelisted resources — anything else is refused at mount. */
-    public const RESOURCES = ['patients', 'visits', 'doctors', 'clinicians', 'staff', 'invoices-open', 'beds-available', 'departments', 'rooms', 'providers', 'stock-items', 'services', 'wards'];
+    public const RESOURCES = ['patients', 'visits', 'doctors', 'clinicians', 'staff', 'invoices-open', 'beds-available', 'departments', 'rooms', 'providers', 'stock-items', 'medicines', 'services', 'wards'];
 
     private const RESULT_LIMIT = 20;
 
@@ -211,7 +211,7 @@ class SelectSearch extends Component
         $ids = match ($this->resource) {
             'staff', 'doctors', 'clinicians' => $this->mePlusRecentColleagues(),
             'departments' => $this->busiest('department_id'),
-            'stock-items' => $this->mostDispensed(),
+            'stock-items', 'medicines' => $this->mostDispensed(),
             'services' => $this->mostCharged(),
             'wards' => $this->wardsWithRoom(),
             'patients' => $this->recentlySeen(),
@@ -549,6 +549,26 @@ class SelectSearch extends Component
                     'id' => (int) $s->id,
                     'label' => (string) $s->name,
                     'meta' => trim(self::trimZeros((string) $s->current_quantity).' '.$s->unit).' · '.HospitalSettings::money($s->sale_price),
+                ])
+                ->values()->all(),
+
+            // The dosage on a visit (docs/pharmacy.md, "Dosage"): every active
+            // item in stock, even one that has run out, since writing how to
+            // take a medicine does not hand it over.
+            'medicines' => StockItem::query()
+                ->where('is_active', true)
+                ->when($pinned, fn ($q) => $q->whereKey($onlyId))
+                ->when($searching, fn ($q) => $q->where(fn ($qq) => $qq
+                    ->where('name', 'like', $like)->orWhere('sku', 'like', $like)))
+                ->orderBy('name')
+                ->limit($limit)
+                ->get(['id', 'name', 'unit', 'current_quantity'])
+                ->map(fn (StockItem $s) => [
+                    'id' => (int) $s->id,
+                    'label' => (string) $s->name,
+                    'meta' => bccomp((string) $s->current_quantity, '0', 2) > 0
+                        ? trim(self::trimZeros((string) $s->current_quantity).' '.$s->unit).' in stock'
+                        : 'Out of stock',
                 ])
                 ->values()->all(),
 

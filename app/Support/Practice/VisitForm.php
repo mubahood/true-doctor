@@ -16,6 +16,11 @@ use App\Support\HospitalSettings;
  * practice). A dental clinic records blood pressure only and writes simple
  * notes; every other practice records every vital and keeps the detailed
  * case sheet, which is what every hospital had before there was a choice.
+ *
+ * `visit_report` (`summary`, `full`, or null to follow the practice) is what
+ * the printed visit report shows: a dental clinic hands the patient a summary
+ * (treatment, dosage, bill, appointments) and keeps its examinations in the
+ * system; every other practice prints the full clinical record.
  */
 final class VisitForm
 {
@@ -40,6 +45,16 @@ final class VisitForm
         self::DETAILED => 'Detailed case sheet',
     ];
 
+    public const SUMMARY = 'summary';
+
+    public const FULL = 'full';
+
+    /** What the printed visit report shows. */
+    public const VISIT_REPORTS = [
+        self::SUMMARY => 'Patient summary',
+        self::FULL => 'Full clinical record',
+    ];
+
     /** The vitals a dental clinic records unless it chooses otherwise. */
     private const DENTAL_VITALS = ['blood_pressure'];
 
@@ -51,6 +66,8 @@ final class VisitForm
         public readonly bool $dentalNotesCustomised,
         public readonly bool $dentalClinic,
         public readonly bool $dentistry,
+        public readonly string $visitReport = self::FULL,
+        public readonly bool $visitReportCustomised = false,
     ) {}
 
     /** The visit form of the hospital in context (a general hospital's where there is none). */
@@ -67,6 +84,7 @@ final class VisitForm
 
         $vitals = is_array($stored['vitals'] ?? null) ? self::validVitals($stored['vitals']) : null;
         $notes = in_array($stored['dental_notes'] ?? null, array_keys(self::DENTAL_NOTES), true) ? (string) $stored['dental_notes'] : null;
+        $report = in_array($stored['visit_report'] ?? null, array_keys(self::VISIT_REPORTS), true) ? (string) $stored['visit_report'] : null;
 
         return new self(
             $vitals ?? self::defaultVitals($practice),
@@ -75,6 +93,8 @@ final class VisitForm
             $notes !== null,
             $dentalClinic,
             DentalService::enabledFor($hospital),
+            $report ?? self::defaultVisitReport($practice),
+            $report !== null,
         );
     }
 
@@ -87,6 +107,11 @@ final class VisitForm
     public static function defaultDentalNotes(Practice $practice): string
     {
         return $practice->sector->key === 'dental_clinic' ? self::SIMPLE : self::DETAILED;
+    }
+
+    public static function defaultVisitReport(Practice $practice): string
+    {
+        return $practice->sector->key === 'dental_clinic' ? self::SUMMARY : self::FULL;
     }
 
     /** @param array<mixed> $vitals @return list<string> in the order a form asks for them */
@@ -134,6 +159,21 @@ final class VisitForm
     }
 
     /**
+     * A dental clinic writes the medicine as a dosage (docs/pharmacy.md,
+     * "Dosage"): picked from stock, the dose, how often, for how many days.
+     */
+    public function writesDosage(): bool
+    {
+        return $this->dentalClinic;
+    }
+
+    /** The printed visit report is the patient summary, not the clinical record. */
+    public function printsSummary(): bool
+    {
+        return $this->visitReport === self::SUMMARY;
+    }
+
+    /**
      * The reason a visit lists under, from the first words of the presenting
      * complaint: its first line or sentence, at most ten words and 60
      * characters, so a list, the queue and a report still show something.
@@ -169,6 +209,9 @@ final class VisitForm
             'asks_reason' => $this->asksReason(),
             'suggests' => $this->suggests(),
             'dental_visit_form' => $this->dentalVisitForm(),
+            'dosage' => $this->writesDosage(),
+            'visit_report' => $this->visitReport,
+            'visit_report_customised' => $this->visitReportCustomised,
         ];
     }
 }

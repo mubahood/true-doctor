@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Visit;
 use App\Services\VisitReportService;
 use App\Support\HospitalSettings;
+use App\Support\Practice\VisitForm;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 /**
@@ -28,6 +29,16 @@ class VisitController extends Controller
         $patient = $visit->patient()->withTrashed()->first();
         if ($patient !== null) {
             app(\App\Services\Audit\RecordAccessLog::class)->printed($patient, auth()->user(), 'Visit report '.$visit->visit_no);
+        }
+
+        // A practice that hands the patient a summary (Settings, Your practice,
+        // "Visit report shows"; a dental clinic's default) prints only the
+        // treatment, dosage, bill and appointments: no examinations leave it.
+        if (VisitForm::current()->printsSummary()) {
+            return Pdf::loadView('pdf.visit-summary', [
+                'summary' => $reports->summary($visit),
+                'hospital' => app(HospitalSettings::class)->hospital(),
+            ])->stream("visit-summary-{$visit->visit_no}.pdf");
         }
 
         $report = $reports->assemble($visit, auth()->user());

@@ -261,6 +261,29 @@ class GeneratedDocumentTest extends TestCase
         }
     }
 
+    /**
+     * The patient summary a dental clinic prints in place of the visit report
+     * (Settings, Your practice, "Visit report shows"): it renders, opens
+     * inline, and stays small.
+     */
+    public function test_the_patient_summary_prints(): void
+    {
+        $this->withLetterhead();
+        $invoice = $this->invoice();
+        app(\App\Services\PrescriptionService::class)->writeDosage($invoice->visit, [[
+            'stock_item_id' => \App\Models\StockItem::factory()->create(['hospital_id' => $this->hospital->id, 'name' => 'Amoxicillin 500mg'])->id,
+            'dose' => '1 capsule', 'frequency' => 'Twice a day', 'days' => 5, 'note' => 'After meals',
+        ]], $this->admin->id);
+        app(\App\Services\PracticeService::class)->chooseVisitForm($this->hospital->fresh(), null, null, 'summary');
+        app()->forgetInstance(\App\Support\HospitalSettings::class);
+
+        $response = $this->get(route('admin.visits.report', $invoice->visit))->assertOk();
+        $this->assertSame('application/pdf', $response->headers->get('content-type'));
+        $this->assertStringStartsWith('inline', (string) $response->headers->get('content-disposition'));
+        $this->assertStringContainsString('visit-summary-', (string) $response->headers->get('content-disposition'));
+        $this->assertLessThan(400 * 1024, strlen((string) $response->baseResponse->getContent()));
+    }
+
     /** A one-page invoice was 1.1 MB, the whole of two fonts each time. */
     public function test_a_document_embeds_only_the_letters_it_uses(): void
     {

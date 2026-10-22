@@ -41,6 +41,7 @@ A dental clinic's form is shorter and has no suggested phrases:
 - There is no **Reason for visit**. Write the **Presenting complaint** under **Visit**, in the patient's own words. The visit is listed under the first words of the complaint, so the visits list, the queue and the reports still show why the patient came.
 - Under **History**, write the **Medical history**, **Family history**, **Dental history** and **Surgical history**. When the patient has been seen before, the medical, family and surgical history are filled in from the last visit. Change whatever is no longer right.
 - Under **Oral examination**, write the **Hard tissues (teeth)**, **Soft tissues (gums)**, **X-ray** and **Diagnosis**. The diagnosis is also the visit's diagnosis, which coding and the reports read.
+- Under **Dosage** (optional), write how the patient takes each medicine, as described in [Write the dosage](#write-the-dosage). Leave it empty when nothing is given.
 
 **History** and **Oral examination** are shown to staff who write clinical notes (the Doctor role and the Hospital Admin). If your receptionist takes the history, give the receptionist role **Diagnose and prescribe** under **Staff and access**. Otherwise the dentist writes them on the visit page, in **Dental notes**.
 
@@ -53,7 +54,7 @@ A visit can also start from an appointment. See [Appointments and the queue](04-
 Each row's actions menu offers:
 
 - **Open visit**: opens the visit over the list.
-- **Visit report (PDF)**: the whole visit as a document the patient can carry to another hospital.
+- **Visit report (PDF)**: the whole visit as a document the patient can carry to another hospital, or, in a dental clinic, the patient summary (see [Write the dosage](#write-the-dosage)).
 - **Add an order**: opens the visit with the order form ready.
 - **Ready for billing** or **Ready for payment**: only when the visit can move on (see below).
 - **Cancel visit**.
@@ -175,6 +176,24 @@ Doctors and the Hospital Admin prescribe from the **Prescriptions** panel on the
 True-Doctor builds a dose schedule from the slots and days. Each dose shows its date, slot and status. Nurses press **Given** when a dose is given, or **Missed** if it was not.
 
 To print the prescription, press **Prescription** at the foot of the visit window. You can also send it to the patient's phone with **Send to patient** (see [Patients](03-patients.md)). Giving out the drugs is done by the pharmacy, as described in [Pharmacy and stock](08-pharmacy-and-stock.md).
+
+## Write the dosage
+
+A dental clinic writes medicine as a **Dosage** in place of a prescription. The **Dosage** panel is on the visit's full page.
+
+1. Press **Add dosage**.
+2. Under **Medicine**, search and pick the medicine. Only medicines entered in your stock list are offered, including ones that have run out.
+3. Write the **Dose**, for example 1 tablet.
+4. Choose **How often**: **Once a day**, **Twice a day**, **Three times a day**, **Four times a day** or **When needed**. Choose **Other** and type the words for anything else, for example every 6 hours.
+5. Set the **Days** and add a **Note** if needed, for example after meals.
+6. Press **Add another medicine** for the next one. Remove a row with its bin icon.
+7. Press **Save dosage**.
+
+The dosage is not charged when you write it. The pharmacy sees it in its queue and dispenses it, and dispensing adds the medicine to the bill, as described in [Pharmacy and stock](08-pharmacy-and-stock.md). To take a medicine off the visit, press its bin icon. Once it has been dispensed it stays on the visit.
+
+### The patient summary
+
+In a dental clinic, **Visit report** prints a patient summary: the patient's name, number, age and sex, the visit date and the dentist, the treatment done with the teeth, the dosage, the bill with the payments and the balance, and the patient's next appointments. It prints no history, examination, diagnosis or notes. To print the full clinical record instead, change **Visit report shows** in **Settings**, **Your practice** (see [Setting up](02-setting-up.md)).
 
 ## Move the visit on
 

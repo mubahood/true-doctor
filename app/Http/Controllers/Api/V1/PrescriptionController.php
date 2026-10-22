@@ -65,8 +65,12 @@ class PrescriptionController extends Controller
             }
             $items[] = [
                 'id' => $d->id,
+                'uuid' => $d->uuid,
+                'stock_item_id' => $d->stock_item_id,
                 'drug_name' => $d->drug_name,
                 'dosage' => $d->dosage,
+                // The dosage section's "how often" (docs/api/dosage.md); null on older lines.
+                'frequency' => $d->frequency,
                 'slots' => array_values((array) $d->slots),
                 'days' => (int) $d->days,
                 'start_date' => $d->start_date->toDateString(),

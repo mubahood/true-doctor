@@ -258,3 +258,13 @@ sold. Valuing it at the selling price would book a profit nobody made, so
 The ledger totals **bought · sold · profit on what sold · lost**, over the rows
 currently filtered, and each row shows what it was worth at cost and what it
 made or lost.
+
+## Dosage
+
+A dental clinic (`VisitForm::writesDosage()`) writes the medicine on a visit as a **dosage** in place of the prescription form: rows of a medicine picked from the clinic's own stock (`select-search` resource `medicines`: every active item, even one that has run out), the dose ("1 tablet"), how often (`DoseItem::FREQUENCIES`: once, twice, three or four times a day, when needed, or the words typed under "Other"), for how many days (1 to 90) and an optional note ("after meals").
+
+- **Built on the prescription.** `PrescriptionService::writeDosage` writes the rows as one prescription; each row is a `dose_items` line with `stock_item_id`, `frequency` and a `uuid` (migration 2026_10_26_120000). A standard frequency fills the line's daily slots so the pharmacy queue sizes the quantity; when needed and free text have none. No administration schedule is made: the medicine is taken at home, not given on a ward round.
+- **Never billed here.** The pharmacy sees the prescription in its queue and dispenses it (`DispensationService`), which deducts the stock and bills the visit, exactly as for any prescription.
+- **Removing a row** (`PrescriptionService::removeDose`) is refused once the pharmacy has dispensed against the prescription or a dose was recorded; the last row removed takes its empty prescription with it. Lines and prescriptions are audited (`AuditTrail::MODELS`).
+- **Where.** The visit page's **Dosage** panel (`Visits\Panels\Dosage`, for `viewClinical`; writing needs `prescriptions.prescribe`), optional on a dental clinic's new visit form after the Oral examination (the rows are checked before the visit opens), the patient summary (docs/documents.md), and the app (docs/api/dosage.md). The row editor is shared: `App\Livewire\Concerns\WritesDosage` and `livewire/partials/dosage-rows`. Validation is `DosageRequest::rulesFor()`.
+- A general hospital keeps the prescription form with its daily slots and nurse rounds.

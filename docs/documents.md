@@ -105,6 +105,13 @@ is not worth handing a template an `eval()`.
 | Insurance usage statement | `admin.insurance-providers.usage` | `pdf/insurance-usage` |
 | Patient ID card | `admin.patients.id-card` | `pdf/patient-card` |
 | **Full visit report** | `admin.visits.report` | `pdf/visit-report` |
+| Patient summary (the visit report where chosen) | `admin.visits.report` | `pdf/visit-summary` |
+
+### The patient summary
+
+Settings, Your practice, **Visit report shows**: *Patient summary* or *Full clinical record* (`VisitForm::visitReport`, `settings.clinical.visit_report`). A dental clinic defaults to the summary; every other practice keeps the full report. The same **Visit report** button prints whichever is chosen.
+
+The summary is what the patient takes home and nothing of the clinic's own record (`VisitReportService::summary`): the letterhead, the patient's name, number, age and sex, the visit date, who saw them, the **treatment done** (the dental procedures done on the visit with their teeth, else the services charged), the **dosage** (docs/pharmacy.md, "Dosage"), the **bill** (the invoice's lines once raised, else the bill as it stands; total, paid and balance from the same figures as the full report), the **payments** with date and method, and the patient's **next appointments** (scheduled or confirmed, from now on: date, time, with whom, reason). No history, examination, findings, diagnosis, vitals, notes, chart or remarks. The verification QR and the footer are the document's own and stay.
 
 ### The full visit report
 
