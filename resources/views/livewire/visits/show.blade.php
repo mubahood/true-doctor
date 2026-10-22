@@ -5,6 +5,9 @@
       @if($printer = app(\App\Support\HospitalSettings::class)->receiptPrinter())
         <a href="{{ route('admin.visits.ticket', [$visit, 'w' => $printer]) }}" target="_blank" rel="noopener" class="btn-tb btn-tb-sm"><i class="fas fa-ticket" aria-hidden="true"></i> Queue ticket</a>
       @endif
+      @can('printReport', $visit)
+        <a href="{{ route('admin.visits.report', $visit) }}" target="_blank" rel="noopener" class="btn-tb btn-tb-sm"><i class="fas fa-file-medical" aria-hidden="true"></i> Visit report</a>
+      @endcan
       <x-ui.badge :tone="$visit->stateBadge()">{{ $visit->stateLabel() }}</x-ui.badge>
     </x-slot:actions>
   </x-ui.page-header>
@@ -110,14 +113,20 @@
            the desk and the cashier see the visit, its reason and its bill. A dental
            visit gets the dental case sheet in place of the general note (docs/dental.md). --}}
       @php($dentalHospital = app(\App\Support\HospitalSettings::class)->hospital())
+      {{-- A dental clinic's prescription (the dosage) sits under the chart and the plan,
+           before the orders and the bill (docs/dental.md). --}}
+      @php($dentalDosage = \App\Livewire\Visits\Actions::dentalPanel($visit, 'dosage'))
       @if(! auth()->user()?->can('viewClinical', $visit))
         <x-ui.no-access title="Clinical notes" icon="fa-notes-medical" />
       @elseif($visit->patient && \App\Services\DentalNotesService::appliesTo($visit, $dentalHospital))
         {{-- Simple notes: History and Oral examination as plain text, a dental clinic's
              default (Settings, Your practice; docs/dental.md, "Simple notes"). --}}
-        @include('livewire.visits.partials.dental-notes', ['visit' => $visit])
+        @include('livewire.visits.partials.dental-notes', ['visit' => $visit, 'withDosage' => $dentalDosage])
       @elseif($visit->patient && \App\Services\DentalCaseSheetService::appliesTo($visit, $dentalHospital))
         @include('livewire.visits.partials.dental-case-sheet', ['visit' => $visit])
+        @if($dentalDosage)
+          <livewire:visits.panels.dosage :visit-id="$visit->id" :key="'dosage-'.$visit->id" />
+        @endif
       @else
       <livewire:visits.panels.clinical :visit-id="$visit->id" :key="'clinical-'.$visit->id" />
       <livewire:visits.panels.diagnoses :visit-id="$visit->id" :key="'diagnoses-'.$visit->id" />
@@ -156,7 +165,7 @@
         <livewire:visits.panels.dispense :visit-id="$visit->id" :key="'disp-'.$visit->id" />
       @endcan
 
-      @can('viewClinical', $visit)
+      @if(auth()->user()?->can('viewClinical', $visit) && ! $dentalDosage)
         {{-- A dental clinic writes the medicine as a dosage: picked from stock, the dose,
              how often, for how many days (docs/pharmacy.md, "Dosage"). --}}
         @if(\App\Support\Practice\VisitForm::current()->writesDosage())
@@ -164,7 +173,7 @@
         @else
           <livewire:visits.panels.prescriptions :visit-id="$visit->id" :key="'rx-'.$visit->id" />
         @endif
-      @endcan
+      @endif
 
       <div class="tb-card">
         <div class="tb-card-header"><span class="tb-card-title">History</span></div>

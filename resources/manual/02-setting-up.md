@@ -170,8 +170,12 @@ True-Doctor will not let you remove, switch off or change the role of the last a
 | **Approve refunds** | Credit notes and money given back |
 | **Change prices** | The price list |
 | **See reports and money** | All invoices, the **Cashier's day**, takings, debtors, reports and the books |
+| **Print the visit report** | The visit report as the patient summary, without the clinical notes on screen |
+| **Record money in and out** | Expenses, other income and transfers between books |
 | **Manage stock** | Stock items, receiving, adjusting and counting |
 | **Manage staff and settings** | User accounts, staff profiles and the clinic's settings |
+
+In a dental clinic the standard settings give more to two roles. The **Receptionist** also takes payments, prints the visit report, enters stock, sees reports and money and records money in and out. The **Nurse** (the dental assistant) also enters stock. You can change these like any other box.
 
 ### Changing what a role may do
 

@@ -35,6 +35,16 @@ class VisitPolicy
     }
 
     /**
+     * Print the visit report: whoever reads the record, and whoever was given
+     * the report on its own (`visits.report`, a dental clinic's desk), who
+     * prints the patient summary (VisitController::report).
+     */
+    public function printReport(User $user, Visit $visit): bool
+    {
+        return $user->can('visits.clinical') || $user->can('visits.report');
+    }
+
+    /**
      * See the visit's vitals: the clinical team, whoever records them, and
      * the desk that takes them at intake (`visits.create`). Not the cashier.
      */

@@ -138,7 +138,7 @@
                 </button>
 
                 {{-- The whole record, as a document to hand over. --}}
-                @can('viewClinical', $c)
+                @can('printReport', $c)
                   <a role="menuitem" href="{{ route('admin.visits.report', $c) }}" target="_blank" rel="noopener">
                     <i class="fas fa-file-medical" aria-hidden="true"></i> Visit report (PDF)
                   </a>

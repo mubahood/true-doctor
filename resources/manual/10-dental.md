@@ -53,7 +53,7 @@ Below the notes come the dental chart, **Treatment done today**, the treatment p
 
 ### The printed dental notes
 
-A dental clinic's **Visit report** prints the patient summary: the treatment done, the dosage, the bill with its payments and balance, and the next appointments, with no notes or examination (see [Visits and consultation](05-visits-and-consultation.md#the-patient-summary)). When your clinic chooses **Full clinical record** under **Visit report shows**, press **Visit report** on the notes, or on the visits list. The report prints the **Presenting complaint**, **History** with its four headings, the blood pressure, **Oral examination** with its four headings, the dental chart and the **Treatment done**. A heading with nothing written under it is left out.
+A dental clinic's **Visit report** prints the patient summary: the oral examination, the prescription, the treatment plan and the treatment done, the receipt, the next appointments and who prepared it, with no history, vitals or internal notes (see [Visits and consultation](05-visits-and-consultation.md#the-patient-summary)). When your clinic chooses **Full clinical record** under **Visit report shows**, press **Visit report** on the notes, or on the visits list. The report prints the **Presenting complaint**, **History** with its four headings, the blood pressure, **Oral examination** with its four headings, the dental chart and the **Treatment done**. A heading with nothing written under it is left out.
 
 A visit written before your clinic changed its choice keeps the way it was written: a visit with a case sheet still shows and prints the case sheet, and a visit with only a reason prints the reason as its presenting complaint.
 

@@ -167,13 +167,7 @@
             <section id="vs-{{ $key }}" data-vs="{{ $key }}"
                      @class(['tb-vs-sec', 'is-empty' => $s['count'] === 0])>
               <h3><i class="fas {{ $s['icon'] }}" aria-hidden="true"></i> {{ $s['label'] }}</h3>
-              @if($key === 'chart')
-                @livewire($s['component'], ['patientId' => $visit->patient_id, 'visitId' => $visit->id], key('vs-chart-'.$visit->id))
-              @elseif($key === 'dosage')
-                @livewire($s['component'], ['visitId' => $visit->id], key('vs-dosage-'.$visit->id))
-              @else
-                @livewire($s['component'], ['visitId' => $visit->id, 'lazy' => false], key('vs-'.$key.'-'.$visit->id))
-              @endif
+              @livewire($s['component'], $s['params'], key('vs-'.$key.'-'.$visit->id))
             </section>
           @endforeach
 
@@ -247,7 +241,7 @@
                      somewhere else. It opens in a tab rather than
                      downloading, like everything else this system prints
                      (docs/documents.md). --}}
-                @can('viewClinical', $visit)
+                @can('printReport', $visit)
                 <a href="{{ route('admin.visits.report', $visit) }}" target="_blank" rel="noopener"
                    class="btn-tb btn-tb-sm btn-tb-ghost">
                   <i class="fas fa-file-medical" aria-hidden="true"></i> Visit report

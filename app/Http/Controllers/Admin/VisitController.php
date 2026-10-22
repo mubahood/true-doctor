@@ -24,24 +24,27 @@ class VisitController extends Controller
         // figures it already has access to through the visit itself.
         $this->authorize('view', $visit);
         // The report IS the clinical record: the desk and the cashier print
-        // the receipt and the invoice instead (docs/rbac.md).
-        $this->authorize('viewClinical', $visit);
+        // the receipt and the invoice instead (docs/rbac.md), unless they were
+        // given the report on its own (`visits.report`, a dental clinic's desk).
+        $this->authorize('printReport', $visit);
+        $reader = auth()->user();
         $patient = $visit->patient()->withTrashed()->first();
         if ($patient !== null) {
-            app(\App\Services\Audit\RecordAccessLog::class)->printed($patient, auth()->user(), 'Visit report '.$visit->visit_no);
+            app(\App\Services\Audit\RecordAccessLog::class)->printed($patient, $reader, 'Visit report '.$visit->visit_no);
         }
 
         // A practice that hands the patient a summary (Settings, Your practice,
-        // "Visit report shows"; a dental clinic's default) prints only the
-        // treatment, dosage, bill and appointments: no examinations leave it.
-        if (VisitForm::current()->printsSummary()) {
+        // "Visit report shows"; a dental clinic's default) prints what the
+        // patient takes home: no history, internal notes or vitals leave it.
+        // Somebody who prints without reading the record gets the summary too.
+        if (VisitForm::current()->printsSummary() || ! $reader?->can('viewClinical', $visit)) {
             return Pdf::loadView('pdf.visit-summary', [
-                'summary' => $reports->summary($visit),
+                'summary' => $reports->summary($visit, $reader),
                 'hospital' => app(HospitalSettings::class)->hospital(),
             ])->stream("visit-summary-{$visit->visit_no}.pdf");
         }
 
-        $report = $reports->assemble($visit, auth()->user());
+        $report = $reports->assemble($visit, $reader);
 
         return Pdf::loadView('pdf.visit-report', [
             'report' => $report,

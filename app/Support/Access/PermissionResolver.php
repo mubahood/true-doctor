@@ -2,6 +2,7 @@
 
 namespace App\Support\Access;
 
+use App\Models\Hospital;
 use App\Models\RoleAbility;
 use App\Models\User;
 use App\Models\UserAbility;
@@ -18,7 +19,8 @@ use Illuminate\Database\QueryException;
  *
  * In order: a permission an ability hands out directly (to the role, or to
  * this one person) wins; then one the clinic took from the role; then one
- * handed out only as a companion (`also` in Abilities). Nothing here ever
+ * handed out only as a companion (`also` in Abilities) or by what the kind
+ * of practice starts the role with (PracticeDefaults). Nothing here ever
  * applies to the hospital admin or a platform account.
  */
 final class PermissionResolver
@@ -64,6 +66,13 @@ final class PermissionResolver
     {
         $strong = $revoke = $weak = [];
 
+        // What the kind of practice starts this role with (a dental clinic's
+        // desk takes payments and keeps the books). Below a choice the clinic
+        // made: a role row that takes the ability away revokes it.
+        foreach (PracticeDefaults::permissions(Hospital::query()->find($user->hospital_id), (string) $user->role) as $p) {
+            $weak[$p] = true;
+        }
+
         try {
             // By the account's own hospital, and through the tenant scope as
             // well: with no tenant resolved yet (a queued job, the start of an
@@ -79,7 +88,7 @@ final class PermissionResolver
                 ->pluck('ability');
         } catch (QueryException) {
             // Before the migration that makes the tables has run.
-            return ['strong' => [], 'revoke' => [], 'weak' => []];
+            return ['strong' => [], 'revoke' => [], 'weak' => $weak];
         }
 
         foreach ($roleRows as $row) {

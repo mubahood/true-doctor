@@ -110,25 +110,33 @@ class VisitReportService
 
     /**
      * The patient summary (Settings, Your practice, "Visit report shows"; a
-     * dental clinic's default): what the patient takes home, and nothing of
-     * the clinic's own record. The treatment done, the dosage, the bill with
-     * its payments and balance, and the appointments still to come. No
-     * history, examination, findings, diagnosis, notes or chart.
+     * dental clinic's default, and what anyone who prints without reading the
+     * record gets): what the patient takes home. Who they are and how to reach
+     * them, the dentist, the oral examination from the dental notes, the
+     * dosage, the treatment plan and the treatment done, the receipt, the
+     * appointments still to come, and who prepared it. No history, internal
+     * notes or vitals; a product given without billing stays off.
      *
      * @return array{
      *     visit:Visit,
      *     patient:\App\Models\Patient|null,
      *     age:?string,
+     *     phone:?string,
+     *     dental:bool,
+     *     examination:list<array{label:string,text:string}>,
      *     treatment:list<array{name:string,tooth:string|null}>,
+     *     plan:list<array{name:string,tooth:string|null,status:string}>,
      *     dosage:Collection<int,\App\Models\DoseItem>,
      *     lines:list<array{name:string,quantity:string,amount:string}>,
      *     invoice:\App\Models\Invoice|null,
      *     payments:Collection<int,\App\Models\Payment>,
      *     totals:array<string,string>,
-     *     appointments:Collection<int,\App\Models\Appointment>
+     *     appointments:Collection<int,\App\Models\Appointment>,
+     *     prepared_by:?string,
+     *     prepared_at:\Illuminate\Support\Carbon
      * }
      */
-    public function summary(Visit $visit): array
+    public function summary(Visit $visit, ?\App\Models\User $reader = null): array
     {
         $visit->loadMissing([
             'patient',
@@ -137,9 +145,11 @@ class VisitReportService
             'invoices' => fn ($q) => $q->with(['items', 'payments'])->latest('id'),
             'orderItems',
         ]);
+        $dental = $visit->patient !== null && DentalService::enabledFor(app(HospitalSettings::class)->hospital());
 
         $invoice = $visit->invoices->firstWhere(fn ($i) => $i->status !== \App\Enums\InvoiceStatus::Void);
-        $billable = $visit->orderItems->filter(fn ($line) => $line->status->isBillable())->sortBy('id')->values();
+        // A product given without billing is on its order, not on the bill.
+        $billable = $visit->orderItems->filter(fn ($line) => $line->status->isBillable() && $line->isBilled())->sortBy('id')->values();
 
         // The bill: the invoice's own lines once raised, else the bill as it stands.
         $lines = $invoice !== null
@@ -151,7 +161,7 @@ class VisitReportService
         // Treatment done: the dental procedures done on this visit with their
         // teeth, else the services charged on it.
         $treatment = [];
-        if ($visit->patient !== null && DentalService::enabledFor(app(HospitalSettings::class)->hospital())) {
+        if ($dental) {
             foreach (app(DentalCaseSheetService::class)->doneToday($visit) as $done) {
                 $treatment[] = [
                     'name' => (string) $done['procedure'],
@@ -167,6 +177,28 @@ class VisitReportService
             }
         }
 
+        // The treatment plan with where each item stands: what is still to do,
+        // and what was done on this visit.
+        $plan = [];
+        if ($dental) {
+            foreach (app(DentalService::class)->plan($visit->patient) as $item) {
+                if (! $item->status->isOpen() && ! ($item->status === \App\Enums\DentalTreatmentStatus::Done && $item->done_visit_id === $visit->id)) {
+                    continue;
+                }
+                $plan[] = [
+                    'name' => (string) ($item->service->name ?? 'Dental procedure'),
+                    'tooth' => $item->tooth === null ? null : trim($item->tooth.' '.($item->surfaces ?? '')),
+                    'status' => $item->status->label(),
+                ];
+            }
+        }
+
+        // The oral examination from the dental notes; never their history.
+        $examination = [];
+        if ($visit->patient !== null && \App\Models\DentalNote::query()->where('visit_id', $visit->id)->exists()) {
+            $examination = app(DentalNotesService::class)->printable($visit)['groups']['examination']['lines'] ?? [];
+        }
+
         $appointments = $visit->patient === null ? collect() : \App\Models\Appointment::query()
             ->with('doctor:id,name')
             ->where('patient_id', $visit->patient_id)
@@ -178,13 +210,19 @@ class VisitReportService
             'visit' => $visit,
             'patient' => $visit->patient,
             'age' => $this->age($visit),
+            'phone' => ($visit->patient?->phone_1 ?: $visit->patient?->phone_2) ?: null,
+            'dental' => $dental,
+            'examination' => $examination,
             'treatment' => $treatment,
+            'plan' => $plan,
             'dosage' => $visit->prescriptions->flatMap(fn ($p) => $p->doseItems)->values(),
             'lines' => $lines->values()->all(),
             'invoice' => $invoice,
             'payments' => $invoice === null ? collect() : $invoice->payments->sortBy('created_at')->values(),
             'totals' => $this->totals($visit, $invoice),
             'appointments' => $appointments,
+            'prepared_by' => $reader?->name,
+            'prepared_at' => now(),
         ];
     }
 

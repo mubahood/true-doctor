@@ -171,7 +171,7 @@ A menu also depends on what your hospital uses. If your hospital has no laborato
 
 ### What each role does not see
 
-Clinical notes are for the clinical team. The Receptionist and the Accountant see that a visit happened, its reason and its bill, but not the complaints, the diagnosis, the doctor's notes, the prescriptions, the dental chart, the results or the visit report. Where a page has one of these parts, they see **You do not have access to this. Ask your hospital admin.** in its place. The Receptionist still sees the vitals of a visit, because the desk often takes them at check-in; the Accountant does not.
+Clinical notes are for the clinical team. The Receptionist and the Accountant see that a visit happened, its reason and its bill, but not the complaints, the diagnosis, the doctor's notes, the prescriptions, the dental chart, the results or the visit report. Where a page has one of these parts, they see **You do not have access to this. Ask your hospital admin.** in its place. The Receptionist still sees the vitals of a visit, because the desk often takes them at check-in; the Accountant does not. In a dental clinic the Receptionist also prints the visit report as the patient summary.
 
 A Doctor sees the bills of their own patients on the visit, but not the clinic's money: the invoice list, the **Cashier's day**, the takings and the reports. A Nurse records vitals and gives treatment but cannot change the diagnosis.
 
