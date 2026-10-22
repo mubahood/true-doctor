@@ -22,7 +22,6 @@ use App\Models\Visit;
 use App\Services\BillingService;
 use App\Services\DentalNotesService;
 use App\Services\DentalService;
-
 use App\Services\PrescriptionService;
 use App\Services\VisitService;
 use App\Support\HospitalSettings;
