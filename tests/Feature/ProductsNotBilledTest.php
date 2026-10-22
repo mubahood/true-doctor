@@ -346,14 +346,14 @@ class ProductsNotBilledTest extends TestCase
     {
         $sections = \Livewire\Livewire::test(\App\Livewire\Visits\Actions::class)
             ->call('openAction', $this->visit->id)
-            ->assertSee('Dental chart')->assertSee('Dosage')
+            ->assertSee('Dental chart')->assertSee('Prescription')
             ->instance()->sections;
-        $this->assertSame(['summary', 'chart', 'orders', 'dosage'], array_slice(array_keys($sections), 0, 4));
+        $this->assertSame(['summary', 'chart', 'plan', 'prescription', 'orders'], array_slice(array_keys($sections), 0, 5));
 
         // A general hospital's preview is as it was.
         $this->useHospital();
         $keys = array_keys(\Livewire\Livewire::test(\App\Livewire\Visits\Actions::class)->call('openAction', $this->visit->id)->instance()->sections);
         $this->assertNotContains('chart', $keys);
-        $this->assertNotContains('dosage', $keys);
+        $this->assertNotContains('prescription', $keys);
     }
 }

@@ -90,7 +90,7 @@ class DentalClinicDeskTest extends TestCase
             $this->assertTrue($desk->can($p), "receptionist: {$p}");
         }
         $this->assertFalse($desk->can('visits.clinical'), 'printing the report is not reading the notes');
-        $this->assertFalse($desk->can('finance.manage'));
+        $this->assertTrue($desk->can('finance.manage'), 'the clinic asked for the whole finance module');
         $this->assertContains('finance.record', $desk->getAllPermissions()->pluck('name')->all());
 
         foreach (['visits.diagnose', 'visits.clinical', 'prescriptions.prescribe', 'treatments.manage', 'visits.manage'] as $p) {

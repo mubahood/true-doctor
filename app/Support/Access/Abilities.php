@@ -75,6 +75,13 @@ final class Abilities
             'permissions' => ['finance.record'],
             'also' => ['finance.view'],
         ],
+        // The whole finance module: financial years, the chart of accounts and finance settings too.
+        'manage_finance' => [
+            'label' => 'Manage the books',
+            'hint' => 'Financial years, the chart of accounts and finance settings.',
+            'permissions' => ['finance.manage'],
+            'also' => ['finance.view'],
+        ],
         'manage_stock' => [
             'label' => 'Manage stock',
             'hint' => 'Stock items, receiving, adjusting and counting.',

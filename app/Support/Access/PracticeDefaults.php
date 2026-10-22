@@ -24,7 +24,7 @@ final class PracticeDefaults
     /** @var array<string, array<string, list<string>>> sector => role => abilities */
     public const SECTORS = [
         'dental_clinic' => [
-            'receptionist' => ['take_payments', 'print_report', 'manage_stock', 'see_money', 'record_money'],
+            'receptionist' => ['take_payments', 'print_report', 'manage_stock', 'see_money', 'record_money', 'manage_finance'],
             'doctor' => ['see_clinical', 'diagnose_prescribe'],
             'nurse' => ['manage_stock'],
         ],
