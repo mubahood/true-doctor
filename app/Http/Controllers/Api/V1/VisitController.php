@@ -180,6 +180,34 @@ class VisitController extends Controller
     }
 
     /**
+     * Delete a visit opened by mistake (VisitService::delete; docs/visits.md,
+     * "Deleting a visit"). Takes a reason; refused with the reason in plain
+     * words while money paid on it is still held.
+     */
+    public function destroyWithReason(Request $request, Visit $visit): JsonResponse
+    {
+        $this->authorize('delete', $visit);
+
+        // A retry after a lost reply finds it deleted already: the same answer.
+        if ($visit->trashed()) {
+            return ApiResponse::success(['uuid' => $visit->uuid, 'deleted' => true], 'Visit '.$visit->visit_no.' deleted.');
+        }
+
+        $reason = $request->validate(['reason' => ['required', 'string', 'min:3', 'max:255']], [
+            'reason.required' => 'Say why the visit is being deleted.',
+            'reason.min' => 'Say why the visit is being deleted.',
+        ])['reason'];
+
+        try {
+            $this->service->delete($visit, $request->user()->id, trim($reason));
+        } catch (\RuntimeException $e) {
+            return ApiResponse::error(ApiErrorCode::ValidationFailed, $e->getMessage(), 422);
+        }
+
+        return ApiResponse::success(['uuid' => $visit->uuid, 'deleted' => true], 'Visit '.$visit->visit_no.' deleted.');
+    }
+
+    /**
      * The open-visit dialog's suggestions: this hospital's own reasons first,
      * then curated complaints and diagnoses (App\Support\VisitPhrases).
      */

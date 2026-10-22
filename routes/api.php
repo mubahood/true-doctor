@@ -179,6 +179,8 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
         Route::post('visits/{visit}/clinical', [VisitController::class, 'clinical'])->name('api.visits.clinical');
         Route::post('visits/{visit}/transition', [VisitController::class, 'transition'])->name('api.visits.transition');
         Route::post('visits/{visit}/cancel', [VisitController::class, 'cancel'])->name('api.visits.cancel');
+        // Delete a visit opened by mistake, with a reason (visits.delete; docs/visits.md).
+        Route::post('visits/{visit}/delete', [VisitController::class, 'destroyWithReason'])->withTrashed()->name('api.visits.delete');
         Route::post('visits/intake', [VisitController::class, 'intake'])->name('api.visits.intake');
         // Before the resource, or `phrases` would be taken for a visit's uuid.
         Route::get('visits/phrases', [VisitController::class, 'phrases'])->name('api.visits.phrases');

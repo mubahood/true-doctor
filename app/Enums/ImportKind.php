@@ -9,6 +9,7 @@ enum ImportKind: string
     case Services = 'services';
     case Stock = 'stock';
     case Appointments = 'appointments';
+    case Visits = 'visits';
 
     public function label(): string
     {
@@ -17,6 +18,7 @@ enum ImportKind: string
             self::Services => 'Price list',
             self::Stock => 'Stock items',
             self::Appointments => 'Appointments',
+            self::Visits => 'Visits',
         };
     }
 
@@ -28,6 +30,7 @@ enum ImportKind: string
             self::Services => 'Services and procedures with their prices.',
             self::Stock => 'Items with their unit, quantity on the shelf, cost, selling price and expiry.',
             self::Appointments => 'Appointments already booked, with the patient, the doctor and the time.',
+            self::Visits => 'Past visits: the date, the patient, the dentist, the complaint, diagnosis, treatment, and what was billed and paid.',
         };
     }
 
@@ -38,10 +41,11 @@ enum ImportKind: string
             self::Services => 'fa-tags',
             self::Stock => 'fa-boxes-stacked',
             self::Appointments => 'fa-calendar-check',
+            self::Visits => 'fa-stethoscope',
         };
     }
 
-    /** "patient", "price", "stock item", "appointment": for counts in sentences. */
+    /** "patient", "price", "stock item", "appointment", "visit": for counts in sentences. */
     public function noun(): string
     {
         return match ($this) {
@@ -49,6 +53,7 @@ enum ImportKind: string
             self::Services => 'price',
             self::Stock => 'stock item',
             self::Appointments => 'appointment',
+            self::Visits => 'visit',
         };
     }
 }

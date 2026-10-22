@@ -54,8 +54,8 @@ class StockModalTest extends TestCase
         $this->assertSame($h->id, $item->hospital_id);
     }
 
-    /** The cost is required; the selling price is not (left empty, it is the cost). */
-    public function test_modal_requires_the_cost_but_not_the_selling_price(): void
+    /** Neither price is required (an empty cost is 0; an empty selling price is the cost). */
+    public function test_modal_requires_neither_price(): void
     {
         $h = Hospital::factory()->create();
         $this->actingAdmin($h);
@@ -65,8 +65,8 @@ class StockModalTest extends TestCase
             ->set('name', 'Item')
             ->set('unit', 'box')
             ->call('save')
-            ->assertHasErrors(['cost_price', 'reorder_level'])
-            ->assertHasNoErrors(['sale_price']);
+            ->assertHasErrors(['reorder_level'])
+            ->assertHasNoErrors(['cost_price', 'sale_price']);
     }
 
     public function test_quick_filter_resets_the_page(): void

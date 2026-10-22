@@ -32,6 +32,7 @@ class PatientService
         // No plan limit here, ever: a clinic is never stopped from
         // registering a patient (PlanLimit, docs/decisions.md 2026-10-17).
 
+        $data = $this->birth($data, null);
         $patient = $this->createWithNumber($data, $registeredBy, $hospitalId);
         \App\Support\Funnel::reached($hospitalId, 'first_patient');
 
@@ -42,9 +43,52 @@ class PatientService
     {
         // patient_no and hospital_id are never mutable through update.
         unset($data['patient_no'], $data['hospital_id'], $data['uuid']);
-        $patient->update($data);
+        $patient->update($this->birth($data, $patient));
 
         return $patient->refresh();
+    }
+
+    /**
+     * The date of birth from what was given: a date, or an age in years (and
+     * months, for a baby) typed at the desk instead (docs/patients.md).
+     *
+     * An age becomes an estimated date (App\Support\BirthDate) flagged
+     * `dob_estimated`. A date given outright is exact unless the caller says
+     * it is an estimate (the import, which reads ages too). Editing a record
+     * whose age is unchanged keeps the date it has, so saving a phone number
+     * never moves an estimated birthday. Data with neither key leaves the
+     * date alone.
+     *
+     * @param  array<string,mixed>  $data
+     * @return array<string,mixed>
+     */
+    private function birth(array $data, ?Patient $patient): array
+    {
+        $years = $data['age_years'] ?? null;
+        $months = $data['age_months'] ?? null;
+        $hasAge = ($years !== null && trim((string) $years) !== '') || ($months !== null && trim((string) $months) !== '');
+        unset($data['age_years'], $data['age_months']);
+
+        if ($hasAge && blank($data['dob'] ?? null)) {
+            $kept = $patient?->dob !== null && $patient->dob_estimated
+                ? \App\Support\BirthDate::ageOf($patient->dob)
+                : null;
+            $sameAge = $kept !== null && $kept[0] === (int) $years
+                && ($months === null || trim((string) $months) === '' || $kept[1] === (int) $months);
+
+            $data['dob'] = $sameAge ? $patient->dob->toDateString() : \App\Support\BirthDate::fromAge($years, $months);
+            $data['dob_estimated'] = true;
+
+            return $data;
+        }
+
+        if (array_key_exists('dob', $data)) {
+            $data['dob_estimated'] = filled($data['dob']) && (bool) ($data['dob_estimated'] ?? false);
+        } else {
+            unset($data['dob_estimated']);
+        }
+
+        return $data;
     }
 
     /** Archive (soft-delete) a patient. */

@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property numeric-string $credited
  * @property numeric-string $refunded
  * @property bool $opening_balance a balance brought forward from before the system (Settings, Import data)
+ * @property numeric-string $paid_before paid in the old books, before the system (a visit brought in by Import data); never a payment here
  */
 class Invoice extends Model
 {
@@ -36,7 +37,7 @@ class Invoice extends Model
         'uuid', 'invoice_no', 'visit_id', 'patient_id', 'currency',
         'subtotal', 'tax_total', 'discount', 'total', 'amount_paid', 'balance',
         'credited', 'refunded',
-        'status', 'notes', 'issued_by', 'issued_at', 'opening_balance',
+        'status', 'notes', 'issued_by', 'issued_at', 'opening_balance', 'paid_before',
     ];
 
     protected function casts(): array
@@ -44,7 +45,7 @@ class Invoice extends Model
         return [
             'subtotal' => 'decimal:2', 'tax_total' => 'decimal:2', 'discount' => 'decimal:2',
             'total' => 'decimal:2', 'amount_paid' => 'decimal:2', 'balance' => 'decimal:2',
-            'credited' => 'decimal:2', 'refunded' => 'decimal:2',
+            'credited' => 'decimal:2', 'refunded' => 'decimal:2', 'paid_before' => 'decimal:2',
             'status' => InvoiceStatus::class,
             'issued_at' => 'datetime',
             'opening_balance' => 'boolean',
@@ -132,6 +133,16 @@ class Invoice extends Model
         $over = bcsub($this->held(), $this->netTotal(), 2);
 
         return bccomp($over, '0', 2) > 0 ? $over : '0.00';
+    }
+
+    /**
+     * Money taken HERE and still held: paid, less refunded, less what was
+     * paid in the old books before the system (never a payment here). While
+     * it is above zero the bill cannot be voided or its visit deleted.
+     */
+    public function heldHere(): string
+    {
+        return bcsub($this->held(), (string) ($this->paid_before ?? '0'), 2);
     }
 
     public function getRouteKeyName(): string

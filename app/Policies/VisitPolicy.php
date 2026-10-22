@@ -91,4 +91,14 @@ class VisitPolicy
     {
         return $user->can('visits.override');
     }
+
+    /**
+     * Delete a visit opened by mistake (VisitService::delete). Its own
+     * permission, given to the hospital admin by default and to whoever
+     * Staff and access allows.
+     */
+    public function delete(User $user, Visit $visit): bool
+    {
+        return $user->can('visits.delete');
+    }
 }

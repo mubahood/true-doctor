@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $first_name
  * @property string $last_name
  * @property \Illuminate\Support\Carbon|null $dob
+ * @property bool $dob_estimated
  * @property PatientSex|null $sex
  * @property PatientStatus $status
  * @property array<int,string>|null $allergies
@@ -51,7 +52,7 @@ class Patient extends Model
     use BelongsToHospital, HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'uuid', 'patient_no', 'old_file_no', 'first_name', 'last_name', 'dob', 'sex',
+        'uuid', 'patient_no', 'old_file_no', 'first_name', 'last_name', 'dob', 'dob_estimated', 'sex',
         'phone_1', 'phone_2', 'email', 'address', 'home_address', 'district_id',
         'blood_type', 'allergies', 'chronic_conditions',
         'spouse_name', 'father_name', 'mother_name',
@@ -64,6 +65,8 @@ class Patient extends Model
     {
         return [
             'dob' => 'date',
+            // Worked out from an age typed at the desk (App\Support\BirthDate).
+            'dob_estimated' => 'boolean',
             'sex' => PatientSex::class,
             'status' => PatientStatus::class,
             'allergies' => 'array',

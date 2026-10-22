@@ -5,9 +5,19 @@
       @if($printer = app(\App\Support\HospitalSettings::class)->receiptPrinter())
         <a href="{{ route('admin.visits.ticket', [$visit, 'w' => $printer]) }}" target="_blank" rel="noopener" class="btn-tb btn-tb-sm"><i class="fas fa-ticket" aria-hidden="true"></i> Queue ticket</a>
       @endif
+      @can('delete', $visit)
+        <button type="button" class="btn-tb btn-tb-sm btn-tb-ghost"
+                wire:click="$dispatch('visit-delete', { visitId: {{ $visit->id }} })">
+          <i class="fas fa-trash" aria-hidden="true"></i> Delete visit
+        </button>
+      @endcan
       <x-ui.badge :tone="$visit->stateBadge()">{{ $visit->stateLabel() }}</x-ui.badge>
     </x-slot:actions>
   </x-ui.page-header>
+
+  @can('delete', $visit)
+    <livewire:visits.delete-visit :leave="true" />
+  @endcan
 
   <x-clinical.alerts :patient="$visit->patient" />
 

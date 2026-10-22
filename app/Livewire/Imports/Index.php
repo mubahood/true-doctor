@@ -30,9 +30,15 @@ class Index extends Component
     /** @var \Livewire\Features\SupportFileUploads\TemporaryUploadedFile|null */
     public $file = null;
 
-    public function mount(): void
+    public function mount(DataImportService $imports): void
     {
         $this->allowed();
+
+        // "Import" on the Visits page arrives with ?kind=visits chosen.
+        $asked = ImportKind::tryFrom((string) request()->query('kind', ''));
+        if ($asked !== null && in_array($asked, $imports->kinds(), true)) {
+            $this->kind = $asked->value;
+        }
     }
 
     private function allowed(): void

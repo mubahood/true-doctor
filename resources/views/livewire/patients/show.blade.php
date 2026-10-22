@@ -222,7 +222,7 @@
                 <tr><th scope="row">Status</th><td><x-ui.badge :tone="$patient->status->badge()">{{ $patient->status->label() }}</x-ui.badge></td></tr>
                 <tr><th scope="row">Sex</th><td>{{ $patient->sex?->label() ?? '—' }}</td></tr>
                 <tr><th scope="row">Age</th><td>{{ $patient->age() !== null ? $patient->age().' yrs' : '—' }}</td></tr>
-                <tr><th scope="row">Date of birth</th><td>{{ $patient->dob?->format('d M Y') ?? '—' }}</td></tr>
+                <tr><th scope="row">Date of birth</th><td>{{ $patient->dob?->format('d M Y') ?? '—' }}@if($patient->dob && $patient->dob_estimated) <span class="muted tb-xs">estimated from the age</span>@endif</td></tr>
                 <tr><th scope="row">Blood type</th><td>{{ $patient->blood_type ?? '—' }}</td></tr>
                 <tr><th scope="row">District</th><td>{{ $patient->district?->name ?? '—' }}</td></tr>
                 <tr><th scope="row">Registered</th><td>{{ $patient->created_at->format('d M Y') }}@if($patient->registeredBy) · {{ $patient->registeredBy->name }}@endif</td></tr>

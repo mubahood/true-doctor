@@ -23,6 +23,10 @@
     <div wire:loading.flex wire:target="{{ $targets }}" class="muted tb-small tb-flex" style="gap:6px;"><i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i> Loading…</div>
 
     <div class="tb-toolbar-actions">
+      {{-- Past visits from the old records (Settings, Import data, Visits; docs/imports.md). --}}
+      @if(auth()->user()?->can('manage-settings') && app(\App\Support\CurrentHospital::class)->id() !== null)
+        <x-ui.link :href="route('admin.imports.index', ['kind' => 'visits'])" class="btn-tb"><i class="fas fa-file-import" aria-hidden="true"></i> Import</x-ui.link>
+      @endif
       @can('create', \App\Models\Visit::class)
         <button type="button" wire:click="create" class="btn-tb btn-tb-primary"><i class="fas fa-plus" aria-hidden="true"></i> New visit</button>
       @endcan
@@ -178,6 +182,13 @@
                 <a role="menuitem" wire:navigate href="{{ route('admin.visits.show', $c) }}">
                   <i class="fas fa-folder-open" aria-hidden="true"></i> Full page
                 </a>
+                @can('delete', $c)
+                  <hr>
+                  <button type="button" role="menuitem"
+                          wire:click="$dispatch('visit-delete', { visitId: {{ $c->id }} })">
+                    <i class="fas fa-trash" aria-hidden="true"></i> Delete visit
+                  </button>
+                @endcan
                 {{-- The patient's record used to sit here and does not belong:
                      this menu is for things done to THIS VISIT, and the rule
                      above is the two or three anyone does from a list. Their
@@ -207,6 +218,7 @@
   {{-- Every row action opens here. Mounted once for the whole page: the modal
        mounts the detail page's own panel for whichever action was asked for. --}}
   <livewire:visits.actions />
+  <livewire:visits.delete-visit />
 
   {{-- ── Slide-over: open visit (existing patient · new patient intake) ── --}}
   <x-ui.modal size="xl" show="showForm" title="New visit">
@@ -325,9 +337,7 @@
             </x-ui.field>
 
             <div class="tb-form-grid">
-              <x-ui.field label="Date of birth" for="v-dob" name="dob">
-                <input id="v-dob" type="date" wire:model="dob" class="tb-input" max="{{ now()->toDateString() }}">
-              </x-ui.field>
+              @include('livewire.partials.age-or-dob', ['prefix' => 'v'])
               <x-ui.field label="Phone" for="v-phone" name="phone_1">
                 <input id="v-phone" type="tel" wire:model="phone_1" class="tb-input" placeholder="07…">
               </x-ui.field>

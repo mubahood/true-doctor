@@ -385,6 +385,8 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'subscribed', 'onboarding',
     // ── Settings, Import data: a clinic's spreadsheets brought in (docs/imports.md) ──
     Route::get('settings/import', \App\Livewire\Imports\Index::class)->name('imports.index');
     Route::get('settings/import/{batch}', \App\Livewire\Imports\Show::class)->name('imports.show');
+    // Remove test records: the hospital admin only, never on the demonstration (docs/test-records.md).
+    Route::get('settings/test-records', \App\Livewire\Settings\TestRecords::class)->name('settings.test-records');
 
     // ── A dental clinic's review, items C and D: Staff and access (docs/rbac.md); Recalls and reviews due (docs/follow-up.md) ──
     Route::get('settings/access', \App\Livewire\Settings\Access::class)->middleware('permission:manage-settings')->name('settings.access');

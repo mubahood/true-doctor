@@ -186,8 +186,10 @@
           <x-ui.field label="Reorder level" for="stock-reorder" name="reorder_level" required>
             <input id="stock-reorder" type="number" step="any" wire:model="reorder_level" class="tb-input" required>
           </x-ui.field>
-          <x-ui.field label="Cost price" for="stock-cost" name="cost_price" required>
-            <input id="stock-cost" type="number" step="any" wire:model="cost_price" class="tb-input" required>
+          <x-ui.field label="Cost price" for="stock-cost" name="cost_price"
+                      hint="Optional. Left empty, it is 0.">
+            <input id="stock-cost" type="number" step="any" min="0" wire:model="cost_price" class="tb-input"
+                   placeholder="0">
           </x-ui.field>
           <x-ui.field label="Sale price" for="stock-sale" name="sale_price"
                       hint="Optional. Left empty, it sells at the cost price.">

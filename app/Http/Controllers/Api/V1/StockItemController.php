@@ -28,7 +28,7 @@ class StockItemController extends Controller
 
     private const FIELDS = ['name', 'stock_category_id', 'sku', 'unit', 'batch_no', 'expiry_date', 'cost_price', 'sale_price', 'reorder_level', 'is_active'];
 
-    private const NULLABLE = ['sku', 'batch_no', 'expiry_date', 'sale_price'];
+    private const NULLABLE = ['sku', 'batch_no', 'expiry_date', 'cost_price', 'sale_price'];
 
     public function store(Request $request): JsonResponse
     {

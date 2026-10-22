@@ -37,6 +37,7 @@ final class ResultsAfterPatientLeft extends Rule
         $n = LabOrderItem::query()
             ->join('lab_orders', 'lab_orders.id', '=', 'lab_order_items.lab_order_id')
             ->join('visits', 'visits.id', '=', 'lab_orders.visit_id')
+            ->whereNull('visits.deleted_at')
             ->whereIn('lab_order_items.result_flag', [ResultFlag::Low->value, ResultFlag::High->value, ResultFlag::Abnormal->value])
             ->where('lab_order_items.resulted_at', '>=', $c->now->copy()->subDays(self::DAYS))
             ->whereNotNull('visits.completed_at')

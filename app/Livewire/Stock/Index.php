@@ -92,7 +92,7 @@ class Index extends Component
 
     protected function nullableFields(): array
     {
-        return ['sku', 'batch_no', 'expiry_date', 'sale_price'];
+        return ['sku', 'batch_no', 'expiry_date', 'cost_price', 'sale_price'];
     }
 
     protected function defaults(): array

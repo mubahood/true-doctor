@@ -116,7 +116,8 @@ class VisitActionsTest extends TestCase
 
         $this->assertSame(0, substr_count($html, 'tb-menu-sec'),
             'the row menu grew headings again');
-        $this->assertLessThanOrEqual(8, substr_count($html, 'role="menuitem"'),
+        // Nine for the hospital admin since "Delete visit" (visits.delete, the admin's by default).
+        $this->assertLessThanOrEqual(9, substr_count($html, 'role="menuitem"'),
             'the row menu grew back into a wall');
     }
 
