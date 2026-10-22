@@ -42,6 +42,12 @@ class Payment extends Model
         return $this->belongsTo(Invoice::class);
     }
 
+    /** The receipt number staff and patients quote: R and the first eight of the uuid, as the income report prints it. */
+    public function receiptNo(): string
+    {
+        return 'R'.strtoupper(substr(str_replace('-', '', (string) $this->uuid), 0, 8));
+    }
+
     /** @return BelongsTo<User, $this> */
     public function receivedBy(): BelongsTo
     {

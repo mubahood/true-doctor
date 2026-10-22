@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Models\UserAbility;
 use App\Support\Access\Abilities;
 use App\Support\Access\PermissionResolver;
+use App\Support\Access\PracticeDefaults;
+use App\Support\HospitalSettings;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 
@@ -212,12 +214,23 @@ final class AccessService
         return $this->effective($defaults, $choices);
     }
 
-    /** @return list<string> the role's permissions in the default matrix */
+    /**
+     * The role's starting point in this clinic: the default matrix, plus what
+     * the kind of practice starts the role with (PracticeDefaults: a dental
+     * clinic's desk takes payments and keeps the books).
+     *
+     * @return list<string>
+     */
     public function defaultPermissions(string $role): array
     {
         $model = Role::query()->where('name', $role)->where('guard_name', 'web')->first();
+        $matrix = $model === null ? [] : $model->permissions->pluck('name')->map(fn ($n) => (string) $n)->all();
+        $practice = PracticeDefaults::permissions(app(HospitalSettings::class)->hospital(), $role);
 
-        return $model === null ? [] : $model->permissions->pluck('name')->map(fn ($n) => (string) $n)->sort()->values()->all();
+        $all = array_values(array_unique([...$matrix, ...$practice]));
+        sort($all);
+
+        return $all;
     }
 
     /**

@@ -66,7 +66,7 @@ the cashier's day or the takings. Discounts are `billing.discount`.
 ## Staff and access: the clinic's own choices
 
 **Settings → Staff and access** (`App\Livewire\Settings\Access`, route `admin.settings.access`).
-The matrix above is the default. A clinic changes it with ten plain-language abilities
+The matrix above is the default. A clinic changes it with twelve plain-language abilities
 (`App\Support\Access\Abilities`), each standing for one or more permissions:
 
 | Ability | Permissions | Also given (never taken) |
@@ -79,6 +79,8 @@ The matrix above is the default. A clinic changes it with ten plain-language abi
 | Approve refunds | `billing.refund` | |
 | Change prices | `services.manage` | |
 | See reports and money | `billing.view`, `reports.view`, `finance.view` | |
+| Print the visit report | `visits.report` (the patient summary, without the notes on screen) | |
+| Record money in and out | `finance.record` (expenses, other income, transfers between books) | `finance.view` |
 | Manage stock | `pharmacy.manage` | `pharmacy.view` |
 | Manage staff and settings | `manage-users`, `manage-settings`, `staff.manage` | |
 
@@ -96,3 +98,23 @@ The matrix above is the default. A clinic changes it with ten plain-language abi
   hospital admin cannot be switched off, demoted or deleted (`StaffService::assertKeepsAnAdmin`).
 - A part of a page a role cannot open says "You do not have access to this. Ask your
   hospital admin." (`x-ui.no-access`), and so do the 403 page and the API's generic 403.
+
+## What a practice starts with
+
+A kind of practice can start some roles with more than the matrix
+(`App\Support\Access\PracticeDefaults`). Today only a dental clinic does:
+
+| Role | Starts with |
+|---|---|
+| Receptionist | Take payments, Print the visit report, Manage stock, See reports and money, Record money in and out (on top of registering patients and opening visits) |
+| Doctor (the dentist) | See clinical notes, Diagnose and prescribe (the matrix already gives them; listed so the screen says so) |
+| Nurse (the dental assistant) | Manage stock |
+
+- Nothing is written: the hospital's sector decides, so an existing dental clinic has these at
+  once and a general hospital never does. `PermissionResolver` adds them below every choice
+  the clinic made (a role row that takes the ability away wins), and `AccessService` counts
+  them in the role's standard, so Staff and access shows them ticked as the default and the
+  clinic changes them there like any other ability.
+- `visits.report` prints the visit report without reading the record on screen
+  (`VisitPolicy::printReport`); such a reader always gets the patient summary
+  (docs/documents.md).

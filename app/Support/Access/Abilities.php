@@ -64,6 +64,17 @@ final class Abilities
             'hint' => 'All invoices, the cashier\'s day, takings, debtors, reports and the books.',
             'permissions' => ['billing.view', 'reports.view', 'finance.view'],
         ],
+        'print_report' => [
+            'label' => 'Print the visit report',
+            'hint' => 'The visit report PDF, without the clinical notes on screen.',
+            'permissions' => ['visits.report'],
+        ],
+        'record_money' => [
+            'label' => 'Record money in and out',
+            'hint' => 'Expenses, other income and transfers between books.',
+            'permissions' => ['finance.record'],
+            'also' => ['finance.view'],
+        ],
         'manage_stock' => [
             'label' => 'Manage stock',
             'hint' => 'Stock items, receiving, adjusting and counting.',

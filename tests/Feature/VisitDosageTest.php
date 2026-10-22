@@ -309,7 +309,7 @@ class VisitDosageTest extends TestCase
 
     // ── The printed report ─────────────────────────────────────────────
 
-    public function test_the_dental_report_is_a_patient_summary_without_examinations(): void
+    public function test_the_dental_report_is_a_patient_summary_without_history_notes_or_vitals(): void
     {
         $visit = $this->visit();
         app(DentalNotesService::class)->save($visit, [
@@ -336,11 +336,13 @@ class VisitDosageTest extends TestCase
         $html = view('pdf.visit-summary', ['summary' => $summary, 'hospital' => $this->hospital])->render();
 
         foreach (['Visit summary', 'Amina Nakato', $this->patient->patient_no, $this->dentist->name, 'Treatment done', 'Extraction',
-            'Dosage', 'Amoxicillin 500mg', '1 capsule', 'Three times a day', 'After meals', 'When needed',
-            'Bill', 'Payments', 'Cash', 'Balance', 'Next appointments', 'Review the socket', '10:30'] as $text) {
+            'Prescription', 'Amoxicillin 500mg', '1 capsule', 'Three times a day', 'After meals', 'When needed',
+            'Receipt', 'Payments', 'Cash', 'Balance', 'Next appointments', 'Review the socket', '10:30',
+            // The oral examination is the patient's to take home (a dental clinic's request).
+            'Oral examination', 'Deep caries 36 DO', 'Irreversible pulpitis 36'] as $text) {
             $this->assertStringContainsString($text, $html, $text);
         }
-        foreach (['amlodipine', 'Hypertension', 'Deep caries', 'pulpitis', 'Internal remark', 'Oral examination', 'History', 'Diagnosis', '130/85', 'Old booking', 'Dental chart'] as $text) {
+        foreach (['amlodipine', 'Hypertension', 'Internal remark', 'History', '130/85', 'Old booking', 'Dental chart'] as $text) {
             $this->assertStringNotContainsString($text, $html, $text);
         }
         $this->assertSame('30000.00', $summary['totals']['balance']);

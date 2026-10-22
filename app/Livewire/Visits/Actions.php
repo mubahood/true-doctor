@@ -8,7 +8,12 @@ use App\Enums\VisitStatus;
 use App\Exceptions\InvalidVisitTransitionException;
 use App\Models\Visit;
 use App\Services\BillingService;
+use App\Services\DentalCaseSheetService;
+use App\Services\DentalService;
 use App\Services\VisitService;
+use App\Support\HospitalSettings;
+use App\Support\Practice\Practice;
+use App\Support\Practice\VisitForm;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Enum;
@@ -30,6 +35,9 @@ use RuntimeException;
  *
  *     Summary  →  Orders  →  Bill  →  Payments  →  History
  *
+ * A dental clinic adds Dental chart, Treatment plan and Prescription between
+ * Summary (which carries the dental notes) and Orders.
+ *
  * Summary carries the vitals and the clinical notes, because that is what a
  * summary of a visit IS. Orders carries every piece of work of every
  * kind — the kinds are chips inside it, not entries in the rail
@@ -50,7 +58,7 @@ use RuntimeException;
  *
  * @property-read Visit|null $visit
  * @property-read array $totals
- * @property-read array<string, array{label:string,icon:string,count:int|null,component:string|null}> $sections
+ * @property-read array<string, array{label:string,icon:string,count:int|null,component:string|null,params:array<string,mixed>}> $sections
  * @property-read bool $canOverride
  * @property-read array{stage:VisitStage,next:?VisitStage,ready:bool,blocker:?string,label:?string,automatic:bool} $gate
  */
@@ -71,6 +79,12 @@ class Actions extends Component
         // live here, not in tabs of their own: they ARE the summary of the
         // visit, and a reader who wants one wants the other.
         'summary' => ['Summary', 'fa-circle-info', null, null],
+        // A dental clinic's dentist works down the notes (in the summary), the
+        // chart, the plan and the prescription before the orders and the bill
+        // (docs/dental.md). `dental` and `dosage` are checked in sections().
+        'chart' => ['Dental chart', 'fa-tooth', 'dental', 'patients.tabs.dental'],
+        'plan' => ['Treatment plan', 'fa-list-ol', 'dental', 'patients.tabs.dental'],
+        'prescription' => ['Prescription', 'fa-prescription', 'dosage', 'visits.panels.dosage'],
         // Everything being done for the patient, of every kind, in one list.
         'orders' => ['Orders', 'fa-list-check', null, 'visits.panels.orders'],
         'bill' => ['Bill', 'fa-file-invoice-dollar', 'viewBill', 'visits.panels.charges'],
@@ -151,7 +165,7 @@ class Actions extends Component
      * inside the Orders section, where they belong, because they narrow one
      * list rather than naming places to go.
      *
-     * @return array<string, array{label:string,icon:string,count:int|null,component:string|null}>
+     * @return array<string, array{label:string,icon:string,count:int|null,component:string|null,params:array<string,mixed>}>
      */
     #[Computed]
     public function sections(): array
@@ -168,8 +182,18 @@ class Actions extends Component
 
         $out = [];
         foreach (self::SECTIONS as $key => [$label, $icon, $ability, $component]) {
-            if ($ability !== null && ! Auth::user()?->can($ability, $visit)) {
+            $allowed = match ($ability) {
+                null => true,
+                'dental', 'dosage' => self::dentalPanel($visit, $ability),
+                default => Auth::user()?->can($ability, $visit) === true,
+            };
+            if (! $allowed) {
                 continue;
+            }
+
+            $params = ['visitId' => $visit->id, 'lazy' => false];
+            if ($ability === 'dental') {
+                $params = ['patientId' => (int) $visit->patient_id, 'visitId' => $visit->id, 'part' => $key, 'lazy' => false];
             }
 
             $out[$key] = [
@@ -177,10 +201,29 @@ class Actions extends Component
                 'icon' => $icon,
                 'count' => $counts[$key] ?? null,
                 'component' => $component,
+                'params' => $params,
             ];
         }
 
         return $out;
+    }
+
+    /**
+     * The dental clinic's own panels, for whoever may read them: the chart and
+     * the plan (`dental`) and the dosage (`dosage`), as on the visit page.
+     */
+    public static function dentalPanel(Visit $visit, string $which): bool
+    {
+        $user = Auth::user();
+        $hospital = app(HospitalSettings::class)->hospital();
+        if ($user === null || ! $user->can('viewClinical', $visit)
+            || Practice::of($hospital)->sector->key !== 'dental_clinic') {
+            return false;
+        }
+
+        return $which === 'dosage'
+            ? VisitForm::of($hospital)->writesDosage()
+            : DentalService::enabledFor($hospital) && DentalCaseSheetService::canRead($user);
     }
 
     /** Any panel wrote something — re-read the visit so every part agrees. */

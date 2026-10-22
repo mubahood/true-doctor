@@ -4,10 +4,10 @@
 @php($qty = fn ($q) => rtrim(rtrim(number_format((float) $q, 2, '.', ''), '0'), '.'))
 {{--
   The patient summary (Settings, Your practice, "Visit report shows"; docs/documents.md).
-  What the patient takes home: the treatment done, how to take the medicine,
-  the bill and what is left to pay, and when to come back. Nothing of the
-  clinic's own record: no history, examination, findings, diagnosis, notes
-  or chart.
+  What the patient takes home: who they are, the dentist, the oral examination,
+  how to take the medicine, the treatment plan and what was done, the receipt,
+  when to come back, and who prepared it. Nothing of the clinic's own record:
+  no history, internal notes or vitals.
 --}}
 <x-pdf.document
   :patient="$patient"
@@ -17,37 +17,40 @@
 
   <table class="party">
     <tr>
-      <td style="width:40%;">
+      <td style="width:34%;">
         <span class="k">Patient</span>
         <span class="v big">{{ $patient?->full_name ?? '' }}</span>
         <span class="v muted num small">{{ $patient?->patient_no }}</span>
       </td>
-      <td style="width:30%;">
+      <td style="width:20%;">
         <span class="k">Age / Sex</span>
         <span class="v">{{ $summary['age'] ?? '' }} · {{ $patient?->sex?->label() ?? '' }}</span>
       </td>
-      <td style="width:30%;">
-        <span class="k">Seen by</span>
+      <td style="width:20%;">
+        <span class="k">Contact</span>
+        <span class="v num">{{ $summary['phone'] ?? '' }}</span>
+      </td>
+      <td style="width:26%;">
+        <span class="k">{{ $summary['dental'] ? 'Dentist' : 'Seen by' }}</span>
         <span class="v">{{ $visit->doctor?->name ?? '' }}</span>
         <span class="v muted small">{{ $visit->created_at->format('d M Y') }}</span>
       </td>
     </tr>
   </table>
 
-  @if($summary['treatment'] !== [])
-    <h2>Treatment done</h2>
+  @if($summary['examination'] !== [])
+    <h2>Oral examination</h2>
     <table class="rows">
-      <thead><tr><th style="width:70%;">Treatment</th><th style="width:30%;">Tooth</th></tr></thead>
       <tbody>
-        @foreach($summary['treatment'] as $done)
-          <tr><td>{{ $done['name'] }}</td><td class="num">{{ $done['tooth'] ?? '' }}</td></tr>
+        @foreach($summary['examination'] as $line)
+          <tr><td style="width:28%;" class="muted">{{ $line['label'] }}</td><td>{!! nl2br(e($line['text'])) !!}</td></tr>
         @endforeach
       </tbody>
     </table>
   @endif
 
   @if($summary['dosage']->isNotEmpty())
-    <h2>Dosage</h2>
+    <h2>Prescription</h2>
     <table class="rows">
       <thead>
         <tr>
@@ -72,7 +75,31 @@
     </table>
   @endif
 
-  <h2>Bill</h2>
+  @if($summary['plan'] !== [])
+    <h2>Treatment plan</h2>
+    <table class="rows">
+      <thead><tr><th style="width:56%;">Treatment</th><th style="width:22%;">Tooth</th><th style="width:22%;">Status</th></tr></thead>
+      <tbody>
+        @foreach($summary['plan'] as $item)
+          <tr><td>{{ $item['name'] }}</td><td class="num">{{ $item['tooth'] ?? '' }}</td><td>{{ $item['status'] }}</td></tr>
+        @endforeach
+      </tbody>
+    </table>
+  @endif
+
+  @if($summary['treatment'] !== [])
+    <h2>Treatment done</h2>
+    <table class="rows">
+      <thead><tr><th style="width:70%;">Treatment</th><th style="width:30%;">Tooth</th></tr></thead>
+      <tbody>
+        @foreach($summary['treatment'] as $done)
+          <tr><td>{{ $done['name'] }}</td><td class="num">{{ $done['tooth'] ?? '' }}</td></tr>
+        @endforeach
+      </tbody>
+    </table>
+  @endif
+
+  <h2>Receipt</h2>
   @if($summary['lines'] !== [])
     <table class="rows">
       <thead><tr><th style="width:62%;">Item</th><th class="r" style="width:12%;">Qty</th><th class="r" style="width:26%;">Amount</th></tr></thead>
@@ -106,11 +133,12 @@
   @if($summary['payments']->isNotEmpty())
     <h2 style="clear:both;">Payments</h2>
     <table class="rows">
-      <thead><tr><th style="width:30%;">Date</th><th style="width:40%;">Method</th><th class="r" style="width:30%;">Amount</th></tr></thead>
+      <thead><tr><th style="width:24%;">Date</th><th style="width:22%;">Receipt no</th><th style="width:26%;">Method</th><th class="r" style="width:28%;">Amount</th></tr></thead>
       <tbody>
         @foreach($summary['payments'] as $payment)
           <tr>
             <td class="num">{{ $payment->created_at?->format('d M Y') }}</td>
+            <td class="num">{{ $payment->receiptNo() }}</td>
             <td>{{ $payment->method?->label() }}</td>
             <td class="r num">{{ $set->format($payment->amount) }}</td>
           </tr>
@@ -139,4 +167,15 @@
       </tbody>
     </table>
   @endif
+
+  <table class="party" style="margin-top:24px; clear:both;">
+    <tr>
+      <td style="width:50%;">
+        <span class="k">Prepared by</span>
+        <span class="v">{{ $summary['prepared_by'] ?? '' }}</span>
+        <span class="v muted small">{{ $summary['prepared_at']->format('d M Y H:i') }}</span>
+      </td>
+      <td style="width:50%;"></td>
+    </tr>
+  </table>
 </x-pdf.document>
