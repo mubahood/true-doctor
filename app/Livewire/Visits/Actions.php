@@ -71,8 +71,13 @@ class Actions extends Component
         // live here, not in tabs of their own: they ARE the summary of the
         // visit, and a reader who wants one wants the other.
         'summary' => ['Summary', 'fa-circle-info', null, null],
+        // A dental clinic's chart of the patient, the same one as the Dental tab
+        // (tap a tooth, choose, OK). Shown only where there is dentistry.
+        'chart' => ['Dental chart', 'fa-tooth', null, 'patients.tabs.dental'],
         // Everything being done for the patient, of every kind, in one list.
         'orders' => ['Orders', 'fa-list-check', null, 'visits.panels.orders'],
+        // How the patient takes each medicine (docs/pharmacy.md, "Dosage"), where the clinic writes dosage.
+        'dosage' => ['Dosage', 'fa-pills', 'viewClinical', 'visits.panels.dosage'],
         'bill' => ['Bill', 'fa-file-invoice-dollar', 'viewBill', 'visits.panels.charges'],
         'payments' => ['Payments', 'fa-hand-holding-dollar', 'billing.view', 'visits.panels.payments'],
         'history' => ['History', 'fa-clock-rotate-left', null, null],
@@ -161,7 +166,14 @@ class Actions extends Component
             return [];
         }
 
+        $hospital = app(\App\Support\HospitalSettings::class)->hospital();
+        $user = Auth::user();
+        $charts = $visit->patient !== null && \App\Services\DentalService::chartOnVisit($visit, $hospital)
+            && ($user?->can('treatments.view') || $user?->can('visits.diagnose'));
+        $dosage = \App\Support\Practice\VisitForm::current()->writesDosage();
+
         $counts = [
+            'dosage' => $dosage ? \App\Models\DoseItem::query()->whereHas('prescription', fn ($q) => $q->where('visit_id', $visit->id))->count() : 0,
             'orders' => $visit->orders->count(),
             'payments' => $visit->invoices->first()?->payments()->count() ?? 0,
         ];
@@ -169,6 +181,9 @@ class Actions extends Component
         $out = [];
         foreach (self::SECTIONS as $key => [$label, $icon, $ability, $component]) {
             if ($ability !== null && ! Auth::user()?->can($ability, $visit)) {
+                continue;
+            }
+            if (($key === 'chart' && ! $charts) || ($key === 'dosage' && ! $dosage)) {
                 continue;
             }
 

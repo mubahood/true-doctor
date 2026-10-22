@@ -330,4 +330,30 @@ class ProductsNotBilledTest extends TestCase
             ->assertSee('Not billed this month')
             ->assertSee('Low stock');
     }
+
+    public function test_the_patient_summary_leaves_a_product_given_without_billing_off_the_bill(): void
+    {
+        $order = $this->procedure();
+        $this->orders()->addServiceItem($order, $this->service(), '1', $this->admin->id);
+        $this->orders()->addProductItem($order, $this->item(), '1', $this->admin->id);
+
+        $summary = app(\App\Services\VisitReportService::class)->summary($this->visit->fresh());
+
+        $this->assertSame(['Filling'], array_column($summary['lines'], 'name'), 'the composite was not billed, so it is not on the bill');
+    }
+
+    public function test_the_visit_preview_shows_the_dental_chart_and_the_dosage(): void
+    {
+        $sections = \Livewire\Livewire::test(\App\Livewire\Visits\Actions::class)
+            ->call('openAction', $this->visit->id)
+            ->assertSee('Dental chart')->assertSee('Dosage')
+            ->instance()->sections;
+        $this->assertSame(['summary', 'chart', 'orders', 'dosage'], array_slice(array_keys($sections), 0, 4));
+
+        // A general hospital's preview is as it was.
+        $this->useHospital();
+        $keys = array_keys(\Livewire\Livewire::test(\App\Livewire\Visits\Actions::class)->call('openAction', $this->visit->id)->instance()->sections);
+        $this->assertNotContains('chart', $keys);
+        $this->assertNotContains('dosage', $keys);
+    }
 }

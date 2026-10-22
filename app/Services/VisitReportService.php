@@ -144,7 +144,9 @@ class VisitReportService
         // The bill: the invoice's own lines once raised, else the bill as it stands.
         $lines = $invoice !== null
             ? $invoice->items->map(fn ($i) => ['name' => (string) $i->description, 'quantity' => (string) $i->quantity, 'amount' => (string) $i->line_total])
-            : $billable->map(fn ($i) => ['name' => (string) $i->name, 'quantity' => (string) $i->quantity, 'amount' => (string) $i->line_total]);
+            // A product given without billing is the clinic's own cost, not the patient's: left off.
+            : $billable->reject(fn ($i) => $i->billed === false)
+                ->map(fn ($i) => ['name' => (string) $i->name, 'quantity' => (string) $i->quantity, 'amount' => (string) $i->line_total]);
 
         // Treatment done: the dental procedures done on this visit with their
         // teeth, else the services charged on it.
