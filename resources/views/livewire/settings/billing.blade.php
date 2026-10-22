@@ -89,6 +89,13 @@
                       hint="The last line of every document. Same setting as the footer under Hospital letterhead.">
             <input id="bill-footer" type="text" wire:model.live.debounce.300ms="invoice_footer" class="tb-input" maxlength="500">
           </x-ui.field>
+          <x-ui.field label="Products used on a visit" for="bill-products" name="products_billed"
+                      hint="Where the Billed or Not billed choice starts. Not billed still takes the stock off the shelf.">
+            <select id="bill-products" wire:model="products_billed" class="tb-select">
+              <option value="1">Billed to the patient</option>
+              <option value="0">Not billed (bill the service only)</option>
+            </select>
+          </x-ui.field>
           <x-ui.field label="Receipt printer" for="bill-printer" name="receipt_printer"
                       hint="A roll-paper printer at the desk: receipts and queue tickets get a print button for it.">
             <select id="bill-printer" wire:model="receipt_printer" class="tb-select">

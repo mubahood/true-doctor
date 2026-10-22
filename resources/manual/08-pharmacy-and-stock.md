@@ -18,15 +18,27 @@ Drugs are given against a visit, so the stock and the bill always agree.
 2. Find the **Dispensing** panel and press **Dispense drugs**.
 3. In **Drug (from stock)**, search for the item and pick it.
 4. Type the quantity in **Qty**.
-5. To give more than one drug, press **Add another line** and repeat. Use the bin icon to remove a line.
-6. Add a **Note** if you need one.
-7. Press **Dispense & bill**.
+5. Choose **Billed** or **Not billed** for the line. See [Billed or not billed](#billed-or-not-billed) below.
+6. To give more than one drug, press **Add another line** and repeat. Use the bin icon to remove a line.
+7. Add a **Note** if you need one.
+8. Press **Dispense & bill**.
 
-In one step, each drug comes off its shelf and its charge goes onto the visit at the item's sale price. If any one line has more than the shelf holds, True-Doctor shows the problem on that line and nothing is dispensed, not even the other lines. Correct the quantity and try again.
+In one step, each drug comes off its shelf and, if it is billed, its charge goes onto the visit at the item's sale price. If any one line has more than the shelf holds, True-Doctor shows the problem on that line and nothing is dispensed, not even the other lines. Correct the quantity and try again.
 
 The **Dispensing** panel then lists what was given and when. Press the date to open the dispensation, which shows each drug, quantity, unit price and the total.
 
 Drugs can also leave the shelf when a clinician adds a product to an order or a charge on the visit. Those are explained in [Visits and consultation](05-visits-and-consultation.md) and [Billing and payments](07-billing-and-payments.md). They move stock in exactly the same way.
+
+### Billed or not billed
+
+Every product used on a visit has a choice: **Billed** or **Not billed**. You see it wherever a product is added: dispensing, an order's **What it used**, a lab or radiology result, a consultation's write-up, and **Add charge** on the bill.
+
+- **Billed**: the patient pays for it at the item's sale price.
+- **Not billed**: the product still comes off the shelf, but the patient is not charged for it. Use this when the product is part of a service's price, so only the service is billed. The line stays on the order, marked **Not billed**, and its cost still counts in the finance reports as goods used.
+
+Where the choice starts is set in **Billing settings** ([Setting up your hospital](02-setting-up.md)). A dental clinic starts at **Not billed**; other hospitals start at **Billed**.
+
+You can change a line's choice on its order until the visit is invoiced. After that the choice is fixed, because the invoice is already written. To change it then, void the invoice first.
 
 ## Stock items
 
@@ -37,7 +49,7 @@ Each row shows the item, its category, how much is **On the shelf**, the **Reord
 ### Add a new item
 
 1. Press **New item**.
-2. Fill in **Name**, **Unit** (for example tablet or box), **Reorder level**, **Cost price** and **Sale price**. These are required.
+2. Fill in **Name**, **Unit** (for example tablet or box), **Reorder level** and **Cost price**. These are required. **Sale price** is optional: left empty, the item sells at its cost price.
 3. Choose a **Category**, and add the **SKU**, **Batch no.** and **Expiry date** if you have them.
 4. Leave **Active** ticked.
 5. Press **Create item**.

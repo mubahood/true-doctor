@@ -55,6 +55,9 @@ class OrderResource extends JsonResource
                 'line_total' => $it->line_total,
                 'status' => $it->status->value,
                 'notes' => $it->notes,
+                // A product given without billing carries no amount (docs/orders.md).
+                'billed' => $it->isBilled(),
+                'billing_set_at' => $it->billing_set_at?->toIso8601String(),
             ])->values()),
             'total' => $live->reduce(fn (string $sum, $it) => bcadd($sum, (string) $it->line_total, 2), '0.00'),
             // The same rules the dialog shows rather than lets you discover.

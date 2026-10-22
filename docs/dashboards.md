@@ -44,7 +44,12 @@ you, and the legend names it.
 **owed** by members in debt, and the insurers' float. Held and owed are opposite
 sides of one instrument — the old `cardFloat()` summed them and said neither.
 
-The headline row leads with **Open visits** and ends with **Outstanding**; the
+The headline row leads with **Patients today** (and the treatments done:
+consultations and procedures completed today), then **Open visits**,
+appointments today and in the next 7 days, **Collected today** and **Collected
+this month** (both from `CashierDaySummary`, the hospital's own day, so the
+dashboard and the till agree), **Outstanding**, **Low stock**, and **Not billed
+this month**: products used without billing, at cost (docs/orders.md). The
 patient register moved to the side stats, where reference numbers belong.
 
 `awaitingTriage()`/`triageQueue()` were the last code carrying a word the

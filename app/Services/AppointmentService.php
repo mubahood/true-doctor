@@ -264,7 +264,7 @@ class AppointmentService
      * A second call finds the order it already started rather than opening a
      * second one.
      *
-     * @param  list<array{kind?:string,id:int,quantity?:string}>  $lines
+     * @param  list<array{kind?:string,id:int,quantity?:string,billed?:bool|null}>  $lines
      */
     public function recordOutcome(Appointment $appointment, ?string $report, array $lines = [], ?int $by = null, bool $complete = true): Order
     {

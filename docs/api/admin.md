@@ -127,8 +127,8 @@ Device: `{uuid, label, platform, user{id,name}, state: active|stale|revoked, reg
 Returns the same shape as `GET`.
 
 ### Billing: `admin/settings/billing`
-- `GET` → `{settings{currency_code, currency_symbol, currency_position, decimals, thousands_separator, decimal_separator, tax_enabled, tax_label, tax_rate, consultation_fee, invoice_prefix, invoice_footer}, preview, invoice_example, recorded{invoices, payments, currency}, currencies{}}`.
-- `PUT/PATCH`: the `BillingSettingRequest` rules plus "the two separators must differ"; unsent fields keep their value. Response adds `currency_relabelled: true` when invoices/payments already exist in another currency: changing the code **re-labels** recorded money, it does not convert it.
+- `GET` → `{settings{currency_code, currency_symbol, currency_position, decimals, thousands_separator, decimal_separator, tax_enabled, tax_label, tax_rate, consultation_fee, invoice_prefix, invoice_footer, products_billed}, preview, invoice_example, recorded{invoices, payments, currency}, currencies{}}`.
+- `PUT/PATCH`: the `BillingSettingRequest` rules plus "the two separators must differ"; unsent fields keep their value. `products_billed` (boolean) is where a product's Billed or Not billed choice starts on a visit; until it is set, false for a dental clinic and true elsewhere. Response adds `currency_relabelled: true` when invoices/payments already exist in another currency: changing the code **re-labels** recorded money, it does not convert it.
 
 ## Account state
 

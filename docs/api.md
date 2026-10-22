@@ -77,6 +77,10 @@ permission:
   move, cancel, report, lines, and `PATCH /api/v1/orders/{uuid}` to change one after it is placed;
   `GET /api/v1/orders/assignees` lists who it can be assigned to. Rules and fields: `docs/orders.md`
   ("Changing an order"). `meta.orders` carries the kinds this practice is offered and the form's labels.
+  A product line may be given without billing: `POST /api/v1/orders/{uuid}/items` takes optional
+  `billed` (boolean, product only; left out, the hospital's choice), each item carries `billed`
+  and `billing_set_at`, and `PUT /api/v1/orders/{uuid}/items/{id}/billed` `{billed}` switches one
+  (422 once the visit is invoiced). See `docs/orders.md` ("Billed or not billed").
 - **Invoices** (`billing.view`): `GET /api/v1/invoices` (`?status=`), `GET {uuid}` — full money
   breakdown + line items.
 

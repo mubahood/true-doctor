@@ -322,6 +322,19 @@
                             </span>
                             {{ $item->name }}
                             @if($gone)<span class="tb-ordm-gone">removed</span>@endif
+                            @if($item->isProduct() && ! $item->isBilled())<span class="tb-notbilled">Not billed</span>@endif
+
+                            {{-- A product is billed or given without billing.
+                                 Either way it has left the shelf. --}}
+                            @if($item->isProduct() && ! $gone && $this->editable)
+                              <div>
+                                @include('livewire.partials.bill-choice', [
+                                  'name' => 'oi-billed-'.$item->id, 'billed' => $item->isBilled(),
+                                  'on' => 'setLineBilled('.$item->id.', true)', 'off' => 'setLineBilled('.$item->id.', false)',
+                                  'label' => 'Bill '.$item->name.' to the patient',
+                                ])
+                              </div>
+                            @endif
 
                             {{-- The words beside the charge, and the hands on
                                  it. A line that can be corrected has to say
@@ -380,6 +393,17 @@
                         : 'From the price list' }}
                   </span>
                 </div>
+
+                @if($itemKind === 'product')
+                  <div class="tb-billq-row">
+                    @include('livewire.partials.bill-choice', [
+                      'name' => 'oi-new-billed', 'billed' => $itemBilled !== false,
+                      'on' => '$set(\'itemBilled\', true)', 'off' => '$set(\'itemBilled\', false)',
+                      'label' => 'Bill this product to the patient',
+                    ])
+                    <span class="tb-seg-hint">Not billed still takes it off the shelf.</span>
+                  </div>
+                @endif
 
                 <div class="tb-ordm-add-row">
                   <x-ui.field :label="$itemKind === 'product' ? 'Product' : 'Service'"

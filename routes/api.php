@@ -203,6 +203,7 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
         Route::put('orders/{order}/report', [\App\Http\Controllers\Api\V1\OrderController::class, 'report'])->name('api.orders.report');
         Route::post('orders/{order}/items', [\App\Http\Controllers\Api\V1\OrderController::class, 'addItem'])->name('api.orders.items.store');
         Route::delete('orders/{order}/items/{item}', [\App\Http\Controllers\Api\V1\OrderController::class, 'removeItem'])->name('api.orders.items.destroy');
+        Route::put('orders/{order}/items/{item}/billed', [\App\Http\Controllers\Api\V1\OrderController::class, 'setBilled'])->whereNumber('item')->name('api.orders.items.billed');
         // Editing an order after it is placed (docs/orders.md, "Changing an order").
         Route::patch('orders/{order}', [\App\Http\Controllers\Api\V1\OrderController::class, 'update'])->name('api.orders.update');
         Route::apiResource('visits', VisitController::class)->only(['index', 'store', 'show']);

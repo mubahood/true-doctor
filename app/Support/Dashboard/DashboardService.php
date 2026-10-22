@@ -448,6 +448,83 @@ class DashboardService
             ->count();
     }
 
+    // ── The day at a glance (a clinic owner's request) ──────────
+
+    /**
+     * Patients seen today: people with a visit opened today. A visit that was
+     * called off is not an attendance (docs/visits.md).
+     */
+    public function patientsSeenToday(): int
+    {
+        return Visit::whereBetween('created_at', $this->todayRange())
+            ->where(fn ($q) => $q->whereNull('outcome')->orWhere('outcome', '!=', VisitOutcome::Cancelled->value))
+            ->distinct()->count('patient_id');
+    }
+
+    /**
+     * Treatments done today: consultations and procedures finished today.
+     * Lab tests, scans, dispensing and stays are counted on their own pages.
+     */
+    public function treatmentsDoneToday(): int
+    {
+        return Order::where('status', OrderStatus::Completed->value)
+            ->whereIn('type', [\App\Enums\OrderType::Consultation->value, \App\Enums\OrderType::Procedure->value])
+            ->whereBetween('completed_at', $this->todayRange())
+            ->count();
+    }
+
+    /** Appointments booked after today, over the next week, still expected. */
+    public function appointmentsUpcoming(int $days = 7): int
+    {
+        return Appointment::where('scheduled_at', '>=', Carbon::now()->addDay()->startOfDay())
+            ->where('scheduled_at', '<', Carbon::now()->addDays($days + 1)->startOfDay())
+            ->whereIn('status', [\App\Enums\AppointmentStatus::Scheduled->value, \App\Enums\AppointmentStatus::Confirmed->value])
+            ->count();
+    }
+
+    /**
+     * What came in today and this month, by the cashier's own rules
+     * (CashierDaySummary: the hospital's calendar day), so the dashboard and
+     * the till cannot disagree.
+     *
+     * @return array{today:string,todayCount:int,month:string}
+     */
+    public function income(): array
+    {
+        $summary = app(\App\Services\CashierDaySummary::class);
+        $hospital = app(\App\Support\HospitalSettings::class)->hospital();
+        $day = $summary->forDate($hospital, $summary->today($hospital));
+
+        return [
+            'today' => (string) $day['total'],
+            'todayCount' => (int) $day['payments_count'],
+            'month' => (string) $summary->monthToDate($hospital)['total'],
+        ];
+    }
+
+    /**
+     * Products used on visits this month without being billed, valued at
+     * what they cost (docs/orders.md). Each line keeps its unit cost from
+     * the moment it was used.
+     *
+     * @return array{count:int,cost:string}
+     */
+    public function notBilledThisMonth(): array
+    {
+        $rows = \App\Models\OrderItem::where('billed', false)
+            ->whereNotNull('stock_item_id')
+            ->where('status', '!=', \App\Enums\OrderItemStatus::Cancelled->value)
+            ->whereBetween('created_at', $this->monthRange())
+            ->get(['quantity', 'unit_cost']);
+
+        $cost = '0.00';
+        foreach ($rows as $row) {
+            $cost = bcadd($cost, bcmul((string) $row->quantity, (string) ($row->unit_cost ?? '0'), 2), 2);
+        }
+
+        return ['count' => $rows->count(), 'cost' => $cost];
+    }
+
     // ── Billing / finance ───────────────────────────────────────
     public function revenueToday(): string
     {

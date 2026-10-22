@@ -2549,3 +2549,12 @@ body.has-brand::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z-i
 .tb-dose-row .tb-form-group{margin-bottom:0;}
 .tb-dose-remove{margin-top:20px;}
 @media (max-width:900px){.tb-dose-row{grid-template-columns:repeat(2,minmax(0,1fr));}.tb-dose-row > :first-child{grid-column:1 / -1;}.tb-dose-remove{margin-top:0;justify-self:start;}}
+
+/* Billed or not billed: a product's per-line choice on a visit (docs/orders.md) */
+.tb-billq{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;white-space:nowrap;}
+.tb-billq label{display:inline-flex;align-items:center;gap:3px;cursor:pointer;color:var(--mt);}
+.tb-billq input{margin:0;}
+.tb-billq label:has(input:checked){color:var(--tx);font-weight:600;}
+.tb-billq-row{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-size:12px;}
+.tb-notbilled{margin-left:7px;font-size:9.5px;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;padding:1px 5px;background:var(--surface-2);color:var(--mt);}

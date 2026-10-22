@@ -142,6 +142,12 @@ class DashboardWidgets
                 $user->can('appointments.view') ? ['appointmentsToday' => $s->appointmentsToday(), 'awaitingStart' => $s->appointmentsAwaitingStart()] : [],
                 $user->can('ipd.view') ? ['inpatients' => $s->currentInpatients(), 'occupancy' => $s->occupancy()] : [],
                 $user->can('billing.view') ? ['revenueToday' => $s->revenueToday(), 'paymentsToday' => $s->paymentsCountToday(), 'outstanding' => $s->outstandingInvoices()] : [],
+                // The day at a glance: who came, what was done, what came in,
+                // what is coming, and what the shelf gave away unbilled.
+                $user->can('visits.view') ? ['patientsToday' => $s->patientsSeenToday(), 'treatmentsToday' => $s->treatmentsDoneToday()] : [],
+                $user->can('appointments.view') ? ['appointmentsUpcoming' => $s->appointmentsUpcoming()] : [],
+                $user->can('billing.view') ? ['income' => $s->income(), 'notBilled' => $s->notBilledThisMonth()] : [],
+                $user->can('pharmacy.view') ? ['lowStock' => $s->lowStockCount()] : [],
             ),
             'admin.visit-flow' => ['visits' => $s->visitsOpen()],
             'admin.work-queue' => ['orders' => $s->openOrders()],

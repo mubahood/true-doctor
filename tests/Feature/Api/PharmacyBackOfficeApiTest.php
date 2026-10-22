@@ -156,7 +156,7 @@ class PharmacyBackOfficeApiTest extends TestCase
         $this->postJson('/api/v1/stock-items', ['name' => 'X'])->assertStatus(403);
 
         $this->as('pharmacist');
-        $this->postJson('/api/v1/stock-items', ['name' => 'Amoxicillin'])->assertStatus(422)->assertJsonStructure(['errors' => ['unit', 'cost_price', 'sale_price', 'reorder_level']]);
+        $this->postJson('/api/v1/stock-items', ['name' => 'Amoxicillin'])->assertStatus(422)->assertJsonStructure(['errors' => ['unit', 'cost_price', 'reorder_level']])->assertJsonMissingPath('errors.sale_price');
         $this->postJson('/api/v1/stock-items', ['name' => 'A', 'unit' => 'caps', 'cost_price' => 1, 'sale_price' => 2, 'reorder_level' => 5, 'stock_category_id' => 99999])
             ->assertStatus(422)->assertJsonStructure(['errors' => ['stock_category_id']]);
 

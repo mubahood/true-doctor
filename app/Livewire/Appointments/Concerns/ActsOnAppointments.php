@@ -255,14 +255,7 @@ trait ActsOnAppointments
             $order = $service->recordOutcome(
                 $appointment,
                 (string) $data['report'],
-                array_map(
-                    fn (array $line) => [
-                        'kind' => $line['kind'],
-                        'id' => (int) $line['id'],
-                        'quantity' => (string) $line['quantity'],
-                    ],
-                    $this->provided,
-                ),
+                $this->providedLines(),
                 auth()->id(),
                 $this->completeIt,
             );

@@ -23,6 +23,8 @@ You rarely type a charge by hand. When a doctor orders a lab test, an X-ray, a p
 
 To see the bill, open the visit and go to the **Bill** section. Each line shows the **Charge**, who **Raised by** it (the order behind it), the **Unit** price, the **Qty** and the **Line total**. Under the lines you see **Charges**, any **Discount**, the tax and the **Total** (or **Due** when there is a discount).
 
+A product given without billing shows on the bill marked **Not billed**, with no amount, and is left off the invoice.
+
 A charge is changed on the order that raised it, not on the bill. Click the order name in the **Raised by** column to open it. This keeps the bill, the work done and the pharmacy shelf in agreement.
 
 If you think a line looks wrong, click **Check the bill adds up**. True-Doctor recalculates each line from its own price and quantity.
@@ -33,7 +35,7 @@ Use this for something sold at the counter that no order raised.
 
 1. In the **Bill** section, click **Add charge**.
 2. Choose **Service** (from the price list) or **Product** (comes off the pharmacy shelf).
-3. Search for the item. For a product, you see how many are on the shelf.
+3. Search for the item. For a product, you see how many are on the shelf, and you choose **Billed** or **Not billed**. Not billed still takes it off the shelf but leaves it off the bill. See [Pharmacy and stock](08-pharmacy-and-stock.md#billed-or-not-billed).
 4. If the service has a price range, type the **Price** within the range shown.
 5. Enter the **Quantity**. The **Total** is worked out for you.
 6. Add a **Note** if you want, then click **Add to bill**.

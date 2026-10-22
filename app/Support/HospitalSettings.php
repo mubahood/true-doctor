@@ -130,6 +130,24 @@ class HospitalSettings
         return (string) $this->get('tax_label', 'Tax');
     }
 
+    /**
+     * Whether a product used on a visit is billed unless somebody says not.
+     *
+     * Each line can be switched either way (docs/orders.md); this is only
+     * where the choice starts. Set in Billing settings; until it is, a dental
+     * clinic starts at Not billed (its materials are part of the treatment
+     * fee) and every other practice at Billed.
+     */
+    public function productsBilledByDefault(): bool
+    {
+        $stored = $this->billing()['products_billed'] ?? null;
+        if ($stored !== null && $stored !== '') {
+            return filter_var($stored, FILTER_VALIDATE_BOOLEAN);
+        }
+
+        return \App\Support\Practice\Practice::of($this->hospital())->sector->key !== 'dental_clinic';
+    }
+
     /** Default visit fee as a scale-2 decimal string. */
     public function consultationFee(): string
     {

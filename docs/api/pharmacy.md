@@ -81,7 +81,8 @@ Existing: `GET /stock-items` (`filter=low|expiring|expired`, `category`, `q`; me
 `.../write-off`. Resource gained `sku`, `is_active`, `category_id`.
 
 * `POST /stock-items` - `pharmacy.manage`. Required: `name` (120), `unit` (32), `cost_price`,
-  `sale_price`, `reorder_level` (0..99999999.99). Optional: `stock_category_id` (this hospital's),
+  `reorder_level` (0..99999999.99). Optional: `sale_price` (empty or left out: it equals
+  `cost_price`, stored as such), `stock_category_id` (this hospital's),
   `sku` (48), `batch_no` (64), `expiry_date`, `is_active` (default true). Returns the item (201).
   Opening stock goes in through `POST .../adjust` with reason `opening_stock`.
 * `PUT|PATCH /stock-items/{uuid}` - `pharmacy.manage`. Same fields, all optional.
@@ -138,3 +139,9 @@ reassign them first." while it holds any item.
 | 403 | `forbidden` | the page's permission is missing |
 | 404 | `not_found` | no such row in this hospital |
 | 422 | `validation_failed` | rules above, or a refused delete (reason in `message`) |
+
+### Dispensing without billing
+
+`POST /visits/{uuid}/dispensations`: each `items[]` row may carry `billed` (boolean). Not billed
+still takes the stock off the shelf and posts its cost; the charge goes on with no amount and is
+left off the invoice. Left out, the hospital's choice (Billing settings, `products_billed`).

@@ -47,6 +47,8 @@
                 <td>
                   {{ $line->name }}
                   @if($off)<span class="tb-ordm-gone">removed</span>@endif
+                  {{-- Used and taken off the shelf, but not charged. --}}
+                  @if($line->isProduct() && ! $line->isBilled())<span class="tb-notbilled">Not billed</span>@endif
                   {{-- Why the tax is what it is, on the line that decides it. --}}
                   @if($line->tax_exempt && bccomp($this->totals['tax'], '0', 2) > 0)
                     <span class="tb-line-exempt">no {{ strtolower($taxLabel) }}</span>
@@ -236,6 +238,17 @@
               {{ $kind === 'product' ? 'Comes off the pharmacy shelf' : 'From the price list' }}
             </span>
           </div>
+
+          @if($kind === 'product')
+            <div class="tb-billq-row">
+              @include('livewire.partials.bill-choice', [
+                'name' => 'ch-billed', 'billed' => $billed !== false,
+                'on' => '$set(\'billed\', true)', 'off' => '$set(\'billed\', false)',
+                'label' => 'Bill this product to the patient',
+              ])
+              <span class="tb-seg-hint">Not billed still takes it off the shelf.</span>
+            </div>
+          @endif
 
           <x-ui.field :label="$kind === 'product' ? 'Product' : 'Service'"
                       :name="$kind === 'product' ? 'stock_item_id' : 'service_id'" required

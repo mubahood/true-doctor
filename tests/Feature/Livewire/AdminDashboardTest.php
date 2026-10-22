@@ -440,11 +440,12 @@ class AdminDashboardTest extends TestCase
 
     /**
      * The register is a reference number, not today's work, so it moved out of
-     * the headline row — but it must still be on the page.
+     * the headline row — but it must still be on the page. The headline counts
+     * the patients seen today instead.
      */
     public function test_the_patient_register_moved_to_the_side_without_disappearing(): void
     {
-        $this->widget('admin.stats')->assertDontSee('Patients');
+        $this->widget('admin.stats')->assertSee('Patients today')->assertDontSee('new today');
         $this->widget('admin.side-stats')->assertSee('Patients');
     }
 

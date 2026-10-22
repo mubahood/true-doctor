@@ -92,7 +92,7 @@ class Index extends Component
 
     protected function nullableFields(): array
     {
-        return ['sku', 'batch_no', 'expiry_date'];
+        return ['sku', 'batch_no', 'expiry_date', 'sale_price'];
     }
 
     protected function defaults(): array
@@ -215,7 +215,7 @@ class Index extends Component
             'original_quantity' => 0,
             'current_quantity' => 0,
             'cost_price' => $row['cost_price'] ?? 0,
-            'sale_price' => $row['sale_price'] ?? 0,
+            'sale_price' => $row['sale_price'] ?? null,
             'current_stock_value' => 0,
             'reorder_level' => $row['reorder_level'] ?? 0,
             'is_active' => true,

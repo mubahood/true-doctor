@@ -135,7 +135,7 @@ The **Orders** section lists every order with what it is, who it is assigned to,
 
 An order's status is **Pending**, **In progress**, **Completed** or **Cancelled**. Click an order to open it. The person whose work it is can:
 
-- add what it used: choose **Service** (from the price list) or **Product** (off the pharmacy shelf), pick the item, set **Qty**, add a **Note** if needed, and press **Add**. A product comes off the shelf at the same moment it goes on the bill.
+- add what it used: choose **Service** (from the price list) or **Product** (off the pharmacy shelf), pick the item, set **Qty**, add a **Note** if needed, and press **Add**. A product comes off the shelf at the same moment it goes on the bill. For a product, choose **Billed** or **Not billed**; each product line on the order can be switched until the visit is invoiced (see [Pharmacy and stock](08-pharmacy-and-stock.md#billed-or-not-billed)).
 - write the **Report**: what was found. It saves as you type.
 - attach files such as results, films or consent forms, up to 10 MB each. Press **Choose files** or drop them on the box.
 - press **Mark in progress** or **Mark completed**.

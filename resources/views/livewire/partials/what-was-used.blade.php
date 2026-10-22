@@ -35,6 +35,15 @@
             @if($line['kind'] === 'product' && $line['stock'] !== null)
               <span class="tb-out-stock">{{ $line['stock'] }} left on the shelf</span>
             @endif
+            @if($line['kind'] === 'product')
+              <div>
+                @include('livewire.partials.bill-choice', [
+                  'name' => 'used-billed-'.$i, 'billed' => (bool) ($line['billed'] ?? true),
+                  'on' => 'setProvidedBilled('.$i.', true)', 'off' => 'setProvidedBilled('.$i.', false)',
+                  'label' => 'Bill '.$line['name'].' to the patient',
+                ])
+              </div>
+            @endif
           </td>
           <td class="tb-text-right muted mono">{{ \App\Support\HospitalSettings::money($line['unit_price']) }}</td>
           <td class="tb-text-right">
@@ -42,7 +51,7 @@
                    wire:model.live.debounce.400ms="provided.{{ $i }}.quantity"
                    aria-label="How many {{ $line['name'] }}">
           </td>
-          <td class="tb-text-right mono">{{ \App\Support\HospitalSettings::money(bcmul((string) $line['unit_price'], (string) $line['quantity'], 4)) }}</td>
+          <td class="tb-text-right mono">{{ ($line['billed'] ?? true) ? \App\Support\HospitalSettings::money(bcmul((string) $line['unit_price'], (string) $line['quantity'], 4)) : 'Not billed' }}</td>
           <td class="tb-text-right">
             <x-ui.icon-button label="Remove {{ $line['name'] }}" icon="fa-xmark" wire:click="removeProvided({{ $i }})" />
           </td>

@@ -68,6 +68,13 @@ class OrderDetail extends Component
 
     public string $qty = '1';
 
+    /**
+     * For a product: billed to the patient, or given without billing
+     * (docs/orders.md). Starts at the hospital's choice each time the form
+     * is reset; null until then.
+     */
+    public ?bool $itemBilled = null;
+
     /** For a service priced as a range: where in the range this line falls. */
     public ?string $itemPrice = null;
 
@@ -292,7 +299,7 @@ class OrderDetail extends Component
     public function lineTotal(): string
     {
         $price = $this->pickedPrice;
-        if ($price === null) {
+        if ($price === null || ($this->itemKind === 'product' && $this->itemBilled === false)) {
             return '0.00';
         }
 
@@ -380,7 +387,7 @@ class OrderDetail extends Component
             if ($this->itemKind === 'product') {
                 /** @var StockItem $item */
                 $item = StockItem::findOrFail($this->stock_item_id);
-                $line = $orders->addProductItem($order, $item, $this->qty, Auth::id());
+                $line = $orders->addProductItem($order, $item, $this->qty, Auth::id(), $this->itemBilled);
             } else {
                 /** @var Service $service */
                 $service = Service::findOrFail($this->service_id);
@@ -480,6 +487,33 @@ class OrderDetail extends Component
         $this->cancelEdit();
         $this->refreshOrder();
         $this->dispatch('toast', message: 'Line updated.', type: 'success');
+        $this->dispatch('visit-updated');
+    }
+
+    /**
+     * Bill a product line, or take it off the bill. Refused once the visit is
+     * invoiced, with the reason (OrderService::setBilled).
+     */
+    public function setLineBilled(int $itemId, bool $billed, OrderService $orders): void
+    {
+        $order = $this->requireWritableOrder();
+        if ($order === null) {
+            return;
+        }
+
+        /** @var OrderItem $line */
+        $line = $order->items()->whereKey($itemId)->firstOrFail();
+
+        try {
+            $orders->setBilled($line, $billed, Auth::id());
+        } catch (Throwable $e) {
+            $this->dispatch('toast', message: $this->plainly($e), type: 'error');
+
+            return;
+        }
+
+        $this->refreshOrder();
+        $this->dispatch('toast', message: $billed ? $line->name.' is billed.' : $line->name.' is not billed.', type: 'success');
         $this->dispatch('visit-updated');
     }
 
@@ -838,6 +872,7 @@ class OrderDetail extends Component
     private function resetForm(): void
     {
         $this->reset(['itemKind', 'service_id', 'stock_item_id', 'qty', 'itemNote', 'itemPrice']);
+        $this->itemBilled = app(\App\Support\HospitalSettings::class)->productsBilledByDefault();
         $this->nonce++;
         $this->resetErrorBag();
         unset($this->pickedPrice, $this->stockOnHand, $this->lineTotal, $this->pickedRange);

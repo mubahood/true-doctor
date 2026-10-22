@@ -36,6 +36,11 @@ class BillingSettingsController extends Controller
         $input = $request->only(array_keys($this->service->rules())) + $this->settings->billing();
         $input['currency_code'] = strtoupper(trim((string) ($input['currency_code'] ?? '')));
         $input['tax_enabled'] = filter_var($input['tax_enabled'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        if (array_key_exists('products_billed', $input) && $input['products_billed'] !== null) {
+            $input['products_billed'] = filter_var($input['products_billed'], FILTER_VALIDATE_BOOLEAN);
+        } else {
+            unset($input['products_billed']);
+        }
 
         $data = validator($input, $this->service->rules(), $this->service->messages())->validate();
         $data['tax_enabled'] = $input['tax_enabled'];
@@ -81,6 +86,8 @@ class BillingSettingsController extends Controller
                 'consultation_fee' => $billing['consultation_fee'] !== null ? (string) $billing['consultation_fee'] : null,
                 'invoice_prefix' => (string) $billing['invoice_prefix'],
                 'invoice_footer' => $billing['invoice_footer'] !== null ? (string) $billing['invoice_footer'] : null,
+                // Where a product's Billed or Not billed choice starts (docs/orders.md).
+                'products_billed' => $this->settings->productsBilledByDefault(),
             ],
             // A sample amount written the way the saved settings write money.
             'preview' => HospitalSettings::money('1234567.89'),

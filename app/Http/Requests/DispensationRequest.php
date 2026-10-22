@@ -36,6 +36,8 @@ class DispensationRequest extends FormRequest
             'items' => ['required', 'array', 'min:1'],
             'items.*.stock_item_id' => ['required', 'integer', Rule::exists('stock_items', 'id')->where('hospital_id', $hospitalId)],
             'items.*.quantity' => ['required', 'numeric', 'gt:0', 'max:99999999.99', 'decimal:0,2'],
+            // Given without billing (docs/orders.md); left out, the hospital's choice.
+            'items.*.billed' => ['sometimes', 'nullable', 'boolean'],
         ];
     }
 }
