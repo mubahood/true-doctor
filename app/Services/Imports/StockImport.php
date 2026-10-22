@@ -40,7 +40,7 @@ class StockImport extends ImportHandler
                 ['qty', 'stock', 'balance', 'in stock', 'quantity in stock', 'on hand', 'closing stock', 'current stock', 'stock level', 'available']),
             new ImportField('cost_price', 'Cost', 'What you pay for one.', '1500', false,
                 ['cost price', 'buying price', 'unit cost', 'purchase price', 'bp', 'cost per unit']),
-            new ImportField('sale_price', 'Selling price', 'What a patient pays for one.', '3000', false,
+            new ImportField('sale_price', 'Selling price', 'What a patient pays for one. Left empty, it is the cost.', '3000', false,
                 ['price', 'sale price', 'sp', 'retail price', 'unit price', 'selling']),
             new ImportField('reorder_level', 'Reorder level', 'Warn when the shelf gets down to this many.', '50', false,
                 ['reorder', 'minimum', 'min stock', 'reorder point', 'min', 'minimum stock']),
@@ -130,6 +130,12 @@ class StockImport extends ImportHandler
             }
 
             return ['status' => ImportRow::UPDATED, 'type' => StockItem::class, 'id' => $item->id, 'message' => 'Details and prices updated; the quantity was left as it is.'];
+        }
+
+        // No selling price given: it sells at what it cost, said outright
+        // rather than left at nothing (the same rule as the stock form).
+        if (! isset($details['sale_price']) && isset($details['cost_price'])) {
+            $details['sale_price'] = $details['cost_price'];
         }
 
         [$item, $state] = CatalogueStore::persist(StockItem::class, null, $details + [

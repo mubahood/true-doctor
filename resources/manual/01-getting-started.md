@@ -133,7 +133,7 @@ The dashboard is the first page you see after you sign in. It is different for e
 
 | Role | What the dashboard shows |
 |---|---|
-| Hospital Admin | Key figures, **Visits in progress** (how many visits are **Not started**, **In care**, at **Billing** and at **Payment**, and how many are held up by an open order), money billed against money collected, bed occupancy, **Work outstanding**, revenue by payment method, cards and insurers, today's appointments by status, and low stock |
+| Hospital Admin | Key figures (**Patients today** and the treatments done, open visits, **Appointments today** and the next 7 days, **Collected today** and **Collected this month** by the cashier's own day, **Outstanding**, **Low stock**, and **Not billed this month**: products used without billing, at cost), **Visits in progress** (how many visits are **Not started**, **In care**, at **Billing** and at **Payment**, and how many are held up by an open order), money billed against money collected, bed occupancy, **Work outstanding**, revenue by payment method, cards and insurers, today's appointments by status, and low stock |
 | Doctor | **My open visits** and **Today's diary** |
 | Nurse | **Waiting for vitals** and **Medication round**, the doses due |
 | Receptionist | **Today's appointments** and **Awaiting payment** |

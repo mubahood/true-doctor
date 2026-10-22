@@ -48,12 +48,20 @@ class BillingService
      * Quantities are decimal, not whole: drugs are dispensed in halves, and a
      * line that cannot say so has to hide the real figure in its own name.
      *
-     * @param  array{service_id?:int|null,stock_item_id?:int|null,name?:string,unit_price?:string|int|float,quantity?:string|int|float,tax_exempt?:bool,notes?:string|null}  $attrs
+     * A product may be put on WITHOUT being billed (`billed` false,
+     * docs/orders.md): it is recorded with no amount, so every total that
+     * adds up line totals leaves it out, and the invoice skips it. Its stock
+     * movement and the cost that posts to the books are the caller's, exactly
+     * as for a billed one. Who made the choice is kept on the line.
+     *
+     * @param  array{service_id?:int|null,stock_item_id?:int|null,name?:string,unit_price?:string|int|float,quantity?:string|int|float,tax_exempt?:bool,notes?:string|null,billed?:bool}  $attrs
      */
     public function addItem(Order $order, array $attrs, ?int $by = null): OrderItem
     {
         $quantity = \App\Support\HospitalSettings::decimal((string) ($attrs['quantity'] ?? 1), 2);
         $unitPrice = (string) ($attrs['unit_price'] ?? '0');
+        $stockItemId = $attrs['stock_item_id'] ?? null;
+        $billed = ($attrs['billed'] ?? true) !== false;
 
         if (bccomp($quantity, '0', 2) <= 0) {
             throw new RuntimeException('Quantity must be greater than zero.');
@@ -61,19 +69,59 @@ class BillingService
         if (bccomp($unitPrice, '0', 2) < 0) {
             throw new RuntimeException('Unit price cannot be negative.');
         }
+        if (! $billed && $stockItemId === null) {
+            throw new RuntimeException('Only a product can be left off the bill. A service is always billed.');
+        }
+
+        $unitPrice = $billed ? $unitPrice : '0.00';
+        // What one cost when it was used, so "used but not billed" can be
+        // valued at cost without reading the stock ledger.
+        $unitCost = $stockItemId === null ? null
+            : (string) (\App\Models\StockItem::withTrashed()->whereKey($stockItemId)->value('cost_price') ?? '0.00');
 
         return $order->items()->create([
             'service_id' => $attrs['service_id'] ?? null,
-            'stock_item_id' => $attrs['stock_item_id'] ?? null,
+            'stock_item_id' => $stockItemId,
             'name' => $attrs['name'] ?? $order->title,
             'unit_price' => $unitPrice,
+            'unit_cost' => $unitCost,
             'quantity' => $quantity,
             'line_total' => bcmul($unitPrice, $quantity, 2),
             'tax_exempt' => (bool) ($attrs['tax_exempt'] ?? false),
             'status' => OrderItemStatus::Ordered,
             'ordered_by' => $by,
             'notes' => $attrs['notes'] ?? null,
+            'billed' => $billed,
+            'billing_set_by' => $stockItemId === null ? null : $by,
+            'billing_set_at' => $stockItemId === null ? null : Carbon::now(),
         ]);
+    }
+
+    /**
+     * Bill a product line, or take it off the bill, before the visit is invoiced.
+     *
+     * Not billed means no amount: the price and total go to nothing and every
+     * total that adds up lines leaves it out. Billed again means the shelf's
+     * selling price today, as when a product is first added. The quantity and
+     * the stock that left the shelf do not move. Who chose is kept.
+     */
+    public function setLineBilled(OrderItem $line, bool $billed, ?int $by = null): OrderItem
+    {
+        $price = '0.00';
+        if ($billed) {
+            $price = (string) (\App\Models\StockItem::withTrashed()->whereKey($line->stock_item_id)->value('sale_price') ?? '0.00');
+        }
+
+        $line->update([
+            'billed' => $billed,
+            'unit_price' => $price,
+            'line_total' => bcmul($price, (string) $line->quantity, 2),
+            'billing_set_by' => $by,
+            'billing_set_at' => Carbon::now(),
+            'updated_by' => $by,
+        ]);
+
+        return $line->fresh() ?? $line;
     }
 
     /** Add a priced catalogue service to an order, snapshotting name + price. */
@@ -423,7 +471,9 @@ class BillingService
             ]);
 
             foreach ($visit->orderItems as $line) {
-                if (! $line->status->isBillable()) {
+                // A product used without billing stays on its order, marked
+                // Not billed; the patient's invoice does not list it.
+                if (! $line->status->isBillable() || ! $line->isBilled()) {
                     continue;
                 }
                 $invoice->items()->create([

@@ -189,8 +189,10 @@
           <x-ui.field label="Cost price" for="stock-cost" name="cost_price" required>
             <input id="stock-cost" type="number" step="any" wire:model="cost_price" class="tb-input" required>
           </x-ui.field>
-          <x-ui.field label="Sale price" for="stock-sale" name="sale_price" required>
-            <input id="stock-sale" type="number" step="any" wire:model="sale_price" class="tb-input" required>
+          <x-ui.field label="Sale price" for="stock-sale" name="sale_price"
+                      hint="Optional. Left empty, it sells at the cost price.">
+            <input id="stock-sale" type="number" step="any" min="0" wire:model="sale_price" class="tb-input"
+                   placeholder="Same as cost">
           </x-ui.field>
         </div>
         <div class="tb-form-group">

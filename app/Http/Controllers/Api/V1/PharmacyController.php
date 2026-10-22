@@ -63,6 +63,7 @@ class PharmacyController extends Controller
         $lines = array_map(fn (array $row) => [
             'stock_item_id' => (int) $row['stock_item_id'],
             'quantity' => (string) $row['quantity'],
+            'billed' => isset($row['billed']) ? (bool) $row['billed'] : null,
         ], array_values($data['items']));
 
         try {

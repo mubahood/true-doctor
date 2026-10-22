@@ -69,10 +69,25 @@ class Dispense extends Component
         abort_unless(Auth::user()?->can('pharmacy.dispense'), 403);
     }
 
-    /** @return array{uid: string, stock_item_id: null, quantity: string} */
+    /**
+     * A new line. `billed` starts at the hospital's choice (docs/orders.md).
+     *
+     * @return array{uid: string, stock_item_id: null, quantity: string, billed: bool}
+     */
     private static function blankRow(): array
     {
-        return ['uid' => (string) Str::uuid(), 'stock_item_id' => null, 'quantity' => ''];
+        return [
+            'uid' => (string) Str::uuid(), 'stock_item_id' => null, 'quantity' => '',
+            'billed' => app(HospitalSettings::class)->productsBilledByDefault(),
+        ];
+    }
+
+    /** Billed or not billed, for one line. Not billed still leaves the shelf. */
+    public function setRowBilled(int $index, bool $billed): void
+    {
+        if (isset($this->items[$index])) {
+            $this->items[$index]['billed'] = $billed;
+        }
     }
 
     // ── Repeater ───────────────────────────────────────────────
@@ -161,6 +176,7 @@ class Dispense extends Component
         $lines = array_map(fn (array $row) => [
             'stock_item_id' => (int) $row['stock_item_id'],
             'quantity' => (string) $row['quantity'],
+            'billed' => isset($row['billed']) ? (bool) $row['billed'] : null,
         ], array_values($data['items']));
 
         try {

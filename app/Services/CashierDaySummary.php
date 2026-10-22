@@ -32,9 +32,34 @@ class CashierDaySummary
     /** @return array<string,mixed> */
     public function forDate(?Hospital $hospital, string $date): array
     {
+        return $this->forDays($hospital, $date, $date);
+    }
+
+    /**
+     * What came in from the start of the hospital's month to today, by the
+     * same rules as a day (the dashboard's "Income this month").
+     *
+     * @return array<string,mixed>
+     */
+    public function monthToDate(?Hospital $hospital): array
+    {
+        $today = $this->today($hospital);
+
+        return $this->forDays($hospital, substr($today, 0, 8).'01', $today);
+    }
+
+    /**
+     * The same figures over whole days, first to last inclusive, in the
+     * hospital's calendar. `date` is the first day.
+     *
+     * @return array<string,mixed>
+     */
+    public function forDays(?Hospital $hospital, string $first, string $last): array
+    {
         $tz = $this->zone($hospital);
-        $from = Carbon::createFromFormat('Y-m-d', $date, $tz)->startOfDay()->setTimezone(config('app.timezone'));
-        $to = $from->copy()->addDay();
+        $from = Carbon::createFromFormat('Y-m-d', $first, $tz)->startOfDay()->setTimezone(config('app.timezone'));
+        $to = Carbon::createFromFormat('Y-m-d', $last, $tz)->startOfDay()->addDay()->setTimezone(config('app.timezone'));
+        $date = $first;
 
         $payments = Payment::query()->with('receivedBy:id,name')
             ->where('created_at', '>=', $from)->where('created_at', '<', $to)

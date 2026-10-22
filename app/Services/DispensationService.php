@@ -25,7 +25,11 @@ class DispensationService
     ) {}
 
     /**
-     * @param  list<array{stock_item_id:int,quantity:string}>  $lines
+     * Each line may say `billed` (docs/orders.md); left out, it takes the
+     * hospital's choice. Not billed still deducts the stock, and its cost
+     * still reaches the books; only the charge is left off.
+     *
+     * @param  list<array{stock_item_id:int,quantity:string,billed?:bool|null}>  $lines
      */
     public function dispense(Visit $visit, array $lines, ?string $note = null, ?int $by = null, ?int $prescriptionId = null): Dispensation
     {
@@ -49,6 +53,8 @@ class DispensationService
                 'notes' => $note,
                 'subject' => $dispensation,
             ], $by);
+
+            $billedByDefault = app(\App\Support\HospitalSettings::class)->productsBilledByDefault();
 
             foreach ($lines as $line) {
                 /** @var StockItem $item */
@@ -82,6 +88,7 @@ class DispensationService
                     'name' => $item->name,
                     'unit_price' => $unitPrice,
                     'quantity' => $qty,
+                    'billed' => isset($line['billed']) ? (bool) $line['billed'] : $billedByDefault,
                 ], $by);
             }
 

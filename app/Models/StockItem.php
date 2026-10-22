@@ -42,6 +42,24 @@ class StockItem extends Model
         ];
     }
 
+    /**
+     * Data hygiene: a selling price left empty is the buying price.
+     *
+     * The selling price is optional wherever an item is registered (the
+     * stock form, the API, the data import). Empty means it sells at what it
+     * cost, and that is stored outright, so every bill, report and export
+     * reads a real figure rather than working the rule out again.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (StockItem $item) {
+            $sale = $item->getAttribute('sale_price');
+            if ($sale === null || $sale === '') {
+                $item->setAttribute('sale_price', (string) ($item->getAttribute('cost_price') ?? '0.00'));
+            }
+        });
+    }
+
     /** @return BelongsTo<StockCategory, $this> */
     public function category(): BelongsTo
     {

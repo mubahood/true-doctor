@@ -69,6 +69,12 @@ class Charges extends Component
 
     public string $quantity = '1';
 
+    /**
+     * For a product: billed to the patient, or given without billing
+     * (docs/orders.md). Starts at the hospital's choice when the dialog opens.
+     */
+    public ?bool $billed = null;
+
     /** For a service priced as a range: where in the range this patient falls. */
     public ?string $unit_price = null;
 
@@ -303,7 +309,7 @@ class Charges extends Component
     public function lineTotal(): string
     {
         $price = $this->pickedPrice;
-        if ($price === null) {
+        if ($price === null || ($this->kind === 'product' && $this->billed === false)) {
             return '0.00';
         }
 
@@ -365,6 +371,7 @@ class Charges extends Component
     {
         $this->authorizeWrite();
         $this->reset(['kind', 'service_id', 'stock_item_id', 'quantity', 'note', 'unit_price']);
+        $this->billed = app(\App\Support\HospitalSettings::class)->productsBilledByDefault();
         $this->formNonce++;
         $this->resetErrorBag();
         unset($this->pickedPrice, $this->lineTotal, $this->stockOnHand, $this->pickedRange);
@@ -489,7 +496,7 @@ class Charges extends Component
                 'status' => \App\Enums\OrderStatus::Completed,
             ], Auth::id());
 
-            return $orders->addProductItem($order, $item, $this->quantity, Auth::id());
+            return $orders->addProductItem($order, $item, $this->quantity, Auth::id(), $this->billed);
         });
     }
 

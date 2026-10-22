@@ -42,11 +42,17 @@ class BillingSettingRequest extends FormRequest
             'invoice_prefix' => ['required', 'string', 'max:10', 'alpha_dash'],
             'invoice_footer' => ['nullable', 'string', 'max:500'],
             'receipt_printer' => ['nullable', 'in:58,80'],
+            // Where a product's "Billed / Not billed" choice starts (docs/orders.md).
+            'products_billed' => ['sometimes', 'boolean'],
         ];
     }
 
     protected function prepareForValidation(): void
     {
+        if ($this->has('products_billed')) {
+            $this->merge(['products_billed' => $this->boolean('products_billed')]);
+        }
+
         $this->merge([
             'tax_enabled' => $this->boolean('tax_enabled'),
             'currency_code' => strtoupper((string) $this->input('currency_code')),

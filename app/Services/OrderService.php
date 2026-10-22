@@ -215,18 +215,25 @@ class OrderService
      * product that is billed but not deducted, or deducted but not billed, is
      * the same class of bug the order model exists to end. If there is not
      * enough stock, InsufficientStockException rolls both back.
+     *
+     * `$billed` false gives it without billing it (docs/orders.md): the stock
+     * still leaves the shelf and its cost still reaches the books, but the
+     * line carries no amount. Null takes the hospital's choice (Billing
+     * settings, HospitalSettings::productsBilledByDefault).
      */
-    public function addProductItem(Order $order, StockItem $item, string $quantity = '1', ?int $by = null): OrderItem
+    public function addProductItem(Order $order, StockItem $item, string $quantity = '1', ?int $by = null, ?bool $billed = null): OrderItem
     {
         $this->assertItemsEditable($order);
         $qty = $this->assertQuantity($quantity);
+        $billed ??= app(HospitalSettings::class)->productsBilledByDefault();
 
-        return DB::transaction(function () use ($order, $item, $qty, $by) {
+        return DB::transaction(function () use ($order, $item, $qty, $by, $billed) {
             $line = $this->billing->addItem($order, [
                 'stock_item_id' => $item->id,
                 'name' => $item->name,
                 'unit_price' => (string) $item->sale_price,
                 'quantity' => $qty,
+                'billed' => $billed,
             ], $by);
 
             $this->stock->dispenseOut($item, $qty, [
@@ -250,7 +257,10 @@ class OrderService
      * lab result, a radiology report — because "what did this use" is one
      * question however it is asked.
      *
-     * @param  list<array{kind?:string,id:int,quantity?:string}>  $lines
+     * A product line may say `billed` (true or false); left out, a new line
+     * takes the hospital's choice and an existing one keeps its own.
+     *
+     * @param  list<array{kind?:string,id:int,quantity?:string,billed?:bool|null}>  $lines
      */
     public function syncLines(Order $order, array $lines, ?int $by = null): void
     {
@@ -267,9 +277,14 @@ class OrderService
 
             $already = $existing->first(fn (OrderItem $item) => (int) $item->{$column} === (int) $line['id']);
 
+            $billed = $isProduct && isset($line['billed']) ? (bool) $line['billed'] : null;
+
             if ($already !== null) {
                 if (bccomp((string) $already->quantity, $quantity, 4) !== 0) {
                     $this->updateItem($already, $quantity, $already->notes, $by);
+                }
+                if ($billed !== null && $billed !== $already->isBilled()) {
+                    $this->setBilled($already, $billed, $by);
                 }
                 $keep[] = $already->id;
 
@@ -277,7 +292,7 @@ class OrderService
             }
 
             $keep[] = $isProduct
-                ? $this->addProductItem($order, StockItem::findOrFail($line['id']), $quantity, $by)->id
+                ? $this->addProductItem($order, StockItem::findOrFail($line['id']), $quantity, $by, $billed)->id
                 : $this->addServiceItem($order, Service::findOrFail($line['id']), $quantity, $by)->id;
         }
 
@@ -331,6 +346,46 @@ class OrderService
             }
 
             return $this->billing->repriceItem($line, $qty, $notes, $by, $price);
+        });
+    }
+
+    /**
+     * Bill a product line, or take it off the bill (docs/orders.md).
+     *
+     * Only a product, only while the line stands, and only before the visit
+     * is invoiced: the invoice is a copy of the bill, so changing it
+     * afterwards would make the two disagree. The stock that left the shelf
+     * does not move either way; only the amount does.
+     */
+    public function setBilled(OrderItem $line, bool $billed, ?int $by = null): OrderItem
+    {
+        if ($line->stock_item_id === null) {
+            throw new RuntimeException('Only a product can be left off the bill. A service is always billed.');
+        }
+        if (! $line->status->isBillable()) {
+            throw new RuntimeException('That line was removed, so it cannot be changed.');
+        }
+
+        /** @var Order $order */
+        $order = $line->order()->firstOrFail();
+
+        return DB::transaction(function () use ($line, $order, $billed, $by) {
+            // The same lock invoicing takes, so a bill being raised at this
+            // moment and a line changing under it cannot both happen.
+            Visit::whereKey($order->visit_id)->lockForUpdate()->first();
+            if (Invoice::where('visit_id', $order->visit_id)->where('status', '!=', InvoiceStatus::Void->value)->exists()) {
+                throw new RuntimeException('This visit has been invoiced, so whether '.$line->name.' is billed can no longer be changed. Void the invoice first if it must change.');
+            }
+            $this->assertItemsEditable($order);
+
+            /** @var OrderItem $locked */
+            $locked = OrderItem::whereKey($line->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->isBilled() === $billed) {
+                return $locked;
+            }
+
+            return $this->billing->setLineBilled($locked, $billed, $by);
         });
     }
 

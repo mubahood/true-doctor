@@ -25,7 +25,13 @@ use Illuminate\Support\Facades\Auth;
 trait ChargesWorkDone
 {
     /**
-     * @var list<array{kind:string,id:int,name:string,unit_price:string,quantity:string,stock:string|null}>
+     * A product line also says whether it is billed (docs/orders.md); a
+     * service always is. `unit_price` is the catalogue price either way, so
+     * switching a line back to Billed shows what it will charge.
+     *
+     * `billed` may be missing on a line a screen held from before it existed.
+     *
+     * @var list<array{kind:string,id:int,name:string,unit_price:string,quantity:string,stock:string|null,billed?:bool}>
      */
     public array $provided = [];
 
@@ -52,9 +58,13 @@ trait ChargesWorkDone
                 'kind' => $item->stock_item_id !== null ? 'product' : 'service',
                 'id' => (int) ($item->stock_item_id ?? $item->service_id),
                 'name' => (string) $item->name,
-                'unit_price' => (string) $item->unit_price,
+                // A line not billed carries no price of its own; show the shelf's.
+                'unit_price' => $item->isBilled() || $item->stock_item_id === null
+                    ? (string) $item->unit_price
+                    : (string) (StockItem::withTrashed()->whereKey($item->stock_item_id)->value('sale_price') ?? '0.00'),
                 'quantity' => (string) (int) $item->quantity,
                 'stock' => null,
+                'billed' => $item->isBilled(),
             ])->values()->all();
     }
 
@@ -109,6 +119,7 @@ trait ChargesWorkDone
                 'unit_price' => (string) $row->sale_price,
                 'quantity' => '1',
                 'stock' => (string) (int) $row->current_quantity,
+                'billed' => app(\App\Support\HospitalSettings::class)->productsBilledByDefault(),
             ]
             : [
                 'kind' => 'service',
@@ -117,7 +128,19 @@ trait ChargesWorkDone
                 'unit_price' => (string) $row->price,
                 'quantity' => '1',
                 'stock' => null,
+                'billed' => true,
             ];
+    }
+
+    /**
+     * Billed or not billed, for one product line. Nothing is written until
+     * the screen is submitted, like every other change here.
+     */
+    public function setProvidedBilled(int $index, bool $billed): void
+    {
+        if (($this->provided[$index]['kind'] ?? null) === 'product') {
+            $this->provided[$index]['billed'] = $billed;
+        }
     }
 
     public function removeProvided(int $index): void
@@ -132,6 +155,9 @@ trait ChargesWorkDone
         $total = '0';
 
         foreach ($this->provided as $line) {
+            if (! ($line['billed'] ?? true)) {
+                continue;
+            }
             $total = bcadd($total, bcmul((string) $line['unit_price'], (string) $line['quantity'], 4), 4);
         }
 
@@ -147,6 +173,7 @@ trait ChargesWorkDone
             // Whole units. You use two swabs or one tube; a spinner stepping
             // by a hundredth is not an answer anybody meant.
             'provided.*.quantity' => ['required', 'integer', 'min:1'],
+            'provided.*.billed' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -170,15 +197,26 @@ trait ChargesWorkDone
             return 0;
         }
 
-        app(OrderService::class)->syncLines($order, array_map(
-            fn (array $line) => [
-                'kind' => $line['kind'],
-                'id' => (int) $line['id'],
-                'quantity' => (string) $line['quantity'],
-            ],
-            $this->provided,
-        ), Auth::id());
+        app(OrderService::class)->syncLines($order, $this->providedLines(), Auth::id());
 
         return count($this->provided);
+    }
+
+    /**
+     * The lines as OrderService::syncLines takes them.
+     *
+     * @return list<array{kind:string,id:int,quantity:string,billed:bool|null}>
+     */
+    protected function providedLines(): array
+    {
+        return array_map(
+            fn (array $line) => [
+                'kind' => $line['kind'],
+                'id' => $line['id'],
+                'quantity' => $line['quantity'],
+                'billed' => $line['kind'] === 'product' ? ($line['billed'] ?? true) : null,
+            ],
+            $this->provided,
+        );
     }
 }

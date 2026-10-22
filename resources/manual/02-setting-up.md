@@ -247,6 +247,7 @@ Leave the box unticked if you do not charge tax. Single services can be marked *
 
 - **Number prefix**: the letters at the start of every invoice number. With the prefix INV, invoices are numbered like INV-2026-00001.
 - **Default visit fee**: charged when a visit is opened with nothing else on it. Leave it at 0 if you do not charge one.
+- **Products used on a visit**: where each product's **Billed** or **Not billed** choice starts. **Not billed (bill the service only)** still takes the stock off the shelf. A dental clinic starts at Not billed, other hospitals at Billed. Staff can still change each line.
 - **Footer line**: the last line of every document. It is the same setting as on **Hospital letterhead**.
 
 ### Receipt printer

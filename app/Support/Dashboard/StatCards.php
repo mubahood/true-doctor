@@ -39,6 +39,11 @@ final class StatCards
             // nobody acts on. A visit is the spine of this system, so "how much
             // work is in the building" leads.
             'admin' => [
+                // Who came today and what was done for them.
+                $can('visits.view') ? self::card(
+                    $n($d['patientsToday'] ?? 0), 'Patients today', 'fa-user-injured', '',
+                    $n($d['treatmentsToday'] ?? 0).' '.Str::plural('treatment', (int) ($d['treatmentsToday'] ?? 0)).' done', 'admin.visits.index',
+                ) : null,
                 $can('visits.view') ? self::card(
                     $n($d['visits']['open'] ?? 0), 'Open visits', 'fa-stethoscope',
                     ($d['visits']['blocked'] ?? 0) > 0 ? 'warn' : '',
@@ -47,16 +52,33 @@ final class StatCards
                         : (($d['visits']['pending'] ?? 0).' not started'),
                     'admin.visits.index',
                 ) : null,
-                $can('appointments.view') ? self::card($n($d['appointmentsToday'] ?? 0), 'Appointments today', 'fa-calendar-check', '', ($d['awaitingStart'] ?? 0).' awaiting start', 'admin.appointments.queue') : null,
+                $can('appointments.view') ? self::card(
+                    $n($d['appointmentsToday'] ?? 0), 'Appointments today', 'fa-calendar-check', '',
+                    ($d['awaitingStart'] ?? 0).' awaiting start · '.($d['appointmentsUpcoming'] ?? 0).' in the next 7 days', 'admin.appointments.queue',
+                ) : null,
                 $can('ipd.view') ? self::card($n($d['inpatients'] ?? 0), 'Inpatients', 'fa-bed', '', ($d['occupancy']['rate'] ?? 0).'% beds full', 'admin.admissions.board') : null,
+                // What came in, by the cashier's own day (CashierDaySummary).
                 $can('billing.view') ? self::card(
-                    $money->format($d['revenueToday'] ?? '0'), 'Collected today', 'fa-coins', 'ok',
-                    ($d['paymentsToday'] ?? 0).' '.Str::plural('payment', $d['paymentsToday'] ?? 0), 'admin.invoices.index',
+                    $money->format($d['income']['today'] ?? ($d['revenueToday'] ?? '0')), 'Collected today', 'fa-coins', 'ok',
+                    ($d['income']['todayCount'] ?? $d['paymentsToday'] ?? 0).' '.Str::plural('payment', (int) ($d['income']['todayCount'] ?? $d['paymentsToday'] ?? 0)), 'admin.cashier.day',
+                ) : null,
+                $can('billing.view') ? self::card(
+                    $money->format($d['income']['month'] ?? '0'), 'Collected this month', 'fa-sack-dollar', 'ok',
+                    null, $user->can('reports.view') ? 'admin.reports.monthly' : 'admin.cashier.day',
                 ) : null,
                 $can('billing.view') ? self::card(
                     $money->format($d['outstanding']['total'] ?? '0'), 'Outstanding', 'fa-file-invoice-dollar',
                     ($d['outstanding']['count'] ?? 0) ? 'warn' : '',
                     ($d['outstanding']['count'] ?? 0).' unpaid '.Str::plural('invoice', $d['outstanding']['count'] ?? 0), 'admin.invoices.index',
+                ) : null,
+                $can('pharmacy.view') ? self::card(
+                    $n($d['lowStock'] ?? 0), 'Low stock', 'fa-triangle-exclamation', ($d['lowStock'] ?? 0) ? 'warn' : '',
+                    'at or below the reorder level', 'admin.stock.alerts',
+                ) : null,
+                // Products given without billing (docs/orders.md), at cost.
+                $can('billing.view') && $can('pharmacy.view') ? self::card(
+                    $money->format($d['notBilled']['cost'] ?? '0'), 'Not billed this month', 'fa-box-open', '',
+                    $n($d['notBilled']['count'] ?? 0).' product '.Str::plural('line', (int) ($d['notBilled']['count'] ?? 0)).', at cost', 'admin.stock.movements',
                 ) : null,
             ],
 

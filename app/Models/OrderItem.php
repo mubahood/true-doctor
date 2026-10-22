@@ -21,6 +21,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property numeric-string $unit_price
  * @property numeric-string $quantity
  * @property numeric-string $line_total
+ * @property numeric-string|null $unit_cost
+ * @property bool $billed
+ * @property \Illuminate\Support\Carbon|null $billing_set_at
  * @property OrderItemStatus $status
  */
 class OrderItem extends Model
@@ -30,6 +33,7 @@ class OrderItem extends Model
     protected $fillable = [
         'order_id', 'service_id', 'stock_item_id', 'name', 'unit_price', 'quantity',
         'line_total', 'tax_exempt', 'status', 'ordered_by', 'updated_by', 'notes',
+        'billed', 'unit_cost', 'billing_set_by', 'billing_set_at',
     ];
 
     protected function casts(): array
@@ -40,7 +44,33 @@ class OrderItem extends Model
             'quantity' => 'decimal:2',
             'tax_exempt' => 'boolean',
             'status' => OrderItemStatus::class,
+            'billed' => 'boolean',
+            'unit_cost' => 'decimal:2',
+            'billing_set_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Whether this line reaches the patient's bill.
+     *
+     * A product can be used without being billed (docs/orders.md): its stock
+     * still leaves the shelf and its cost still reaches the books, but it
+     * carries no amount and the invoice leaves it out. A service is always
+     * billed. A row loaded without the column counts as billed.
+     */
+    public function isBilled(): bool
+    {
+        return $this->billed !== false;
+    }
+
+    /**
+     * Who last chose whether this line is billed.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function billingSetBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'billing_set_by');
     }
 
     /** Whether this line came off the pharmacy shelf rather than the price list. */

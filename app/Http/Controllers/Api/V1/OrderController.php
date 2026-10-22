@@ -199,6 +199,9 @@ class OrderController extends Controller
             // For a service priced as a range; checked against it, ignored otherwise.
             'unit_price' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:255'],
+            // A product only: billed to the patient, or given without billing
+            // (docs/orders.md). Left out, the hospital's choice.
+            'billed' => ['sometimes', 'nullable', 'boolean'],
         ], [
             'service_id.required_if' => 'Choose a service.',
             'stock_item_id.required_if' => 'Choose a product.',
@@ -208,7 +211,8 @@ class OrderController extends Controller
         try {
             $this->orders->assertItemsEditable($order);
             $line = $data['kind'] === 'product'
-                ? $this->orders->addProductItem($order, StockItem::findOrFail($data['stock_item_id']), (string) $data['quantity'], $request->user()->id)
+                ? $this->orders->addProductItem($order, StockItem::findOrFail($data['stock_item_id']), (string) $data['quantity'], $request->user()->id,
+                    isset($data['billed']) ? (bool) $data['billed'] : null)
                 : $this->orders->addServiceItem($order, Service::findOrFail($data['service_id']), (string) $data['quantity'], $request->user()->id,
                     isset($data['unit_price']) ? (string) $data['unit_price'] : null);
             if (($data['notes'] ?? '') !== '') {
@@ -220,6 +224,27 @@ class OrderController extends Controller
         }
 
         return ApiResponse::success($this->one($order), 'Added.', 201);
+    }
+
+    /**
+     * Bill a product line, or take it off the bill. The stock stays where it
+     * is; refused once the visit is invoiced (docs/orders.md).
+     */
+    public function setBilled(Request $request, Order $order, int $item): JsonResponse
+    {
+        $this->authorize('view', $order->visit);
+        abort_unless(OrderDesk::canWrite($request->user()), 403);
+
+        $billed = (bool) $request->validate(['billed' => ['required', 'boolean']])['billed'];
+        $line = OrderItem::where('order_id', $order->id)->findOrFail($item);
+
+        try {
+            $this->orders->setBilled($line, $billed, $request->user()->id);
+        } catch (RuntimeException $e) {
+            return ApiResponse::error(ApiErrorCode::ValidationFailed, $e->getMessage(), 422);
+        }
+
+        return ApiResponse::success($this->one($order), $billed ? 'Billed.' : 'Not billed.');
     }
 
     public function removeItem(Request $request, Order $order, int $item): JsonResponse

@@ -2533,3 +2533,12 @@ body.has-brand::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z-i
 
 /* A dental visit's simple notes: the dialog form spans the modal body and foot (docs/dental.md, "Simple notes"). */
 .dn-form{display:contents;}
+
+/* Billed or not billed: a product's per-line choice on a visit (docs/orders.md) */
+.tb-billq{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;white-space:nowrap;}
+.tb-billq label{display:inline-flex;align-items:center;gap:3px;cursor:pointer;color:var(--mt);}
+.tb-billq input{margin:0;}
+.tb-billq label:has(input:checked){color:var(--tx);font-weight:600;}
+.tb-billq-row{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-size:12px;}
+.tb-notbilled{margin-left:7px;font-size:9.5px;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;padding:1px 5px;background:var(--surface-2);color:var(--mt);}

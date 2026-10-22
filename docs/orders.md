@@ -545,6 +545,33 @@ construction** — running it five times can no more double-deduct than running
 it once could, and on a visit where nothing has drifted it writes no movement
 at all. Both of those are tested.
 
+### Billed or not billed (2026-10-22)
+
+A product used on a visit can be given **without billing it**: a dental clinic's
+materials are part of the treatment fee, so only the service is billed. Every
+place a product reaches a visit offers the choice per line: an order's items
+(`OrderService::addProductItem`, `syncLines`), the bill's Add charge, the
+dispensing panel (`DispensationService::dispense`), a lab or radiology result's
+"what it used", an appointment's write-up, and the same paths in the API
+(`POST /orders/{uuid}/items` and `POST /visits/{uuid}/dispensations` take
+`billed`; `PUT /orders/{uuid}/items/{id}/billed` switches a line).
+
+- **Not billed** (`order_items.billed = false`): the stock movement is exactly
+  as for a billed line, so the shelf and its cost in the books (cost of sales)
+  are unchanged. The line stays on its order, marked Not billed, with
+  `unit_price` and `line_total` at zero, so every total that adds up lines
+  leaves it out without knowing about the flag; `generateInvoice` skips it.
+- **Switching** (`OrderService::setBilled`): only a product, only a standing
+  line, only before the visit is invoiced (after that it is refused, saying
+  so). Billed again takes the shelf's selling price today. `billing_set_by` and
+  `billing_set_at` say who chose; the audit trail has the before and after.
+- **Where it starts**: Billing settings, "Products used on a visit"
+  (`settings.billing.products_billed`, `HospitalSettings::productsBilledByDefault`).
+  Until it is set, a dental clinic starts at Not billed and every other practice
+  at Billed.
+- `unit_cost` is kept on each product line when it is used, so the dashboard's
+  "Not billed this month" is valued at cost without reading the ledger.
+
 ## Taking the money
 
 The last link in the chain. Each method needs something different, and the form

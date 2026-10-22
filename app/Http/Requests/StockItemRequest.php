@@ -42,7 +42,8 @@ class StockItemRequest extends FormRequest
             'batch_no' => ['nullable', 'string', 'max:64'],
             'expiry_date' => ['nullable', 'date'],
             'cost_price' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
-            'sale_price' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
+            // Optional: left empty, an item sells at what it cost (StockItem::booted).
+            'sale_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'reorder_level' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
             'is_active' => ['sometimes', 'boolean'],
         ];

@@ -53,6 +53,12 @@
                    wire:model="items.{{ $index }}.quantity">
           </x-ui.field>
 
+          @include('livewire.partials.bill-choice', [
+            'name' => 'disp-billed-'.$row['uid'], 'billed' => (bool) ($row['billed'] ?? true),
+            'on' => 'setRowBilled('.$index.', true)', 'off' => 'setRowBilled('.$index.', false)',
+            'label' => 'Bill line '.($index + 1).' to the patient',
+          ])
+
           @if(count($items) > 1)
             <x-ui.icon-button label="Remove line {{ $index + 1 }}" icon="fa-trash" variant="danger"
                               wire:click="removeRow({{ $index }})" />
