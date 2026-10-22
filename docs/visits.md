@@ -226,6 +226,34 @@ regardless of gates, with a reason, recorded in the trail as *out of order*.
 Everything above is the shape of a normal day; the override is for the days
 that are not.
 
+## Deleting a visit
+
+A visit opened by mistake (the wrong patient, a duplicate, a test) is deleted
+rather than cancelled: `VisitService::delete($visit, $by, $reason)`, behind
+`visits.delete` (the hospital admin by default; Staff and access, **Delete
+visits**). Web: **Delete visit** on the visit page and in the list's row menu
+(`Visits\DeleteVisit`, one dialog mounted on both pages). API:
+`POST /api/v1/visits/{uuid}/delete` with `reason`.
+
+It undoes the visit's work the way cancelling does, in one transaction:
+
+- every order is withdrawn (`OrderService::withdraw`): its lines come off the
+  bill and what it took off the shelf goes back through `StockService`, even
+  for a finished order the state machine would not let anyone cancel;
+  dispensations made the old way give their stock back too;
+- a live invoice is voided (`BillingService::voidInvoice`), with a reversing
+  entry in the books dated today; refused into a closed period;
+- dental chart entries made on that visit are deleted one by one (audited);
+- a history row says "Deleted: reason"; `deleted_by` and `delete_reason` are
+  written, then the visit is soft-deleted. It leaves every list, report and the
+  patient's record (the global soft-delete scope; the one raw join in the
+  insights rules filters `deleted_at` by hand). The audit log keeps it.
+
+Refused while money paid here is still held (`Invoice::heldHere()`: paid, less
+refunded, less `paid_before`): "Refund it first". Also refused for an
+admission, a credit note, a pending credit or refund, or an insurance claim.
+An imported visit's undo uses the same path.
+
 ## What happened to the old stages
 
 Registration, Triage, Consultation and Orders were four names for *the patient
@@ -268,6 +296,8 @@ click would refuse**:
   Patient record
   ─────────
   Set state…                   (visits.override only)
+  ─────────
+  Delete visit                 (visits.delete only; opens the dialog that asks why)
 ```
 
 The gate is decided per row from counts the listing query already fetched —

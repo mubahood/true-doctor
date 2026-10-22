@@ -23,6 +23,18 @@ identified by a generated, checksummed `patient_no` that is unique **per hospita
 | **Dependents** | `app/Models/PatientDependent.php`, `app/Http/Controllers/Admin/PatientDependentController.php` |
 | **QR / ID card** | `app/Services/QrService.php`, `PatientController@idCard`, `resources/views/pdf/patient-card.blade.php` |
 
+## Age or date of birth
+
+The registration form (web and API) and the new-patient part of the visit form
+ask for the **age** by default: `age_years`, and `age_months` for a baby under
+two (`App\Support\BirthDate`). `PatientService::birth()` turns it into a date:
+1 July of the year that makes the age right today, or exactly that many years
+and months back when months are given, and sets `patients.dob_estimated`. "Enter
+the date of birth instead" switches the form to the date, which is exact. An
+edit that sends the same age keeps the stored date, so saving a phone number
+never moves an estimated birthday. Everything that shows an age reads `dob` as
+before. The import's age column also sets the flag.
+
 ## Patient number
 
 Format `PT-<year>-<seq6><check>` (e.g. `PT-2026-000123K`). The sequence is per hospital

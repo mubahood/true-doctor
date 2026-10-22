@@ -20,7 +20,7 @@ What you see inside a record also depends on your role. For example, only staff 
 2. Press **Register patient**. A form opens over the list.
 3. Fill in **First name** and **Last name**. These are the only required fields.
 4. Add what you can of the rest. The form has five parts:
-   - **Identity**: **Date of birth**, **Sex**, **Blood type**, **Status**.
+   - **Identity**: **Age**, **Sex**, **Blood type**, **Status**. See **Age or date of birth** below.
    - **Contact**: **Phone (primary)**, **Phone (alt)**, **Email**, **District**, **Current address**, **Home address**.
    - **Medical**: **Allergies (comma-separated)** and **Chronic conditions (comma-separated)**. Type each one separated by a comma, for example "Penicillin, Peanuts".
    - **Family & emergency**: **Spouse name**, **Father name**, **Mother name**, **Emergency contact**, **Emergency phone**.
@@ -28,6 +28,12 @@ What you see inside a record also depends on your role. For example, only staff 
 5. Press **Register patient**.
 
 True-Doctor gives the patient a number, for example PT-2026-000123K. The number is unique in your hospital and never changes. The last letter is a check character, so a mistyped number is less likely to find the wrong person.
+
+### Age or date of birth
+
+The form asks for the **Age** in years, because that is what most patients can tell you at the desk. For a baby under two, a second box asks for the months as well (optional). True-Doctor works out a date of birth from it and marks it as an estimate: 1 July of the year that makes the age right today, or the exact date when you gave the months. The record shows "estimated from the age" beside the date. Everywhere the age is shown, it keeps counting up as the years pass.
+
+When the patient knows their real date of birth, click **Enter the date of birth instead** under the age and pick the date. To go back, click **Enter the age instead**. Editing a patient whose age you do not change keeps the date they already have.
 
 Always ask about allergies, even if the answer is "none". Clinical screens warn staff when allergies have not been recorded.
 

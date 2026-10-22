@@ -207,6 +207,9 @@ class PatientsImport extends ImportHandler
                     unset($changes[$identity]);
                 }
             }
+            if (! isset($changes['dob'])) {
+                unset($changes['dob_estimated']);
+            }
             foreach (['allergies', 'chronic_conditions'] as $list) {
                 if ($data[$list] !== []) {
                     $changes[$list] = array_values(array_unique(array_merge($patient->{$list} ?? [], $data[$list])));
@@ -357,8 +360,8 @@ class PatientsImport extends ImportHandler
     private function data(array $v): array
     {
         [$first, $last] = $this->names($v);
-        $dob = $this->date($v['dob'] ?? '');
-        $dob = is_string($dob) ? $dob : (($v['age'] ?? '') !== '' ? $this->ageToDob($v['age']) : null);
+        $given = $this->date($v['dob'] ?? '');
+        $dob = is_string($given) ? $given : (($v['age'] ?? '') !== '' ? $this->ageToDob($v['age']) : null);
         $blood = ($v['blood_type'] ?? '') !== '' ? $this->bloodType($v['blood_type']) : null;
 
         return [
@@ -367,6 +370,8 @@ class PatientsImport extends ImportHandler
             'old_file_no' => ($v['old_file_no'] ?? '') !== '' ? $v['old_file_no'] : null,
             'sex' => ($v['sex'] ?? '') !== '' ? $this->sex($v['sex'])?->value : null,
             'dob' => $dob,
+            // Worked out from the age column: an estimate, not a known birthday.
+            'dob_estimated' => $dob !== null && ! is_string($given),
             'phone_1' => ($v['phone'] ?? '') !== '' ? $v['phone'] : null,
             'phone_2' => ($v['phone_2'] ?? '') !== '' ? $v['phone_2'] : null,
             'email' => ($v['email'] ?? '') !== '' ? mb_substr($v['email'], 0, 150) : null,

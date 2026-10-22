@@ -77,6 +77,7 @@ The matrix above is the default. A clinic changes it with twelve plain-language 
 | Take payments | `billing.manage` | `billing.view` |
 | Give discounts | `billing.discount` | |
 | Approve refunds | `billing.refund` | |
+| Delete visits | `visits.delete` (default: hospital admin only; docs/visits.md, "Deleting a visit") | |
 | Change prices | `services.manage` | |
 | See reports and money | `billing.view`, `reports.view`, `finance.view` | |
 | Print the visit report | `visits.report` (the patient summary, without the notes on screen) | |

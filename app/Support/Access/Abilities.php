@@ -54,6 +54,11 @@ final class Abilities
             'hint' => 'Credit notes and money given back.',
             'permissions' => ['billing.refund'],
         ],
+        'delete_visits' => [
+            'label' => 'Delete visits',
+            'hint' => 'Remove a visit opened by mistake, with its orders and bill, while nothing has been paid on it.',
+            'permissions' => ['visits.delete'],
+        ],
         'change_prices' => [
             'label' => 'Change prices',
             'hint' => 'The price list: services, procedures and their prices.',

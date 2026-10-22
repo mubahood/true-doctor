@@ -80,9 +80,9 @@ Existing: `GET /stock-items` (`filter=low|expiring|expired`, `category`, `q`; me
 `module_label`), `GET /stock-items/{uuid}`, `.../movements`, `.../receive`, `.../adjust`,
 `.../write-off`. Resource gained `sku`, `is_active`, `category_id`.
 
-* `POST /stock-items` - `pharmacy.manage`. Required: `name` (120), `unit` (32), `cost_price`,
-  `reorder_level` (0..99999999.99). Optional: `sale_price` (empty or left out: it equals
-  `cost_price`, stored as such), `stock_category_id` (this hospital's),
+* `POST /stock-items` - `pharmacy.manage`. Required: `name` (120), `unit` (32),
+  `reorder_level` (0..99999999.99). Optional: `cost_price` (empty or left out: 0), `sale_price`
+  (empty or left out: it equals `cost_price`, stored as such), `stock_category_id` (this hospital's),
   `sku` (48), `batch_no` (64), `expiry_date`, `is_active` (default true). Returns the item (201).
   Opening stock goes in through `POST .../adjust` with reason `opening_stock`.
 * `PUT|PATCH /stock-items/{uuid}` - `pharmacy.manage`. Same fields, all optional.

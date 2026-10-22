@@ -41,6 +41,9 @@ class VisitIntakeRequest extends FormRequest
             'last_name' => ['required', 'string', 'max:80'],
             'sex' => ['nullable', new Enum(PatientSex::class)],
             'dob' => ['nullable', 'date', 'before:today'],
+            // Or the age instead: years, and months for a baby (PatientService::birth).
+            'age_years' => ['nullable', 'integer', 'min:0', 'max:'.\App\Support\BirthDate::MAX_YEARS],
+            'age_months' => ['nullable', 'integer', 'min:0', 'max:23'],
             'phone_1' => ['nullable', 'string', 'max:30'],
             'consent_given' => ['sometimes', 'boolean'],
             // Visit
@@ -71,7 +74,7 @@ class VisitIntakeRequest extends FormRequest
     /** @return array<string,mixed> patient attributes only */
     public function patientData(): array
     {
-        return $this->safe()->only(['first_name', 'last_name', 'sex', 'dob', 'phone_1', 'consent_given']);
+        return $this->safe()->only(['first_name', 'last_name', 'sex', 'dob', 'age_years', 'age_months', 'phone_1', 'consent_given']);
     }
 
     /** @return array<string,mixed> visit attributes only */

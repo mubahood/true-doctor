@@ -49,7 +49,7 @@ Each row shows the item, its category, how much is **On the shelf**, the **Reord
 ### Add a new item
 
 1. Press **New item**.
-2. Fill in **Name**, **Unit** (for example tablet or box), **Reorder level** and **Cost price**. These are required. **Sale price** is optional: left empty, the item sells at its cost price.
+2. Fill in **Name**, **Unit** (for example tablet or box) and **Reorder level**. These are required. Both prices are optional: an empty **Cost price** is 0, and an empty **Sale price** sells the item at its cost price.
 3. Choose a **Category**, and add the **SKU**, **Batch no.** and **Expiry date** if you have them.
 4. Leave **Active** ticked.
 5. Press **Create item**.

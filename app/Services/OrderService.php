@@ -823,6 +823,35 @@ class OrderService
         }
     }
 
+    /**
+     * Take an order off a visit that is being deleted (VisitService::delete),
+     * whatever state it is in. The same reversal cancelling performs: its
+     * lines come off the bill and whatever it took off the shelf goes back
+     * through StockService. A finished order cannot be cancelled by hand; a
+     * visit opened by mistake still has to lose its work, so this does not
+     * ask the state machine. Safe to run twice: nothing is out, nothing
+     * comes back.
+     */
+    public function withdraw(Order $order, ?int $by, string $reason): Order
+    {
+        return DB::transaction(function () use ($order, $by, $reason) {
+            /** @var Order $locked */
+            $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+
+            $this->billing->cancelItemsOf($locked);
+            $this->returnEverythingTakenFor($locked, $by);
+
+            if ($locked->status !== OrderStatus::Cancelled) {
+                $locked->status = OrderStatus::Cancelled;
+                $locked->cancelled_at = now();
+                $locked->cancel_reason = mb_substr($reason, 0, 255);
+                $locked->save();
+            }
+
+            return $locked;
+        });
+    }
+
     /** Put back everything this order took off the shelf, wherever it hangs. */
     private function returnEverythingTakenFor(Order $order, ?int $by): void
     {

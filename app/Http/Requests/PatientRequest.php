@@ -32,6 +32,10 @@ class PatientRequest extends FormRequest
             'first_name' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
             'dob' => ['nullable', 'date', 'before_or_equal:today'],
+            // Or the age instead (PatientService::birth): years, and months for a baby.
+            'age_years' => ['nullable', 'integer', 'min:0', 'max:'.\App\Support\BirthDate::MAX_YEARS],
+            'age_months' => ['nullable', 'integer', 'min:0', 'max:23'],
+            'dob_estimated' => ['sometimes', 'boolean'],
             'sex' => ['nullable', new Enum(PatientSex::class)],
 
             'phone_1' => ['nullable', 'string', 'max:32'],

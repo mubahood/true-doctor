@@ -72,11 +72,22 @@ class Bookkeeper
             // Import data) was earned in the old books, not this year: what
             // the patient owes comes in against opening equity, as opening
             // stock does, never as income.
+            //
+            // A visit brought in from the old records (Import data, Visits)
+            // is the same, less what was paid on it in the old books
+            // (`paid_before`): only what is still owed comes in. Dated the
+            // day it was brought in, not the visit's own day, so nothing is
+            // backdated into a period that may be closed.
             if ($invoice->opening_balance) {
-                return $this->post($invoice, 'issued', $invoice->issued_at ?? $invoice->created_at,
+                $owed = bcsub((string) $invoice->total, (string) ($invoice->paid_before ?? '0'), 2);
+                if (bccomp($owed, '0', 2) <= 0) {
+                    return null;
+                }
+
+                return $this->post($invoice, 'issued', $invoice->created_at ?? $invoice->issued_at,
                     'Balance brought forward '.$invoice->invoice_no.$this->patientSuffix($invoice), [
-                        ['account' => $this->chart->key('receivable'), 'debit' => (string) $invoice->total, 'memo' => $invoice->invoice_no],
-                        ['account' => $this->chart->key('opening_equity'), 'credit' => (string) $invoice->total, 'memo' => 'Owed from before the system'],
+                        ['account' => $this->chart->key('receivable'), 'debit' => $owed, 'memo' => $invoice->invoice_no],
+                        ['account' => $this->chart->key('opening_equity'), 'credit' => $owed, 'memo' => 'Owed from before the system'],
                     ], $invoice->invoice_no, $invoice->issued_by);
             }
 

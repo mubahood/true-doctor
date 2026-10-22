@@ -40,6 +40,11 @@ proven by `PatientApiTest::test_index_is_scoped_to_the_token_users_hospital`.
   + `PatientPolicy`. RBAC is identical to the panel (a role without `patients.create` gets 403).
   `?q=` matches name, patient number, phone and the **old file number** (`old_file_no` on the
   resource: the number from the paper file or the old system, kept by Settings, Import data).
+  A patient may be sent with an **age** instead of `dob`: `age_years` (0..130) and, for a baby,
+  `age_months` (0..23). The server works out the date (1 July of the year that makes the age
+  right today, or exactly that far back when months are given) and the resource carries
+  `dob_estimated: true`. A `dob` sent outright is exact (`dob_estimated: false`). The same two
+  fields work on `POST /visits/intake`. Editing with an unchanged age keeps the stored date.
 
 ## Tests
 
@@ -56,6 +61,11 @@ envelope).
 - **Visits** (`VisitService` + policy): `GET /api/v1/visits` (status filter),
   `POST` (open — returns the generated `visit_no`), `GET {uuid}`, `POST {uuid}/vitals`
   (BMI computed; a reading not sent is left as it is), `POST {uuid}/clinical` (diagnosis — `diagnose` ability), `POST {uuid}/transition`.
+  `POST {uuid}/delete` (`visits.delete`, body `reason` 3..255): deletes a visit opened by mistake
+  (`VisitService::delete`, docs/visits.md "Deleting a visit"); returns `{ uuid, deleted: true }`.
+  Refused with **422** and the reason in plain words while money paid on it is held ("Refund it
+  first"), or for an admission, a credit note or an insurance claim. The visit leaves every list
+  (soft-deleted; a tombstone reaches the phone through sync).
   Each visit carries `vital_signs`, the readings the hospital records (`VisitForm`); a dental
   clinic fills `reason` from the complaint and takes `dental_notes` (docs/api/dental.md, "Simple notes").
   Each ability is authorized exactly as in the panel (nurse can take vitals but not diagnose).

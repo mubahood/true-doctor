@@ -53,6 +53,12 @@ class StockItem extends Model
     protected static function booted(): void
     {
         static::saving(function (StockItem $item) {
+            // Both prices are optional: no cost is 0, and no selling price
+            // sells at the cost.
+            $cost = $item->getAttribute('cost_price');
+            if ($cost === null || $cost === '') {
+                $item->setAttribute('cost_price', '0.00');
+            }
             $sale = $item->getAttribute('sale_price');
             if ($sale === null || $sale === '') {
                 $item->setAttribute('sale_price', (string) ($item->getAttribute('cost_price') ?? '0.00'));

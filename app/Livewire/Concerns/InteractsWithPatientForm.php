@@ -25,6 +25,14 @@ trait InteractsWithPatientForm
 
     public ?string $dob = null;
 
+    /** 'age' (the quick way at a desk) or 'date' when the birthday is known (PatientService::birth). */
+    public string $dob_mode = 'age';
+
+    public ?string $age_years = null;
+
+    /** Asked for a baby under two. */
+    public ?string $age_months = null;
+
     public ?string $sex = null;
 
     public ?string $blood_type = null;
@@ -87,6 +95,11 @@ trait InteractsWithPatientForm
         $this->first_name = (string) $p->first_name;
         $this->last_name = (string) $p->last_name;
         $this->dob = $p->dob?->toDateString();
+        // A known birthday is shown as the date; an estimate, or none, as the age.
+        $this->dob_mode = $p->dob !== null && ! $p->dob_estimated ? 'date' : 'age';
+        [$years, $months] = $p->dob !== null ? \App\Support\BirthDate::ageOf($p->dob) : [null, null];
+        $this->age_years = $years !== null ? (string) $years : null;
+        $this->age_months = $years !== null && $years < \App\Support\BirthDate::MONTHS_UNDER && $months > 0 ? (string) $months : null;
         $this->sex = $p->sex?->value;
         $this->blood_type = $p->blood_type;
         $this->status = $p->status->value;
@@ -121,7 +134,7 @@ trait InteractsWithPatientForm
     protected function resetPatientForm(): void
     {
         $this->reset([
-            'first_name', 'last_name', 'dob', 'sex', 'blood_type',
+            'first_name', 'last_name', 'dob', 'dob_mode', 'age_years', 'age_months', 'sex', 'blood_type',
             'phone_1', 'phone_2', 'email', 'district_id', 'address', 'home_address',
             'allergies', 'chronic_conditions', 'spouse_name', 'father_name', 'mother_name',
             'emergency_contact_name', 'emergency_contact_phone',
@@ -138,7 +151,9 @@ trait InteractsWithPatientForm
         $data = [
             'first_name' => $this->first_name,
             'last_name' => $this->last_name,
-            'dob' => $this->dob,
+            'dob' => $this->dob_mode === 'date' ? $this->dob : null,
+            'age_years' => $this->dob_mode === 'age' ? $this->age_years : null,
+            'age_months' => $this->dob_mode === 'age' ? $this->monthsAsked() : null,
             'sex' => $this->sex,
             'blood_type' => $this->blood_type,
             'status' => $this->status,
@@ -169,6 +184,14 @@ trait InteractsWithPatientForm
         $data['consent_given'] = $this->consent_given;
 
         return $data;
+    }
+
+    /** Months count only for a baby under two; the box is hidden above that. */
+    private function monthsAsked(): ?string
+    {
+        $years = trim((string) $this->age_years);
+
+        return $years !== '' && (int) $years >= \App\Support\BirthDate::MONTHS_UNDER ? null : $this->age_months;
     }
 
     /** @return list<string> */

@@ -12,6 +12,7 @@ use App\Services\Imports\ImportHandler;
 use App\Services\Imports\PatientsImport;
 use App\Services\Imports\ServicesImport;
 use App\Services\Imports\StockImport;
+use App\Services\Imports\VisitsImport;
 use App\Support\CurrentHospital;
 use App\Support\Imports\SpreadsheetReader;
 use App\Support\Imports\XlsxWriter;
@@ -63,6 +64,7 @@ class DataImportService
             ImportKind::Services => ServicesImport::class,
             ImportKind::Stock => StockImport::class,
             ImportKind::Appointments => AppointmentsImport::class,
+            ImportKind::Visits => VisitsImport::class,
         });
     }
 

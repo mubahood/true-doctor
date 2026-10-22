@@ -557,25 +557,132 @@ class BillingService
     }
 
     /**
+     * The bill of a visit brought in from the old records (Settings, Import
+     * data, Visits; docs/imports.md), as an opening entry like a balance
+     * brought forward.
+     *
+     * The invoice carries the visit's lines and the amount billed, dated on
+     * the visit's day. What was paid then was paid in the old books: it is
+     * written on the invoice as `paid_before`, never as a payment here, so it
+     * is never today's takings. Only what was still owed goes into these
+     * books, against opening equity (Bookkeeper::invoiceIssued), and it is
+     * owed and paid like any other bill.
+     */
+    public function billPastVisit(Visit $visit, string $billed, string $paid, ?int $by = null): Invoice
+    {
+        $billed = HospitalSettings::decimal($billed, 2);
+        $paid = HospitalSettings::decimal($paid, 2);
+        if (bccomp($billed, '0', 2) <= 0) {
+            throw new RuntimeException('A visit from the old records is billed only when an amount was billed.');
+        }
+        if (bccomp($paid, '0', 2) < 0 || bccomp($paid, $billed, 2) > 0) {
+            throw new RuntimeException('The amount paid must be between nothing and the amount billed.');
+        }
+
+        app(\App\Services\FinancialYearService::class)->assertPostingAllowed(Carbon::now());
+
+        return DB::transaction(function () use ($visit, $billed, $paid, $by) {
+            Visit::whereKey($visit->id)->lockForUpdate()->first();
+            $this->assertNoOpenInvoice($visit);
+
+            $balance = bcsub($billed, $paid, 2);
+            $on = $visit->completed_at ?? $visit->created_at ?? Carbon::now();
+
+            $invoice = $this->createInvoiceWithNumber([
+                'visit_id' => $visit->id,
+                'patient_id' => $visit->patient_id,
+                'currency' => $this->settings->currencyCode(),
+                'subtotal' => $billed,
+                'tax_total' => '0.00',
+                'discount' => '0.00',
+                'total' => $billed,
+                'amount_paid' => $paid,
+                'paid_before' => $paid,
+                'balance' => $balance,
+                'status' => match (true) {
+                    bccomp($balance, '0', 2) === 0 => InvoiceStatus::Paid,
+                    bccomp($paid, '0', 2) > 0 => InvoiceStatus::PartiallyPaid,
+                    default => InvoiceStatus::Issued,
+                },
+                'opening_balance' => true,
+                'notes' => 'Visit from the old records',
+                'issued_by' => $by,
+                'issued_at' => $on,
+            ]);
+
+            foreach ($visit->orderItems()->get() as $line) {
+                if (! $line->status->isBillable() || ! $line->isBilled()) {
+                    continue;
+                }
+                $invoice->items()->create([
+                    'description' => $line->name,
+                    'quantity' => $line->quantity,
+                    'unit_price' => $line->unit_price,
+                    'line_total' => $line->line_total,
+                    'tax_exempt' => true,
+                    'source_type' => $line->getMorphClass(),
+                    'source_id' => $line->id,
+                ]);
+            }
+
+            app(\App\Services\Finance\Bookkeeper::class)->invoiceIssued($invoice);
+
+            return $invoice;
+        });
+    }
+
+    /**
      * Take back a balance brought forward that nothing has touched (an import
      * undone): the invoice is voided and its entry comes back out of the
      * books. Refused once anything was paid or credited against it.
      */
     public function voidOpeningBalance(Invoice $invoice): void
     {
+        if (! $invoice->opening_balance) {
+            throw new RuntimeException('Only a balance brought forward can be taken back this way.');
+        }
+
+        $this->voidInvoice($invoice);
+    }
+
+    /**
+     * Why this invoice cannot be voided, or null when it can: money taken
+     * here and not refunded, a credit note, or an insurance claim on it.
+     */
+    public function voidBlocker(Invoice $invoice): ?string
+    {
+        if ($invoice->status === InvoiceStatus::Void) {
+            return null;
+        }
+
+        return match (true) {
+            bccomp($invoice->heldHere(), '0', 2) > 0 => HospitalSettings::money($invoice->heldHere()).' has been paid on invoice '.$invoice->invoice_no.'. Refund it first.',
+            bccomp((string) ($invoice->credited ?? '0'), '0', 2) !== 0 => 'Invoice '.$invoice->invoice_no.' has a credit note on it.',
+            $invoice->credits()->where('status', \App\Enums\CreditStatus::Pending->value)->exists() => 'Invoice '.$invoice->invoice_no.' has a credit note or refund waiting for approval.',
+            \App\Models\InsuranceClaim::query()->where('invoice_id', $invoice->id)->exists() => 'Invoice '.$invoice->invoice_no.' has an insurance claim on it.',
+            default => null,
+        };
+    }
+
+    /**
+     * Void an invoice nobody has paid (a visit deleted, an import undone):
+     * it stops being owed, and its entry comes back out of the books as a
+     * reversing entry dated today. Never into a closed period.
+     */
+    public function voidInvoice(Invoice $invoice): void
+    {
         DB::transaction(function () use ($invoice) {
             /** @var Invoice $locked */
             $locked = Invoice::whereKey($invoice->id)->lockForUpdate()->firstOrFail();
 
-            if (! $locked->opening_balance) {
-                throw new RuntimeException('Only a balance brought forward can be taken back this way.');
-            }
             if ($locked->status === InvoiceStatus::Void) {
                 return;
             }
-            if (bccomp((string) $locked->amount_paid, '0', 2) !== 0 || bccomp((string) ($locked->credited ?? '0'), '0', 2) !== 0) {
-                throw new RuntimeException('Something has been paid or credited against this balance.');
+            if (($why = $this->voidBlocker($locked)) !== null) {
+                throw new RuntimeException($why);
             }
+
+            app(\App\Services\FinancialYearService::class)->assertPostingAllowed(Carbon::now());
 
             $locked->update(['status' => InvoiceStatus::Void, 'balance' => '0.00']);
             app(\App\Services\Finance\Bookkeeper::class)->invoiceVoided($locked);

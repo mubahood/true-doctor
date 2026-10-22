@@ -181,6 +181,13 @@ class Index extends Component
 
     public ?string $dob = null;
 
+    /** The age is the quick way at a desk; the date when it is known (PatientService::birth). */
+    public string $dob_mode = 'age';
+
+    public ?string $age_years = null;
+
+    public ?string $age_months = null;
+
     public ?string $phone_1 = null;
 
     public bool $consent_given = false;
@@ -280,16 +287,36 @@ class Index extends Component
         unset($this->formChart);
         $this->chart_primary = $tab === 'existing'
             ? DentalService::childTeeth(Patient::whereKey($this->patient_id)->first()?->dob)
-            : DentalService::childTeeth($this->dob ? \Illuminate\Support\Carbon::parse($this->dob) : null);
+            : DentalService::childTeeth($this->newPatientDob());
     }
 
-    /** A new patient's date of birth decides whether the chart shows the milk teeth. */
+    /** A new patient's date of birth (or age) decides whether the chart shows the milk teeth. */
     public function updatedDob(): void
     {
+        $this->chart_primary = DentalService::childTeeth($this->newPatientDob());
+    }
+
+    public function updatedAgeYears(): void
+    {
+        $this->updatedDob();
+    }
+
+    public function updatedAgeMonths(): void
+    {
+        $this->updatedDob();
+    }
+
+    /** The new patient's birth date as typed, or as the age says. */
+    private function newPatientDob(): ?\Illuminate\Support\Carbon
+    {
         try {
-            $this->chart_primary = DentalService::childTeeth($this->dob ? \Illuminate\Support\Carbon::parse($this->dob) : null);
+            $date = $this->dob_mode === 'date'
+                ? $this->dob
+                : \App\Support\BirthDate::fromAge(is_numeric($this->age_years) ? $this->age_years : null, is_numeric($this->age_months) ? $this->age_months : null);
+
+            return $date ? \Illuminate\Support\Carbon::parse($date) : null;
         } catch (\Throwable) {
-            // Not a date yet: the validation says so on save.
+            return null; // not a date yet: the validation says so on save
         }
     }
 
@@ -297,6 +324,13 @@ class Index extends Component
      * A <livewire:ui.select-search> child reports a pick — and each pick makes
      * the next question easier to answer.
      */
+    /** A visit deleted from the row menu drops out of the list (Visits\DeleteVisit). */
+    #[On('visit-deleted')]
+    public function visitDeleted(): void
+    {
+        unset($this->patientBrief);
+    }
+
     #[On('select-search:picked')]
     public function picked(string $name, int $id): void
     {
@@ -658,16 +692,25 @@ class Index extends Component
         // optionals must be null *before* validation (no ConvertEmptyStringsToNull
         // on the Livewire wire) or `date`/`Enum` would reject ''.
         $this->consent_given = (bool) $this->consent_given;
-        foreach (['sex', 'dob', 'phone_1', 'reason', 'complaints'] as $k) {
+        foreach (['sex', 'dob', 'age_years', 'age_months', 'phone_1', 'reason', 'complaints'] as $k) {
             if (is_string($this->{$k}) && trim($this->{$k}) === '') {
                 $this->{$k} = null;
+            }
+        }
+        // One of the two ways is sent: the date, or the age.
+        if ($this->dob_mode === 'date') {
+            $this->age_years = $this->age_months = null;
+        } else {
+            $this->dob = null;
+            if ($this->age_years !== null && (int) $this->age_years >= \App\Support\BirthDate::MONTHS_UNDER) {
+                $this->age_months = null;
             }
         }
 
         $data = $this->notAskedHere($this->validate());
         $dosage = $this->writesDosageHere() ? $this->validatedDosage(optional: true) : [];
 
-        $patientData = array_intersect_key($data, array_flip(['first_name', 'last_name', 'sex', 'dob', 'phone_1', 'consent_given']));
+        $patientData = array_intersect_key($data, array_flip(['first_name', 'last_name', 'sex', 'dob', 'age_years', 'age_months', 'phone_1', 'consent_given']));
         $visitData = array_intersect_key($data, array_flip(['reason', 'complaints', 'diagnosis']));
 
         try {
@@ -778,7 +821,7 @@ class Index extends Component
 
             'patient_id', 'appointment_id', 'reason', 'complaints', 'diagnosis', 'start_now', 'dental_notes', 'carried', 'dosage',
             'temperature', 'blood_pressure', 'pulse', 'respiratory_rate', 'spo2', 'weight', 'height',
-            'first_name', 'last_name', 'sex', 'dob', 'phone_1', 'consent_given', 'messages_care',
+            'first_name', 'last_name', 'sex', 'dob', 'dob_mode', 'age_years', 'age_months', 'phone_1', 'consent_given', 'messages_care',
         ]);
         $this->formNonce++;
         $this->resetErrorBag();

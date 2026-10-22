@@ -223,6 +223,8 @@ final class Navigation
                     ['label' => 'Messages to patients', 'icon' => 'fa-comment-sms', 'route' => 'admin.settings.messages', 'match' => ['admin.settings.messages']],
                     // Import data: patients, price list, stock and appointments from a spreadsheet (docs/imports.md).
                     ['label' => 'Import data', 'icon' => 'fa-file-import', 'route' => 'admin.imports.index', 'match' => ['admin.imports.*'], 'tenant' => true],
+                    // Patients made while learning the system, removed with everything attached (docs/test-records.md).
+                    ['label' => 'Remove test records', 'icon' => 'fa-broom', 'route' => 'admin.settings.test-records', 'match' => ['admin.settings.test-records'], 'tenant' => true, 'role' => 'hospital_admin', 'demo' => false],
 
                     // A dental clinic's review, item C: what each role may do, set by the clinic (docs/rbac.md).
                     ['label' => 'Staff and access', 'icon' => 'fa-user-lock', 'route' => 'admin.settings.access', 'match' => ['admin.settings.access'], 'tenant' => true],
@@ -259,7 +261,11 @@ final class Navigation
             && (! isset($it['module']) || $practice->uses($it['module']))
             // `pack`: shown only to a practice with one of these specialty packs on.
             && (! isset($it['pack']) || array_intersect($it['pack'], $practice->packKeys()) !== [])
-            && (! ($it['tenant'] ?? false) || $user->hospital_id !== null);
+            && (! ($it['tenant'] ?? false) || $user->hospital_id !== null)
+            // `role`: one role only, whatever else a clinic hands out (Remove test records).
+            && (! isset($it['role']) || $user->role === $it['role'])
+            // `demo` false: never on the demonstration hospital.
+            && (($it['demo'] ?? true) || ! \App\Support\Demo::isDemoUser($user));
 
         $rendered = [];
         $byRoute = [];          // every visible destination, for setup mode below

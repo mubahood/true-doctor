@@ -42,6 +42,47 @@ class VisitService
     }
 
     /**
+     * A visit from the clinic's old records (Settings, Import data, Visits;
+     * docs/imports.md): numbered for its own day, dated on it, and closed on
+     * it, as the visit was. Nothing is started, advanced or texted.
+     *
+     * @param  array<string,mixed>  $data  patient_id, doctor_user_id, complaints, diagnosis, reason
+     */
+    public function recordPast(array $data, Carbon $on, ?int $by = null): Visit
+    {
+        if (app(CurrentHospital::class)->id() === null) {
+            throw new RuntimeException('Cannot open a visit with no resolved hospital.');
+        }
+        if ($on->isFuture()) {
+            throw new RuntimeException('A visit from the old records cannot be dated in the future.');
+        }
+
+        return DB::transaction(function () use ($data, $on, $by) {
+            $visit = $this->createWithNumber($data, $by, 0, $on);
+
+            $visit->forceFill([
+                'status' => VisitStatus::Completed,
+                'stage' => VisitStage::Completed,
+                'outcome' => VisitOutcome::Closed,
+                'completed_at' => $on,
+            ])->save();
+
+            VisitStatusHistory::create([
+                'visit_id' => $visit->id,
+                'from_status' => VisitStatus::Pending->value,
+                'to_status' => VisitStatus::Completed->value,
+                'from_stage' => VisitStage::Ongoing->value,
+                'to_stage' => VisitStage::Completed->value,
+                'note' => 'Brought in from the old records',
+                'changed_by' => $by,
+                'created_at' => Carbon::now(),
+            ]);
+
+            return $visit;
+        });
+    }
+
+    /**
      * The visit a patient's activity belongs to right now: the one still open
      * for them today, or a fresh one.
      *
@@ -109,16 +150,16 @@ class VisitService
         return ! empty($data['start_now']) ? $this->start($visit, $by) : $visit;
     }
 
-    private function createWithNumber(array $data, ?int $openedBy, int $attempt = 0): Visit
+    private function createWithNumber(array $data, ?int $openedBy, int $attempt = 0, ?Carbon $at = null): Visit
     {
-        $now = Carbon::now();
+        $now = $at ?? Carbon::now();
 
         try {
-            return DB::transaction(function () use ($data, $openedBy, $now) {
+            return DB::transaction(function () use ($data, $openedBy, $now, $at) {
                 $day = $now->toDateString();
                 $seq = \App\Support\Sequence::next('visit', $day, fn () => Visit::withTrashed()->whereDate('created_at', $day)->count());
 
-                $visit = Visit::create([
+                $visit = new Visit([
                     'uuid' => (string) Str::uuid(),
                     'visit_no' => $this->makeNumber($seq, $now),
                     'patient_id' => $data['patient_id'],
@@ -142,6 +183,12 @@ class VisitService
                     'stage' => VisitStage::Ongoing,
                     'outcome' => null,
                 ]);
+                if ($at !== null) {
+                    // A visit from the old records is dated on its own day.
+                    $visit->created_at = $at;
+                    $visit->updated_at = $at;
+                }
+                $visit->save();
 
                 VisitStatusHistory::create([
                     'visit_id' => $visit->id,
@@ -161,7 +208,7 @@ class VisitService
                 throw $e;
             }
 
-            return $this->createWithNumber($data, $openedBy, $attempt + 1);
+            return $this->createWithNumber($data, $openedBy, $attempt + 1, $at);
         }
     }
 
@@ -430,6 +477,114 @@ class VisitService
 
             return $this->put($locked, VisitStatus::Completed, $locked->stage,
                 VisitOutcome::Cancelled, $by, $reason, false);
+        });
+    }
+
+    // ── Deleting it ──────────────────────────────────────────────────────
+
+    /**
+     * Why this visit cannot be deleted, or null when it can.
+     *
+     * Only a visit nothing was paid on: money taken has to be given back
+     * (a refund) before the visit it paid for can go. An admission, a credit
+     * note or an insurance claim is a real record of its own and is
+     * refused too, with what to do about it.
+     */
+    public function deleteBlocker(Visit $visit): ?string
+    {
+        if ($visit->admissions()->exists()) {
+            return 'The patient was admitted on this visit. An admitted visit cannot be deleted.';
+        }
+
+        $billing = app(BillingService::class);
+        foreach ($visit->invoices()->get() as $invoice) {
+            if (($why = $billing->voidBlocker($invoice)) !== null) {
+                return $why;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Delete a visit opened by mistake (docs/visits.md, "Deleting a visit").
+     *
+     * It removes the visit's work the way cancelling an order does: every
+     * order comes off the bill and gives back what it took off the shelf
+     * (StockService), an unpaid invoice is voided with a reversing entry in
+     * the books, and the dental chart entries made on it are removed. The
+     * visit itself is soft-deleted with who and why, so it leaves every list,
+     * report and the patient's record while the audit log keeps it.
+     *
+     * Refused (deleteBlocker) while money paid on it is still held.
+     */
+    public function delete(Visit $visit, ?int $by, string $reason): void
+    {
+        $reason = trim($reason);
+        if ($reason === '') {
+            throw new RuntimeException('Say why the visit is being deleted.');
+        }
+
+        DB::transaction(function () use ($visit, $by, $reason) {
+            /** @var Visit $locked */
+            $locked = Visit::withTrashed()->whereKey($visit->id)->lockForUpdate()->firstOrFail();
+
+            // Already deleted (a retry after a lost reply): nothing to do.
+            if ($locked->trashed()) {
+                return;
+            }
+
+            if (($why = $this->deleteBlocker($locked)) !== null) {
+                throw new RuntimeException($why);
+            }
+
+            $orders = app(OrderService::class);
+            foreach ($locked->orders()->get() as $order) {
+                $orders->withdraw($order, $by, 'Visit deleted: '.$reason);
+            }
+
+            // Drugs given the old way hang off the dispensation, not an order.
+            $stock = app(StockService::class);
+            foreach ($locked->dispensations()->with('items')->get() as $dispensation) {
+                foreach ($dispensation->items as $item) {
+                    $stock->returnFor($item, $by, 'Visit deleted');
+                }
+            }
+
+            $billing = app(BillingService::class);
+            foreach ($locked->invoices()->where('status', '!=', InvoiceStatus::Void->value)->get() as $invoice) {
+                $billing->voidInvoice($invoice);
+            }
+
+            // One at a time, so each removal is in the audit log.
+            foreach (\App\Models\DentalChartEntry::query()->where('visit_id', $locked->id)->get() as $entry) {
+                $entry->delete();
+            }
+
+            // Treatment-plan items done on this visit are not done any more:
+            // back to accepted, as they were before the work.
+            foreach (\App\Models\DentalTreatmentItem::query()->where('done_visit_id', $locked->id)->get() as $item) {
+                $item->forceFill([
+                    'status' => \App\Enums\DentalTreatmentStatus::Accepted,
+                    'done_at' => null, 'done_by' => null, 'done_visit_id' => null, 'order_item_id' => null,
+                ])->save();
+            }
+
+            VisitStatusHistory::create([
+                'visit_id' => $locked->id,
+                'from_status' => $locked->status->value,
+                'to_status' => $locked->status->value,
+                'from_stage' => $locked->stage->value,
+                'to_stage' => $locked->stage->value,
+                'note' => mb_substr('Deleted: '.$reason, 0, 255),
+                'is_override' => true,
+                'changed_by' => $by,
+                'created_at' => Carbon::now(),
+            ]);
+
+            // Who and why first (audited as a change), then the deletion itself.
+            $locked->forceFill(['deleted_by' => $by, 'delete_reason' => mb_substr($reason, 0, 255)])->save();
+            $locked->delete();
         });
     }
 

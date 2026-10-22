@@ -14,11 +14,7 @@
         <input wire:model="last_name" class="tb-input" required>
         @error('last_name')<div class="tb-field-error">{{ $message }}</div>@enderror
       </div>
-      <div class="tb-form-group">
-        <label class="tb-label">Date of birth</label>
-        <input type="date" wire:model="dob" class="tb-input">
-        @error('dob')<div class="tb-field-error">{{ $message }}</div>@enderror
-      </div>
+      @include('livewire.partials.age-or-dob', ['prefix' => 'pt'])
       <div class="tb-form-group">
         <label class="tb-label">Sex</label>
         <select wire:model="sex" class="tb-select">

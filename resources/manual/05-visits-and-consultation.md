@@ -19,7 +19,7 @@ Other chapters pick up from here. Lab and radiology staff work on the orders you
 Usually the receptionist opens the visit when the patient arrives.
 
 1. Open **Visits** in the sidebar and press **New visit**. You can also press **New visit** on the patient's record, which chooses the patient for you.
-2. Under **Patient**, choose **Registered patient** and search by name, number or phone. For someone who has never been here, choose **New patient** and fill in **First name**, **Last name**, **Sex**, **Date of birth** and **Phone**, and tick **Consent given** and **Texts about the patient's care (SMS and WhatsApp)** if the patient agrees.
+2. Under **Patient**, choose **Registered patient** and search by name, number or phone. For someone who has never been here, choose **New patient** and fill in **First name**, **Last name**, **Sex**, **Age** (or click **Enter the date of birth instead**, see [Patients](03-patients.md)) and **Phone**, and tick **Consent given** and **Texts about the patient's care (SMS and WhatsApp)** if the patient agrees.
 3. Read the box that appears under a registered patient. It may say:
    - **Already has an open visit**. Opening a second one splits the bill in two. Press **Go to it** to use the open one instead.
    - **Booked today at** a time. Press **This visit fulfils it** to link the visit to that appointment.
@@ -60,6 +60,7 @@ Each row's actions menu offers:
 - **Cancel visit**.
 - **Bill & payments**: jumps to the bill.
 - **Full page**: opens the visit as its own page.
+- **Delete visit**: for a visit opened by mistake. See [Delete a visit](#delete-a-visit).
 - **Set state…**: Hospital Admin only.
 
 ## Working inside a visit
@@ -223,6 +224,19 @@ Use this when a visit was opened in error, is a duplicate, or the patient left.
 3. Press **Cancel visit** to confirm, or **Keep the visit** to go back.
 
 Everything already recorded stays on the visit. Open orders keep their charges until each one is cancelled.
+
+## Delete a visit
+
+When a visit was opened by mistake (the wrong patient, a duplicate, a test), delete it instead of cancelling it. Only the Hospital Admin can, and anyone else your clinic allows under **Staff and access** (**Delete visits**).
+
+1. Press **Delete visit** on the visit page, or in the row's actions menu on **Visits**.
+2. Read what will be undone, write the **Reason for deleting** and press **Delete visit**.
+
+Deleting undoes the visit's work the same way cancelling an order does: every order comes off the bill, anything taken off the shelf for it goes back into stock, an unpaid invoice is voided (the books get a reversing entry dated today), and the dental chart entries made on that visit are removed. The visit then leaves the visits list, the reports and the patient's record. The **Audit log** keeps who deleted it, when, and why.
+
+A visit that has been paid on cannot be deleted. The dialog says so: refund the payment first (see [Billing and payments](07-billing-and-payments.md)), then delete the visit. A visit with an admission, a credit note or an insurance claim cannot be deleted either.
+
+To bring in visits from your old records, press **Import** on the **Visits** page. See [Setting up](02-setting-up.md), **Importing your data**.
 
 ## Set a visit's state out of order
 

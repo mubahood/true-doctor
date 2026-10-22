@@ -21,6 +21,8 @@ class PatientResource extends JsonResource
             'full_name' => $this->full_name,
             'sex' => $this->sex?->value,
             'dob' => $this->dob?->toDateString(),
+            // Worked out from an age typed at the desk, not a known birthday.
+            'dob_estimated' => (bool) $this->dob_estimated,
             'age' => $this->age(),
             'phone_1' => $this->phone_1,
             'email' => $this->email,

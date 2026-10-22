@@ -296,9 +296,9 @@ The owner can also turn on **My daily summary** on this page. See [Reports and M
 
 ## Importing your data
 
-**Settings**, then **Import data**. If you kept your patients, prices, stock or appointments in Excel or another system, you can bring them in instead of typing them again. Only the hospital administrator can import.
+**Settings**, then **Import data**. If you kept your patients, prices, stock, appointments or past visits in Excel or another system, you can bring them in instead of typing them again. Only the hospital administrator can import.
 
-Import in this order: **Patients** first, then **Price list**, **Stock items** (if your practice keeps stock) and **Appointments**. Appointments are matched to patients who are already registered, so the patients must come first.
+Import in this order: **Patients** first, then **Price list**, **Stock items** (if your practice keeps stock), **Appointments** and **Visits**. Appointments and visits are matched to patients who are already registered, so the patients must come first. The **Import** button on the **Visits** page opens this page with **Visits** chosen.
 
 Nothing is saved until you have seen every row checked and pressed **Import**.
 
@@ -343,6 +343,7 @@ If the columns were wrong, click **Change columns**. If you do not want to go on
 - **Patients**: each gets their own patient number as if they were registered at the desk. Their **Old file number** is kept on their record, and searching for it finds them, so "PT 1043 in our old book" still finds the right person. If the sheet says they owe money (**Balance owed**), it goes on their record as a **Balance brought forward** that they pay like any other bill. It appears on their statement and on the debtors list, and in the books it is shown as money owed from before, not as income earned now.
 - **Price list**: each service is added with its price. A service you already have can be updated with the new price.
 - **Stock items**: each item is added with what is on the shelf today as opening stock. A stock item you already have can have its prices and details updated, but its quantity is not changed: count it on the stock page instead.
+- **Visits**: each row is a visit that already happened: the **Date**, the patient (their patient number or old file number, or their name and phone), the **Dentist** (optional), the **Presenting complaint**, the **Diagnosis**, the **Treatment done**, the **Amount billed** and the **Amount paid**. The visit is dated on its own day and closed. Treatments named as they are on your price list become lines of the bill when their prices add up to the amount billed; otherwise the bill has one line for the whole amount. What was paid then was paid in your old books: it shows on the bill as paid, but it is never counted in today's takings. What was still owed becomes owed on the patient's record and is paid like any other bill. A patient who already has a visit on that day is shown as **Looks registered**, so the same sheet imported twice is caught.
 - **Appointments**: only appointments from today on. The patient is found by their patient number or old file number (or by phone or name), and the doctor by their name or email as it is on their staff account. Patients are not sent a text about imported appointments.
 
 ### Undoing an import
@@ -352,10 +353,22 @@ If an import went wrong, you can undo it for 24 hours after it finished.
 1. Open the import from the log on **Import data**.
 2. Click **Undo this import**, then **Undo the import**.
 
-Undoing takes back what the import added. Anything that has been used since is kept and marked **Kept (used since)** with the reason, for example a patient who has had a visit, a price that has been charged, or stock that has been dispensed. Records the import updated keep their changes, but a balance owed that the import added to them is taken back if nothing has been paid against it.
+Undoing takes back what the import added. An imported visit is deleted the same way as **Delete visit**. Anything that has been used since is kept and marked **Kept (used since)** with the reason, for example a patient who has had a visit, a price that has been charged, or stock that has been dispensed. Records the import updated keep their changes, but a balance owed that the import added to them is taken back if nothing has been paid against it.
 
 ### The import log
 
 The table on **Import data** lists every import: the file, what it was, when, who did it, and how many rows were added, updated, left out or not saved. If an import was undone, it says who undid it and when. Click a file name to see every row and what happened to it.
 
 If you would rather not do it yourself, send us your file and we will import it for you as part of installation help.
+
+## Remove test records
+
+**Settings**, then **Remove test records**. Before the clinic starts for real, remove the patients you made while learning the system. Only the Hospital Admin sees this page.
+
+1. Find the test patients. The list shows each patient with their number of visits, what they were billed and paid, and when they were registered. Filter it with **Name contains**, **Created before** a date, or **No payments**.
+2. Tick the patients to remove, or press **Select all shown** to tick everyone on the page.
+3. Press **Remove**. Type your hospital's name exactly as shown and press **Remove**.
+
+Each patient is removed with everything attached: visits, orders, bills, payments, the dental chart, notes, documents and messages. What was taken off the shelf for them goes back into stock. Nothing is deleted from the books silently: every amount gets a reversing entry dated today. On your own server a full backup is made first. A patient whose money is in a closed financial year, or who has an insurance claim, is kept and the message says why.
+
+Staff accounts made for testing are deleted on **User accounts**: press the bin icon on the account's row and confirm. The last Hospital Admin cannot be deleted.
