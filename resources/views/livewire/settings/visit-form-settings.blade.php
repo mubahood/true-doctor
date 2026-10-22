@@ -1,7 +1,7 @@
 <div class="tb-card tb-mt-3">
   <div class="tb-card-header">
     <span class="tb-card-title"><i class="fas fa-file-medical" aria-hidden="true"></i> Visit form</span>
-    @if($form->vitalsCustomised || $form->dentalNotesCustomised)
+    @if($form->vitalsCustomised || $form->dentalNotesCustomised || $form->visitReportCustomised)
       <button type="button" class="btn-tb btn-tb-sm btn-tb-ghost" wire:click="useDefaults">Use the defaults for your practice</button>
     @endif
   </div>
@@ -33,6 +33,20 @@
         <p class="muted tb-small tb-mt-3">A visit already written keeps the way it was written.</p>
       </fieldset>
     @endif
+
+    <fieldset class="tb-kinds tb-mt-3">
+      <legend class="tb-label">Visit report shows</legend>
+      <div class="tb-seg-cards" role="radiogroup" aria-label="Visit report shows">
+        <label @class(['tb-seg-opt', 'is-on' => $visitReport === \App\Support\Practice\VisitForm::SUMMARY])>
+          <input type="radio" wire:model.live="visitReport" value="{{ \App\Support\Practice\VisitForm::SUMMARY }}" class="sr-only">
+          <span>Patient summary</span><em>Treatment done, dosage, the bill and payments, and the next appointments. No history or examination</em>
+        </label>
+        <label @class(['tb-seg-opt', 'is-on' => $visitReport === \App\Support\Practice\VisitForm::FULL])>
+          <input type="radio" wire:model.live="visitReport" value="{{ \App\Support\Practice\VisitForm::FULL }}" class="sr-only">
+          <span>Full clinical record</span><em>Everything written on the visit, for a patient sent to another clinician</em>
+        </label>
+      </div>
+    </fieldset>
 
     <div class="tb-flex tb-mt-3">
       <button type="submit" class="btn-tb btn-tb-primary btn-tb-sm" wire:loading.attr="disabled" wire:target="save">

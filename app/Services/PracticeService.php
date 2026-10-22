@@ -94,18 +94,25 @@ class PracticeService
      * follows the practice; anything else is the hospital's own choice. Like
      * choosing a practice, it changes what is asked, never what was recorded.
      *
+     * The visit report (patient summary or full clinical record) is chosen
+     * the same way.
+     *
      * @param  list<string>|null  $vitals
      */
-    public function chooseVisitForm(Hospital $hospital, ?array $vitals, ?string $dentalNotes): VisitForm
+    public function chooseVisitForm(Hospital $hospital, ?array $vitals, ?string $dentalNotes, ?string $visitReport = null): VisitForm
     {
         if ($dentalNotes !== null && ! array_key_exists($dentalNotes, VisitForm::DENTAL_NOTES)) {
             throw new \DomainException('Choose simple notes or the detailed case sheet.');
+        }
+        if ($visitReport !== null && ! array_key_exists($visitReport, VisitForm::VISIT_REPORTS)) {
+            throw new \DomainException('Choose the patient summary or the full clinical record.');
         }
 
         $settings = $hospital->settings ?? [];
         $settings['clinical'] = [
             'vitals' => $vitals === null ? null : VisitForm::validVitals($vitals),
             'dental_notes' => $dentalNotes,
+            'visit_report' => $visitReport,
         ];
 
         $hospital->settings = $settings;

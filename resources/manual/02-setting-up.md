@@ -68,7 +68,8 @@ Below your practice, the **Visit form** card decides how a visit is written down
 
 1. Under **Vital signs recorded**, tick the readings your clinic takes: **Blood pressure**, **Temperature**, **Pulse**, **Respiratory rate**, **Oxygen saturation (SpO₂)**, **Weight** and **Height**. The new visit form and the visit page ask only for these. A dental clinic starts with **Blood pressure** only; every other practice starts with all of them. A reading already taken on a visit is always kept and shown.
 2. If your practice does dentistry, under **Dental notes** choose **Simple notes** (the presenting complaint, history and oral examination as plain text, the usual choice for a dental clinic) or **Detailed case sheet** (structured sections with coded diagnoses, X-rays and instructions). A visit already written keeps the way it was written.
-3. Press **Save visit form**. Press **Use the defaults for your practice** to go back to the usual choice.
+3. Under **Visit report shows**, choose **Patient summary** (the treatment done, the dosage, the bill and payments and the next appointments, with no history or examination; the usual choice for a dental clinic) or **Full clinical record** (everything written on the visit, for a patient sent to another clinician; the usual choice elsewhere).
+4. Press **Save visit form**. Press **Use the defaults for your practice** to go back to the usual choice.
 
 See [Visits and consultation](05-visits-and-consultation.md) and [Dental](10-dental.md).
 

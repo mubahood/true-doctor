@@ -58,7 +58,8 @@ class PracticeSettingsController extends Controller
 
     /**
      * How a visit is written down: the vital signs recorded and, where the
-     * hospital does dentistry, simple notes or the detailed case sheet. A
+     * hospital does dentistry, simple notes or the detailed case sheet, and
+     * what the printed visit report shows. A
      * field left out keeps its value; null follows the practice again.
      */
     public function visitForm(Request $request): JsonResponse
@@ -69,6 +70,7 @@ class PracticeSettingsController extends Controller
             'vitals' => ['sometimes', 'nullable', 'array'],
             'vitals.*' => ['string', Rule::in(array_keys(VisitForm::VITALS))],
             'dental_notes' => ['sometimes', 'nullable', 'string', Rule::in(array_keys(VisitForm::DENTAL_NOTES))],
+            'visit_report' => ['sometimes', 'nullable', 'string', Rule::in(array_keys(VisitForm::VISIT_REPORTS))],
         ]);
 
         $now = VisitForm::of($hospital);
@@ -76,6 +78,7 @@ class PracticeSettingsController extends Controller
             $hospital,
             array_key_exists('vitals', $data) ? $data['vitals'] : ($now->vitalsCustomised ? $now->vitals : null),
             array_key_exists('dental_notes', $data) ? $data['dental_notes'] : ($now->dentalNotesCustomised ? $now->dentalNotes : null),
+            array_key_exists('visit_report', $data) ? $data['visit_report'] : ($now->visitReportCustomised ? $now->visitReport : null),
         );
 
         return ApiResponse::success($this->payload($hospital->fresh()), 'Saved: '.$form->vitalsTitle().($form->dentistry ? ', '.mb_strtolower(VisitForm::DENTAL_NOTES[$form->dentalNotes]) : '').'.');
@@ -142,7 +145,7 @@ class PracticeSettingsController extends Controller
             'addable_packs' => $practice->addablePacks(),
             // How a visit is written down (App\Support\Practice\VisitForm).
             'visit_form' => VisitForm::of($hospital)->toArray() + [
-                'catalogue' => ['vitals' => VisitForm::VITALS, 'dental_notes' => VisitForm::DENTAL_NOTES],
+                'catalogue' => ['vitals' => VisitForm::VITALS, 'dental_notes' => VisitForm::DENTAL_NOTES, 'visit_report' => VisitForm::VISIT_REPORTS],
             ],
             'counts' => $practice->template()->counts(),
             // What applying would add, per part (empty until a practice is chosen).

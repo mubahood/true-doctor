@@ -13,12 +13,14 @@ use App\Http\Requests\VisitIntakeRequest;
 use App\Http\Requests\VisitRequest;
 use App\Livewire\Concerns\ChoosesPhrases;
 use App\Livewire\Concerns\WithTable;
+use App\Livewire\Concerns\WritesDosage;
 use App\Models\Appointment;
 use App\Models\Invoice;
 use App\Models\Patient;
 use App\Models\Visit;
 use App\Services\BillingService;
 use App\Services\DentalNotesService;
+use App\Services\PrescriptionService;
 use App\Services\VisitService;
 use App\Support\HospitalSettings;
 use App\Support\PatientBrief;
@@ -58,7 +60,7 @@ use Livewire\Component;
 #[Layout('layouts.admin')]
 class Index extends Component
 {
-    use AuthorizesRequests, ChoosesPhrases, WithTable;
+    use AuthorizesRequests, ChoosesPhrases, WithTable, WritesDosage;
 
     /** Modal fields a <livewire:ui.select-search> child may set. */
     /**
@@ -255,6 +257,9 @@ class Index extends Component
     #[On('select-search:picked')]
     public function picked(string $name, int $id): void
     {
+        if ($this->dosePicked($name, $id)) {
+            return;
+        }
         if (! in_array($name, self::PICKERS, true)) {
             return;
         }
@@ -267,6 +272,9 @@ class Index extends Component
     #[On('select-search:cleared')]
     public function cleared(string $name): void
     {
+        if ($this->dosePicked($name, null)) {
+            return;
+        }
         if (! in_array($name, self::PICKERS, true)) {
             return;
         }
@@ -332,6 +340,13 @@ class Index extends Component
     public function writesDentalNotes(): bool
     {
         return $this->visitForm->dentalVisitForm() && (auth()->user()?->can('visits.diagnose') ?? false);
+    }
+
+    /** A dental clinic's dosage, after the Oral examination, for someone who prescribes (docs/pharmacy.md, "Dosage"). */
+    public function writesDosageHere(): bool
+    {
+        return $this->writesDentalNotes() && $this->visitForm->writesDosage()
+            && (auth()->user()?->can('prescribe', \App\Models\Prescription::class) ?? false);
     }
 
     // ── What we already know ─────────────────────────────────────────────
@@ -478,6 +493,7 @@ class Index extends Component
         }
 
         $data = $this->validate();
+        $dosage = $this->writesDosageHere() ? $this->validatedDosage(optional: true) : [];
         foreach (['reason', 'complaints', 'diagnosis'] as $k) {
             if (($data[$k] ?? '') === '') {
                 $data[$k] = null;
@@ -492,6 +508,7 @@ class Index extends Component
             );
             $visit = $this->recordWhatWasTaken($visit, $service);
             $this->writeDentalNotes($visit);
+            $this->writeDosage($visit, $dosage);
         } catch (\DomainException $e) {
             $this->dispatch('toast', message: $e->getMessage(), type: 'error');
 
@@ -522,6 +539,7 @@ class Index extends Component
         }
 
         $data = $this->notAskedHere($this->validate());
+        $dosage = $this->writesDosageHere() ? $this->validatedDosage(optional: true) : [];
 
         $patientData = array_intersect_key($data, array_flip(['first_name', 'last_name', 'sex', 'dob', 'phone_1', 'consent_given']));
         $visitData = array_intersect_key($data, array_flip(['reason', 'complaints', 'diagnosis']));
@@ -533,6 +551,7 @@ class Index extends Component
             }
             $visit = $this->recordWhatWasTaken($visit, $service);
             $this->writeDentalNotes($visit);
+            $this->writeDosage($visit, $dosage);
         } catch (PlanLimitExceededException|\DomainException $e) {
             $this->dispatch('toast', message: $e->getMessage(), type: 'error');
 
@@ -578,6 +597,18 @@ class Index extends Component
         }
     }
 
+    /**
+     * The dosage written while the visit is opened, as its first prescription.
+     *
+     * @param  list<array{stock_item_id:int,dose:string,frequency:string,days:int,note:string|null}>  $rows
+     */
+    private function writeDosage(Visit $visit, array $rows): void
+    {
+        if ($rows !== []) {
+            app(PrescriptionService::class)->writeDosage($visit, $rows, auth()->id());
+        }
+    }
+
     /** The vitals taken at the desk, and the visit status — VisitService decides both. */
     private function recordWhatWasTaken(Visit $visit, VisitService $service): Visit
     {
@@ -614,7 +645,7 @@ class Index extends Component
     private function resetForm(): void
     {
         $this->reset([
-            'patient_id', 'appointment_id', 'reason', 'complaints', 'diagnosis', 'start_now', 'dental_notes', 'carried',
+            'patient_id', 'appointment_id', 'reason', 'complaints', 'diagnosis', 'start_now', 'dental_notes', 'carried', 'dosage',
             'temperature', 'blood_pressure', 'pulse', 'respiratory_rate', 'spo2', 'weight', 'height',
             'first_name', 'last_name', 'sex', 'dob', 'phone_1', 'consent_given', 'messages_care',
         ]);

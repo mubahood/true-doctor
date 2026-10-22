@@ -44,7 +44,7 @@
         @foreach($prescription->doseItems as $dose)
           <tr>
             <td>{{ $dose->drug_name }}</td>
-            <td class="num">{{ $dose->dosage ?: '—' }}</td>
+            <td class="num">{{ $dose->dosage ?: '—' }}@if($dose->frequency)<br><span class="muted small">{{ $dose->frequency }}</span>@endif</td>
             <td class="num">{{ $dose->days ? $dose->days.' '.\Illuminate\Support\Str::plural('day', $dose->days) : '—' }}</td>
             <td>{{ $dose->instructions ?: '—' }}</td>
           </tr>

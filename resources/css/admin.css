@@ -2533,3 +2533,10 @@ body.has-brand::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z-i
 
 /* A dental visit's simple notes: the dialog form spans the modal body and foot (docs/dental.md, "Simple notes"). */
 .dn-form{display:contents;}
+
+/* Dosage on a visit (docs/pharmacy.md, "Dosage"): one row per medicine, the dialog form spans body and foot. */
+.dose-form{display:contents;}
+.tb-dose-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1.3fr) 64px minmax(0,1.3fr) auto;gap:8px;align-items:start;padding:6px 0;border-bottom:1px solid var(--line);margin-bottom:8px;}
+.tb-dose-row .tb-form-group{margin-bottom:0;}
+.tb-dose-remove{margin-top:20px;}
+@media (max-width:900px){.tb-dose-row{grid-template-columns:repeat(2,minmax(0,1fr));}.tb-dose-row > :first-child{grid-column:1 / -1;}.tb-dose-remove{margin-top:0;justify-self:start;}}
