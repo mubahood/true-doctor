@@ -465,6 +465,7 @@ class Index extends Component
             // than claim the visit failed.
             $this->dispatch('toast', message: 'The visit is open, but the chart was not saved: '.collect($e->errors())->flatten()->first(), type: 'error');
         }
+    }
 
     /** A dental clinic's dosage, after the Oral examination, for someone who prescribes (docs/pharmacy.md, "Dosage"). */
     public function writesDosageHere(): bool
