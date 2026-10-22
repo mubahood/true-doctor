@@ -41,6 +41,8 @@ class OrderResource extends JsonResource
             'assigned_to' => $this->assigned_to !== null ? (int) $this->assigned_to : null,
             'department' => $this->whenLoaded('department', fn () => $this->department?->name),
             'notes' => $this->notes,
+            // The teeth a procedure is on (FDI), charted when it is completed; [] for none.
+            'teeth' => $this->teeth ?? [],
             'report' => $this->report,
             'report_updated_at' => $this->report_updated_at?->toIso8601String(),
             'cancel_reason' => $this->cancel_reason,

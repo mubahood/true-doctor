@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $uuid
  * @property int $patient_id
  * @property int|null $visit_id
+ * @property int|null $order_id the completed order it came from, if any
  * @property int $tooth
  * @property string|null $surfaces
  * @property DentalFinding $finding
@@ -35,7 +36,7 @@ class DentalChartEntry extends Model
 
     public const UPDATED_AT = null;
 
-    protected $fillable = ['uuid', 'patient_id', 'visit_id', 'tooth', 'surfaces', 'finding', 'mobility', 'notes', 'recorded_by', 'recorded_at', 'created_at'];
+    protected $fillable = ['uuid', 'patient_id', 'visit_id', 'order_id', 'tooth', 'surfaces', 'finding', 'mobility', 'notes', 'recorded_by', 'recorded_at', 'created_at'];
 
     protected function casts(): array
     {

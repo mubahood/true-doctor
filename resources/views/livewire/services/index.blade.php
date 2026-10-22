@@ -62,6 +62,15 @@
             <datalist id="svc-cat-list">@foreach($this->categories as $c)<option value="{{ $c }}"></option>@endforeach</datalist>
           </x-ui.field>
         </div>
+        @if($this->marksTeeth)
+          <x-ui.field label="Marks the tooth as" for="svc-mark" name="marks_tooth_as"
+                      hint="When this procedure is done on a tooth, the dental chart shows this.">
+            <select id="svc-mark" wire:model="marks_tooth_as" class="tb-select">
+              <option value="">Nothing</option>
+              @foreach(\App\Enums\DentalFinding::marks() as $mark)<option value="{{ $mark->value }}">{{ $mark->markLabel() }}</option>@endforeach
+            </select>
+          </x-ui.field>
+        @endif
         @can('finance.view')
           <x-ui.field label="Earns into" for="svc-acct" name="ledger_account_id" hint="The income account this service is booked to. Left on automatic, it follows the kind of work — consultation, lab, imaging, procedure.">
             <select id="svc-acct" wire:model="ledger_account_id" class="tb-select">

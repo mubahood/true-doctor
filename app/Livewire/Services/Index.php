@@ -38,6 +38,9 @@ class Index extends Component
 
     public ?string $category = null;
 
+    /** What a finished procedure leaves on the tooth (a dental clinic's chart follows it). */
+    public ?string $marks_tooth_as = null;
+
     /** The income account it earns into; blank earns by the kind of order. */
     public ?string $ledger_account_id = null;
 
@@ -63,7 +66,7 @@ class Index extends Component
 
     protected function formFields(): array
     {
-        return ['name', 'code', 'category', 'ledger_account_id', 'price', 'max_price', 'tax_exempt', 'is_active'];
+        return ['name', 'code', 'category', 'marks_tooth_as', 'ledger_account_id', 'price', 'max_price', 'tax_exempt', 'is_active'];
     }
 
     protected function nounLabel(): string
@@ -73,7 +76,7 @@ class Index extends Component
 
     protected function nullableFields(): array
     {
-        return ['code', 'category', 'ledger_account_id', 'max_price'];
+        return ['code', 'category', 'marks_tooth_as', 'ledger_account_id', 'max_price'];
     }
 
     /** Income accounts a service can earn into — only while the form is open. @return \Illuminate\Support\Collection<int, \App\Models\LedgerAccount> */
@@ -92,6 +95,16 @@ class Index extends Component
     public function categories(): array
     {
         return Service::query()->whereNotNull('category')->distinct()->orderBy('category')->pluck('category')->all();
+    }
+
+    /**
+     * Whether the form asks what a procedure leaves on the tooth: a dental
+     * clinic's does, where orders name the teeth they are done on.
+     */
+    #[Computed]
+    public function marksTeeth(): bool
+    {
+        return \App\Services\DentalService::teethOnOrders();
     }
 
     protected function defaults(): array

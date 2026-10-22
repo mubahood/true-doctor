@@ -10,6 +10,17 @@ The dental chart, the treatment plan, billing and the recall, for a hospital who
 - **Append-only.** `dental_chart_entries` is never edited. The chart on a date is the latest entry per tooth and per surface up to that date, so "the chart as it was in March" is a query, not a backup. A correction is a new entry.
 - **Offline.** The app records findings with no network through the sync outbox (`dental_chart_entries`, create only, `DentalChartHandler`); the device's uuid is the entry's uuid, so a replay never charts twice.
 
+### Tap, choose, OK
+
+- **On the patient's Dental tab and the visit page** a tap on a tooth opens a small dialog: what the tooth has now, the findings as radio buttons (with the mobility grade, surfaces for a surface finding, and a note), **OK** and **Cancel**. OK records one entry (on the visit, when on one); Cancel records nothing; OK on the status the tooth already has, with nothing added, records nothing. `x-clinical.odontogram` draws the chart everywhere.
+- **On the new visit form** of a dental clinic (for `visits.diagnose`) the chart sits above Blood pressure: the patient's current chart, or an empty one for a new patient (milk teeth under 12 by the date of birth, as the Dental tab decides; **Child's teeth** switches). The dialog offers every finding but a note. Changes are held on the form (`chart_changes`, drawn by `DentalService::withChanges`) and written when the visit is created (`DentalService::recordChanges`, through `record`, linked to the new visit); a tooth set back to what it already has is skipped.
+
+### The chart follows the work
+
+- **Price list.** `services.marks_tooth_as` says what a finished procedure leaves on the tooth: filled, missing (an extraction), root canal, crown, bridge, implant, or nothing (`DentalFinding::marks()`). Set under **Marks the tooth as** in a dental clinic's price list and in the API (`marks_tooth_as` on `services`). The migration guessed it for existing dental services from their names; a new service under a dental specialty starts from the same guess (`DentalFinding::guessFromService`).
+- **Orders.** A procedure order in a dental clinic names its teeth (`orders.teeth`, FDI list, a tooth picker on the order form and the order's edit form; `teeth` on `POST /visits/{uuid}/orders` and `PATCH /orders/{uuid}`, answered in the order JSON; `meta.orders.teeth` says whether to ask). When the order is completed, every service on it with a mark charts that mark on every tooth (`DentalService::chartOrder`, called by `OrderService::transition` and by `addServiceItem` on a completed order), with `visit_id` and `order_id`. A mark the order already charted on a tooth is skipped, so a second completion or a resend adds nothing.
+- **Plan items.** Marking a plan item done charts its service's mark on its tooth (with its surfaces, for a filling) and names the tooth on the order it was billed through, so completing that order later adds nothing.
+
 ## The treatment plan
 
 - Procedures come from the clinic's own price list (`services`), on a tooth and surfaces or on none. A range price is chosen inside its range (`Service::chargePrice`).

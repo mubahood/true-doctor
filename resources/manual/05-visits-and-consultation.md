@@ -37,6 +37,7 @@ If you leave the department empty, the visit takes the doctor's own department, 
 
 A dental clinic's form is shorter and has no suggested phrases:
 
+- Above **Blood pressure** is the **Dental chart**: the patient's chart from earlier visits, or an empty chart for a new patient. Tap a tooth, choose its status and press **OK**. The teeth you change are saved to the patient's chart when the visit is created. See [Dental](10-dental.md).
 - There is no **Reason for visit**. Write the **Presenting complaint** under **Visit**, in the patient's own words. The visit is listed under the first words of the complaint, so the visits list, the queue and the reports still show why the patient came.
 - Under **History**, write the **Medical history**, **Family history**, **Dental history** and **Surgical history**. When the patient has been seen before, the medical, family and surgical history are filled in from the last visit. Change whatever is no longer right.
 - Under **Oral examination**, write the **Hard tissues (teeth)**, **Soft tissues (gums)**, **X-ray** and **Diagnosis**. The diagnosis is also the visit's diagnosis, which coding and the reports read.
@@ -116,7 +117,7 @@ An order is one piece of work for the patient: a consultation, a lab test, a sca
 1. Press **Add order** (in the visit window, or in the **Orders** section).
 2. Under **Type** (called **Treatment** in a dental clinic), choose **Consultation**, **Lab test**, **Imaging**, **Pharmacy**, **Procedure** or **Admission**. Only the kinds your practice uses are offered. A practice without wards and beds is not offered **Admission**, and one without a laboratory or imaging is not offered those.
 3. For **Lab test** or **Imaging**, tick the tests or studies under **Tests** or **Studies**. Each shows its price. Type to search a long list.
-4. For other kinds, write what it is under **Service**, for example "Wound dressing". Click a suggestion if one fits.
+4. For other kinds, write what it is under **Service**, for example "Wound dressing". Click a suggestion if one fits. In a dental clinic, a **Procedure** also has a **Teeth** box: tick each tooth it is done on. When the order is completed, the dental chart updates (see [Dental](10-dental.md)).
 5. Choose who should do it in **Clinician assigned** (called **Dentist assigned** in a dental clinic), and the **Department**, if you know them. The box lists only active staff who see patients: doctors, and anyone whose account is marked as also seeing patients. It starts with the visit's own doctor.
 6. Add **Instructions** (or **Clinical notes** for lab and imaging) for the person doing the work.
 7. Press **Place order**.
@@ -150,7 +151,7 @@ An order that is still **Pending** or **In progress** can be changed by anyone w
 
 1. Change the **Service** (what the order is called).
 2. If the order has one charge from the price list, choose another under **Price list item** and set the **Qty**. The charge on the bill changes with it, and the old charge is kept, marked removed. For a service priced as a range, set the **Price** within the range.
-3. Change the **Clinician assigned** (**Dentist assigned** in a dental clinic) or the **Instructions**.
+3. Change the **Clinician assigned** (**Dentist assigned** in a dental clinic) or the **Instructions**. In a dental clinic you can also change the **Teeth** of a procedure.
 4. Press **Save changes**.
 
 To change the quantity or price of one line, press the pencil beside it under **What it used**, change **Qty** (and **Price**, for a service priced as a range) and press **Save**. A fixed price cannot be changed here; it comes from the price list.

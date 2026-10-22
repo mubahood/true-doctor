@@ -47,6 +47,7 @@ use Throwable;
  * @property-read bool $chargeSwappable
  * @property-read array{from:string,to:string}|null $editRange
  * @property-read array{from:string,to:string}|null $lineRange
+ * @property-read bool $asksTeeth
  * @property-read array{kind:string,title:string,assignee:string} $wording
  */
 class OrderDetail extends Component
@@ -91,6 +92,9 @@ class OrderDetail extends Component
     public ?string $editNotes = null;
 
     public ?int $editAssignee = null;
+
+    /** The teeth a dental procedure is on (a dental clinic). */
+    public array $editTeeth = [];
 
     /** The order's one charge, from the price list, when it may be swapped. */
     public ?int $editServiceId = null;
@@ -552,6 +556,13 @@ class OrderDetail extends Component
             : null;
     }
 
+    /** A dental clinic's procedure says which teeth it is on. */
+    #[Computed]
+    public function asksTeeth(): bool
+    {
+        return $this->order?->type === \App\Enums\OrderType::Procedure && \App\Services\DentalService::teethOnOrders();
+    }
+
     /** @return array{kind:string,title:string,assignee:string} */
     #[Computed]
     public function wording(): array
@@ -575,6 +586,7 @@ class OrderDetail extends Component
         $this->editTitle = $order->title;
         $this->editNotes = $order->notes;
         $this->editAssignee = $order->assigned_to !== null ? (int) $order->assigned_to : null;
+        $this->editTeeth = array_map('strval', $order->teeth ?? []);
         $this->editServiceId = $line !== null && $line->service_id !== null ? (int) $line->service_id : null;
         $this->editServiceQty = $line !== null ? $line->tidyQuantity() : '1';
         $this->editServicePrice = $line !== null ? (string) $line->unit_price : null;
@@ -588,7 +600,7 @@ class OrderDetail extends Component
     public function cancelOrderEdit(): void
     {
         $this->editingOrder = false;
-        $this->reset(['editTitle', 'editNotes', 'editAssignee', 'editServiceId', 'editServiceQty', 'editServicePrice']);
+        $this->reset(['editTitle', 'editNotes', 'editAssignee', 'editTeeth', 'editServiceId', 'editServiceQty', 'editServicePrice']);
         unset($this->editRange);
         $this->resetErrorBag();
     }
@@ -612,6 +624,8 @@ class OrderDetail extends Component
             'editServiceId' => ['nullable', 'integer'],
             'editServiceQty' => [$swap && $this->editServiceId !== null ? 'required' : 'nullable', 'decimal:0,2', 'gt:0'],
             'editServicePrice' => ['nullable', 'decimal:0,2', 'min:0'],
+            'editTeeth' => ['array', 'max:32'],
+            'editTeeth.*' => ['integer', fn (string $a, mixed $v, \Closure $fail) => \App\Services\DentalService::validTooth((int) $v) ? null : $fail("{$v} is not a tooth number.")],
         ], [
             'editTitle.required' => 'Say which service this is.',
             'editAssignee.exists' => 'Choose someone who sees patients here.',
@@ -619,6 +633,9 @@ class OrderDetail extends Component
         ]);
 
         $changes = ['notes' => $this->editNotes];
+        if ($this->asksTeeth) {
+            $changes['teeth'] = $this->editTeeth;
+        }
         if ($reassigned) {
             $changes['assigned_to'] = $this->editAssignee;
         }
@@ -751,6 +768,10 @@ class OrderDetail extends Component
         $this->refreshOrder();
         $this->dispatch('toast', message: $message, type: 'success');
         $this->dispatch('visit-updated');
+        // Work done on named teeth has just been charted: the chart redraws.
+        if ($target === OrderStatus::Completed && ($order->teeth ?? []) !== []) {
+            $this->dispatch('dental-changed');
+        }
     }
 
     /** Show what cancelling costs before it costs it. */

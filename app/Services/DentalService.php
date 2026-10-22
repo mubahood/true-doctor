@@ -4,10 +4,14 @@ namespace App\Services;
 
 use App\Enums\DentalFinding;
 use App\Enums\DentalTreatmentStatus;
+use App\Enums\OrderItemStatus;
+use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Models\DentalChartEntry;
 use App\Models\DentalTreatmentItem;
 use App\Models\Hospital;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Patient;
 use App\Models\Service;
 use App\Models\User;
@@ -110,6 +114,53 @@ class DentalService
     public static function validTooth(int $tooth): bool
     {
         return in_array($tooth, self::teeth(), true) || in_array($tooth, self::teeth(true), true);
+    }
+
+    /**
+     * The rows of the odontogram as the dentist faces the patient: upper then
+     * lower, each from the patient's right to left.
+     *
+     * @return list<array{0:list<int>,1:list<int>}>
+     */
+    public static function rows(bool $primary = false): array
+    {
+        return $primary
+            ? [[[55, 54, 53, 52, 51], [61, 62, 63, 64, 65]], [[85, 84, 83, 82, 81], [71, 72, 73, 74, 75]]]
+            : [[[18, 17, 16, 15, 14, 13, 12, 11], [21, 22, 23, 24, 25, 26, 27, 28]], [[48, 47, 46, 45, 44, 43, 42, 41], [31, 32, 33, 34, 35, 36, 37, 38]]];
+    }
+
+    /** A child's mouth opens on the milk teeth: under 12, as the chart decides. */
+    public static function childTeeth(?Carbon $dob): bool
+    {
+        return $dob !== null && $dob->age < 12;
+    }
+
+    /**
+     * Teeth as a sorted list of valid FDI numbers: [36, 46] from [46, "36"],
+     * "36, 46" or a repeat. Anything that is not a tooth is dropped.
+     *
+     * @return list<int>
+     */
+    public static function normaliseTeeth(mixed $teeth): array
+    {
+        $list = is_array($teeth) ? $teeth : preg_split('/[^0-9]+/', (string) $teeth);
+        $out = [];
+        foreach ($list ?: [] as $t) {
+            if (is_numeric($t) && self::validTooth((int) $t)) {
+                $out[(int) $t] = (int) $t;
+            }
+        }
+        ksort($out);
+
+        return array_values($out);
+    }
+
+    /** Whether procedure orders here say which teeth they are on: a dental clinic's do. */
+    public static function teethOnOrders(?Hospital $hospital = null): bool
+    {
+        $hospital ??= app(\App\Support\HospitalSettings::class)->hospital();
+
+        return self::enabledFor($hospital) && Practice::of($hospital)->sector->key === 'dental_clinic';
     }
 
     /** "MO", "mod" or "M,O" → "MO" in the canonical order; null for none. */
@@ -267,6 +318,182 @@ class DentalService
         });
     }
 
+    // ── The chart on the new visit form ────────────────────────────────
+
+    /**
+     * The statuses a tooth can be given with one tap: every finding but a
+     * note, which needs words.
+     *
+     * @return list<DentalFinding>
+     */
+    public static function formFindings(): array
+    {
+        $out = [];
+        foreach (DentalFinding::cases() as $f) {
+            if ($f !== DentalFinding::Note) {
+                $out[] = $f;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Set one tooth's status in a list of changes; a later choice on the same
+     * tooth replaces the earlier one.
+     *
+     * @param  array<int, array<string,mixed>>  $changes  as the form holds them (a public Livewire property)
+     * @return list<array{tooth:int,finding:string,mobility:int|null}>
+     */
+    public static function change(array $changes, int $tooth, string $finding, ?int $mobility): array
+    {
+        $out = [];
+        foreach ($changes as $c) {
+            $t = (int) ($c['tooth'] ?? 0);
+            if ($t !== $tooth && self::validTooth($t)) {
+                $out[] = ['tooth' => $t, 'finding' => (string) ($c['finding'] ?? ''), 'mobility' => isset($c['mobility']) ? (int) $c['mobility'] : null];
+            }
+        }
+        $out[] = ['tooth' => $tooth, 'finding' => $finding, 'mobility' => $finding === DentalFinding::Mobility->value ? $mobility : null];
+
+        return $out;
+    }
+
+    /**
+     * A chart with the changes not yet saved drawn on it, the way chart()
+     * would draw them once recorded.
+     *
+     * @param  array<int, array<string,mixed>>  $chart
+     * @param  array<int, array<string,mixed>>  $changes
+     * @return array<int, array<string,mixed>>
+     */
+    public static function withChanges(array $chart, array $changes): array
+    {
+        foreach ($changes as $c) {
+            $finding = DentalFinding::tryFrom((string) ($c['finding'] ?? ''));
+            $t = (int) ($c['tooth'] ?? 0);
+            if ($finding === null || ! self::validTooth($t)) {
+                continue;
+            }
+            $chart[$t] ??= ['tooth' => $t, 'finding' => null, 'label' => null, 'tone' => null, 'mobility' => null, 'surfaces' => [], 'notes' => [], 'updated_at' => null];
+            $sound = $finding === DentalFinding::Sound;
+            $chart[$t]['finding'] = $sound ? null : $finding->value;
+            $chart[$t]['label'] = $sound ? null : $finding->label();
+            $chart[$t]['tone'] = $sound ? null : $finding->tone();
+            $chart[$t]['mobility'] = $finding === DentalFinding::Mobility ? ($c['mobility'] ?? null) : null;
+            if ($sound || in_array($finding, [DentalFinding::Missing, DentalFinding::Implant, DentalFinding::Crown], true)) {
+                $chart[$t]['surfaces'] = [];
+            }
+        }
+        ksort($chart);
+
+        return $chart;
+    }
+
+    /**
+     * Record the teeth changed on the new visit form, linked to the visit.
+     * A tooth set back to the status it already has is not written again.
+     *
+     * @param  array<int, array<string,mixed>>  $changes
+     * @return list<DentalChartEntry>
+     */
+    public function recordChanges(Patient $patient, array $changes, Visit $visit, User $by): array
+    {
+        $now = $this->chart($patient);
+        $findings = [];
+        foreach ($changes as $c) {
+            $tooth = (int) ($c['tooth'] ?? 0);
+            $current = $now[$tooth] ?? null;
+            $finding = $c['finding'] ?? null;
+            $mobility = isset($c['mobility']) ? (int) $c['mobility'] : null;
+            $same = $finding === ($current['finding'] ?? DentalFinding::Sound->value)
+                && ($current['surfaces'] ?? []) === []
+                && ($finding !== DentalFinding::Mobility->value || $mobility === ($current['mobility'] ?? null));
+            if ($same) {
+                continue;
+            }
+            $findings[] = ['tooth' => $tooth, 'finding' => $finding, 'mobility' => $mobility];
+        }
+
+        return $findings === [] ? [] : $this->record($patient, $findings, $visit, $by);
+    }
+
+    // ── The chart follows the work ─────────────────────────────────────
+
+    /**
+     * A completed order that names teeth leaves its mark on them: each
+     * price-list service on it with a "Marks the tooth as" (an extraction:
+     * missing; a filling: filled) is charted on each tooth, linked to the
+     * visit and the order. Charted once: a second completion, a line added
+     * later or a resend adds only what is not there yet.
+     *
+     * @return int how many chart entries were written
+     */
+    public function chartOrder(Order $order, ?int $by = null): int
+    {
+        $teeth = self::normaliseTeeth($order->teeth);
+        if ($teeth === [] || $order->status !== OrderStatus::Completed) {
+            return 0;
+        }
+
+        $serviceIds = OrderItem::query()->where('order_id', $order->id)
+            ->where('status', '!=', OrderItemStatus::Cancelled->value)
+            ->whereNotNull('service_id')->orderBy('id')->pluck('service_id')->all();
+        $services = Service::withTrashed()->whereIn('id', $serviceIds)->get()->keyBy('id');
+
+        $marks = [];
+        foreach ($serviceIds as $id) {
+            $mark = $services->get($id)?->toothMark();
+            if ($mark !== null) {
+                $marks[$mark->value] = $mark;
+            }
+        }
+
+        return $this->chartWork($order, $teeth, array_values($marks), null, $by);
+    }
+
+    /**
+     * Write the marks a piece of work left, skipping any this order already
+     * charted on that tooth.
+     *
+     * @param  list<int>  $teeth
+     * @param  list<DentalFinding>  $marks
+     */
+    private function chartWork(Order $order, array $teeth, array $marks, ?string $surfaces, ?int $by): int
+    {
+        if ($teeth === [] || $marks === []) {
+            return 0;
+        }
+
+        $made = 0;
+        $now = now();
+        foreach ($marks as $mark) {
+            foreach ($teeth as $tooth) {
+                $done = DentalChartEntry::query()->where('order_id', $order->id)
+                    ->where('tooth', $tooth)->where('finding', $mark->value)->exists();
+                if ($done) {
+                    continue;
+                }
+                (new DentalChartEntry)->forceFill([
+                    'uuid' => (string) Str::uuid(),
+                    'hospital_id' => $order->hospital_id,
+                    'patient_id' => $order->patient_id,
+                    'visit_id' => $order->visit_id,
+                    'order_id' => $order->id,
+                    'tooth' => $tooth,
+                    'surfaces' => $mark->wholeTooth() ? null : $surfaces,
+                    'finding' => $mark,
+                    'recorded_by' => $by,
+                    'recorded_at' => $now,
+                    'created_at' => $now,
+                ])->save();
+                $made++;
+            }
+        }
+
+        return $made;
+    }
+
     // ── The treatment plan ─────────────────────────────────────────────
 
     /** @return Collection<int, DentalTreatmentItem> open items first, then the rest, newest first */
@@ -338,6 +565,16 @@ class DentalService
                 $service = Service::query()->findOrFail($locked->service_id);
                 $order = $this->orders->forSubject($locked, $visit, OrderType::Procedure, $this->title($locked, $service), $by->id);
                 $line = $this->orders->addServiceItem($order, $service, '1', $by->id, (string) $locked->price);
+
+                // The tooth it was done on shows on the order, and the chart
+                // takes the mark the procedure leaves (an extraction: missing).
+                if ($locked->tooth !== null) {
+                    if (($order->teeth ?? []) === []) {
+                        $order->forceFill(['teeth' => [(int) $locked->tooth]])->save();
+                    }
+                    $mark = $service->toothMark();
+                    $this->chartWork($order, [(int) $locked->tooth], $mark !== null ? [$mark] : [], $locked->surfaces, $by->id);
+                }
 
                 $locked->forceFill([
                     'status' => $to, 'done_at' => $now, 'done_by' => $by->id,

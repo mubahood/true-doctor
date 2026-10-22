@@ -20,87 +20,59 @@
     </div>
     <div class="tb-card-body">
       @if($asOf)<p class="muted tb-xs">The chart as it was on {{ \Illuminate\Support\Carbon::parse($asOf)->format('d M Y') }}.</p>@endif
-      <div class="odonto" role="grid" aria-label="Teeth, FDI notation">
-        @foreach($this->rows() as $r => [$right, $left])
-          <div class="odonto-row {{ $r === 0 ? 'upper' : 'lower' }}" role="row">
-            @foreach([$right, $left] as $side => $teeth)
-              <div class="odonto-half {{ $side === 0 ? 'right' : 'left' }}">
-                @foreach($teeth as $t)
-                  @php($s = $chart[$t] ?? null)
-                  <button type="button" role="gridcell" wire:click="pick({{ $t }})" wire:key="tooth-{{ $t }}"
-                          @class(['tooth', 'on' => $tooth === $t, 'f-'.($s['finding'] ?? 'none'), 'has-surf' => ! empty($s['surfaces'])])
-                          aria-pressed="{{ $tooth === $t ? 'true' : 'false' }}"
-                          aria-label="Tooth {{ $t }}{{ $s && $s['label'] ? ': '.$s['label'] : '' }}{{ ! empty($s['surfaces']) ? ', surfaces '.implode(' ', array_map(fn ($k, $v) => $k.' '.str_replace('_', ' ', $v), array_keys($s['surfaces']), $s['surfaces'])) : '' }}">
-                    <span class="tooth-n">{{ $t }}</span>
-                    <span class="tooth-s" aria-hidden="true">
-                      @foreach(\App\Services\DentalService::SURFACES as $sf)
-                        <i class="s-{{ $sf }} {{ isset($s['surfaces'][$sf]) ? 'sf-'.$s['surfaces'][$sf] : '' }}"></i>
-                      @endforeach
-                    </span>
-                    @if($s && $s['finding'])<span class="tooth-f">{{ $s['label'] }}</span>@endif
-                  </button>
-                @endforeach
-              </div>
-            @endforeach
-          </div>
-        @endforeach
-      </div>
-      <p class="odonto-key muted tb-xs">
-        <span class="k f-caries"></span> Caries <span class="k f-filled"></span> Filled <span class="k f-missing"></span> Missing
-        <span class="k f-to_extract"></span> To extract <span class="k f-crown"></span> Crown or implant
-      </p>
+      <x-clinical.odontogram :chart="$chart" :primary="$primary" :selected="$showTooth ? $tooth : null" action="pick" />
+      @if($canChart && ! $asOf)<p class="muted tb-xs">Tap a tooth to set its status.</p>@endif
     </div>
   </div>
 
-  {{-- ── The chosen tooth ────────────────────────────────────── --}}
-  @if($tooth)
-    @php($s = $chart[$tooth] ?? null)
-    <div class="tb-card">
-      <div class="tb-card-header">
-        <span class="tb-card-title">Tooth {{ $tooth }}</span>
-        @if($s && $s['label'])<x-ui.badge :tone="$s['tone']">{{ $s['label'] }}@if($s['mobility'] !== null) {{ $s['mobility'] }}@endif</x-ui.badge>@endif
-      </div>
-      <div class="tb-card-body">
-        @if($s && $s['surfaces'])
-          <p class="tb-small">Surfaces:
+  {{-- ── The tapped tooth: its status, OK or Cancel ──────────── --}}
+  <x-ui.modal show="showTooth" size="sm" :title="'Tooth '.$tooth" autosaves>
+    @if($showTooth && $tooth)
+      @php($s = $chart[$tooth] ?? null)
+      <form wire:submit="record" class="tb-modal-body dental-form">
+        @if($s && ($s['label'] || $s['surfaces'] || $s['notes']))
+          <p class="tb-small">Now:
+            @if($s['label'])<x-ui.badge :tone="$s['tone']">{{ $s['label'] }}@if($s['mobility'] !== null) {{ $s['mobility'] }}@endif</x-ui.badge>@endif
             @foreach($s['surfaces'] as $sf => $f)<x-ui.badge :tone="\App\Enums\DentalFinding::from($f)->tone()">{{ $sf }} {{ \App\Enums\DentalFinding::from($f)->label() }}</x-ui.badge> @endforeach
           </p>
+          @if($s['notes'])<p class="muted tb-xs">{{ implode(' · ', $s['notes']) }}</p>@endif
+        @else
+          <p class="tb-small muted">Nothing recorded on this tooth.</p>
         @endif
-        @if($s && $s['notes'])<p class="muted tb-xs">{{ implode(' · ', $s['notes']) }}</p>@endif
 
         @if($canChart && ! $asOf)
-          <form wire:submit="record" class="dental-form">
+          <x-clinical.tooth-findings model="finding" id="dt" />
+          @error('finding')<p class="tb-field-error">{{ $message }}</p>@enderror
+          @if($finding === 'mobility')
+            <x-ui.field label="Mobility grade" for="dental-mob" name="mobility">
+              <select id="dental-mob" class="tb-select" wire:model="mobility"><option value="">Choose…</option>@foreach([0, 1, 2, 3] as $g)<option value="{{ $g }}">{{ $g }}</option>@endforeach</select>
+            </x-ui.field>
+          @endif
+          @if(! (\App\Enums\DentalFinding::tryFrom($finding)?->wholeTooth() ?? true))
             <fieldset class="dental-surfaces">
               <legend class="tb-label">Surfaces <span class="muted">(none for the whole tooth)</span></legend>
               @foreach(['M' => 'Mesial', 'O' => 'Occlusal', 'D' => 'Distal', 'B' => 'Buccal', 'L' => 'Lingual', 'I' => 'Incisal'] as $code => $name)
                 <label class="tb-chip-check" title="{{ $name }}"><input type="checkbox" value="{{ $code }}" wire:model="surfaces"> {{ $code }}</label>
               @endforeach
             </fieldset>
-            <div class="tb-form-grid">
-              <x-ui.field label="Finding" for="dental-finding" name="finding">
-                <select id="dental-finding" class="tb-select" wire:model.live="finding">
-                  @foreach($findings as $f)<option value="{{ $f->value }}">{{ $f->label() }}</option>@endforeach
-                </select>
-              </x-ui.field>
-              @if($finding === 'mobility')
-                <x-ui.field label="Mobility grade" for="dental-mob" name="mobility">
-                  <select id="dental-mob" class="tb-select" wire:model="mobility"><option value="">Choose…</option>@foreach([0, 1, 2, 3] as $g)<option value="{{ $g }}">{{ $g }}</option>@endforeach</select>
-                </x-ui.field>
-              @endif
-              <x-ui.field label="Note" for="dental-note" name="notes">
-                <input id="dental-note" type="text" class="tb-input" wire:model="notes" maxlength="500">
-              </x-ui.field>
-            </div>
-            @error('tooth')<p class="tb-field-error">{{ $message }}</p>@enderror
-            <div class="tb-flex">
-              <button type="submit" class="btn-tb btn-tb-primary btn-tb-sm" wire:loading.attr="disabled" wire:target="record"><i class="fas fa-check" aria-hidden="true"></i> Record</button>
-              <button type="button" class="btn-tb btn-tb-ghost btn-tb-sm" wire:click="openPlan({{ $tooth }})"><i class="fas fa-plus" aria-hidden="true"></i> Plan a procedure on {{ $tooth }}</button>
-            </div>
-          </form>
+          @endif
+          <x-ui.field label="Note" for="dental-note" name="notes">
+            <input id="dental-note" type="text" class="tb-input" wire:model="notes" maxlength="500">
+          </x-ui.field>
+          @error('tooth')<p class="tb-field-error">{{ $message }}</p>@enderror
+        @endif
+      </form>
+      <div class="tb-modal-foot">
+        @if($canChart && ! $asOf)
+          <button type="button" class="btn-tb btn-tb-ghost btn-tb-sm" wire:click="openPlan({{ $tooth }})"><i class="fas fa-plus" aria-hidden="true"></i> Plan a procedure</button>
+        @endif
+        <button type="button" class="btn-tb btn-tb-ghost" wire:click="$set('showTooth', false)">{{ $canChart && ! $asOf ? 'Cancel' : 'Close' }}</button>
+        @if($canChart && ! $asOf)
+          <button type="button" class="btn-tb btn-tb-primary" wire:click="record" wire:loading.attr="disabled" wire:target="record">OK</button>
         @endif
       </div>
-    </div>
-  @endif
+    @endif
+  </x-ui.modal>
 
   @endif
 

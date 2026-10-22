@@ -36,6 +36,7 @@ use RuntimeException;
  * @property-read list<OrderType> $chips
  * @property-read list<int> $editableIds
  * @property-read array{kind:string,title:string,assignee:string} $wording
+ * @property-read bool $asksTeeth
  */
 #[Lazy]
 class Orders extends Component
@@ -67,6 +68,9 @@ class Orders extends Component
     public array $test_ids = [];
 
     public array $study_ids = [];
+
+    /** The teeth a procedure is on, in a dental clinic (charted when it is completed). */
+    public array $teeth = [];
 
     /** Where the patient is going, when the work is an admission. */
     public ?int $ward_id = null;
@@ -194,6 +198,13 @@ class Orders extends Component
     public function wording(): array
     {
         return OrderDesk::wording();
+    }
+
+    /** A dental clinic's procedure says which teeth it is on. */
+    #[Computed]
+    public function asksTeeth(): bool
+    {
+        return $this->type === OrderType::Procedure->value && \App\Services\DentalService::teethOnOrders();
     }
 
     /** @return Collection<int,Order> */
@@ -333,7 +344,7 @@ class Orders extends Component
     /** Switching the kind of work resets what only made sense for the last one. */
     public function updatedType(): void
     {
-        $this->reset(['title', 'test_ids', 'study_ids', 'ward_id', 'bed_id', 'pick']);
+        $this->reset(['title', 'test_ids', 'study_ids', 'ward_id', 'bed_id', 'pick', 'teeth']);
         $this->resetErrorBag();
         unset($this->catalogue, $this->catalogueTotal, $this->titleSuggestions);
     }
@@ -393,7 +404,7 @@ class Orders extends Component
         }
 
         $this->reset(['type', 'title', 'assigned_to', 'department_id', 'notes',
-            'test_ids', 'study_ids', 'ward_id', 'bed_id', 'pick']);
+            'test_ids', 'study_ids', 'ward_id', 'bed_id', 'pick', 'teeth']);
         $filtered = OrderType::tryFrom($this->filter);
         $this->type = $filtered !== null && in_array($filtered, $this->kinds, true)
             ? $filtered->value
@@ -470,7 +481,7 @@ class Orders extends Component
     private function finish(string $message): void
     {
         $this->reset(['title', 'assigned_to', 'department_id', 'notes',
-            'test_ids', 'study_ids', 'ward_id', 'bed_id', 'pick']);
+            'test_ids', 'study_ids', 'ward_id', 'bed_id', 'pick', 'teeth']);
         $this->resetErrorBag();
         $this->placed = $message;
 

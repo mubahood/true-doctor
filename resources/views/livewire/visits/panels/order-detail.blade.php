@@ -142,6 +142,12 @@
                                          :key="'ord-e-who-'.$orderId.'-'.$nonce" />
             </x-ui.field>
 
+            @if($this->asksTeeth)
+              <x-ui.field label="Teeth" name="editTeeth" hint="The dental chart updates when the order is completed.">
+                <x-clinical.teeth-picker model="editTeeth" :selected="$editTeeth" id="ord-e-teeth" />
+              </x-ui.field>
+            @endif
+
             <x-ui.field label="Instructions" for="ord-e-notes" name="editNotes">
               <textarea id="ord-e-notes" class="tb-textarea" rows="3" maxlength="2000"
                         placeholder="Anything the person doing this needs to know"
@@ -179,6 +185,9 @@
             </div>
           @endif
 
+          @if($order->teeth)
+            <div class="tb-vs-notes"><p><span>Teeth</span>{{ implode(', ', $order->teeth) }}</p></div>
+          @endif
           @if($order->notes)
             <div class="tb-vs-notes"><p><span>Instructions</span>{{ $order->notes }}</p></div>
           @endif

@@ -27,9 +27,9 @@ class ServiceController extends Controller
         PagesAndDeltas::perPage insteadof WritesCatalogue;
     }
 
-    private const FIELDS = ['name', 'code', 'category', 'ledger_account_id', 'price', 'max_price', 'tax_exempt', 'is_active'];
+    private const FIELDS = ['name', 'code', 'category', 'marks_tooth_as', 'ledger_account_id', 'price', 'max_price', 'tax_exempt', 'is_active'];
 
-    private const NULLABLE = ['code', 'category', 'ledger_account_id', 'max_price'];
+    private const NULLABLE = ['code', 'category', 'marks_tooth_as', 'ledger_account_id', 'max_price'];
 
     public function index(Request $request): JsonResponse
     {

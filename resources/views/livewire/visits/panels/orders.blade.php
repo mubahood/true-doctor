@@ -53,7 +53,7 @@
                   aria-label="Manage {{ $order->title }}">
                 <td>
                   <span class="tb-ord-t"><i class="fas {{ $order->type->icon() }}" aria-hidden="true"></i>{{ $order->title }}</span>
-                  <span class="tb-ord-k">{{ $order->type->label() }}@if($order->items->count() > 1) · {{ $order->items->count() }} items @endif</span>
+                  <span class="tb-ord-k">{{ $order->type->label() }}@if($order->items->count() > 1) · {{ $order->items->count() }} items @endif @if($order->teeth) · Teeth {{ implode(', ', $order->teeth) }}@endif</span>
                 </td>
                 <td class="muted">{{ $order->assignee?->name ?? $order->department?->name ?? 'Unassigned' }}</td>
                 <td class="muted tb-nowrap">{{ $order->created_at->format('d M · H:i') }}</td>
@@ -200,6 +200,14 @@
               </x-ui.field>
             @endif
           </div>
+
+          {{-- The teeth a dental procedure is on. When the order is
+               completed, the chart takes the mark its service leaves. --}}
+          @if($this->asksTeeth)
+            <x-ui.field label="Teeth" name="teeth" hint="Tick each tooth this is done on. The dental chart updates when the order is completed.">
+              <x-clinical.teeth-picker model="teeth" :selected="$teeth" id="ord-teeth" />
+            </x-ui.field>
+          @endif
 
           {{-- Where the patient is going. A bed is scarce and exclusive, so it
                is claimed when the work is raised — the ward narrows the bed

@@ -28,6 +28,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon|null $started_at
  * @property \Illuminate\Support\Carbon|null $completed_at
  * @property \Illuminate\Support\Carbon|null $edited_at
+ * @property list<int>|null $teeth the teeth a procedure is done on (FDI)
  */
 class Order extends Model implements HoldsAttachments
 {
@@ -41,7 +42,7 @@ class Order extends Model implements HoldsAttachments
     public const CARRIED_OVER = 'Carried over when charges became orders';
 
     protected $fillable = [
-        'uuid', 'visit_id', 'patient_id', 'type', 'status', 'title', 'notes',
+        'uuid', 'visit_id', 'patient_id', 'type', 'status', 'title', 'notes', 'teeth',
         'report', 'report_updated_at',
         'assigned_to', 'department_id', 'requested_by',
         'subject_type', 'subject_id',
@@ -58,6 +59,7 @@ class Order extends Model implements HoldsAttachments
             'completed_at' => 'datetime',
             'cancelled_at' => 'datetime',
             'edited_at' => 'datetime',
+            'teeth' => 'array',
         ];
     }
 

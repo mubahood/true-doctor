@@ -212,11 +212,12 @@ Clinic hours for doctors are set under **Doctor availability**. See [Appointment
 1. Click **New service**.
 2. Fill in **Name** and a **Code** if you use one.
 3. Choose a **Specialty**. It groups the price list, for example Dental.
-4. Type the **Price**.
-5. If the price varies, type the highest amount in **Up to (optional)**. For a range such as 50,000 to 80,000, the cashier can then charge any amount in between.
-6. If you can see **Earns into**, leave it on **Automatic** unless your accountant tells you otherwise. It decides which income account the service is recorded under in the books.
-7. Tick **Tax exempt** if no tax is charged on this service.
-8. Leave **Active** ticked and save.
+4. In a dental clinic, choose what the service leaves on the tooth under **Marks the tooth as**: **Filled**, **Missing (extracted)**, **Root canal**, **Crown**, **Bridge**, **Implant**, or **Nothing**. When this service is done on a tooth, the dental chart shows it. Dental services you already had were set from their names, for example "Tooth extraction" marks **Missing (extracted)**. Check them once.
+5. Type the **Price**.
+6. If the price varies, type the highest amount in **Up to (optional)**. For a range such as 50,000 to 80,000, the cashier can then charge any amount in between.
+7. If you can see **Earns into**, leave it on **Automatic** unless your accountant tells you otherwise. It decides which income account the service is recorded under in the books.
+8. Tick **Tax exempt** if no tax is charged on this service.
+9. Leave **Active** ticked and save.
 
 To start from a list of common services, click **Import samples**, adjust the prices, and click **Import services**.
 

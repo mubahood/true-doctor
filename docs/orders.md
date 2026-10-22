@@ -419,13 +419,25 @@ before and after; `orders.edited_by` / `edited_at` let the dialog say
 "changed by".
 
 API: `PATCH /api/v1/orders/{uuid}` with any of `title`, `notes`,
-`assigned_to`, `service_id`, `quantity`, `unit_price`, `lines[]`. Answers the
+`assigned_to`, `teeth` (a procedure's FDI teeth), `service_id`, `quantity`, `unit_price`, `lines[]`. Answers the
 order (`can_edit`, `takes_title`, `assigned_to`, `edited_by`, `edited_at`
 added to it) and "Order updated."; 403 for a reader who could not place the
 kind, 404 across hospitals, 422 with the reason otherwise. Idempotent through
 `Idempotency-Key` like every write. `GET /api/v1/orders/assignees?q=` lists
 who can be assigned with the practice's label; `meta.orders` carries the
 offered kinds and the labels.
+
+### Teeth on a procedure (2026-10-26)
+
+In a dental clinic a procedure order names the teeth it is done on
+(`orders.teeth`, a sorted list of FDI numbers; `OrderDesk::teethRules`
+refuses anything that is not a tooth). Placed with `teeth` on `POST
+/visits/{uuid}/orders`, changed with `teeth` on `PATCH /orders/{uuid}` while
+the order is open, shown on the order and in the list ("Teeth 36, 46"), and
+returned as `teeth` (empty list for none). Completing the order charts the
+mark each of its services leaves (`services.marks_tooth_as`) on those teeth,
+once (docs/dental.md, "The chart follows the work"). `meta.orders.teeth` tells
+the app whether to ask. A general hospital is not asked.
 
 ## Order of work
 

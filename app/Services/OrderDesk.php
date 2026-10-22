@@ -102,7 +102,7 @@ final class OrderDesk
     /**
      * The kinds offered and the words for the form, for the app's meta.
      *
-     * @return array{kinds:list<array{value:string,label:string,icon:string,takes_title:bool}>,labels:array{kind:string,title:string,assignee:string}}
+     * @return array{kinds:list<array{value:string,label:string,icon:string,takes_title:bool}>,labels:array{kind:string,title:string,assignee:string},teeth:bool}
      */
     public static function form(?Practice $practice = null): array
     {
@@ -113,6 +113,8 @@ final class OrderDesk
                 'value' => $t->value, 'label' => $t->label(), 'icon' => $t->icon(), 'takes_title' => $t->takesTitle(),
             ], self::kinds($practice)),
             'labels' => self::wording($practice),
+            // Whether a procedure order asks which teeth it is on (a dental clinic).
+            'teeth' => $practice->sector->key === 'dental_clinic' && in_array('dental', $practice->packKeys(), true),
         ];
     }
 
@@ -175,8 +177,26 @@ final class OrderDesk
                 'assigned_to' => ['nullable', 'integer', self::assigneeRule($hospital)],
                 'department_id' => ['nullable', 'integer', $inHospital('departments')],
                 'notes' => ['nullable', 'string', 'max:2000'],
-            ],
+            ] + ($type === OrderType::Procedure ? self::teethRules() : []),
         };
+    }
+
+    /**
+     * The teeth a procedure is done on (FDI), for a dental clinic's order.
+     * Charted when the order is completed (DentalService::chartOrder).
+     *
+     * @return array<string, list<mixed>>
+     */
+    public static function teethRules(): array
+    {
+        return [
+            'teeth' => ['sometimes', 'nullable', 'array', 'max:32'],
+            'teeth.*' => ['integer', function (string $attribute, mixed $value, \Closure $fail): void {
+                if (! DentalService::validTooth((int) $value)) {
+                    $fail("{$value} is not a tooth number (FDI: 11 to 48, or 51 to 85 for a child's teeth).");
+                }
+            }],
+        ];
     }
 
     /** @return array<string,string> */
@@ -249,7 +269,7 @@ final class OrderDesk
             'lines.*.id' => ['required', 'integer'],
             'lines.*.quantity' => ['required', 'decimal:0,2', 'gt:0'],
             'lines.*.unit_price' => ['nullable', 'decimal:0,2', 'min:0'],
-        ];
+        ] + ($order === null || $order->type === OrderType::Procedure ? self::teethRules() : []);
     }
 
     /**
@@ -337,6 +357,7 @@ final class OrderDesk
                     'assigned_to' => $data['assigned_to'] ?? null,
                     'department_id' => $data['department_id'] ?? null,
                     'notes' => $notes,
+                    'teeth' => $type === OrderType::Procedure ? ($data['teeth'] ?? null) : null,
                 ], $by->id);
 
                 return 'Order placed.';

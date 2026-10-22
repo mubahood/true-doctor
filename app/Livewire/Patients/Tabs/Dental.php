@@ -55,6 +55,9 @@ class Dental extends Component
 
     public ?int $tooth = null;
 
+    /** The tapped tooth's dialog: its status as radio buttons, OK and Cancel. */
+    public bool $showTooth = false;
+
     /** @var list<string> */
     public array $surfaces = [];
 
@@ -138,19 +141,24 @@ class Dental extends Component
     /** @return list<array{0:list<int>,1:list<int>}> the rows of the odontogram: upper then lower, each patient's right to left */
     public function rows(): array
     {
-        return $this->primary
-            ? [[[55, 54, 53, 52, 51], [61, 62, 63, 64, 65]], [[85, 84, 83, 82, 81], [71, 72, 73, 74, 75]]]
-            : [[[18, 17, 16, 15, 14, 13, 12, 11], [21, 22, 23, 24, 25, 26, 27, 28]], [[48, 47, 46, 45, 44, 43, 42, 41], [31, 32, 33, 34, 35, 36, 37, 38]]];
+        return DentalService::rows($this->primary);
     }
 
+    /**
+     * Tap a tooth: its dialog opens with the status it has now ticked. OK
+     * records the change; Cancel leaves the chart as it was.
+     */
     public function pick(int $tooth): void
     {
         $this->tooth = DentalService::validTooth($tooth) ? $tooth : null;
         $this->surfaces = [];
-        $this->mobility = null;
+        $now = $this->tooth !== null ? ($this->chart[$this->tooth] ?? null) : null;
+        $this->finding = $now['finding'] ?? DentalFinding::Sound->value;
+        $this->mobility = $now['mobility'] ?? null;
         $this->notes = '';
         $this->planTooth = $this->tooth;
         $this->resetErrorBag();
+        $this->showTooth = $this->tooth !== null;
         // The case sheet's diagnosis picker takes the tooth chosen here.
         if ($this->tooth !== null) {
             $this->dispatch('dental-tooth-picked', tooth: $this->tooth);
@@ -174,6 +182,18 @@ class Dental extends Component
             return;
         }
 
+        // OK on the status the tooth already has, with nothing added, is no
+        // change: the chart is not written twice for nothing.
+        $now = $this->chart[$this->tooth] ?? null;
+        $unchanged = $this->surfaces === [] && trim($this->notes) === ''
+            && $this->finding === ($now['finding'] ?? DentalFinding::Sound->value)
+            && ($this->finding !== DentalFinding::Mobility->value || (int) $this->mobility === (int) ($now['mobility'] ?? -1));
+        if ($unchanged) {
+            $this->showTooth = false;
+
+            return;
+        }
+
         try {
             $dental->record($this->patient, [[
                 'tooth' => $this->tooth, 'finding' => $this->finding, 'surfaces' => implode('', $this->surfaces),
@@ -190,6 +210,7 @@ class Dental extends Component
         $this->surfaces = [];
         $this->notes = '';
         $this->asOf = null;
+        $this->showTooth = false;
         unset($this->chart, $this->history);
         $this->dispatch('toast', message: "Tooth {$this->tooth}: ".(DentalFinding::from($this->finding)->label()).' recorded.', type: 'success');
         $this->dispatch('dental-changed');
@@ -198,6 +219,7 @@ class Dental extends Component
     public function openPlan(?int $tooth = null): void
     {
         abort_unless(auth()->user()->can('visits.diagnose'), 403);
+        $this->showTooth = false;
         $this->reset(['serviceId', 'planSurfaces', 'planPrice', 'planNotes']);
         $this->planTooth = $tooth ?? $this->tooth;
         $this->planSurfaces = implode('', $this->surfaces);

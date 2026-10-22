@@ -342,6 +342,41 @@
           @endif
         </section>
 
+        {{-- ── A dental clinic's chart ──────────────────────────────────
+             The patient's chart as it stands (the Dental tab's), or an empty
+             one for a new patient. Tap a tooth, choose its status, OK. The
+             teeth changed are saved to the chart with the visit. --}}
+        @if($this->chartsTeeth())
+        <section class="tb-vform-step" wire:key="v-chart">
+          <h4 class="tb-step-h">Dental chart
+            <span class="tb-step-note">Tap a tooth to set its status</span>
+          </h4>
+          <label class="tb-check-group tb-xs"><input type="checkbox" wire:model.live="chart_primary"> Child's teeth</label>
+          <x-clinical.odontogram :chart="$this->formChart" :primary="$chart_primary" :selected="$showChartTooth ? $chartTooth : null" action="pickTooth" />
+          @if($chart_changes !== [])
+            <p class="tb-xs muted">Changed here: {{ collect($chart_changes)->map(fn ($c) => $c['tooth'].' '.strtolower(\App\Enums\DentalFinding::from($c['finding'])->label()))->implode(', ') }}. Saved with the visit.</p>
+          @endif
+        </section>
+
+        <x-ui.modal show="showChartTooth" size="sm" :title="'Tooth '.$chartTooth" autosaves>
+          @if($showChartTooth && $chartTooth)
+            <div class="tb-modal-body dental-form">
+              <x-clinical.tooth-findings model="chartFinding" :except="['note']" id="vt" />
+              @error('chartFinding')<p class="tb-field-error">{{ $message }}</p>@enderror
+              @if($chartFinding === 'mobility')
+                <x-ui.field label="Mobility grade" for="vt-mob" name="chartMobility">
+                  <select id="vt-mob" class="tb-select" wire:model="chartMobility"><option value="">Choose…</option>@foreach([0, 1, 2, 3] as $g)<option value="{{ $g }}">{{ $g }}</option>@endforeach</select>
+                </x-ui.field>
+              @endif
+            </div>
+            <div class="tb-modal-foot">
+              <button type="button" class="btn-tb btn-tb-ghost" wire:click="cancelTooth">Cancel</button>
+              <button type="button" class="btn-tb btn-tb-primary" wire:click="applyTooth">OK</button>
+            </div>
+          @endif
+        </x-ui.modal>
+        @endif
+
         {{-- ── Vital signs ────────────────────────────────────────────
              Only the readings this hospital records (Settings, Your practice:
              App\Support\Practice\VisitForm). A dental clinic records blood

@@ -85,11 +85,11 @@ The first person who can diagnose and writes on a visit with no doctor becomes t
 
 - **Extra-oral** and **Intra-oral soft tissues**: press **Normal** when you find nothing, one tap. When something is not normal, press **Write**, untick **Normal**, and describe only what you found: face symmetry, swelling, lymph nodes, the jaw joint and mouth opening; or the gums, mucosa, tongue, floor of mouth and palate. Oral hygiene, calculus, plaque and pocket depths are recorded either way.
 - **Investigations**: press **X-ray taken** for an X-ray taken in the chair. Choose the kind (**Periapical**, **Bitewing**, **Panoramic (OPG)** or **Occlusal**), type the **Teeth** (for example 35 36; leave it empty for a panoramic), write the **Finding** in a line, and attach the **Image** if you have it. The **Charge** is chosen from your price list for you; choose **Not charged** if it is free. Press **Record**. The X-ray is billed on the visit and filed with it; you do not need a radiology order. Lab tests ordered on the visit show here with their results.
-- **Hard tissues**: the dental chart, as described below. Click a tooth to record a finding on it.
+- **Hard tissues**: the dental chart, as described below. Tap a tooth to record a finding on it.
 
 ### Diagnosis
 
-1. Pick the tooth on the chart above, or type it in **Tooth**. Tick surfaces if they matter.
+1. Tap the tooth on the chart above (press **Cancel** in its window if you only want to diagnose it), or type it in **Tooth**. Tick surfaces if they matter.
 2. Tap the diagnosis: **Caries, enamel**, **Caries, dentine**, **Root caries**, **Reversible pulpitis**, **Irreversible pulpitis**, **Pulp necrosis**, **Apical periodontitis**, **Periapical abscess**, **Retained root**, **Fractured tooth**, **Impacted tooth** and others. Diagnoses of the whole mouth (**Gingivitis**, **Malocclusion**) are listed after **Mouth:** and need no tooth.
 3. Tick **Suspected** first if you are not yet sure.
 
@@ -119,18 +119,35 @@ Each tooth shows its number, small marks for its surfaces, and a short word for 
 
 ## Recording a finding
 
-1. Click the tooth on the chart. A card titled **Tooth** and the number opens below the chart, with any surfaces and notes already recorded.
-2. Under **Surfaces**, tick the surfaces the finding is on: **M** (mesial), **O** (occlusal), **D** (distal), **B** (buccal), **L** (lingual or palatal) or **I** (incisal). Tick none if the finding is for the whole tooth.
-3. Choose the **Finding**: Sound, Caries, Filled, Missing, To extract, Crown, Bridge, Implant, Root canal, Fracture, Mobility or Note.
-4. If you chose **Mobility**, choose the **Mobility grade**, 0 to 3.
+1. Tap the tooth on the chart. A small window titled **Tooth** and the number opens. It shows what the tooth has now.
+2. Under **Status**, choose one: Sound, Caries, Filled, Missing, To extract, Crown, Bridge, Implant, Root canal, Fracture, Mobility or Note. The tooth's current status is already chosen.
+3. If you chose **Mobility**, choose the **Mobility grade**, 0 to 3.
+4. For Caries, Filled, Fracture or Note, you can tick the **Surfaces** the finding is on: **M** (mesial), **O** (occlusal), **D** (distal), **B** (buccal), **L** (lingual or palatal) or **I** (incisal). Tick none for the whole tooth.
 5. Add a **Note** if it helps.
-6. Press **Record**.
+6. Press **OK**. The chart updates at once. Press **Cancel** to leave the tooth as it was.
+
+Pressing **OK** without changing anything records nothing.
 
 Some findings always concern the whole tooth, whatever surfaces you tick: Sound, Missing, To extract, Crown, Bridge, Implant, Root canal and Mobility. Recording **Sound** clears the tooth.
 
 ### Correcting a mistake
 
 Findings are never edited or deleted. If you recorded the wrong thing, record the right finding on the same tooth. The chart always shows the latest finding, and the old one stays in the history. This keeps an honest record of what was seen and when.
+
+### The chart on the new visit form
+
+In a dental clinic, the new visit form shows the **Dental chart** above **Blood pressure**, for staff who write clinical notes. For a patient seen before, it is the patient's chart from all earlier visits, the same as on the **Dental** tab. For a new patient it starts empty. For a patient under 12 it shows the milk teeth; tick or untick **Child's teeth** to switch.
+
+Tap a tooth, choose its status and press **OK**, exactly as above. The teeth you change are listed under the chart and saved to the patient's chart when you press **Create visit**. Nothing is saved if you close the form without creating the visit.
+
+### The chart follows the treatment
+
+When a treatment is done on named teeth, the chart updates by itself:
+
+- **Orders:** in a dental clinic, a **Procedure** order has a **Teeth** box. Tick each tooth the treatment is done on. When the order is marked **Completed**, each service on it marks those teeth on the chart, for example an extraction marks them **Missing** and a filling marks them **Filled**. Marking it completed again, or saving it again, does not add a second entry.
+- **Treatment plan:** pressing **Done & bill** marks the planned tooth the same way.
+
+What each service marks is set on the **Price list**, under **Marks the tooth as** (see [Setting up](02-setting-up.md)). A service set to **Nothing**, such as scaling or a check-up, does not change the chart.
 
 ## Chart history and the chart on an earlier date
 
@@ -144,7 +161,7 @@ The **Treatment plan** card lists what you intend to do for the patient, with th
 
 ### Planning a procedure
 
-1. Either click a tooth and press **Plan a procedure on** (the tooth number), or press **Add** on the **Treatment plan** card for a procedure that is not on one tooth, such as scaling.
+1. Either tap a tooth and press **Plan a procedure** in its window, or press **Add** on the **Treatment plan** card for a procedure that is not on one tooth, such as scaling.
 2. In **Plan a procedure**, choose the **Procedure** from the price list.
 3. Check the **Tooth** and **Surfaces**. They are filled in from the tooth and surfaces you picked on the chart. Clear the tooth for a procedure on the whole mouth.
 4. If the service has a price range on the price list, a **Price** box appears. Enter the price for this patient within the range. Leave it empty to use the lower price of the range.

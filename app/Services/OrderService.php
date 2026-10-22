@@ -37,7 +37,7 @@ class OrderService
     /**
      * Raise a piece of work on a visit.
      *
-     * @param  array{assigned_to?:int|null,department_id?:int|null,notes?:string|null,subject?:Model|null,status?:OrderStatus}  $opts
+     * @param  array{assigned_to?:int|null,department_id?:int|null,notes?:string|null,subject?:Model|null,status?:OrderStatus,teeth?:list<int>|null}  $opts
      */
     public function place(Visit $visit, OrderType $type, string $title, array $opts = [], ?int $by = null): Order
     {
@@ -54,6 +54,7 @@ class OrderService
                 'status' => $opts['status'] ?? OrderStatus::Pending,
                 'title' => $title,
                 'notes' => $opts['notes'] ?? null,
+                'teeth' => DentalService::normaliseTeeth($opts['teeth'] ?? []) ?: null,
                 // Unassigned falls to the visit's doctor: someone is always
                 // answerable for a piece of work, even before it is routed.
                 'assigned_to' => $opts['assigned_to'] ?? $visit->doctor_user_id,
@@ -166,6 +167,12 @@ class OrderService
 
             $locked->save();
 
+            // Work done on named teeth leaves its mark on the dental chart
+            // (an extraction: missing), once (docs/dental.md).
+            if ($to === OrderStatus::Completed && ($locked->teeth ?? []) !== []) {
+                app(DentalService::class)->chartOrder($locked, $by);
+            }
+
             return $locked;
         });
     }
@@ -199,13 +206,21 @@ class OrderService
         $this->assertItemsEditable($order);
         $qty = $this->assertQuantity($quantity);
 
-        return $this->billing->addItem($order, [
+        $line = $this->billing->addItem($order, [
             'service_id' => $service->id,
             'name' => $service->name,
             'unit_price' => $service->chargePrice($unitPrice),
             'quantity' => $qty,
             'tax_exempt' => $service->tax_exempt,
         ], $by);
+
+        // A procedure added to work already completed on named teeth still
+        // leaves its mark on the chart.
+        if ($order->status === OrderStatus::Completed && ($order->teeth ?? []) !== []) {
+            app(DentalService::class)->chartOrder($order, $by);
+        }
+
+        return $line;
     }
 
     /**
@@ -387,7 +402,7 @@ class OrderService
      * planned dental procedure, a stay) keeps its charge where that record
      * put it; its lines are corrected one by one instead.
      *
-     * @param  array{title?:string|null,notes?:string|null,assigned_to?:int|null,service_id?:int|null,quantity?:string|int|float|null,unit_price?:string|int|float|null,lines?:list<array{id:int,quantity:string|int|float,unit_price?:string|int|float|null}>}  $changes
+     * @param  array{title?:string|null,notes?:string|null,assigned_to?:int|null,teeth?:list<int>|null,service_id?:int|null,quantity?:string|int|float|null,unit_price?:string|int|float|null,lines?:list<array{id:int,quantity:string|int|float,unit_price?:string|int|float|null}>}  $changes
      */
     public function edit(Order $order, array $changes, ?int $by = null): Order
     {
@@ -432,6 +447,14 @@ class OrderService
                         throw new RuntimeException('Choose someone who sees patients here.');
                     }
                     $fields['assigned_to'] = $who;
+                }
+            }
+
+            // The teeth a procedure is on. Charted when the order is completed.
+            if (array_key_exists('teeth', $changes)) {
+                $teeth = DentalService::normaliseTeeth($changes['teeth'] ?? []);
+                if ($teeth !== DentalService::normaliseTeeth($locked->teeth ?? [])) {
+                    $fields['teeth'] = $teeth ?: null;
                 }
             }
 

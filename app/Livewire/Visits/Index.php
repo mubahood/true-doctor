@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Visits;
 
+use App\Enums\DentalFinding;
 use App\Enums\DiscountType;
 use App\Enums\InvoiceStatus;
 use App\Enums\OrderItemStatus;
@@ -19,6 +20,7 @@ use App\Models\Patient;
 use App\Models\Visit;
 use App\Services\BillingService;
 use App\Services\DentalNotesService;
+use App\Services\DentalService;
 use App\Services\VisitService;
 use App\Support\HospitalSettings;
 use App\Support\PatientBrief;
@@ -54,6 +56,7 @@ use Livewire\Component;
  * @property-read list<string> $reasonSuggestions
  * @property-read array<string,string> $sexes
  * @property-read array<string,string> $statuses
+ * @property-read array<int, array<string,mixed>> $formChart
  */
 #[Layout('layouts.admin')]
 class Index extends Component
@@ -129,6 +132,29 @@ class Index extends Component
      */
     public array $dental_notes = [];
 
+    // ── A dental clinic's chart, set while the visit is opened ─────────
+
+    /**
+     * The teeth changed on this form, each the status chosen in its dialog,
+     * written to the patient's chart (DentalService::record) when the visit
+     * is created.
+     *
+     * @var list<array{tooth:int,finding:string,mobility:int|null}>
+     */
+    public array $chart_changes = [];
+
+    /** A child's milk teeth, by the patient's age; the toggle still switches. */
+    public bool $chart_primary = false;
+
+    /** The tapped tooth's dialog. */
+    public bool $showChartTooth = false;
+
+    public ?int $chartTooth = null;
+
+    public string $chartFinding = 'sound';
+
+    public ?int $chartMobility = null;
+
     // ── Vitals, taken at the desk ──────────────────────────────
     public ?string $temperature = null;
 
@@ -174,6 +200,7 @@ class Index extends Component
                 $this->create();
                 $this->patient_id = $patient->id;
                 $this->carryHistory($patient->id);
+                $this->chart_primary = DentalService::childTeeth($patient->dob);
             }
         }
     }
@@ -246,6 +273,22 @@ class Index extends Component
         // A new patient has no history here yet: what was carried from the
         // patient picked on the other tab is not theirs.
         $this->carryHistory($tab === 'existing' ? $this->patient_id : null);
+
+        // The chart shown is the patient's own: a new patient's starts empty.
+        unset($this->formChart);
+        $this->chart_primary = $tab === 'existing'
+            ? DentalService::childTeeth(Patient::whereKey($this->patient_id)->first()?->dob)
+            : DentalService::childTeeth($this->dob ? \Illuminate\Support\Carbon::parse($this->dob) : null);
+    }
+
+    /** A new patient's date of birth decides whether the chart shows the milk teeth. */
+    public function updatedDob(): void
+    {
+        try {
+            $this->chart_primary = DentalService::childTeeth($this->dob ? \Illuminate\Support\Carbon::parse($this->dob) : null);
+        } catch (\Throwable) {
+            // Not a date yet: the validation says so on save.
+        }
     }
 
     /**
@@ -285,9 +328,10 @@ class Index extends Component
     private function patientChanged(): void
     {
         $this->appointment_id = null;
-        unset($this->patientBrief, $this->reasonSuggestions);
+        unset($this->patientBrief, $this->reasonSuggestions, $this->formChart);
 
         $this->carryHistory($this->patient_id);
+        $this->chart_primary = DentalService::childTeeth(Patient::whereKey($this->patient_id)->first()?->dob);
     }
 
     /**
@@ -332,6 +376,86 @@ class Index extends Component
     public function writesDentalNotes(): bool
     {
         return $this->visitForm->dentalVisitForm() && (auth()->user()?->can('visits.diagnose') ?? false);
+    }
+
+    // ── The dental chart ─────────────────────────────────────────────────
+
+    /** A dental clinic's form shows the chart to whoever may chart (visits.diagnose). */
+    public function chartsTeeth(): bool
+    {
+        return $this->visitForm->dentalClinic && $this->visitForm->dentistry
+            && (auth()->user()?->can('visits.diagnose') ?? false);
+    }
+
+    /**
+     * The chart as the form shows it: the patient's current chart (the same
+     * as the Dental tab), or an empty one for a new patient, with the teeth
+     * changed here on top.
+     *
+     * @return array<int, array<string,mixed>>
+     */
+    #[Computed]
+    public function formChart(): array
+    {
+        $patient = $this->tab === 'existing' && $this->patient_id !== null ? Patient::whereKey($this->patient_id)->first() : null;
+        $chart = $patient !== null ? app(DentalService::class)->chart($patient) : [];
+
+        return DentalService::withChanges($chart, $this->chart_changes);
+    }
+
+    /** Tap a tooth: its dialog opens on the status it has now. */
+    public function pickTooth(int $tooth): void
+    {
+        if (! $this->chartsTeeth() || ! DentalService::validTooth($tooth)) {
+            return;
+        }
+        $now = $this->formChart[$tooth] ?? null;
+        $this->chartTooth = $tooth;
+        $this->chartFinding = $now['finding'] ?? DentalFinding::Sound->value;
+        $this->chartMobility = $now['mobility'] ?? null;
+        $this->resetErrorBag(['chartFinding', 'chartMobility']);
+        $this->showChartTooth = true;
+    }
+
+    /** OK: the chosen status goes on the chart shown; it is saved with the visit. */
+    public function applyTooth(): void
+    {
+        if (! $this->chartsTeeth() || $this->chartTooth === null) {
+            return;
+        }
+        $this->validate([
+            'chartFinding' => ['required', \Illuminate\Validation\Rule::in(array_map(fn (DentalFinding $f) => $f->value, DentalService::formFindings()))],
+            'chartMobility' => [$this->chartFinding === DentalFinding::Mobility->value ? 'required' : 'nullable', 'integer', 'between:0,3'],
+        ], ['chartMobility.required' => 'Choose the mobility grade.']);
+
+        $this->chart_changes = DentalService::change($this->chart_changes, $this->chartTooth, $this->chartFinding, $this->chartMobility);
+        $this->showChartTooth = false;
+        unset($this->formChart);
+    }
+
+    /** Cancel: the tooth stays as it was. */
+    public function cancelTooth(): void
+    {
+        $this->showChartTooth = false;
+        $this->chartTooth = null;
+        $this->resetErrorBag(['chartFinding', 'chartMobility']);
+    }
+
+    /** The teeth changed here, written to the patient's chart on the new visit. */
+    private function writeDentalChart(Visit $visit): void
+    {
+        $user = auth()->user();
+        if ($this->chart_changes === [] || ! $this->chartsTeeth() || ! $user instanceof \App\Models\User || $visit->patient === null) {
+            return;
+        }
+
+        try {
+            app(DentalService::class)->recordChanges($visit->patient, $this->chart_changes, $visit, $user);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // The visit is open; say what did not reach the chart rather
+            // than claim the visit failed.
+            $this->dispatch('toast', message: 'The visit is open, but the chart was not saved: '.collect($e->errors())->flatten()->first(), type: 'error');
+        }
     }
 
     // ── What we already know ─────────────────────────────────────────────
@@ -492,6 +616,7 @@ class Index extends Component
             );
             $visit = $this->recordWhatWasTaken($visit, $service);
             $this->writeDentalNotes($visit);
+            $this->writeDentalChart($visit);
         } catch (\DomainException $e) {
             $this->dispatch('toast', message: $e->getMessage(), type: 'error');
 
@@ -533,6 +658,7 @@ class Index extends Component
             }
             $visit = $this->recordWhatWasTaken($visit, $service);
             $this->writeDentalNotes($visit);
+            $this->writeDentalChart($visit);
         } catch (PlanLimitExceededException|\DomainException $e) {
             $this->dispatch('toast', message: $e->getMessage(), type: 'error');
 
@@ -615,12 +741,13 @@ class Index extends Component
     {
         $this->reset([
             'patient_id', 'appointment_id', 'reason', 'complaints', 'diagnosis', 'start_now', 'dental_notes', 'carried',
+            'chart_changes', 'chart_primary', 'showChartTooth', 'chartTooth', 'chartFinding', 'chartMobility',
             'temperature', 'blood_pressure', 'pulse', 'respiratory_rate', 'spo2', 'weight', 'height',
             'first_name', 'last_name', 'sex', 'dob', 'phone_1', 'consent_given', 'messages_care',
         ]);
         $this->formNonce++;
         $this->resetErrorBag();
-        unset($this->patientBrief, $this->reasonSuggestions);
+        unset($this->patientBrief, $this->reasonSuggestions, $this->formChart);
     }
 
     /**

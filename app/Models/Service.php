@@ -17,12 +17,35 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property bool $is_active
  * @property string|null $category the specialty it is listed under ("Dental")
  * @property int|null $ledger_account_id the income it earns into; null = by kind of order
+ * @property string|null $marks_tooth_as what a finished procedure leaves on the tooth (DentalFinding), or null
  */
 class Service extends Model
 {
     use BelongsToHospital, HasFactory, SoftDeletes;
 
-    protected $fillable = ['name', 'code', 'category', 'ledger_account_id', 'price', 'max_price', 'tax_exempt', 'is_active'];
+    protected $fillable = ['name', 'code', 'category', 'marks_tooth_as', 'ledger_account_id', 'price', 'max_price', 'tax_exempt', 'is_active'];
+
+    /**
+     * A new dental service (filed under a dental specialty) that says nothing
+     * about the tooth starts with the mark its name suggests: "Tooth
+     * extraction" leaves the tooth missing. The price list can change it.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (Service $service) {
+            if (! $service->isDirty('marks_tooth_as') && str_contains(mb_strtolower((string) $service->category), 'dent')) {
+                $service->marks_tooth_as = \App\Enums\DentalFinding::guessFromService((string) $service->name)?->value;
+            }
+        });
+    }
+
+    /** What a finished procedure leaves on the tooth, or null. */
+    public function toothMark(): ?\App\Enums\DentalFinding
+    {
+        $mark = \App\Enums\DentalFinding::tryFrom((string) $this->marks_tooth_as);
+
+        return $mark !== null && in_array($mark, \App\Enums\DentalFinding::marks(), true) ? $mark : null;
+    }
 
     /** Priced as a range — "50,000 – 80,000" — rather than one figure. */
     public function hasRange(): bool

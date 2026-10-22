@@ -16,6 +16,8 @@ class ServiceResource extends JsonResource
             'name' => $this->name,
             'code' => $this->code,
             'category' => $this->category,
+            // What a finished procedure leaves on the tooth: filled, missing, root_canal, crown, bridge, implant; null for none.
+            'marks_tooth_as' => $this->marks_tooth_as,
             'ledger_account_id' => $this->ledger_account_id,
             'income_account' => $this->whenLoaded('incomeAccount', fn () => $this->incomeAccount?->name),
             // A fixed price, or the start of a range (max_price set and above it).

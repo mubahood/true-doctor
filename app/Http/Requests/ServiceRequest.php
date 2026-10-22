@@ -39,6 +39,8 @@ class ServiceRequest extends FormRequest
             // The specialty it is listed under, and the income it earns into
             // (docs/finance.md) — this hospital's own income accounts only.
             'category' => ['nullable', 'string', 'max:60'],
+            // What a finished procedure leaves on the tooth (a dental clinic's chart follows it).
+            'marks_tooth_as' => ['nullable', Rule::in(array_map(fn (\App\Enums\DentalFinding $f) => $f->value, \App\Enums\DentalFinding::marks()))],
             'ledger_account_id' => ['nullable', 'integer',
                 Rule::exists('ledger_accounts', 'id')->where(fn ($q) => $q->where('hospital_id', $hospitalId)->where('type', 'income')),
             ],

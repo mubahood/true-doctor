@@ -2533,3 +2533,12 @@ body.has-brand::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z-i
 
 /* A dental visit's simple notes: the dialog form spans the modal body and foot (docs/dental.md, "Simple notes"). */
 .dn-form{display:contents;}
+
+/* The tooth dialog's status radios, and the teeth a procedure order is on (docs/dental.md, "The chart follows the work"). */
+.tooth-opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 12px;border:none;padding:0;margin:0;}
+.tooth-opts legend{grid-column:1/-1;margin-bottom:2px;}
+.teeth-pick{display:flex;flex-direction:column;gap:6px;}
+.teeth-pick-set{display:flex;flex-direction:column;gap:4px;overflow-x:auto;}
+.teeth-pick-row{display:flex;flex-wrap:wrap;gap:3px;}
+.teeth-pick-row .tb-chip-check{padding:2px 5px;font-size:11px;font-variant-numeric:tabular-nums;}
+@media (max-width:600px){.tooth-opts{grid-template-columns:repeat(2,minmax(0,1fr));}}
