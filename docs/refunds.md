@@ -64,6 +64,9 @@ The tax on a credit note goes back in the share it was charged: credit 55 of a
 - **PDF**: `pdf/credit-note.blade.php`, plain like the receipt; approved
   documents only.
 - **API**: [`api/refunds.md`](api/refunds.md).
+- **The app**: the same list (waiting first), one document with its invoice,
+  approve and reject, the PDF; "Credit note / refund" on an invoice; and
+  Refunded and Net received on the day close.
 
 ## Code
 
