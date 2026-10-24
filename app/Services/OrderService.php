@@ -686,6 +686,13 @@ class OrderService
         $order = $line->order()->firstOrFail();
         $this->assertItemsEditable($order);
 
+        // A dispensing's stock hangs off the dispensed line, not this charge:
+        // taking the charge off alone would leave the goods off the shelf.
+        // Cancelling the dispensing's order puts both back together.
+        if ($line->stock_item_id !== null && self::isDispensing($order)) {
+            throw new RuntimeException('This was dispensed. Cancel the dispensing to put it back on the shelf and take it off the bill.');
+        }
+
         return DB::transaction(function () use ($line, $by) {
             $this->stock->returnFor($line, $by, 'Line removed from the order');
 

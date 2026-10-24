@@ -96,8 +96,10 @@ class OrderResource extends JsonResource
             // A product given without billing carries no amount (docs/orders.md).
             'billed' => $it->isBilled(),
             'billing_set_at' => $it->billing_set_at?->toIso8601String(),
-            // A dispensing's product: its quantity is the dispensing's, not changed here.
+            // A dispensing's product: its quantity is the dispensing's, not changed
+            // here, and it comes off only with the whole dispensing (cancel the order).
             'quantity_fixed' => $it->stock_item_id !== null && OrderService::isDispensing($this->resource),
+            'removable' => ! ($it->stock_item_id !== null && OrderService::isDispensing($this->resource)),
         ];
 
         if ($it->relationLoaded('service')) {

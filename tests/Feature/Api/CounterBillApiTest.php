@@ -458,14 +458,40 @@ class CounterBillApiTest extends TestCase
         $this->postJson("{$this->bill()}/lines", ['kind' => 'service', 'service_id' => $svc->id, 'quantity' => '1'])->assertCreated();
     }
 
-    /** A charge taken off a dispensing is not shown as billed. */
+    /** A charge taken off a dispensing (by cancelling it) is not shown as billed. */
     public function test_a_removed_dispensing_charge_is_not_shown_as_billed(): void
     {
         $drug = $this->drug('20');
         $dispensation = app(DispensationService::class)->dispense($this->visit, [['stock_item_id' => $drug->id, 'quantity' => '2', 'billed' => true]], null, $this->doctor->id);
         $order = Order::where('subject_type', $dispensation->getMorphClass())->where('subject_id', $dispensation->id)->firstOrFail();
-        app(OrderService::class)->removeItem($order->items()->firstOrFail(), $this->doctor->id);
+        app(OrderService::class)->transition($order, OrderStatus::Cancelled, $this->doctor->id, 'Given in error');
 
         $this->getJson("/api/v1/visits/{$this->visit->uuid}/dispensations")->assertOk()->assertJsonPath('data.0.items.0.billed', false);
+    }
+
+    /** A dispensing's product comes off only with the whole dispensing, which puts the goods back. */
+    public function test_a_dispensings_product_is_not_removed_alone_on_web_or_api(): void
+    {
+        $drug = $this->drug('20');
+        $dispensation = app(DispensationService::class)->dispense($this->visit, [['stock_item_id' => $drug->id, 'quantity' => '3', 'billed' => true]], null, $this->doctor->id);
+        $order = Order::where('subject_type', $dispensation->getMorphClass())->where('subject_id', $dispensation->id)->firstOrFail();
+        $line = $order->items()->firstOrFail();
+        $message = 'This was dispensed. Cancel the dispensing to put it back on the shelf and take it off the bill.';
+
+        Sanctum::actingAs($this->doctor);
+        $this->getJson("/api/v1/orders/{$order->uuid}")->assertJsonPath('data.items.0.removable', false);
+        $this->deleteJson("/api/v1/orders/{$order->uuid}/items/{$line->id}")->assertStatus(422)->assertJsonPath('message', $message);
+
+        $this->actingAs($this->doctor);
+        \Livewire\Livewire::test(\App\Livewire\Visits\Panels\OrderDetail::class, ['visitId' => $this->visit->id])
+            ->call('open', $this->visit->id, $order->id)->call('removeItem', $line->id)
+            ->assertDispatched('toast', message: $message, type: 'error');
+        $this->assertTrue($line->fresh()->status->isBillable(), 'still on the bill');
+        $this->assertSame('17.00', (string) $drug->fresh()->current_quantity, 'still off the shelf, as given');
+
+        // The way it comes off: cancelling the dispensing puts both back.
+        $this->postJson("/api/v1/orders/{$order->uuid}/cancel", ['reason' => 'Given in error'])->assertOk();
+        $this->assertSame('20.00', (string) $drug->fresh()->current_quantity);
+        $this->assertFalse($line->fresh()->status->isBillable());
     }
 }
