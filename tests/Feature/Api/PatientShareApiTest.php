@@ -7,7 +7,6 @@ use App\Models\Hospital;
 use App\Models\LabOrder;
 use App\Models\LabTest;
 use App\Models\Patient;
-use App\Models\PatientLink;
 use App\Models\User;
 use App\Models\Visit;
 use App\Services\LabService;
@@ -139,23 +138,25 @@ class PatientShareApiTest extends TestCase
         $this->getJson("/api/v1/patients/{$this->patient->uuid}/shareable")->assertForbidden()->assertJsonPath('code', 'forbidden');
     }
 
-    public function test_a_link_made_from_the_phone_carries_its_qr_and_a_replay_makes_one(): void
+    public function test_a_link_made_from_the_phone_carries_its_qr_and_its_secrets_are_never_kept(): void
     {
         $order = $this->labOrder();
         Sanctum::actingAs($this->doctor);
         $key = ['Idempotency-Key' => (string) Str::uuid()];
         $body = ['document_type' => 'lab_result', 'document_uuid' => $order->uuid, 'days' => 3];
 
-        $made = $this->postJson('/api/v1/patient-links', $body, $key)->assertCreated()
-            ->assertJsonPath('data.link.can_revoke', true)
-            ->json('data');
+        $res = $this->postJson('/api/v1/patient-links', $body, $key)->assertCreated()
+            ->assertJsonPath('data.link.can_revoke', true);
+        $made = $res->json('data');
         $this->assertStringStartsWith('data:image/png;base64,', (string) $made['qr']);
         $this->assertNotFalse(base64_decode(Str::after($made['qr'], ','), true));
+        $this->assertStringContainsString('no-store', (string) $res->headers->get('Cache-Control'));
 
+        // The link and its code in clear never sit in the idempotency store; a
+        // retry makes a fresh link, and the newest one shown is the one sent.
+        $this->assertSame(0, \Illuminate\Support\Facades\DB::table('idempotency_keys')->count());
         $again = $this->postJson('/api/v1/patient-links', $body, $key)->assertCreated()->json('data');
-        $this->assertSame($made['code'], $again['code']);
-        $this->assertSame($made['qr'], $again['qr']);
-        $this->assertSame(1, PatientLink::count());
+        $this->assertNotSame($made['link']['uuid'], $again['link']['uuid']);
 
         // Validation, as before: an expiry the clinic does not offer.
         $this->postJson('/api/v1/patient-links', ['document_type' => 'lab_result', 'document_uuid' => $order->uuid, 'days' => 5])

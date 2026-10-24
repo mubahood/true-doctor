@@ -275,6 +275,13 @@ class PatientHandler extends EntityHandler
 
         $merged = array_diff_key($changedByDevice, array_flip($contested));
 
+        // A date of birth and its estimate flag are one fact: a date merged
+        // without the flag the device sent with it (dropped above because the
+        // flag equals the base) would be stored as a known birthday.
+        if (array_key_exists('dob', $merged) && array_key_exists('dob_estimated', $incoming) && ! in_array('dob_estimated', $contested, true)) {
+            $merged['dob_estimated'] = $incoming['dob_estimated'];
+        }
+
         if ($merged !== []) {
             $errors = $this->validate($merged + ['uuid' => $patient->uuid], $patient->id);
 

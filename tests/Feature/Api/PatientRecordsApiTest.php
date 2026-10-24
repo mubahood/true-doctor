@@ -326,6 +326,39 @@ class PatientRecordsApiTest extends TestCase
         $this->assertSame(1, PatientDependent::count());
     }
 
+    public function test_an_archived_patient_cannot_be_linked_and_says_so_by_the_field(): void
+    {
+        Sanctum::actingAs($this->staff('receptionist'));
+        $gone = Patient::factory()->create(['hospital_id' => $this->h->id]);
+        $gone->delete();
+
+        $this->postJson("/api/v1/patients/{$this->patient->uuid}/dependents", ['dependent_uuid' => $gone->uuid, 'relationship' => 'child'])
+            ->assertStatus(422)->assertJsonValidationErrors(['dependent_uuid']);
+        $this->assertSame(0, PatientDependent::count());
+    }
+
+    public function test_a_file_is_kept_as_what_its_bytes_are_not_what_its_name_claims(): void
+    {
+        Sanctum::actingAs($this->staff('receptionist'));
+        $path = tempnam(sys_get_temp_dir(), 'png');
+        imagepng(imagecreatetruecolor(4, 4), $path);
+        $upload = new UploadedFile($path, 'scan.pdf', 'application/pdf', null, true);
+
+        $this->post("/api/v1/patients/{$this->patient->uuid}/documents", ['type' => 'other', 'file' => $upload], ['Accept' => 'application/json'])->assertCreated();
+
+        $document = PatientDocument::query()->sole();
+        $this->assertStringEndsWith('.png', $document->file_path);
+        $this->assertSame('image/png', $document->mime);
+        $this->assertSame('scan.pdf', $document->original_name, 'the name the person gave is still shown');
+    }
+
+    public function test_a_tiny_file_is_never_zero_kb(): void
+    {
+        $this->assertSame('1 KB', \App\Http\Controllers\Api\V1\PatientDocumentController::sizeLabel(300));
+        $this->assertSame('120 KB', \App\Http\Controllers\Api\V1\PatientDocumentController::sizeLabel(122880));
+        $this->assertSame('1.5 MB', \App\Http\Controllers\Api\V1\PatientDocumentController::sizeLabel(1572864));
+    }
+
     public function test_linking_needs_patients_update_and_another_hospitals_records_are_not_found(): void
     {
         $child = Patient::factory()->create(['hospital_id' => $this->h->id]);

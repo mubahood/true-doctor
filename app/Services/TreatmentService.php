@@ -44,7 +44,7 @@ class TreatmentService
             ]);
 
             foreach ($photos as $photo) {
-                $name = Str::uuid().'.'.$photo->getClientOriginalExtension();
+                $name = Str::uuid().'.'.DocumentService::extensionOf($photo);
                 $path = $photo->storeAs("treatments/{$hospitalId}/{$record->id}", $name, self::DISK);
                 $record->photos()->create(['photo_path' => $path]);
             }

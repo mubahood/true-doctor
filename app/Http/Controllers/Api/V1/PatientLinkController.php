@@ -111,7 +111,9 @@ class PatientLinkController extends Controller
                 'status_label' => $message->status->label(),
                 'skip_reason' => $message->skip_reason,
             ],
-        ], 'Link ready.', 201);
+        ], 'Link ready.', 201)
+            // The link, its code and its QR in clear: never kept by the idempotency store.
+            ->header('Cache-Control', 'no-store, private');
     }
 
     /** GET patient-links/{uuid}: the link, its text message, and its last 50 opens. */

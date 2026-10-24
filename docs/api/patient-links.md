@@ -49,8 +49,10 @@ A link of another hospital, or a document of another hospital, is `404`.
 ```
 
 `document_type`: `lab_result` (lab order uuid), `radiology_report` (radiology order uuid), `discharge_summary`
-(admission uuid), `prescription` (visit uuid), `dental_quote` (patient uuid). Covered by `Idempotency-Key`: a retry
-replays the same answer (and the same code) and makes no second link.
+(admission uuid), `prescription` (visit uuid), `dental_quote` (patient uuid). The answer carries the link, its
+code and its QR in clear, so it is marked `Cache-Control: no-store` and never kept by the idempotency store: a
+retry after a lost answer makes a fresh link, and the newest one shown is the one sent (an unseen earlier link
+opens for nobody without its code, and expires).
 
 `201`:
 

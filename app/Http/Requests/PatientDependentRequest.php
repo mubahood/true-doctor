@@ -35,7 +35,8 @@ class PatientDependentRequest extends FormRequest
     {
         $hospitalId = app(CurrentHospital::class)->id();
 
-        $exists = Rule::exists('patients', 'uuid');
+        // An archived patient is not linkable: a field error, not a 404 from the lookup.
+        $exists = Rule::exists('patients', 'uuid')->whereNull('deleted_at');
         if ($hospitalId !== null) {
             $exists->where('hospital_id', $hospitalId);
         }

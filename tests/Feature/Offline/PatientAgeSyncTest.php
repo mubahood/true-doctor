@@ -115,6 +115,28 @@ class PatientAgeSyncTest extends TestCase
         $this->assertFalse($patient->dob_estimated);
     }
 
+    public function test_a_merged_age_stays_an_estimate_when_someone_else_edited_meanwhile(): void
+    {
+        $patient = app(PatientService::class)->register(['first_name' => 'Ruth', 'last_name' => 'Akello', 'age_years' => 40], $this->clerk->id);
+        $patient->forceFill(['version' => 1])->saveQuietly();
+        $base = $patient->dob->toDateString();
+
+        // The web corrects the address; the version moves on.
+        $patient->update(['address' => 'Kololo']);
+        $patient->forceFill(['version' => 2])->saveQuietly();
+
+        // A phone still on version 1 changes the age from 40 to 45.
+        $newDob = BirthDate::fromAge(45);
+        $result = $this->push('update', ['uuid' => $patient->uuid, 'first_name' => 'Ruth', 'last_name' => 'Akello', 'dob' => $newDob, 'dob_estimated' => true],
+            ['base_version' => 1, 'base_fields' => ['first_name' => 'Ruth', 'last_name' => 'Akello', 'dob' => $base, 'dob_estimated' => true]]);
+
+        $this->assertSame('accepted', $result['status']);
+        $patient->refresh();
+        $this->assertSame($newDob, $patient->dob->toDateString());
+        $this->assertTrue($patient->dob_estimated, 'the flag travels with the merged date');
+        $this->assertSame('Kololo', $patient->address);
+    }
+
     public function test_the_pull_carries_the_flag_so_the_device_holds_its_base(): void
     {
         app(PatientService::class)->register(['first_name' => 'Ruth', 'last_name' => 'Akello', 'age_years' => 40], $this->clerk->id);

@@ -27,7 +27,8 @@ class DocumentService
         }
 
         $dir = "patients/{$hospitalId}/{$patient->id}";
-        $name = Str::uuid().'.'.$file->getClientOriginalExtension();
+        // The type the bytes are, not the one the name or the sender claims.
+        $name = Str::uuid().'.'.self::extensionOf($file);
         $path = $file->storeAs($dir, $name, self::DISK);
 
         return PatientDocument::create([
@@ -36,11 +37,19 @@ class DocumentService
             'type' => $type,
             'file_path' => $path,
             'original_name' => $file->getClientOriginalName(),
-            'mime' => $file->getClientMimeType(),
+            'mime' => $file->getMimeType() ?: $file->getClientMimeType(),
             'size' => $file->getSize(),
             'note' => $note,
             'uploaded_by' => $uploadedBy,
         ]);
+    }
+
+    /** The extension guessed from the file's content; the client's only when the content says nothing. */
+    public static function extensionOf(UploadedFile $file): string
+    {
+        $guessed = $file->extension();
+
+        return strtolower($guessed !== '' ? $guessed : ($file->getClientOriginalExtension() ?: 'bin'));
     }
 
     public function disk(): \Illuminate\Contracts\Filesystem\Filesystem

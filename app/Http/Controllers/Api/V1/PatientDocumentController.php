@@ -67,6 +67,14 @@ class PatientDocumentController extends Controller
         return ApiResponse::success(['uuid' => $document->uuid], 'Document removed.');
     }
 
+    /** "820 KB", "1.4 MB"; never "0 KB" for a file that has bytes. */
+    public static function sizeLabel(int $bytes): string
+    {
+        return $bytes >= 1024 * 1024
+            ? number_format($bytes / (1024 * 1024), 1).' MB'
+            : max($bytes > 0 ? 1 : 0, (int) ceil($bytes / 1024)).' KB';
+    }
+
     /** @return array<string,mixed> */
     private function row(Patient $patient, PatientDocument $d): array
     {
@@ -77,7 +85,7 @@ class PatientDocumentController extends Controller
             'original_name' => $d->original_name,
             'mime' => $d->mime,
             'size' => (int) ($d->size ?? 0),
-            'size_label' => number_format(($d->size ?? 0) / 1024, 0).' KB',
+            'size_label' => self::sizeLabel((int) ($d->size ?? 0)),
             'note' => $d->note,
             'uploaded_by' => $d->uploader?->name,
             'created_at' => $d->created_at?->toIso8601String(),
