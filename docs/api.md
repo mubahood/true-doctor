@@ -115,6 +115,7 @@ Reports and the monthly reports (income, expenses, receivables, patient records;
 Notifications, devices, notification preferences and upcoming reminders: [`api/notify.md`](api/notify.md).
 Suppliers, purchase orders, goods received and returns to supplier: [`api/procurement.md`](api/procurement.md).
 The dosage on a visit (medicine from stock, dose, how often, days; `GET`/`POST`/`DELETE visits/{uuid}/dosage`): [`api/dosage.md`](api/dosage.md).
+The visit page on the phone (the visit report and prescription PDFs, `meta.visit_form`, a visit's `layout`, the review's free times, the dosage's medicines): [`api/visit-page.md`](api/visit-page.md).
 The app's "Try the demo" door (`GET /public/demo`, `POST /public/demo/login`, `meta.demo`; SaaS only): [`api/demo.md`](api/demo.md).
 The owner's daily summary (`GET`/`PUT /owner-summary`, hospital administrator only): [`api/owner-summary.md`](api/owner-summary.md).
 The data plane - `GET /bootstrap`, `meta.capabilities`, `GET /search`, ETag/`304`, `?updated_since=`, tombstones (`removed`) and the

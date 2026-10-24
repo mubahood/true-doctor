@@ -259,11 +259,13 @@ class VisitController extends Controller
         ]);
     }
 
-    /** One visit, as its page shows it: the gate and the trail. */
+    /** One visit, as its page shows it: the gate, the trail and how the page is laid out. */
     private function one(Visit $visit): VisitResource
     {
         $visit = $visit->fresh(['patient', 'doctor', 'department', 'history.changedBy']) ?? $visit;
 
-        return (new VisitResource($visit))->withGate($this->service->readiness($visit));
+        return (new VisitResource($visit))
+            ->withGate($this->service->readiness($visit))
+            ->withLayout(VisitForm::layoutOf($visit, app(HospitalSettings::class)->hospital()));
     }
 }

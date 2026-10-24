@@ -17,6 +17,22 @@ class VisitResource extends JsonResource
      */
     private ?array $gate = null;
 
+    /**
+     * How the visit's page is laid out (VisitForm::layoutOf), when the caller
+     * asked for it: one visit's page, never a list.
+     *
+     * @var array{notes:string, chart:?string}|null
+     */
+    private ?array $layout = null;
+
+    /** @param  array{notes:string, chart:?string}  $layout */
+    public function withLayout(array $layout): static
+    {
+        $this->layout = $layout;
+
+        return $this;
+    }
+
     /** @param  array{stage:\App\Enums\VisitStage,next:?\App\Enums\VisitStage,ready:bool,blocker:?string,label:?string,automatic:bool}  $readiness */
     public function withGate(array $readiness): static
     {
@@ -103,6 +119,9 @@ class VisitResource extends JsonResource
                 fn () => $this->gate['ready'] ?? $this->resource->gateIsOpen(),
             ),
             'gate' => $this->when($this->gate !== null, fn () => $this->gate),
+            // Simple dental notes, the case sheet or the general note, and the
+            // dental chart on a general visit (docs/api/visit-page.md).
+            'layout' => $this->when($this->layout !== null, fn () => $this->layout),
             'history' => $this->whenLoaded('history', fn () => $this->history->map(fn ($h) => [
                 'at' => $h->created_at?->toIso8601String(),
                 'from' => $h->fromLabel(),
