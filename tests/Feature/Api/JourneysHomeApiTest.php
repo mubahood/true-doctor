@@ -128,6 +128,8 @@ class JourneysHomeApiTest extends TestCase
 
     public function test_reception_sees_the_queue_and_it_is_cached_per_person_and_hospital(): void
     {
+        // Midday, so "an hour ago" is still today's queue whatever time the suite runs.
+        $this->travelTo(now()->setTime(12, 0));
         $recep = $this->staff('receptionist');
         $patient = Patient::factory()->create(['hospital_id' => $this->h->id]);
         $appt = Appointment::factory()->create(['hospital_id' => $this->h->id, 'patient_id' => $patient->id, 'status' => AppointmentStatus::CheckedIn->value,
