@@ -44,15 +44,12 @@
           <td class="tb-small mono tb-nowrap">{{ $phone ?? '—' }}</td>
           <td class="tb-small tb-nowrap">
             @if($isRecall)
-              @php($on = $row->next_recall_on)
-              Dental check-up, {{ $on?->format('d M Y') }}
-              @if($on && $on->isPast() && ! $on->isToday())
-                <x-ui.badge tone="warn">{{ (int) abs($on->diffInDays(now()->startOfDay())) }} days overdue</x-ui.badge>
-              @endif
+              Dental check-up, {{ $row->next_recall_on?->format('d M Y') }}
             @else
               Review, {{ $row->scheduled_at->format('D d M, H:i') }}
-              @if($shown === 'missed')<x-ui.badge tone="danger">{{ $row->status === \App\Enums\AppointmentStatus::NoShow ? 'Did not come' : 'Not attended' }}</x-ui.badge>@endif
             @endif
+            {{-- Worded by FollowUpService::flag, as the app shows it. --}}
+            @if($flag = $flags[$row->id] ?? null)<x-ui.badge :tone="$flag['tone']">{{ $flag['label'] }}</x-ui.badge>@endif
           </td>
           <td class="tb-small">{{ $isRecall ? '—' : ($row->doctor?->name ?? '—') }}</td>
           <td class="tb-text-right tb-nowrap">

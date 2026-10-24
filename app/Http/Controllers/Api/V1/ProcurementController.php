@@ -15,7 +15,6 @@ use App\Models\User;
 use App\Services\ProcurementService;
 use App\Support\ApiResponse;
 use App\Support\HospitalSettings;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -34,32 +33,59 @@ class ProcurementController extends Controller
 
     private const SUPPLIER_NULLABLE = ['contact_person', 'phone', 'email', 'address', 'tin', 'payment_terms_days', 'notes'];
 
+    /**
+     * The words the web's forms use for an order's fields, so a refusal the
+     * phone shows as it is reads "The quantity field must be greater than 0.",
+     * not "The lines.0.quantity field ...".
+     */
+    private const WORDS = [
+        'lines.*.stock_item_id' => 'item',
+        'lines.*.purchase_order_item_id' => 'order line',
+        'lines.*.quantity' => 'quantity',
+        'lines.*.unit_cost' => 'unit cost',
+        'lines.*.batch_no' => 'batch',
+        'lines.*.expiry_date' => 'expiry date',
+        'stock_item_id' => 'item',
+        'unit_cost' => 'unit cost',
+        'received_on' => 'received date',
+        'supplier_invoice_no' => 'supplier invoice',
+    ];
+
     public function __construct(private readonly ProcurementService $procurement) {}
 
     // ── Suppliers ──────────────────────────────────────────────────────
 
-    /** GET suppliers?q=&status=active|inactive */
+    /** GET suppliers?q=&status=active|inactive - the web directory's search (name, contact, phone) and filter. */
     public function suppliers(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Supplier::class);
-        $q = trim((string) $request->query('q', ''));
-        $status = (string) $request->query('status', '');
 
         $page = Supplier::query()
-            ->when($q !== '', fn (Builder $x) => $x->where('name', 'like', "%{$q}%"))
-            ->when($status !== '', fn (Builder $x) => $x->where('is_active', $status === 'active'))
+            ->withCount(['purchaseOrders as orders_count'])
+            ->listed((string) $request->query('status', ''), (string) $request->query('q', ''))
             ->orderBy('name')
             ->paginate($this->perPage($request, 25));
 
         return ApiResponse::paginated($page, collect($page->items())->map(fn (Supplier $s) => $this->supplier($s))->all());
     }
 
-    /** GET suppliers/{supplier} */
+    /** GET suppliers/{supplier} - with the web quick view's figures. */
     public function supplierShow(Supplier $supplier): JsonResponse
     {
         $this->authorize('view', $supplier);
 
-        return ApiResponse::success($this->supplier($supplier) + ['figures' => $supplier->figures()]);
+        $figures = $supplier->figures();
+
+        return ApiResponse::success($this->supplier($supplier) + ['figures' => $figures + [
+            'received_label' => HospitalSettings::money($figures['received']),
+            'returned_label' => HospitalSettings::money($figures['returned']),
+        ]]);
+    }
+
+    /** DELETE suppliers/{supplier} - archived, as the web's Delete; refused while it has orders. */
+    public function supplierDestroy(Supplier $supplier): JsonResponse
+    {
+        return $this->destroyRow($supplier, 'Supplier');
     }
 
     /** POST suppliers */
@@ -116,13 +142,14 @@ class ProcurementController extends Controller
         $this->authorize('create', PurchaseOrder::class);
         $data = $request->validate([
             'supplier_uuid' => ['required', 'uuid'],
-            'expected_date' => ['nullable', 'date'],
+            // As the web's "New purchase order": a delivery is expected today or later.
+            'expected_date' => ['nullable', 'date', 'after_or_equal:today'],
             'notes' => ['nullable', 'string', 'max:500'],
             'lines' => ['nullable', 'array', 'max:200'],
             'lines.*.stock_item_id' => ['required', 'integer'],
             'lines.*.quantity' => ['required', 'numeric', 'gt:0'],
             'lines.*.unit_cost' => ['nullable', 'numeric', 'min:0'],
-        ]);
+        ], [], self::WORDS);
 
         $supplier = Supplier::query()->where('uuid', $data['supplier_uuid'])->firstOrFail();
         $order = $this->procurement->createOrder($supplier, [
@@ -141,7 +168,7 @@ class ProcurementController extends Controller
             'stock_item_id' => ['required', 'integer'],
             'quantity' => ['required', 'numeric', 'gt:0'],
             'unit_cost' => ['nullable', 'numeric', 'min:0'],
-        ]);
+        ], [], self::WORDS);
 
         $this->procurement->addLine($purchaseOrder, $data);
 
@@ -201,7 +228,7 @@ class ProcurementController extends Controller
             'lines.*.unit_cost' => ['nullable', 'numeric', 'min:0'],
             'lines.*.batch_no' => ['nullable', 'string', 'max:60'],
             'lines.*.expiry_date' => ['nullable', 'date'],
-        ]);
+        ], [], self::WORDS);
 
         $receipt = $this->procurement->receive($purchaseOrder, $data, array_values($data['lines']), $this->user($request));
 
@@ -258,6 +285,8 @@ class ProcurementController extends Controller
             'payment_terms_days' => $s->payment_terms_days,
             'notes' => $s->notes,
             'is_active' => (bool) $s->is_active,
+            // How many orders it has had (the web list's Orders column).
+            'orders_count' => (int) ($s->getAttribute('orders_count') ?? $s->purchaseOrders()->count()),
         ];
     }
 
@@ -272,6 +301,8 @@ class ProcurementController extends Controller
             'supplier' => $o->supplier ? ['uuid' => $o->supplier->uuid, 'name' => $o->supplier->name] : null,
             'order_date' => $o->order_date->toDateString(),
             'expected_date' => $o->expected_date?->toDateString(),
+            // Still waiting for goods past the expected day (the web list's red date).
+            'is_overdue' => $o->isOverdue(),
             'total' => (string) $o->total,
             'total_label' => HospitalSettings::money($o->total),
             'lines_count' => (int) ($o->items_count ?? $o->items()->count()),
@@ -282,13 +313,14 @@ class ProcurementController extends Controller
     /** @return array<string,mixed> */
     private function detail(PurchaseOrder $order): array
     {
-        $o = $order->fresh(['supplier', 'items.stockItem', 'receipts.items.stockItem', 'receipts.items.returns']) ?? $order;
+        $o = $order->fresh(['supplier', 'items.stockItem', 'receipts.items.stockItem', 'receipts.items.returns', 'receipts.receivedBy', 'endedBy']) ?? $order;
         $figures = $this->procurement->figures($o);
 
         return $this->summary($o) + [
             'notes' => $o->notes,
             'ordered_at' => $o->ordered_at?->toIso8601String(),
             'ended_at' => $o->ended_at?->toIso8601String(),
+            'ended_by' => $o->endedBy?->name,
             'end_reason' => $o->end_reason,
             'figures' => $figures + array_combine(
                 array_map(fn ($k) => $k.'_label', array_keys($figures)),
@@ -322,28 +354,36 @@ class ProcurementController extends Controller
     /** @return array<string,mixed> */
     private function receipt(GoodsReceipt $r): array
     {
-        $r->loadMissing(['items.stockItem', 'items.returns']);
+        $r->loadMissing(['items.stockItem', 'items.returns', 'receivedBy']);
 
         return [
             'uuid' => $r->uuid,
             'grn_no' => $r->grn_no,
             'received_on' => $r->received_on->toDateString(),
             'supplier_invoice_no' => $r->supplier_invoice_no,
+            'received_by' => $r->receivedBy?->name,
             'total' => (string) $r->total,
             'total_label' => HospitalSettings::money($r->total),
             'notes' => $r->notes,
-            'lines' => $r->items->map(fn (GoodsReceiptItem $l) => [
-                'id' => $l->id,
-                'purchase_order_item_id' => $l->purchase_order_item_id,
-                'name' => $l->stockItem->name ?? 'Stock item',
-                'quantity' => (string) $l->quantity,
-                'unit_cost' => (string) $l->unit_cost,
-                'line_total' => (string) $l->line_total,
-                'batch_no' => $l->batch_no,
-                'expiry_date' => $l->expiry_date?->toDateString(),
-                'returned_quantity' => $l->returns->reduce(fn (string $s, SupplierReturn $x) => bcadd($s, (string) $x->quantity, 2), '0.00'),
-                'returns' => $l->returns->map(fn (SupplierReturn $x) => $this->returned($x))->values()->all(),
-            ])->values()->all(),
+            'lines' => $r->items->map(function (GoodsReceiptItem $l) {
+                $returned = $l->returns->reduce(fn (string $s, SupplierReturn $x) => bcadd($s, (string) $x->quantity, 2), '0.00');
+
+                return [
+                    'id' => $l->id,
+                    'purchase_order_item_id' => $l->purchase_order_item_id,
+                    'name' => $l->stockItem->name ?? 'Stock item',
+                    'unit' => $l->stockItem?->unit,
+                    'quantity' => (string) $l->quantity,
+                    'unit_cost' => (string) $l->unit_cost,
+                    'line_total' => (string) $l->line_total,
+                    'batch_no' => $l->batch_no,
+                    'expiry_date' => $l->expiry_date?->toDateString(),
+                    'returned_quantity' => $returned,
+                    // What may still go back from this line (the web's Return button and its starting quantity).
+                    'returnable' => $l->returnable($returned),
+                    'returns' => $l->returns->map(fn (SupplierReturn $x) => $this->returned($x))->values()->all(),
+                ];
+            })->values()->all(),
         ];
     }
 

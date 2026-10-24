@@ -261,6 +261,11 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
         foreach (['care', 'pharmacy', 'finance', 'admin', 'extras', 'plane', 'notify', 'journeys'] as $area) {
             require __DIR__."/api/{$area}.php";
         }
+        require __DIR__.'/api/gap-money.php';
+        require __DIR__.'/api/gap-stock.php';
+        require __DIR__.'/api/gap-admin.php';
+        require __DIR__.'/api/gap-care.php';
+        require __DIR__.'/api/gap-visit.php';
         require __DIR__.'/api/gap-patient.php';
     });
 });

@@ -9,8 +9,11 @@ use App\Enums\MessageStatus;
 use App\Models\Appointment;
 use App\Models\DentalTreatmentItem;
 use App\Models\Patient;
+use App\Models\User;
 use App\Models\Visit;
 use App\Services\Messaging\PatientMessenger;
+use App\Support\DoctorSlots;
+use App\Support\HospitalSettings;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -146,6 +149,47 @@ final class FollowUpService
         ], $by);
     }
 
+    /**
+     * The free times for the review booked from a visit, as the visit page
+     * offers them. A dental visit books from its case sheet's Follow-up
+     * (DentalCaseSheetService::bookReview: the visit's dentist, else whoever
+     * books, for REVIEW_MINUTES there), any other visit from Book a review
+     * (bookReview above: the visit's doctor). Without a day: a dental visit
+     * offers the suggested day or the first day after it the dentist is free,
+     * any other visit the suggested day.
+     *
+     * @return array{kind:string, date:string, doctor_user_id:?int, doctor:?string, minutes:int, times:list<string>, note:?string}
+     */
+    public function reviewTimes(Visit $visit, User $by, ?string $date = null): array
+    {
+        $dental = DentalCaseSheetService::appliesTo($visit, app(HospitalSettings::class)->hospital());
+        $doctor = $dental ? ($visit->doctor_user_id ?? $by->id) : $visit->doctor_user_id;
+        $minutes = $dental ? DentalCaseSheetService::REVIEW_MINUTES : self::REVIEW_MINUTES;
+
+        if ($date === null) {
+            $date = $dental
+                ? DoctorSlots::firstFreeDay((int) $doctor, app(DentalCaseSheetService::class)->reviewSuggestion($visit)['on'] ?? Carbon::today()->addWeek()->toDateString(), $minutes)
+                : $this->suggestion($visit)['date'];
+        }
+
+        $times = $doctor === null ? [] : DoctorSlots::open((int) $doctor, $date, $minutes);
+
+        return [
+            'kind' => $dental ? 'dental' : 'general',
+            'date' => $date,
+            'doctor_user_id' => $doctor,
+            // The visit's own doctor, or the one booking: never another clinic's.
+            'doctor' => $doctor === null ? null : User::query()->whereKey($doctor)->value('name'),
+            'minutes' => $minutes,
+            'times' => $times,
+            'note' => match (true) {
+                $times !== [] => null,
+                $doctor === null => 'This visit has no doctor yet. Book the review from Appointments instead.',
+                default => DoctorSlots::note((int) $doctor, $date, $minutes),
+            },
+        ];
+    }
+
     // ── The receptionist's list ─────────────────────────────────────────
 
     public const LISTS = [
@@ -153,6 +197,87 @@ final class FollowUpService
         'missed' => 'Missed reviews',
         'recalls' => 'Dental check-ups due',
     ];
+
+    /** The list a request names, or this week's reviews when it names none of them. */
+    public static function list(?string $show): string
+    {
+        return isset(self::LISTS[(string) $show]) ? (string) $show : 'week';
+    }
+
+    /**
+     * One list's rows, narrowed by what was typed: name, patient number or
+     * phone, every word somewhere (Patient::matchWords, the patient search
+     * everywhere else). The web page and the API both read it.
+     *
+     * @return Builder<Appointment>|Builder<Patient>
+     */
+    public function rows(string $show, string $search = ''): Builder
+    {
+        $query = match (self::list($show)) {
+            'missed' => $this->missedReviews(),
+            'recalls' => $this->recallsDue(),
+            default => $this->reviewsThisWeek(),
+        };
+
+        $search = trim($search);
+        if ($search === '') {
+            return $query;
+        }
+
+        return self::list($show) === 'recalls'
+            ? Patient::matchWords($query, $search)
+            : $query->whereHas('patient', fn (Builder $p) => Patient::matchWords($p, $search));
+    }
+
+    /**
+     * What to flag beside a row, worded once for the web page and the app: a
+     * check-up overdue by so many days, a review the patient did not come to.
+     *
+     * @return array{label:string, tone:string}|null
+     */
+    public function flag(Appointment|Patient $row): ?array
+    {
+        $today = Carbon::today();
+
+        if ($row instanceof Patient) {
+            $on = $row->next_recall_on;
+            if ($on === null || ! $on->copy()->startOfDay()->lt($today)) {
+                return null;
+            }
+            $days = (int) round($on->copy()->startOfDay()->diffInDays($today));
+
+            return ['label' => $days.' '.($days === 1 ? 'day' : 'days').' overdue', 'tone' => 'warn'];
+        }
+
+        if ($row->status === AppointmentStatus::NoShow) {
+            return ['label' => 'Did not come', 'tone' => 'danger'];
+        }
+
+        return $row->scheduled_at->lt($today) ? ['label' => 'Not attended', 'tone' => 'danger'] : null;
+    }
+
+    /**
+     * When each patient was last seen: their newest visit, in one query for a
+     * page of rows.
+     *
+     * @param  list<int>  $patientIds
+     * @return array<int, Carbon>
+     */
+    public function lastVisits(array $patientIds): array
+    {
+        if ($patientIds === []) {
+            return [];
+        }
+
+        return Visit::query()
+            ->whereIn('patient_id', array_values(array_unique($patientIds)))
+            ->groupBy('patient_id')
+            ->selectRaw('patient_id, max(created_at) as last_at')
+            ->pluck('last_at', 'patient_id')
+            ->filter()
+            ->mapWithKeys(fn ($at, $id) => [(int) $id => Carbon::parse((string) $at)])
+            ->all();
+    }
 
     /** @return array<string,int> how many in each list */
     public function counts(): array

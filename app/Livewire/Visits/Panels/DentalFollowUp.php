@@ -82,7 +82,7 @@ class DentalFollowUp extends Component
             return [];
         }
 
-        return DoctorSlots::open($this->doctorId(), $this->date, 30);
+        return DoctorSlots::open($this->doctorId(), $this->date, DentalCaseSheetService::REVIEW_MINUTES);
     }
 
     public function updatedDate(): void
@@ -111,21 +111,13 @@ class DentalFollowUp extends Component
 
     private function firstSittingDay(string $from): string
     {
-        $day = Carbon::parse($from);
-        for ($i = 0; $i < 14; $i++) {
-            if (DoctorSlots::open($this->doctorId(), $day->toDateString(), 30) !== []) {
-                return $day->toDateString();
-            }
-            $day->addDay();
-        }
-
-        return $from;
+        return DoctorSlots::firstFreeDay($this->doctorId(), $from, DentalCaseSheetService::REVIEW_MINUTES);
     }
 
     public function render()
     {
         return view('livewire.visits.panels.dental-follow-up', [
-            'note' => $this->booking && $this->slots === [] ? DoctorSlots::note($this->doctorId(), $this->date, 30) : null,
+            'note' => $this->booking && $this->slots === [] ? DoctorSlots::note($this->doctorId(), $this->date, DentalCaseSheetService::REVIEW_MINUTES) : null,
         ]);
     }
 }

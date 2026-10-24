@@ -176,6 +176,28 @@ class TwoFactorService
         $this->forgetDevices($user);
     }
 
+    /**
+     * A colleague lost their phone: somebody who may edit their account (the
+     * caller has checked the update policy, so only an admin does this to an
+     * admin) turns two-step sign-in off for them, on the web or in the app.
+     * Never on your own account: that needs your password, on Account
+     * security. The activity log says who did it.
+     *
+     * @throws \DomainException
+     */
+    public function resetFor(User $actor, User $colleague): void
+    {
+        if ($colleague->is($actor)) {
+            throw new \DomainException('Turn your own off on Account security.');
+        }
+        if (! $this->isEnabled($colleague)) {
+            throw new \DomainException("Two-step sign-in is already off for {$colleague->name}.");
+        }
+
+        $this->disable($colleague);
+        activity('users')->performedOn($colleague)->causedBy($actor)->log('Two-step sign-in turned off by a colleague');
+    }
+
     // ── Trusted browsers ───────────────────────────────────────────
 
     /** Remember this browser; returns the token for its cookie. */

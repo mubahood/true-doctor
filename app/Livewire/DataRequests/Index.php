@@ -10,7 +10,6 @@ use App\Models\DataRequest;
 use App\Models\Patient;
 use App\Services\Compliance\DataRequestService;
 use App\Support\CurrentHospital;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
@@ -170,16 +169,8 @@ class Index extends Component
     {
         $this->allowed();
 
-        $rows = DataRequest::query()->with('patient:id,uuid,first_name,last_name,patient_no')
-            ->when($this->status !== '', fn (Builder $q) => $q->where('status', $this->status))
-            ->when($this->kind !== '', fn (Builder $q) => $q->where('kind', $this->kind))
-            ->when($this->search !== '', fn (Builder $q) => $q->where(fn (Builder $qq) => $qq
-                ->where('requester_name', 'like', "%{$this->search}%")
-                ->orWhereHas('patient', fn (Builder $p) => $p->where('first_name', 'like', "%{$this->search}%")
-                    ->orWhere('last_name', 'like', "%{$this->search}%")->orWhere('patient_no', 'like', "%{$this->search}%"))))
-            // Open first, the soonest due at the top: the list is a worklist before it is a log.
-            ->orderByRaw('case when status = ? then 0 else 1 end', [DataRequestStatus::Open->value])
-            ->orderBy('due_on')->orderByDesc('id')
+        // Open first, the soonest due at the top: the list is a worklist before it is a log (the service's order, shared with the API).
+        $rows = app(DataRequestService::class)->query(['status' => $this->status, 'kind' => $this->kind, 'search' => $this->search])
             ->paginate($this->perPage);
 
         return view('livewire.data-requests.index', [

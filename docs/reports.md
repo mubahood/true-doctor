@@ -98,3 +98,17 @@ opened one) every entry point answers 404 and the menu does not offer it.
 Tests: `tests/Feature/MonthlyReportsTest.php` (agreement with the cashier's
 day, the income statement and the debtors list; tenancy; permissions; every
 export; the API; the demo).
+
+## Ministry reports, HMIS (`/admin/reports/hmis`)
+
+HMIS 105 (outpatients) and 108 (inpatients) for a month, 033b (surveillance)
+for a week, counted from the coded diagnoses (`App\Services\Hmis\HmisReports`,
+`config/hmis.php`), with the visits that cannot be counted listed as missing
+data. `HmisReports::forForm()` is the one way a form is read: the page
+(`App\Livewire\Reports\Hmis`), its PDF and CSV (`Admin\HmisController`) and the
+app's API ([`api/reports.md`](api/reports.md), Ministry reports) all call it,
+so they always count the same days. A month is read from its first day; a
+month or day that does not read is the default (the last whole month, last
+week). With no hospital in context the page, files and API answer 404 rather
+than add up every hospital. Tests: `tests/Feature/CodedDiagnosesTest.php`,
+`tests/Feature/Api/HmisApiTest.php`.

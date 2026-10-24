@@ -556,11 +556,8 @@ class SelectSearch extends Component
             // item in stock, even one that has run out, since writing how to
             // take a medicine does not hand it over.
             'medicines' => StockItem::query()
-                ->where('is_active', true)
+                ->medicineChoices($searching ? $term : '')
                 ->when($pinned, fn ($q) => $q->whereKey($onlyId))
-                ->when($searching, fn ($q) => $q->where(fn ($qq) => $qq
-                    ->where('name', 'like', $like)->orWhere('sku', 'like', $like)))
-                ->orderBy('name')
                 ->limit($limit)
                 ->get(['id', 'name', 'unit', 'current_quantity'])
                 ->map(fn (StockItem $s) => [

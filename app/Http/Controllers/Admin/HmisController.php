@@ -6,25 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Services\Hmis\HmisReports;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-/** HMIS 105, 108 and 033b as the paper form (PDF) and as rows (CSV). */
+/** HMIS 105, 108 and 033b as the paper form (PDF) and as rows (CSV); the web's and the app's (docs/api/reports.md). */
 class HmisController extends Controller
 {
     public function export(Request $request, HmisReports $hmis, string $form, string $format)
     {
         abort_unless($request->user()?->can('reports.view'), 403);
         abort_unless(in_array($form, ['105', '108', '033b'], true) && in_array($format, ['pdf', 'csv'], true), 404);
+        HmisReports::requireHospital();
 
-        $month = preg_match('/^\d{4}-\d{2}$/', (string) $request->query('month')) === 1 ? (string) $request->query('month') : now()->subMonthNoOverflow()->format('Y-m');
-        $from = Carbon::createFromFormat('Y-m', $month)->startOfMonth();
-        $to = $from->copy()->addMonth();
-        $report = match ($form) {
-            '108' => $hmis->ipd($from, $to),
-            '033b' => $hmis->weekly(Carbon::parse((string) ($request->query('week') ?: now()->subWeek()->toDateString()))),
-            default => $hmis->opd($from, $to),
-        };
+        $month = preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', (string) $request->query('month')) === 1 ? (string) $request->query('month') : HmisReports::defaultMonth();
+        $report = $hmis->forForm($form, $month, (string) ($request->query('week') ?: HmisReports::defaultWeek()));
         $name = 'hmis-'.$form.'-'.($form === '033b' ? $report['week']['from'] : $month);
 
         if ($format === 'pdf') {

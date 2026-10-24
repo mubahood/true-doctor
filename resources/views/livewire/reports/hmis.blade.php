@@ -8,9 +8,7 @@
 
   <div class="tb-filter-bar tb-toolbar">
     <select wire:model.live="form" class="tb-select" aria-label="Which form">
-      <option value="105">HMIS 105 · outpatients (monthly)</option>
-      <option value="108">HMIS 108 · inpatients (monthly)</option>
-      <option value="033b">HMIS 033b · surveillance (weekly)</option>
+      @foreach($forms as $key => $f)<option value="{{ $key }}">{{ $f['label'] }}</option>@endforeach
     </select>
     @if($form === '033b')
       <input type="date" class="tb-input tb-input-slim" wire:model.live="week" aria-label="A day in the week">

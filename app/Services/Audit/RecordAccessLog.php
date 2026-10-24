@@ -71,14 +71,23 @@ final class RecordAccessLog
     /**
      * Opens and prints, newest first.
      *
-     * @param  array{patient?:int|null,user?:int|null,action?:string,from?:string,to?:string}  $filters
+     * `search` is a patient's name or number: the phone's search box over this
+     * list, where the web has a patient picker.
+     *
+     * @param  array{patient?:int|null,user?:int|null,action?:string,from?:string,to?:string,search?:string}  $filters
      * @return Builder<RecordAccess>
      */
     public function query(array $filters = []): Builder
     {
+        $search = trim((string) ($filters['search'] ?? ''));
+
         return RecordAccess::query()
             ->with(['user:id,name,role', 'patient:id,uuid,patient_no,first_name,last_name'])
             ->when(! empty($filters['patient']), fn (Builder $q) => $q->where('patient_id', $filters['patient']))
+            ->when($search !== '', fn (Builder $q) => $q->whereHas('patient', fn (Builder $p) => $p->where(fn (Builder $w) => $w
+                ->where('first_name', 'like', "%{$search}%")
+                ->orWhere('last_name', 'like', "%{$search}%")
+                ->orWhere('patient_no', 'like', "%{$search}%"))))
             ->when(! empty($filters['user']), fn (Builder $q) => $q->where('user_id', $filters['user']))
             ->when(($filters['action'] ?? '') !== '', fn (Builder $q) => $q->where('action', $filters['action']))
             ->when(($filters['from'] ?? '') !== '', fn (Builder $q) => $q->where('created_at', '>=', $filters['from'].' 00:00:00'))

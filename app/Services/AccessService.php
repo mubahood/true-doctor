@@ -38,6 +38,18 @@ final class AccessService
     }
 
     /**
+     * Whether $actor may give $user extra abilities: a hospital admin, editing
+     * somebody they may edit whose role can take them (an admin already has
+     * everything). The web's edit dialog asks the same (Users\Index::canGiveExtras).
+     */
+    public static function canGiveExtras(?User $actor, User $user): bool
+    {
+        return self::canManage($actor)
+            && Abilities::roleIsEditable((string) $user->role)
+            && $actor?->can('update', $user) === true;
+    }
+
+    /**
      * The table on the screen: every editable role against every ability.
      *
      * @return array<string, array<string, array{on:bool, partial:bool, default:bool, changed:bool}>>
@@ -77,15 +89,7 @@ final class AccessService
     public function setForRole(User $actor, string $role, string $ability, bool $allowed): array
     {
         $this->assertCanManage($actor);
-        if ($role === Abilities::LOCKED_ROLE) {
-            throw new \DomainException('The hospital admin keeps every ability, so the clinic can never be locked out.');
-        }
-        if (! Abilities::roleIsEditable($role)) {
-            throw new \DomainException('That role cannot be changed here.');
-        }
-        if (! Abilities::exists($ability)) {
-            throw new \DomainException('That ability is not one of the list.');
-        }
+        $this->assertEditable($role, $ability);
 
         // Diagnosing without reading the notes, or the reverse, makes no sense:
         // switching one on brings what it needs, switching one off takes what needs it.
@@ -124,6 +128,39 @@ final class AccessService
         $this->resolver->flush();
 
         return $moves;
+    }
+
+    /**
+     * Put one ability of a role back to its standard (the default matrix and
+     * what the practice starts the role with), so the role follows it again.
+     * When the standard gives all of the ability, or none of it, this is the
+     * same as ticking it that way, and what depends on it moves too; when the
+     * standard gives part of it, the clinic's choice for it is simply dropped.
+     *
+     * @return list<string> the abilities that moved, this one first
+     *
+     * @throws \DomainException
+     */
+    public function restoreDefault(User $actor, string $role, string $ability): array
+    {
+        $this->assertCanManage($actor);
+        $this->assertEditable($role, $ability);
+
+        $defaults = $this->defaultPermissions($role);
+        $perms = Abilities::permissions($ability);
+        if (array_diff($perms, $defaults) === []) {
+            return $this->setForRole($actor, $role, $ability, true);
+        }
+        if (array_intersect($perms, $defaults) === []) {
+            return $this->setForRole($actor, $role, $ability, false);
+        }
+
+        DB::transaction(function () use ($role, $ability) {
+            RoleAbility::query()->where('role', $role)->where('ability', $ability)->lockForUpdate()->first()?->delete();
+        });
+        $this->resolver->flush();
+
+        return [$ability];
     }
 
     /** Put a role back to the default matrix. */
@@ -274,6 +311,20 @@ final class AccessService
     {
         if (! self::canManage($actor)) {
             throw new \DomainException('Only a hospital admin can change who may do what.');
+        }
+    }
+
+    /** @throws \DomainException */
+    private function assertEditable(string $role, string $ability): void
+    {
+        if ($role === Abilities::LOCKED_ROLE) {
+            throw new \DomainException('The hospital admin keeps every ability, so the clinic can never be locked out.');
+        }
+        if (! Abilities::roleIsEditable($role)) {
+            throw new \DomainException('That role cannot be changed here.');
+        }
+        if (! Abilities::exists($ability)) {
+            throw new \DomainException('That ability is not one of the list.');
         }
     }
 }

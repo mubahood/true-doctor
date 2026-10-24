@@ -25,6 +25,11 @@ class InvoiceCreditResource extends JsonResource
             'amount_label' => HospitalSettings::money($this->amount),
             'tax_part' => (string) $this->tax_part,
             'method' => $this->method?->value,
+            'method_label' => $this->method?->label(),
+            // A refund put back on a prepaid card: which card, masked as the web shows it.
+            'card' => $this->relationLoaded('card') && $this->card !== null
+                ? ['uuid' => $this->card->uuid, 'masked' => $this->card->masked()]
+                : null,
             'reference' => $this->reference,
             'reason' => $this->reason,
             'invoice' => $invoice === null ? null : ['uuid' => $invoice->uuid, 'invoice_no' => $invoice->invoice_no],

@@ -72,11 +72,38 @@ class StaffUserController extends Controller
         $this->authorize('view', $account);
 
         $account->load('staffProfile.department');
+        $actor = $request->user();
+        $twoFactor = app(\App\Services\TwoFactorService::class)->isEnabled($account);
 
         return ApiResponse::success(array_merge((new StaffUserResource($account))->resolve(), [
             // What the role actually lets them do — the thing an audit is asking about.
             'abilities' => $account->getAllPermissions()->pluck('name')->sort()->values()->all(),
+            // Two-step sign-in, and whether this caller may turn it off for them (the web's peek).
+            'two_factor_enabled' => $twoFactor,
+            'can_reset_two_factor' => $twoFactor && ! $account->is($actor) && $actor->can('update', $account),
+            // Extra abilities on top of the role (Staff and access); only a hospital admin gives them.
+            'extras' => array_map(fn (string $key) => ['key' => $key, 'label' => \App\Support\Access\Abilities::label($key)], app(\App\Services\AccessService::class)->personal($account)),
+            'can_give_extras' => \App\Services\AccessService::canGiveExtras($actor, $account),
         ]));
+    }
+
+    /**
+     * POST admin/users/{id}/reset-two-factor - a colleague lost their phone.
+     * The web's "Turn off two-step sign-in": whoever may edit the account,
+     * never your own (that needs your password, auth/two-factor/disable).
+     */
+    public function resetTwoFactor(Request $request, int $user): JsonResponse
+    {
+        $account = $this->manageable($request, $user);
+        $this->authorize('update', $account);
+
+        try {
+            app(\App\Services\TwoFactorService::class)->resetFor($request->user(), $account);
+        } catch (\DomainException $e) {
+            return $this->refused($e->getMessage());
+        }
+
+        return ApiResponse::success(['id' => $account->id, 'two_factor_enabled' => false], "Two-step sign-in is off for {$account->name}.");
     }
 
     public function store(Request $request): JsonResponse

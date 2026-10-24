@@ -95,10 +95,19 @@ class MetaController extends Controller
                 'two_factor_enabled' => app(\App\Services\TwoFactorService::class)->isEnabled($user),
                 'two_factor_required' => app(\App\Services\TwoFactorService::class)->isRequired($user),
                 'recovery_codes_left' => app(\App\Services\TwoFactorService::class)->recoveryCodesLeft($user),
+                // This server turns it off and makes new recovery codes from the app
+                // (auth/two-factor/disable, auth/two-factor/recovery-codes); older ones do not.
+                'self_service' => true,
             ],
             // The order form: the kinds of work this practice is offered (no
             // admission without wards) and the words its fields use (docs/orders.md).
             'orders' => \App\Services\OrderDesk::form(\App\Support\Practice\Practice::of($hospital)),
+            // How a visit is written down here, for everyone who opens one
+            // (App\Support\Practice\VisitForm, the web's own source): the
+            // vitals recorded, the BMI, simple dental notes or the case sheet,
+            // whether the reason is asked, the visit page's sections in order
+            // (docs/api/visit-page.md).
+            'visit_form' => \App\Support\Practice\VisitForm::of($hospital)->toArray(),
             // Who to ask for help, and the prefilled messages (docs/api/support.md).
             'support' => \App\Support\SupportContact::forHospital($hospital)->toArray(),
         ] + (Demo::isDemoUser($user) ? ['demo' => [

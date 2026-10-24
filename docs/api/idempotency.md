@@ -9,7 +9,11 @@ the work twice. Send an `Idempotency-Key` header on a `POST`, `PUT`, `PATCH` or 
 - Scope: the key is per signed-in user; another user (or hospital) sending the same key is unaffected.
 - First use: the request runs. The answer is stored for 24 hours if it is final: any `2xx` or `4xx`
   except `401`, `403`, `408`, `422`, `423`, `429`. `5xx`, validation `422`s and non-JSON answers (PDFs) are
-  not stored, so the client may correct and resend under the same key.
+  not stored, so the client may correct and resend under the same key. Nor is an answer sent with
+  `Cache-Control: no-store`: it carries a secret (new recovery codes, a two-step secret) that must not sit in
+  `idempotency_keys` in clear; a retry of such a write runs again (docs/api/security.md). A body carrying
+  `password` or `current_password` is fingerprinted with a keyed hash (HMAC with the app key), so the stored
+  fingerprint cannot be used to guess the password.
 - Same key, same method + path + query + body: the stored status and body are replayed, the controller does
   not run, and the response carries `Idempotent-Replay: true`. Body key order does not matter; for multipart
   uploads the file names and sizes are compared, not the bytes.

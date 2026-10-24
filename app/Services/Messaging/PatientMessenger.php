@@ -136,6 +136,31 @@ final class PatientMessenger
         return null;
     }
 
+    /**
+     * What a patient would read for each message, with this clinic's own name
+     * and number and sample details (Settings, Messages, on the web and in the app).
+     *
+     * @return array<string,string> event => text
+     */
+    public function previews(Hospital $hospital): array
+    {
+        $samples = [
+            'appointment_booked' => ['doctor' => 'Dr. Nakato', 'date' => now()->addDays(3)->format('D j M'), 'time' => '10:30'],
+            'appointment_day_before' => ['time' => '10:30'],
+            'receipt' => ['amount' => '20,000', 'invoice' => 'INV-2026-00123', 'link' => url('/s/r/…')],
+            'dental_recall' => [],
+            'follow_up_due' => [],
+            'document_link' => ['document' => 'lab result', 'link' => url('/p/…'), 'code' => '482913'],
+        ];
+
+        $out = [];
+        foreach ($samples as $event => $vars) {
+            $out[$event] = $this->body($event, $vars, $hospital);
+        }
+
+        return $out;
+    }
+
     /** @param  array<string,scalar|null>  $vars */
     public function body(string $event, array $vars, Hospital $hospital): string
     {

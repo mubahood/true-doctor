@@ -6,7 +6,6 @@ use App\Livewire\Concerns\WithTable;
 use App\Models\Appointment;
 use App\Models\Patient;
 use App\Services\FollowUpService;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
@@ -70,27 +69,17 @@ class Recalls extends Component
     {
         abort_unless(Auth::user()?->can('appointments.view'), 403);
 
-        $show = isset(FollowUpService::LISTS[$this->show]) ? $this->show : 'week';
+        $show = FollowUpService::list($this->show);
         $service = $this->service();
 
-        /** @var Builder<Appointment>|Builder<Patient> $query */
-        $query = match ($show) {
-            'missed' => $service->missedReviews(),
-            'recalls' => $service->recallsDue(),
-            default => $service->reviewsThisWeek(),
-        };
-
-        if ($this->search !== '') {
-            $term = '%'.$this->search.'%';
-            $byName = fn (Builder $q) => $q->where(fn (Builder $w) => $w->where('first_name', 'like', $term)
-                ->orWhere('last_name', 'like', $term)->orWhere('patient_no', 'like', $term)->orWhere('phone_1', 'like', $term));
-            $show === 'recalls' ? $byName($query) : $query->whereHas('patient', $byName);
-        }
+        // The same rows, search and flags as the app's (FollowUpController::index).
+        $rows = $service->rows($show, $this->search)->paginate($this->perPage);
 
         return view('livewire.appointments.recalls', [
-            'rows' => $query->paginate($this->perPage),
+            'rows' => $rows,
             'shown' => $show,
             'counts' => $service->counts(),
+            'flags' => collect($rows->items())->mapWithKeys(fn (Appointment|Patient $row) => [$row->id => $service->flag($row)])->all(),
             'canText' => Auth::user()->can('appointments.manage'),
         ])->title('Recalls and reviews due');
     }

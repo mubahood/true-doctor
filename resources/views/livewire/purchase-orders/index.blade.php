@@ -63,7 +63,7 @@
             </td>
             <td>{{ $r->supplier?->name ?? '—' }}</td>
             <td class="muted tb-nowrap">{{ $r->order_date->format('j M Y') }}</td>
-            <td @class(['tb-nowrap', 'muted' => ! ($r->expected_date && $r->expected_date->isPast() && $r->status->canReceive()), 'tb-danger' => $r->expected_date && $r->expected_date->isPast() && $r->status->canReceive()])>
+            <td @class(['tb-nowrap', 'muted' => ! $r->isOverdue(), 'tb-danger' => $r->isOverdue()])>
               {{ $r->expected_date?->format('j M Y') ?? '—' }}
             </td>
             <td class="tb-text-right muted">{{ $r->items_count }}</td>

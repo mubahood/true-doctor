@@ -24,9 +24,17 @@ otherwise 14. Only the visit doctor's free times are offered (`DoctorSlots::open
 - **Dental check-ups due**: `patients.next_recall_on` in the next seven days or up to 180 days
   overdue, with no visit since and nothing booked.
 
+The search box finds a patient by name, number or phone, every word somewhere (the patient
+search used everywhere else). The flag beside a row (so many days overdue, did not come, not
+attended) is worded once in `FollowUpService::flag`, for the page and the app.
+
 Each row has **Call** (a `tel:` link) and **Text** (`appointments.manage`). The text is the
 message event `follow_up_due`, sent through `PatientMessenger`, so consent, the number, credit
 and quiet hours all apply; its dedupe key is the thing due, so a second press reports the
 first text rather than sending another.
+
+The app's Recalls screen reads the same rows (`GET follow-ups`), with each patient's answer about
+texts and their last visit, offers **Text** only to a patient who agreed, and books from a missed
+review or a check-up due with the diary's own booking form.
 
 API: [docs/api/follow-up.md](api/follow-up.md).

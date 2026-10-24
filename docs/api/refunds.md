@@ -12,7 +12,8 @@ must send the key on `credit-notes` and `refunds`: without it the answer is
 
 | Method | Path | Permission | Notes |
 |---|---|---|---|
-| GET | `/api/v1/credits?status=&kind=&q=&per_page=` | `billing.view` | Every document, newest first. `meta` adds `pending` (waiting for approval). |
+| GET | `/api/v1/credits?status=&kind=&q=&waiting_first=&per_page=` | `billing.view` | Every document, newest first; `waiting_first=1` puts the ones waiting for approval at the top (newest first within each part). `meta` adds `pending` (waiting for approval). |
+| GET | `/api/v1/credits/{credit}` | `billing.view` | One document with its invoice, the invoice's lines and figures (below): the web's quick view. |
 | GET | `/api/v1/invoices/{invoice}/credits` | `billing.view` | The invoice's documents and figures (below). |
 | POST | `/api/v1/invoices/{invoice}/credit-notes` | `billing.manage` or `billing.refund` | `{amount, reason}` |
 | POST | `/api/v1/invoices/{invoice}/refunds` | `billing.manage` or `billing.refund` | `{amount, method, reason, reference?, card_uuid?}`; `method` is `cash`, `mobile_money`, `bank` or `card`; a reference is required for mobile money and bank, a card for `card`. |
@@ -35,7 +36,8 @@ Credit (`InvoiceCreditResource`):
   "uuid": "…", "kind": "refund", "kind_label": "Refund", "number": "RF-2026-00001",
   "status": "approved", "status_label": "Approved",
   "amount": "20000.00", "amount_label": "USh 20,000", "tax_part": "0.00",
-  "method": "cash", "reference": null, "reason": "Cash back for the scan.",
+  "method": "cash", "method_label": "Cash", "card": null,
+  "reference": null, "reason": "Cash back for the scan.",
   "invoice": {"uuid": "…", "invoice_no": "INV-2026-00012"},
   "patient": {"uuid": "…", "name": "…", "patient_no": "…"},
   "requested_by": "Ruth Namubiru", "requested_at": "2026-10-17T09:12:00+03:00",
@@ -44,8 +46,26 @@ Credit (`InvoiceCreditResource`):
 }
 ```
 
-`number` is null until approved. `GET invoices/{invoice}/credits` and both POSTs
-on an invoice return:
+`number` is null until approved. `card` is `{uuid, masked}` for a refund put
+back on a prepaid card (`"•••• 1234"`), else null.
+
+`GET credits/{credit}` returns the document, its invoice (`InvoiceResource`
+with `items`: `description, quantity, unit_price, line_total`), the invoice's
+figures (as below) and whether this person may decide it:
+
+```json
+{
+  "credit": { … },
+  "invoice": {"uuid": "…", "invoice_no": "…", "patient": {…}, "total": "50000.00",
+              "amount_paid": "50000.00", "credited": "0.00", "refunded": "0.00",
+              "balance": "0.00", "status": "paid", "items": [ … ], "issued_at": "…"},
+  "figures": { … },
+  "can_approve": true
+}
+```
+
+`invoice` and `figures` are null only if the invoice is gone. `GET invoices/{invoice}/credits`
+and both POSTs on an invoice return:
 
 ```json
 {
@@ -59,9 +79,20 @@ on an invoice return:
   },
   "can_request": true, "can_approve": true,
   "refund_methods": ["cash", "mobile_money", "bank", "card"],
+  "refund_method_options": [
+    {"value": "cash", "label": "Cash", "needs_reference": false},
+    {"value": "mobile_money", "label": "Mobile money", "needs_reference": true},
+    {"value": "bank", "label": "Bank transfer", "needs_reference": true},
+    {"value": "card", "label": "Prepaid card", "needs_reference": false}
+  ],
+  "cards": [{"uuid": "…", "masked": "•••• 1234", "balance": "15000.00"}],
   "credits": [ … ]
 }
 ```
+
+`refund_method_options` are the refund form's choices with their words;
+`cards` are the patient's own prepaid cards, as the web's refund dialog
+lists them (empty for someone who may not ask).
 
 `creditable` and `can_refund` are what may still be asked for, counting
 requests already waiting. The invoice resource (`GET invoices/{invoice}` and

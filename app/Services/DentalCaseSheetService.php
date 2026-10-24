@@ -42,6 +42,9 @@ use Illuminate\Validation\ValidationException;
  */
 class DentalCaseSheetService
 {
+    /** The length of a review booked from the case sheet, in minutes. */
+    public const REVIEW_MINUTES = 30;
+
     public function __construct(
         private readonly CaseSheetService $sections,
         private readonly DentalService $dental,
@@ -492,7 +495,7 @@ class DentalCaseSheetService
      * one booking), carrying the visit it follows. The slot rules are the
      * appointment book's own; a taken or closed slot is said in plain words.
      */
-    public function bookReview(Visit $visit, string $date, string $time, User $by, ?int $doctorId = null, ?string $reason = null, int $minutes = 30): Appointment
+    public function bookReview(Visit $visit, string $date, string $time, User $by, ?int $doctorId = null, ?string $reason = null, int $minutes = self::REVIEW_MINUTES): Appointment
     {
         $doctorId ??= $visit->doctor_user_id ?? $by->id;
         try {

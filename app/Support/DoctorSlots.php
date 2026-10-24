@@ -108,6 +108,24 @@ final class DoctorSlots
     }
 
     /**
+     * The day to offer first: [from], or the first day after it within
+     * [$days] on which this doctor still has a free time; [from] itself when
+     * none has (the note then says why).
+     */
+    public static function firstFreeDay(int $doctorId, string $from, int $length, int $days = 14): string
+    {
+        $day = Carbon::parse($from);
+        for ($i = 0; $i < $days; $i++) {
+            if (self::open($doctorId, $day->toDateString(), $length) !== []) {
+                return $day->toDateString();
+            }
+            $day->addDay();
+        }
+
+        return $from;
+    }
+
+    /**
      * Why there are no times, in the words of whatever is actually missing —
      * "no times" with nothing beside it sends people looking for a bug.
      */

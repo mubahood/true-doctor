@@ -148,6 +148,25 @@ class StockItem extends Model
     }
 
     /**
+     * What a dosage is written from (docs/pharmacy.md, "Dosage"): every active
+     * item, even one that has run out, since writing how to take a medicine
+     * does not hand it over; found by name or SKU. The web's medicine picker
+     * (Ui\SelectSearch, `medicines`) and the app's (GET dosage/medicines).
+     *
+     * @param  Builder<StockItem>  $q
+     * @return Builder<StockItem>
+     */
+    public function scopeMedicineChoices(Builder $q, string $search = ''): Builder
+    {
+        $like = '%'.trim($search).'%';
+
+        return $q->where('is_active', true)
+            ->when(trim($search) !== '', fn (Builder $x) => $x->where(fn (Builder $y) => $y
+                ->where('name', 'like', $like)->orWhere('sku', 'like', $like)))
+            ->orderBy('name');
+    }
+
+    /**
      * What the store holds, by the same rules the alerts page uses.
      *
      * @return array{items:int,quantity:string,value:string,low:int,expiring:int,expired:int}
