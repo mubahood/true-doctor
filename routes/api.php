@@ -264,5 +264,6 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
         require __DIR__.'/api/gap-money.php';
         require __DIR__.'/api/gap-stock.php';
         require __DIR__.'/api/gap-admin.php';
+        require __DIR__.'/api/gap-care.php';
     });
 });

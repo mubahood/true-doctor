@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\DiagnosisCode;
+use App\Models\Patient;
 use App\Models\User;
 use App\Models\Visit;
 use App\Models\VisitDiagnosis;
@@ -164,19 +165,66 @@ class DiagnosisService
 
     /**
      * Visits with a written diagnosis and no code in force, newest first: the
-     * records officer's worklist.
+     * records officer's worklist. A search narrows it to a patient (name,
+     * number or phone, every word somewhere) or a visit number.
      *
      * @return Builder<Visit>
      */
-    public function uncoded(): Builder
+    public function uncoded(string $search = ''): Builder
     {
         $coded = VisitDiagnosis::query()->where('removed', false)
             ->whereNotIn('id', VisitDiagnosis::query()->whereNotNull('replaces_id')->select('replaces_id'))
             ->select('visit_id');
 
+        $search = trim($search);
+
         return Visit::query()->whereNotNull('diagnosis')->where('diagnosis', '!=', '')
             ->whereNotIn('id', $coded)
+            ->when($search !== '', fn (Builder $q) => $q->where(fn (Builder $w) => $w
+                ->where('visit_no', 'like', '%'.str_replace(['%', '_'], ['\%', '\_'], $search).'%')
+                ->orWhereHas('patient', fn (Builder $p) => Patient::matchWords($p, $search))))
             ->latest('id');
+    }
+
+    /**
+     * Code a visit from the worklist (the web's Diagnoses to code and the
+     * app's): the first code, so the primary. Only a visit still on the
+     * worklist: two people working down the same list must not stack a second
+     * primary on a visit the other has just coded. The device's uuid makes a
+     * repeat of the same press the row already written.
+     *
+     * @throws ValidationException when the code is not in the list, the visit was coded meanwhile, or it has no written diagnosis
+     */
+    public function codeFromWorklist(Visit $visit, string $code, string $certainty = 'confirmed', ?User $by = null, ?string $uuid = null): VisitDiagnosis
+    {
+        return DB::transaction(function () use ($visit, $code, $certainty, $by, $uuid) {
+            $locked = Visit::query()->whereKey($visit->id)->lockForUpdate()->first();
+
+            if ($uuid !== null && ($existing = VisitDiagnosis::query()->where('uuid', $uuid)->first()) !== null) {
+                if ((int) $existing->visit_id !== (int) $visit->id) {
+                    throw ValidationException::withMessages(['uuid' => 'This entry belongs to another visit.']);
+                }
+                if ($existing->code === strtoupper(trim($code))) {
+                    return $existing; // the same press sent again
+                }
+                // Another code under the same entry is not a repeat: the visit
+                // is coded now, which the next check says.
+            }
+
+            $coded = $this->current($visit)->first();
+            if ($coded !== null) {
+                // An earlier press of one's own whose answer was lost reads as that, not as somebody else's.
+                $mine = $by !== null && (int) $coded->recorded_by === (int) $by->id;
+                throw ValidationException::withMessages(['code' => $mine
+                    ? "You have already coded this visit: {$coded->code} {$coded->title}."
+                    : "This visit was coded meanwhile: {$coded->code} {$coded->title}."]);
+            }
+            if ($locked === null || trim((string) $locked->diagnosis) === '') {
+                throw ValidationException::withMessages(['code' => 'This visit has no written diagnosis to code from the worklist. Code it on the visit.']);
+            }
+
+            return $this->add($visit, $code, true, $certainty, null, $by, $uuid);
+        });
     }
 
     /**
@@ -210,10 +258,13 @@ class DiagnosisService
         return new Collection;
     }
 
+    /** @var array<int, array<string,int>> per hospital, for this instance: a worklist page asks for it once per suggestion search */
+    private array $usageSeen = [];
+
     /** @return array<string,int> code => times used here in the last six months */
     private function usage(int $hospitalId): array
     {
-        return VisitDiagnosis::query()->withoutGlobalScopes()
+        return $this->usageSeen[$hospitalId] ??= VisitDiagnosis::query()->withoutGlobalScopes()
             ->where('hospital_id', $hospitalId)->where('removed', false)
             ->where('recorded_at', '>=', Carbon::now()->subMonths(6))
             ->selectRaw('code, count(*) as n')->groupBy('code')

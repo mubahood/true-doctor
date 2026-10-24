@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\MessageChannel;
+use App\Enums\MessagePurpose;
 use App\Exceptions\SlotUnavailableException;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Patient;
 use App\Models\Visit;
 use App\Services\FollowUpService;
+use App\Services\Messaging\ConsentService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -64,26 +67,38 @@ class FollowUpController extends Controller
             : ApiResponse::success($this->appointmentRow($appointment->load('doctor:id,name')), 'This review was already booked.');
     }
 
-    /** GET follow-ups?show=week|missed|recalls */
+    /**
+     * GET follow-ups?show=week|missed|recalls&q=
+     *
+     * The web page's rows (FollowUpService::rows, its search and its flags),
+     * and for each patient what the desk needs before calling: whether they
+     * agreed to texts about their care, and when they were last seen.
+     */
     public function index(Request $request): JsonResponse
     {
         abort_unless($request->user()?->can('appointments.view'), 403);
 
-        $show = (string) $request->query('show', 'week');
-        $show = isset(FollowUpService::LISTS[$show]) ? $show : 'week';
+        $data = $request->validate(['q' => ['nullable', 'string', 'max:100']]);
+        $show = FollowUpService::list((string) $request->query('show', 'week'));
+        $search = trim((string) ($data['q'] ?? ''));
         $perPage = max(1, min((int) $request->query('per_page', 20), 100));
 
-        $page = match ($show) {
-            'missed' => $this->followUps->missedReviews()->paginate($perPage),
-            'recalls' => $this->followUps->recallsDue()->paginate($perPage),
-            default => $this->followUps->reviewsThisWeek()->paginate($perPage),
-        };
+        $page = $this->followUps->rows($show, $search)->paginate($perPage);
+
+        $patients = collect($page->items())->map(fn ($row) => $row instanceof Patient ? $row : $row->patient)->filter();
+        $ids = $patients->map(fn (Patient $p) => (int) $p->id)->values()->all();
+        $consent = app(ConsentService::class)->allowsMany($ids, MessageChannel::Sms, MessagePurpose::Care);
+        $seen = $this->followUps->lastVisits($ids);
+        $patient = fn (Patient $p) => $this->patientRow($p) + [
+            'sms_consent' => $consent[(int) $p->id] ?? false,
+            'last_visit_at' => isset($seen[(int) $p->id]) ? $seen[(int) $p->id]->toIso8601String() : null,
+        ];
 
         $rows = collect($page->items())->map(fn ($row) => $row instanceof Patient
-            ? ['kind' => 'recall', 'id' => $row->id, 'key' => 'recall:'.$row->next_recall_on?->toDateString(), 'due_on' => $row->next_recall_on?->toDateString(), 'patient' => $this->patientRow($row), 'appointment' => null]
-            : ['kind' => 'review', 'id' => $row->id, 'key' => 'review:'.$row->uuid, 'due_on' => $row->scheduled_at->toDateString(), 'patient' => $row->patient ? $this->patientRow($row->patient) : null, 'appointment' => $this->appointmentRow($row)]);
+            ? ['kind' => 'recall', 'id' => $row->id, 'key' => 'recall:'.$row->next_recall_on?->toDateString(), 'due_on' => $row->next_recall_on?->toDateString(), 'what' => 'Dental check-up', 'flag' => $this->followUps->flag($row), 'patient' => $patient($row), 'appointment' => null]
+            : ['kind' => 'review', 'id' => $row->id, 'key' => 'review:'.$row->uuid, 'due_on' => $row->scheduled_at->toDateString(), 'what' => 'Review', 'flag' => $this->followUps->flag($row), 'patient' => $row->patient ? $patient($row->patient) : null, 'appointment' => $this->appointmentRow($row)]);
 
-        return ApiResponse::paginated($page, $rows->values()->all(), ['show' => $show, 'counts' => $this->followUps->counts()]);
+        return ApiResponse::paginated($page, $rows->values()->all(), ['show' => $show, 'search' => $search, 'counts' => $this->followUps->counts()]);
     }
 
     /** POST follow-ups/text {kind: review|recall, id} */
@@ -128,7 +143,11 @@ class FollowUpController extends Controller
     {
         return [
             'uuid' => $p->uuid,
+            // The id the booking form sends as `patient_id` (PatientResource's own name for it).
+            'server_id' => $p->id,
             'name' => $p->full_name,
+            'first_name' => $p->first_name,
+            'last_name' => $p->last_name,
             'patient_no' => $p->patient_no,
             'phone' => $p->phone_1 ?: $p->phone_2,
         ];

@@ -17,7 +17,7 @@ Never move a thing from tier 3 to tier 1 casually: money and stock need the serv
 - **IDs are UUIDs** generated on the device for new records (`lib/sync/ids.dart`); the server accepts and keeps them.
 - **Clocks lie.** The device measures its offset from server time (`DeviceClock`) and warns when unknown. The server remains the authority for ordering; never trust a client timestamp for money.
 - **Pull must tell about deletes** (tombstones): `removed` in `sync/pull` and `GET /bootstrap`, written by `TombstoneObserver` (deletes, and lab/radiology orders closed out of a worklist). A new listed entity needs its model added to `TombstoneObserver::ENTITIES`. See `docs/api/plane.md`.
-- **Pagination is capped.** Say so in the UI when a list is a slice ("50 of 212"); the radiology list still lacks it.
+- **Pagination is capped.** Say so in the UI when a list is a slice ("50 of 212"), and let the person page on (the radiology list does since 2026-10-24).
 - **Rate limit** 240/min; sign-in fans out ~30 requests. Batch where you can; GETs retry on 429/502/503/504 honouring `Retry-After`.
 - Responses the app caches must be **stable and small**. Don't embed huge blobs or per-request noise (it breaks cache diffing and fills the 6 MB cache budget).
 

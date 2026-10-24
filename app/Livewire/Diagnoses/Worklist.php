@@ -39,7 +39,8 @@ class Worklist extends Component
         abort_unless(self::allowed(), 403);
         $visit = Visit::query()->findOrFail($visitId);
         try {
-            app(DiagnosisService::class)->add($visit, $code, true, 'confirmed', null, Auth::user());
+            // The app codes through the same call (DiagnosisController::code).
+            app(DiagnosisService::class)->codeFromWorklist($visit, $code, 'confirmed', Auth::user());
         } catch (ValidationException $e) {
             $this->dispatch('toast', type: 'error', message: (string) collect($e->errors())->flatten()->first());
 

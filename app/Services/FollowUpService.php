@@ -154,6 +154,87 @@ final class FollowUpService
         'recalls' => 'Dental check-ups due',
     ];
 
+    /** The list a request names, or this week's reviews when it names none of them. */
+    public static function list(?string $show): string
+    {
+        return isset(self::LISTS[(string) $show]) ? (string) $show : 'week';
+    }
+
+    /**
+     * One list's rows, narrowed by what was typed: name, patient number or
+     * phone, every word somewhere (Patient::matchWords, the patient search
+     * everywhere else). The web page and the API both read it.
+     *
+     * @return Builder<Appointment>|Builder<Patient>
+     */
+    public function rows(string $show, string $search = ''): Builder
+    {
+        $query = match (self::list($show)) {
+            'missed' => $this->missedReviews(),
+            'recalls' => $this->recallsDue(),
+            default => $this->reviewsThisWeek(),
+        };
+
+        $search = trim($search);
+        if ($search === '') {
+            return $query;
+        }
+
+        return self::list($show) === 'recalls'
+            ? Patient::matchWords($query, $search)
+            : $query->whereHas('patient', fn (Builder $p) => Patient::matchWords($p, $search));
+    }
+
+    /**
+     * What to flag beside a row, worded once for the web page and the app: a
+     * check-up overdue by so many days, a review the patient did not come to.
+     *
+     * @return array{label:string, tone:string}|null
+     */
+    public function flag(Appointment|Patient $row): ?array
+    {
+        $today = Carbon::today();
+
+        if ($row instanceof Patient) {
+            $on = $row->next_recall_on;
+            if ($on === null || ! $on->copy()->startOfDay()->lt($today)) {
+                return null;
+            }
+            $days = (int) round($on->copy()->startOfDay()->diffInDays($today));
+
+            return ['label' => $days.' '.($days === 1 ? 'day' : 'days').' overdue', 'tone' => 'warn'];
+        }
+
+        if ($row->status === AppointmentStatus::NoShow) {
+            return ['label' => 'Did not come', 'tone' => 'danger'];
+        }
+
+        return $row->scheduled_at->lt($today) ? ['label' => 'Not attended', 'tone' => 'danger'] : null;
+    }
+
+    /**
+     * When each patient was last seen: their newest visit, in one query for a
+     * page of rows.
+     *
+     * @param  list<int>  $patientIds
+     * @return array<int, Carbon>
+     */
+    public function lastVisits(array $patientIds): array
+    {
+        if ($patientIds === []) {
+            return [];
+        }
+
+        return Visit::query()
+            ->whereIn('patient_id', array_values(array_unique($patientIds)))
+            ->groupBy('patient_id')
+            ->selectRaw('patient_id, max(created_at) as last_at')
+            ->pluck('last_at', 'patient_id')
+            ->filter()
+            ->mapWithKeys(fn ($at, $id) => [(int) $id => Carbon::parse((string) $at)])
+            ->all();
+    }
+
     /** @return array<string,int> how many in each list */
     public function counts(): array
     {
