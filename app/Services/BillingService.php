@@ -183,9 +183,15 @@ class BillingService
     public function addCharge(Visit $visit, string $kind, int $id, string $quantity, ?int $by = null, ?string $unitPrice = null, ?bool $billed = null, ?string $note = null): OrderItem
     {
         return DB::transaction(function () use ($visit, $kind, $id, $quantity, $by, $unitPrice, $billed, $note) {
-            Visit::whereKey($visit->id)->lockForUpdate()->first();
+            /** @var Visit $locked */
+            $locked = Visit::whereKey($visit->id)->lockForUpdate()->firstOrFail();
             if ($this->hasLiveInvoice($visit)) {
                 throw new RuntimeException('This visit has been invoiced, so its charges can no longer be changed.');
+            }
+            // A cancelled visit is one the hospital decided did not happen;
+            // a completed one may still be billed (people pay after they leave).
+            if ($locked->status === \App\Enums\VisitStatus::Completed && $locked->outcome === \App\Enums\VisitOutcome::Cancelled) {
+                throw new RuntimeException('This visit was cancelled, so nothing can be charged to it.');
             }
 
             if ($kind === 'product') {
@@ -280,28 +286,32 @@ class BillingService
      */
     public function recompute(Visit $visit, ?int $by = null): array
     {
-        if ($this->hasLiveInvoice($visit)) {
-            throw new RuntimeException('This visit has been invoiced — its lines are fixed.');
-        }
-
-        $checked = 0;
-        $fixed = [];
-
-        foreach ($visit->orderItems()->get() as $line) {
-            if (! $line->status->isBillable()) {
-                continue;
+        return DB::transaction(function () use ($visit, $by) {
+            // The lock invoicing takes: lines are never rewritten under an invoice being raised.
+            Visit::whereKey($visit->id)->lockForUpdate()->first();
+            if ($this->hasLiveInvoice($visit)) {
+                throw new RuntimeException('This visit has been invoiced — its lines are fixed.');
             }
 
-            $checked++;
-            $should = bcmul((string) $line->unit_price, (string) $line->quantity, 2);
+            $checked = 0;
+            $fixed = [];
 
-            if (bccomp($should, (string) $line->line_total, 2) !== 0) {
-                $fixed[] = $line->name.': '.$line->line_total.' → '.$should;
-                $line->update(['line_total' => $should, 'updated_by' => $by]);
+            foreach ($visit->orderItems()->get() as $line) {
+                if (! $line->status->isBillable()) {
+                    continue;
+                }
+
+                $checked++;
+                $should = bcmul((string) $line->unit_price, (string) $line->quantity, 2);
+
+                if (bccomp($should, (string) $line->line_total, 2) !== 0) {
+                    $fixed[] = $line->name.': '.$line->line_total.' → '.$should;
+                    $line->update(['line_total' => $should, 'updated_by' => $by]);
+                }
             }
-        }
 
-        return ['checked' => $checked, 'fixed' => count($fixed), 'lines' => $fixed];
+            return ['checked' => $checked, 'fixed' => count($fixed), 'lines' => $fixed];
+        });
     }
 
     /**
@@ -312,6 +322,17 @@ class BillingService
      * because the discount is printed on it.
      */
     public function applyDiscount(Visit $visit, DiscountType $type, string $value, ?string $reason, ?int $by = null): Visit
+    {
+        return DB::transaction(function () use ($visit, $type, $value, $reason, $by) {
+            // The lock invoicing takes: a discount never changes under an invoice being raised.
+            Visit::whereKey($visit->id)->lockForUpdate()->first();
+            $visit->unsetRelation('orderItems');
+
+            return $this->applyDiscountLocked($visit, $type, $value, $reason, $by);
+        });
+    }
+
+    private function applyDiscountLocked(Visit $visit, DiscountType $type, string $value, ?string $reason, ?int $by): Visit
     {
         if ($this->hasLiveInvoice($visit)) {
             throw new RuntimeException('This visit has been invoiced — its discount is on the invoice now.');
@@ -470,35 +491,40 @@ class BillingService
      * Generate an invoice from a visit's billable lines. One live invoice
      * per visit (a re-generate is blocked while a non-void invoice exists).
      * Runs in a transaction: number allocation, roll-ups and item snapshots are
-     * all-or-nothing. Discount is a flat amount, 0..(subtotal+tax).
+     * all-or-nothing. Discount is a flat amount, 0..(subtotal+tax); null takes
+     * the discount agreed on the visit, worked out under the lock.
+     *
+     * The visit row is locked FIRST and the lines are read after it, so a
+     * charge, a correction or a discount committed a moment earlier is on the
+     * invoice, and one that comes a moment later waits and is then refused.
      */
-    public function generateInvoice(Visit $visit, string $discount = '0.00', ?int $by = null): Invoice
+    public function generateInvoice(Visit $visit, ?string $discount = '0.00', ?int $by = null): Invoice
     {
-        if (bccomp($discount, '0', 2) < 0) {
+        if ($discount !== null && bccomp($discount, '0', 2) < 0) {
             throw new RuntimeException('Discount cannot be negative.');
         }
 
         // Can't post an invoice into a closed accounting period.
         app(\App\Services\FinancialYearService::class)->assertPostingAllowed(Carbon::now());
 
-        $this->assertNoOpenInvoice($visit);
-
-        $visit->loadMissing('orderItems');
-
-        // The same arithmetic the screen showed, with the same discount — so
-        // what was read at the counter is what gets printed.
-        $t = $this->figures($visit, $discount);
-
-        if (bccomp($discount, $t['subtotal'], 2) > 0) {
-            throw new RuntimeException('Discount cannot exceed the invoice amount.');
-        }
-        $total = $t['due'];
-
-        return DB::transaction(function () use ($visit, $t, $discount, $total, $by) {
+        return DB::transaction(function () use ($visit, $discount, $by) {
             // Serialise per visit: two concurrent "generate" clicks must
             // not both pass the existence check (plan finding K3).
-            Visit::whereKey($visit->id)->lockForUpdate()->first();
+            /** @var Visit $visit */
+            $visit = Visit::whereKey($visit->id)->lockForUpdate()->firstOrFail();
             $this->assertNoOpenInvoice($visit);
+
+            $visit->load('orderItems');
+            $discount ??= $this->discountFor($visit);
+
+            // The same arithmetic the screen showed, with the same discount — so
+            // what was read at the counter is what gets printed.
+            $t = $this->figures($visit, $discount);
+
+            if (bccomp($discount, $t['subtotal'], 2) > 0) {
+                throw new RuntimeException('Discount cannot exceed the invoice amount.');
+            }
+            $total = $t['due'];
 
             $invoice = $this->createInvoiceWithNumber([
                 'visit_id' => $visit->id,

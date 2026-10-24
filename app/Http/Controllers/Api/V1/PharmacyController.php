@@ -40,7 +40,8 @@ class PharmacyController extends Controller
             // Each line was billed on the dispensing's own order, one order line
             // per dispensed line and in the same order (DispensationService), so
             // the two pair up by position: what was given, and whether it is on
-            // the bill. A pair whose names differ is not trusted (null).
+            // the bill. A pair whose item or quantity differs is not trusted
+            // (null); a charge taken off the bill is not billed, whatever it was.
             $order = \App\Models\Order::where('subject_type', $d->getMorphClass())->where('subject_id', $d->id)->latest('id')->first();
             $charged = $order === null ? [] : $order->items()->reorder()->orderBy('id')->get()->values()->all();
             $items = [];
@@ -49,7 +50,9 @@ class PharmacyController extends Controller
                 $items[] = [
                     'name' => $i->name, 'quantity' => $i->quantity, 'unit_price' => $i->unit_price, 'line_total' => $i->line_total,
                     // Given without billing: off the shelf, not on the bill (docs/orders.md).
-                    'billed' => $line !== null && $line->name === $i->name ? $line->isBilled() : null,
+                    'billed' => $line !== null && (int) $line->stock_item_id === (int) $i->stock_item_id && bccomp((string) $line->quantity, (string) $i->quantity, 2) === 0
+                        ? ($line->status->isBillable() && $line->isBilled())
+                        : null,
                 ];
             }
             $out[] = [

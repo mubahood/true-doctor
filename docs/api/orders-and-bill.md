@@ -26,6 +26,8 @@ A charge is changed **on the order that raised it**, never on the bill: each bil
 - `notes`: up to 255; `null` or empty clears it.
 - `unit_price`: only a service priced as a range moves, and only inside its range (the line's `price_range`). A fixed price, a product, or a charge another record placed (a lab request, a dental plan item) is refused by `unit_price`: "Dressing has a fixed price, so its price cannot be changed here." Sending the price it already has is no change.
 - A field left out keeps what the line has.
+- A dispensing's product line keeps the dispensing's quantity (its stock was taken against the dispensed line, not this charge): a different quantity is refused, "Change the quantity on the dispensing."; its note may still change. Such a line answers `quantity_fixed: true`.
+- The correction runs under the visit's row lock (the lock invoicing takes) and reads the line again inside it, so two corrections at once never move the shelf twice.
 
 Answers the order (as `GET /orders/{uuid}`, without `reversal`) and "Line updated.". **422** with the reason, and no field, once the order is cancelled or the visit invoiced, or for a removed line ("That line was removed, so it cannot be changed.").
 
@@ -89,7 +91,7 @@ Every answer of `GET /orders/{uuid}` and the order writes (`PATCH`, `move`, `can
 ```
 
 - `lines` are the standing lines, newest first as the panel lists them; a removed line is never among them (it is in `removed_lines`, for the trail). A product given **Not billed** stands at `"0.00"` with `"billed": false`: it left the shelf and is not on the bill.
-- `changeable`: whether this reader may change the line on its order: `visits.create` or `visits.manage`, the order not cancelled, and nothing invoiced (the order dialog's rule).
+- `changeable`: whether this reader may change the line on its order: `visits.create` or `visits.manage`, the order not cancelled, and nothing invoiced (the order dialog's rule). A dispensing's product line is never changeable from the bill.
 - `discount`: as agreed at the counter. A percentage keeps its rule (`value` "25.00" with `type` "percent"); `amount` is what it is worth against the bill now, capped at the bill.
 - `can_add`, `can_discount`, `can_rebill`: `billing.manage` (and `billing.discount`) while nothing is invoiced. Once invoiced the bill is fixed.
 - Every amount is a two-decimal string.
@@ -109,7 +111,7 @@ Every answer of `GET /orders/{uuid}` and the order writes (`PATCH`, `move`, `can
 - `billed`: a product only; left out, the hospital's choice (`products_billed`).
 - `note`: optional, up to 255.
 
-It raises an order of its own, completed (a consultation for a service, a pharmacy order for a product), so the charge has a piece of work behind it; a product leaves the shelf in the same transaction, and more than the shelf holds is refused by `stock_item_id` with nothing billed. Answers **201** with the bill and "Added to the bill.". **422** "This visit has been invoiced, so its charges can no longer be changed." once there is an invoice (the service asks again under the visit's lock, the lock invoicing takes).
+It raises an order of its own, completed (a consultation for a service, a pharmacy order for a product), so the charge has a piece of work behind it; a product leaves the shelf in the same transaction, and more than the shelf holds is refused by `stock_item_id` with nothing billed. Answers **201** with the bill and "Added to the bill.". **422** "This visit has been invoiced, so its charges can no longer be changed." once there is an invoice (the service asks again under the visit's lock, the lock invoicing takes), and "This visit was cancelled, so nothing can be charged to it." on a cancelled visit. A completed visit may still be charged: people pay after they leave.
 
 ## The discount
 

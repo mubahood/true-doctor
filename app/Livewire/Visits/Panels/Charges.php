@@ -492,12 +492,14 @@ class Charges extends Component
         // whoever is raising the invoice. A percentage is resolved against the
         // bill as it stands at this moment.
         $this->discount = $billing->discountFor($visit);
-        $data = $this->validate(InvoiceGenerateRequest::rulesFor());
+        $this->validate(InvoiceGenerateRequest::rulesFor());
 
         try {
             // "already invoiced", "discount exceeds the amount", ClosedPeriodException
             // — every one of them is a RuntimeException raised by BillingService.
-            $invoice = $billing->generateInvoice($visit, InvoiceGenerateRequest::normalise($data['discount'] ?? null), Auth::id());
+            // Null: the agreed discount, worked out again under the visit's
+            // lock with the lines it applies to (the figure above is the preview).
+            $invoice = $billing->generateInvoice($visit, null, Auth::id());
         } catch (RuntimeException $e) {
             $this->addError('discount', $e->getMessage());
 

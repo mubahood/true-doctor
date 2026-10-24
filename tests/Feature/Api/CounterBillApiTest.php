@@ -376,4 +376,96 @@ class CounterBillApiTest extends TestCase
             ->assertJsonPath('data.0.items.0.billed', true)
             ->assertJsonPath('data.0.items.1.billed', false);
     }
+
+    // ── What the review found ────────────────────────────────────────────
+
+    /** A dispensing took its stock against the dispensed line: its charge's quantity is not changed on the order. */
+    public function test_a_dispensings_charge_keeps_its_quantity_on_web_and_api(): void
+    {
+        $drug = $this->drug('20');
+        $dispensation = app(DispensationService::class)->dispense($this->visit, [['stock_item_id' => $drug->id, 'quantity' => '10', 'billed' => true]], null, $this->doctor->id);
+        $order = Order::where('subject_type', $dispensation->getMorphClass())->where('subject_id', $dispensation->id)->firstOrFail();
+        $line = $order->items()->firstOrFail();
+        $this->assertSame('10.00', (string) $drug->fresh()->current_quantity);
+
+        Sanctum::actingAs($this->doctor);
+        $this->patchJson("/api/v1/orders/{$order->uuid}/items/{$line->id}", ['quantity' => '4'])
+            ->assertStatus(422)->assertJsonPath('message', 'Change the quantity on the dispensing.');
+        $this->patchJson("/api/v1/orders/{$order->uuid}/items/{$line->id}", ['notes' => 'After meals'])->assertOk()
+            ->assertJsonPath('data.items.0.quantity_fixed', true);
+        $this->assertSame('10.00', (string) $drug->fresh()->current_quantity, 'the shelf is as the dispensing left it');
+        $this->assertSame('10.00', (string) $line->fresh()->quantity);
+        $this->getJson($this->bill())->assertJsonPath('data.lines.0.changeable', false);
+
+        // The web's order dialog: the same refusal.
+        $this->actingAs($this->doctor);
+        \Livewire\Livewire::test(\App\Livewire\Visits\Panels\OrderDetail::class, ['visitId' => $this->visit->id])
+            ->call('open', $this->visit->id, $order->id)
+            ->call('editItem', $line->id)->set('editQty', '4')->call('saveItem')
+            ->assertDispatched('toast', message: 'Change the quantity on the dispensing.', type: 'error');
+        $this->assertSame('10.00', (string) $drug->fresh()->current_quantity);
+    }
+
+    /** A correction works from the line as it is now, not from a copy read before it. */
+    public function test_a_correction_moves_the_shelf_from_the_quantity_as_it_now_stands(): void
+    {
+        $drug = $this->drug('20');
+        $order = app(OrderService::class)->place($this->visit, OrderType::Procedure, 'Filling', [], $this->doctor->id);
+        $line = app(OrderService::class)->addProductItem($order, $drug, '2', $this->doctor->id, true);
+        $stale = OrderItem::findOrFail($line->id);
+
+        // Somebody else corrects it to 5 first.
+        app(OrderService::class)->updateItem($line, '5', null, $this->doctor->id);
+        $this->assertSame('15.00', (string) $drug->fresh()->current_quantity);
+
+        // A correction to 6 from the copy that still says 2 takes one more, not four.
+        app(OrderService::class)->updateItem($stale, '6', null, $this->doctor->id);
+        $this->assertSame('14.00', (string) $drug->fresh()->current_quantity);
+        $this->assertSame('6.00', (string) $line->fresh()->quantity);
+    }
+
+    /** The invoice reads the lines after it takes the lock: a charge committed just before is on it. */
+    public function test_the_invoice_carries_every_charge_committed_before_it_and_the_agreed_discount(): void
+    {
+        app(BillingService::class)->orderService($this->visit, $this->service('Consultation', '8000')->id, 1, $this->clerk->id);
+        $held = Visit::findOrFail($this->visit->id);
+        $held->load('orderItems');   // read before the next charge
+
+        app(BillingService::class)->orderService($this->visit, $this->service('Dressing', '2000')->id, 1, $this->clerk->id);
+        app(BillingService::class)->applyDiscount($this->visit, \App\Enums\DiscountType::Percent, '10', 'Staff rate', $this->clerk->id);
+
+        $invoice = app(BillingService::class)->generateInvoice($held, null, $this->clerk->id);
+        $this->assertSame('10000.00', (string) $invoice->subtotal);
+        $this->assertSame('1000.00', (string) $invoice->discount, 'ten per cent of the bill as it stands under the lock');
+        $this->assertCount(2, $invoice->items);
+    }
+
+    /** A visit called off is one that did not happen; a closed one may still be billed. */
+    public function test_nothing_is_charged_to_a_cancelled_visit_but_a_closed_one_may_be_billed(): void
+    {
+        $svc = $this->service();
+        $this->visit->forceFill(['status' => 'completed', 'outcome' => 'cancelled'])->save();
+
+        $this->postJson("{$this->bill()}/lines", ['kind' => 'service', 'service_id' => $svc->id, 'quantity' => '1'])
+            ->assertStatus(422)->assertJsonPath('errors.service_id.0', 'This visit was cancelled, so nothing can be charged to it.');
+        $this->actingAs($this->clerk);
+        \Livewire\Livewire::test(\App\Livewire\Visits\Panels\Charges::class, ['visitId' => $this->visit->id, 'lazy' => false])
+            ->call('openAdd')->set('service_id', $svc->id)->set('quantity', '1')->call('addLine')
+            ->assertHasErrors(['service_id']);
+        $this->assertSame(0, OrderItem::count());
+
+        $this->visit->forceFill(['status' => 'completed', 'outcome' => 'closed'])->save();
+        $this->postJson("{$this->bill()}/lines", ['kind' => 'service', 'service_id' => $svc->id, 'quantity' => '1'])->assertCreated();
+    }
+
+    /** A charge taken off a dispensing is not shown as billed. */
+    public function test_a_removed_dispensing_charge_is_not_shown_as_billed(): void
+    {
+        $drug = $this->drug('20');
+        $dispensation = app(DispensationService::class)->dispense($this->visit, [['stock_item_id' => $drug->id, 'quantity' => '2', 'billed' => true]], null, $this->doctor->id);
+        $order = Order::where('subject_type', $dispensation->getMorphClass())->where('subject_id', $dispensation->id)->firstOrFail();
+        app(OrderService::class)->removeItem($order->items()->firstOrFail(), $this->doctor->id);
+
+        $this->getJson("/api/v1/visits/{$this->visit->uuid}/dispensations")->assertOk()->assertJsonPath('data.0.items.0.billed', false);
+    }
 }

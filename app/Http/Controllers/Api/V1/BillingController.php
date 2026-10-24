@@ -8,7 +8,6 @@ use App\Enums\InvoiceStatus;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\InvoiceGenerateRequest;
 use App\Http\Requests\PaymentRequest;
 use App\Http\Resources\InvoiceResource;
 use App\Models\Invoice;
@@ -17,6 +16,7 @@ use App\Models\Service;
 use App\Models\Visit;
 use App\Services\BillingService;
 use App\Services\OrderDesk;
+use App\Services\OrderService;
 use App\Support\ApiResponse;
 use App\Support\CurrentHospital;
 use App\Support\HospitalSettings;
@@ -233,7 +233,9 @@ class BillingController extends Controller
                     'type' => $order->type->value,
                     'status' => $order->status->value,
                 ],
-                'changeable' => $standing && $writable && $order !== null && $order->status !== OrderStatus::Cancelled,
+                // A dispensing's charge is changed on the dispensing: its stock hangs off that, not this line.
+                'changeable' => $standing && $writable && $order !== null && $order->status !== OrderStatus::Cancelled
+                    && ! ($line->isProduct() && OrderService::isDispensing($order)),
             ];
             if ($standing) {
                 $lines[] = $row;
@@ -286,11 +288,10 @@ class BillingController extends Controller
         $this->authorize('view', $visit);
         $this->authorize('create', Invoice::class);
 
-        // The discount decided at the counter, not one typed here.
-        $discount = $this->billing->discountFor($visit);
-
         try {
-            $invoice = $this->billing->generateInvoice($visit, InvoiceGenerateRequest::normalise($discount), $request->user()->id);
+            // The discount decided at the counter, not one typed here, worked
+            // out under the visit's lock with the lines it applies to.
+            $invoice = $this->billing->generateInvoice($visit, null, $request->user()->id);
         } catch (RuntimeException $e) {
             return ApiResponse::error(ApiErrorCode::ValidationFailed, $e->getMessage(), 422);
         }
