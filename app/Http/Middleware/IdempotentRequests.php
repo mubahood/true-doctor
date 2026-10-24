@@ -130,6 +130,11 @@ class IdempotentRequests
         // A refund pays money out; a credit note moves what is owed (docs/refunds.md).
         'api.invoices.refunds',
         'api.invoices.credit-notes',
+        // A charge at the counter (a product leaves the shelf), the discount
+        // agreed there, and a line corrected in place (docs/api/orders-and-bill.md).
+        'api.bill.lines.store',
+        'api.bill.discount',
+        'api.orders.items.update',
     ];
 
     private function keyIsRequired(Request $request): bool

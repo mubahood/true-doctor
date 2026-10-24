@@ -427,6 +427,12 @@ kind, 404 across hospitals, 422 with the reason otherwise. Idempotent through
 who can be assigned with the practice's label; `meta.orders` carries the
 offered kinds and the labels.
 
+One line is corrected in place, as the dialog's pencil does, with `PATCH
+/api/v1/orders/{uuid}/items/{id}` (`quantity`, `notes`, a ranged service's
+`unit_price`), through `OrderService::updateItem`; the order's own answers
+carry the labels, `charge_swappable`, `products_billed` and each line's
+`price_range` (docs/api/orders-and-bill.md).
+
 ### Teeth on a procedure (2026-10-26)
 
 In a dental clinic a procedure order names the teeth it is done on

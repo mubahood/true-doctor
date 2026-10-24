@@ -328,20 +328,33 @@ class OrderService
      */
     public function updateItem(OrderItem $line, string $quantity, ?string $notes, ?int $by = null, ?string $unitPrice = null): OrderItem
     {
-        /** @var Order $order */
-        $order = $line->order()->firstOrFail();
-        $this->assertItemsEditable($order);
-
-        if (! $line->status->isBillable()) {
-            throw new RuntimeException('That line was removed, so it cannot be changed.');
-        }
-
         $qty = $this->assertQuantity($quantity);
-        $price = $this->allowedPrice($order, $line, $unitPrice);
 
-        return DB::transaction(function () use ($line, $qty, $notes, $by, $price) {
+        return DB::transaction(function () use ($line, $qty, $notes, $by, $unitPrice) {
+            /** @var Order $order */
+            $order = Order::whereKey($line->order_id)->firstOrFail();
+            // The lock invoicing and the other bill writes take, then the line
+            // itself, read again: two corrections at once must not both move
+            // the shelf by a difference worked out from the same old quantity.
+            Visit::whereKey($order->visit_id)->lockForUpdate()->first();
+            $this->assertItemsEditable($order);
+
+            /** @var OrderItem $line */
+            $line = OrderItem::whereKey($line->id)->lockForUpdate()->firstOrFail();
+            if (! $line->status->isBillable()) {
+                throw new RuntimeException('That line was removed, so it cannot be changed.');
+            }
+
+            $price = $this->allowedPrice($order, $line, $unitPrice);
             $was = (string) $line->quantity;
             $delta = bcsub($qty, $was, 2);
+
+            // A dispensing took its stock against the dispensed line, not this
+            // charge, so moving stock here would put back nothing and take
+            // more than was given.
+            if ($line->stock_item_id !== null && bccomp($delta, '0', 2) !== 0 && self::isDispensing($order)) {
+                throw new RuntimeException('Change the quantity on the dispensing.');
+            }
 
             if ($line->stock_item_id !== null && bccomp($delta, '0', 2) !== 0) {
                 /** @var StockItem $item */
@@ -402,6 +415,29 @@ class OrderService
 
             return $this->billing->setLineBilled($locked, $billed, $by);
         });
+    }
+
+    /**
+     * Whether this order is a dispensing's (DispensationService): its stock
+     * hangs off the dispensation's items, not off its charges, so a charge's
+     * quantity is not changed here.
+     */
+    public static function isDispensing(Order $order): bool
+    {
+        return $order->subject_type === (new Dispensation)->getMorphClass();
+    }
+
+    /**
+     * The unit price this line may take, or null to keep its own; a sentence
+     * when it may not (the rule below). Lets a caller say which field was
+     * refused before it asks updateItem(), which applies the same rule again.
+     */
+    public function priceFor(OrderItem $line, ?string $asked): ?string
+    {
+        /** @var Order $order */
+        $order = $line->order()->firstOrFail();
+
+        return $this->allowedPrice($order, $line, $asked);
     }
 
     /**
@@ -649,6 +685,13 @@ class OrderService
         /** @var Order $order */
         $order = $line->order()->firstOrFail();
         $this->assertItemsEditable($order);
+
+        // A dispensing's stock hangs off the dispensed line, not this charge:
+        // taking the charge off alone would leave the goods off the shelf.
+        // Cancelling the dispensing's order puts both back together.
+        if ($line->stock_item_id !== null && self::isDispensing($order)) {
+            throw new RuntimeException('This was dispensed. Cancel the dispensing to put it back on the shelf and take it off the bill.');
+        }
 
         return DB::transaction(function () use ($line, $by) {
             $this->stock->returnFor($line, $by, 'Line removed from the order');

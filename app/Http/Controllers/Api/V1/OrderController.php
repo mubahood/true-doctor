@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Enums\ApiErrorCode;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
+use App\Exceptions\InsufficientStockException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
@@ -54,7 +55,26 @@ class OrderController extends Controller
             'orders' => OrderResource::collection($orders),
             'counts' => collect(OrderType::cases())->mapWithKeys(fn ($t) => [$t->value => (int) ($counts[$t->value] ?? 0)]),
             'writable' => OrderDesk::canWrite($request->user()) && $visit->isOpen(),
-        ], ['total' => $total, 'returned' => $orders->count(), 'limit' => self::LIST_CAP, 'truncated' => $total > self::LIST_CAP]);
+        ] + self::practice(), ['total' => $total, 'returned' => $orders->count(), 'limit' => self::LIST_CAP, 'truncated' => $total > self::LIST_CAP]);
+    }
+
+    /**
+     * What this practice calls an order's fields and where a product line
+     * starts, so the app words and defaults its forms the way the web's do
+     * without reading them from /meta: `labels` (OrderDesk::wording — a dental
+     * clinic's "Treatment" and "Dentist assigned"), `asks_teeth` (a procedure
+     * names its teeth here) and `products_billed` (Billed or Not billed when a
+     * product is added; HospitalSettings::productsBilledByDefault).
+     *
+     * @return array{labels:array{kind:string,title:string,assignee:string},asks_teeth:bool,products_billed:bool}
+     */
+    private static function practice(): array
+    {
+        return [
+            'labels' => OrderDesk::wording(),
+            'asks_teeth' => \App\Services\DentalService::teethOnOrders(),
+            'products_billed' => app(\App\Support\HospitalSettings::class)->productsBilledByDefault(),
+        ];
     }
 
     /** Place one order of any kind. */
@@ -89,6 +109,65 @@ class OrderController extends Controller
             // What cancelling would undo — money off the bill, goods back on the shelf.
             'reversal' => $this->orders->reversalPlan($order),
         ]);
+    }
+
+    /**
+     * Correct one line in place (web: the order dialog's pencil, saveItem):
+     * its quantity, the note beside it and, on a service priced as a range,
+     * its price inside the range. A product's quantity is how much left the
+     * shelf, so the difference moves stock either way, in the same
+     * transaction as the money (OrderService::updateItem). A field left out
+     * keeps what the line has. Refused once the order is cancelled or the
+     * visit invoiced, and for a removed line, with the reason.
+     */
+    public function updateItem(Request $request, Order $order, int $item): JsonResponse
+    {
+        $this->authorize('view', $order->visit);
+        abort_unless(OrderDesk::canWrite($request->user()), 403);
+
+        $line = OrderItem::where('order_id', $order->id)->findOrFail($item);
+
+        $data = $request->validate([
+            // Plain decimals only: "1e3" passes `numeric` but not bcmath.
+            'quantity' => ['sometimes', 'required', 'decimal:0,2', 'gt:0', 'max:99999999.99'],
+            'notes' => ['sometimes', 'nullable', 'string', 'max:255'],
+            // Only a service priced as a range moves, and only inside it (OrderService::allowedPrice).
+            'unit_price' => ['sometimes', 'nullable', 'decimal:0,2', 'min:0'],
+        ], [
+            'quantity.gt' => 'Quantity must be more than zero.',
+            'quantity.decimal' => 'Quantity is a number with at most two decimals.',
+        ]);
+
+        $quantity = array_key_exists('quantity', $data) ? (string) $data['quantity'] : (string) $line->quantity;
+        $notes = array_key_exists('notes', $data) ? (trim((string) $data['notes']) ?: null) : $line->notes;
+        $price = isset($data['unit_price']) && $data['unit_price'] !== '' ? (string) $data['unit_price'] : null;
+
+        try {
+            // The order cancelled or the visit invoiced: about the order, not a field.
+            $this->orders->assertItemsEditable($order);
+        } catch (RuntimeException $e) {
+            return ApiResponse::error(ApiErrorCode::ValidationFailed, $e->getMessage(), 422);
+        }
+
+        if ($price !== null) {
+            try {
+                // A fixed price, a product, a charge another record placed, or outside the range.
+                $this->orders->priceFor($line, $price);
+            } catch (RuntimeException $e) {
+                return ApiResponse::error(ApiErrorCode::ValidationFailed, $e->getMessage(), 422, ['unit_price' => [$e->getMessage()]]);
+            }
+        }
+
+        try {
+            $this->orders->updateItem($line, $quantity, $notes, $request->user()->id, $price);
+        } catch (InsufficientStockException $e) {
+            // "Not enough Amoxicillin in stock" reaches the reader as itself, by the quantity.
+            return ApiResponse::error(ApiErrorCode::ValidationFailed, $e->getMessage(), 422, ['quantity' => [$e->getMessage()]]);
+        } catch (RuntimeException $e) {
+            return ApiResponse::error(ApiErrorCode::ValidationFailed, $e->getMessage(), 422);
+        }
+
+        return ApiResponse::success($this->one($order), 'Line updated.');
     }
 
     /**
@@ -272,13 +351,17 @@ class OrderController extends Controller
         $type = (string) $request->query('type', '');
 
         return ApiResponse::success(OrderDesk::catalogue($type, (string) $request->query('q', ''), array_map('intval', (array) $request->query('chosen', [])))
-            + ['titles' => OrderDesk::titleSuggestions($type)]);
+            + ['titles' => OrderDesk::titleSuggestions($type)] + self::practice());
     }
 
-    /** Services and products an order's lines are picked from. */
+    /**
+     * Services and products an order's lines are picked from, and the bill's
+     * Add charge (whoever takes payments may add a charge: billing.manage).
+     * A service priced as a range carries `max_price` (null for a fixed price).
+     */
     public function lines(Request $request): JsonResponse
     {
-        abort_unless(OrderDesk::canWrite($request->user()), 403);
+        abort_unless(OrderDesk::canWrite($request->user()) || $request->user()->can('billing.manage'), 403);
 
         $q = trim((string) $request->query('q', ''));
         $kind = $request->query('kind') === 'product' ? 'product' : 'service';
@@ -289,7 +372,7 @@ class OrderController extends Controller
                 ->map(fn ($s) => ['id' => $s->id, 'name' => $s->name, 'price' => (string) $s->sale_price, 'on_hand' => (string) $s->current_quantity, 'unit' => $s->unit])
             : Service::where('is_active', true)->when($q !== '', fn ($x) => $x->where('name', 'like', "%{$q}%"))
                 ->orderBy('name')->limit(OrderDesk::PICK_LIMIT)->get()
-                ->map(fn ($s) => ['id' => $s->id, 'name' => $s->name, 'price' => (string) $s->price]);
+                ->map(fn (Service $s) => ['id' => $s->id, 'name' => $s->name, 'price' => (string) $s->price, 'max_price' => $s->hasRange() ? (string) $s->max_price : null]);
 
         return ApiResponse::success($rows->values());
     }
@@ -297,6 +380,8 @@ class OrderController extends Controller
     /** @return array<string,mixed> */
     private function one(Order $order): array
     {
-        return (new OrderResource($order->fresh(['items', 'assignee', 'department', 'subject', 'editor', 'visit'])))->resolve();
+        // With each line's service (its price range), and who put it on and
+        // who last changed it, as the dialog shows them.
+        return (new OrderResource($order->fresh(['items.service', 'items.orderedBy', 'items.updatedBy', 'assignee', 'department', 'subject', 'editor', 'visit'])))->resolve() + self::practice();
     }
 }
