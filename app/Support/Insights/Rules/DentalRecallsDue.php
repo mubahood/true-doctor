@@ -59,7 +59,7 @@ final class DentalRecallsDue extends Rule
             $this->key(), 'info',
             self::plural($n, 'dental check-up').' overdue',
             'Due in the last '.self::DAYS.' days, not back and not booked. A call now fills next week\'s chairs.',
-            'admin.appointments.index', 'Book them', $n, 45,
+            'admin.appointments.recalls', 'Call them', $n, 45,
         );
     }
 }
