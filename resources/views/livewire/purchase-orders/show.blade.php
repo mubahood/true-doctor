@@ -77,7 +77,8 @@
     @if($isDraft && $canManage)
       <form wire:submit="addLine" class="tb-card-body tb-inline-form">
         <x-ui.field label="Item" name="stock_item_id">
-          <livewire:ui.select-search resource="stock-items" name="po_stock_item_id" :selected="$stock_item_id"
+          {{-- Every active item, run out or not: what has run out is what gets ordered. --}}
+          <livewire:ui.select-search resource="medicines" name="po_stock_item_id" :selected="$stock_item_id"
                                      placeholder="Search stock items…" :key="'po-item-'.$lineNonce" />
         </x-ui.field>
         <x-ui.field label="Quantity" for="po-line-qty" name="line_quantity">

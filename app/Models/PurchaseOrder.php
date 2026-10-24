@@ -109,6 +109,17 @@ class PurchaseOrder extends Model
                 ->orWhereHas('supplier', fn (Builder $s) => $s->where('name', 'like', "%{$search}%"))));
     }
 
+    /**
+     * Still waiting for goods past the day they were expected: the list's red
+     * date on the web and `is_overdue` in the API.
+     */
+    public function isOverdue(): bool
+    {
+        return $this->expected_date !== null
+            && $this->expected_date->isPast()
+            && $this->status->canReceive();
+    }
+
     public function getRouteKeyName(): string
     {
         return 'uuid';

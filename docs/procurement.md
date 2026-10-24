@@ -1,6 +1,6 @@
 # Procurement
 
-Buying stock: suppliers, purchase orders, goods received with batch and expiry, and returns to the supplier (roadmap 04 §7). Pharmacy → Purchase orders and Pharmacy → Suppliers on the web; `docs/api/procurement.md` for the app.
+Buying stock: suppliers, purchase orders, goods received with batch and expiry, and returns to the supplier (roadmap 04 §7). Pharmacy → Purchase orders and Pharmacy → Suppliers on the web and in the app (the same menu entries open native screens); `docs/api/procurement.md` for the API.
 
 ## Who
 
@@ -16,7 +16,7 @@ draft ─► ordered ─► part received ─► received
   └─────────┴─► cancelled (only while nothing has been received)
 ```
 
-- A draft collects lines (item, quantity, unit cost, default the item's cost). The same item twice is one line.
+- A draft collects lines (item, quantity, unit cost, default the item's cost). Any active item on the stock list can be ordered, in stock or not: what has run out is what gets ordered. The same item twice is one line.
 - "Mark as ordered" needs at least one line. From then on the lines are the supplier's copy and do not change.
 - Numbers come from `Sequence`: `PO-2026-00001`, `GRN-2026-00001`, `SR-2026-00001`.
 - The PDF (`admin.purchase-orders.pdf`, also `api.purchase-orders.pdf`) is plain: letterhead, supplier, lines, total, and a line asking the supplier to quote the PO number and print batch and expiry.

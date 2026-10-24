@@ -154,13 +154,10 @@ class Index extends Component
     {
         $this->authorize('viewAny', Supplier::class);
 
+        // The same filters as the app's list (Supplier::listed).
         $query = Supplier::query()
             ->withCount(['purchaseOrders as orders_count'])
-            ->when($this->search !== '', fn (Builder $q) => $q->where(fn (Builder $x) => $x
-                ->where('name', 'like', "%{$this->search}%")
-                ->orWhere('contact_person', 'like', "%{$this->search}%")
-                ->orWhere('phone', 'like', "%{$this->search}%")))
-            ->when($this->status !== '', fn (Builder $q) => $q->where('is_active', $this->status === 'active'));
+            ->listed($this->status, $this->search);
 
         /** @var Builder<Supplier> $sorted */
         $sorted = $this->applySort($query, fn (Builder $q) => $q->orderBy('name'));

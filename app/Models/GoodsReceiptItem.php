@@ -70,10 +70,14 @@ class GoodsReceiptItem extends Model implements NamesALedgerParty
         return bcadd((string) ($this->returns()->sum('quantity') ?: '0'), '0', 2);
     }
 
-    /** What may still be sent back: received less already returned. */
-    public function returnable(): string
+    /**
+     * What may still be sent back: received less already returned. A caller
+     * that has already added up the returns (from a loaded relation) passes
+     * that sum, so a page of delivery lines is not one query each.
+     */
+    public function returnable(?string $returned = null): string
     {
-        $left = bcsub((string) $this->quantity, $this->returnedQuantity(), 2);
+        $left = bcsub((string) $this->quantity, $returned ?? $this->returnedQuantity(), 2);
 
         return bccomp($left, '0', 2) > 0 ? $left : '0.00';
     }
