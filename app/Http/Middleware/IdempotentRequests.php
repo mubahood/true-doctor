@@ -138,11 +138,19 @@ class IdempotentRequests
             && in_array($request->route()?->getName(), self::KEY_REQUIRED_ROUTES, true);
     }
 
+    /**
+     * An answer marked `Cache-Control: no-store` carries a secret (new recovery
+     * codes, a two-step secret) and is never written to `idempotency_keys`,
+     * where it would sit in clear for a day and in every backup. Such writes
+     * are safe to run again: a retry makes a fresh secret, and the newest one
+     * shown is the one that works.
+     */
     private function isFinal(Response $response): bool
     {
         $status = $response->getStatusCode();
 
         return ($status >= 200 && $status < 300 || $status >= 400 && $status < 500)
+            && ! str_contains((string) $response->headers->get('Cache-Control'), 'no-store')
             && ! in_array($status, self::NOT_STORED, true)
             && ! $response instanceof \Symfony\Component\HttpFoundation\StreamedResponse
             && ! $response instanceof \Symfony\Component\HttpFoundation\BinaryFileResponse
@@ -167,7 +175,13 @@ class IdempotentRequests
             $parts[] = $this->canonical($request->all());
         }
 
-        return hash('sha256', implode("\n", $parts));
+        // A body with a password in it is fingerprinted with a keyed hash, so the
+        // stored fingerprint cannot be used to guess the password offline.
+        $secret = $request->hasAny(['password', 'current_password']);
+
+        return $secret
+            ? hash_hmac('sha256', implode("\n", $parts), (string) config('app.key'))
+            : hash('sha256', implode("\n", $parts));
     }
 
     private function canonical(mixed $value): string

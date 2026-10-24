@@ -238,13 +238,15 @@ class Index extends Component
     {
         $user = $this->manageable($id);
         $this->authorize('update', $user);
-        if ($user->is($this->actor())) {
-            $this->dispatch('toast', message: 'Turn your own off on Account security.', type: 'error');
+
+        // The rules (not your own, only when it is on) are the service's, shared with the API.
+        try {
+            app(\App\Services\TwoFactorService::class)->resetFor($this->actor(), $user);
+        } catch (\DomainException $e) {
+            $this->dispatch('toast', message: $e->getMessage(), type: 'error');
 
             return;
         }
-        app(\App\Services\TwoFactorService::class)->disable($user);
-        activity('users')->performedOn($user)->causedBy($this->actor())->log('Two-step sign-in turned off by a colleague');
         $this->dispatch('toast', message: "Two-step sign-in is off for {$user->name}.", type: 'success');
     }
 

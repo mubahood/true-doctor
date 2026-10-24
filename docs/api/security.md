@@ -27,7 +27,23 @@ When the installation enforces it (`TWO_FACTOR_ENFORCE`, on by default) owners (
 - `POST /api/v1/auth/two-factor/setup` gives `secret` (base32, for typing) and `uri` (`otpauth://…`, which an authenticator app on the same phone can open). Not in force yet.
 - `POST /api/v1/auth/two-factor/confirm` with `code` turns it on and returns `recovery_codes` (8, shown once).
 
-`GET /meta` carries `security`: `two_factor_enabled`, `two_factor_required`, `recovery_codes_left`.
+`GET /meta` carries `security`: `two_factor_enabled`, `two_factor_required`, `recovery_codes_left`, and `self_service: true` on a server that takes the two endpoints below (an app hides them when it is absent).
+
+## Turning your own off, and new recovery codes
+
+Both need the person's password, as the web's Account security page does, and allow 12 tries a minute each (a bucket of their own).
+
+- `POST /api/v1/auth/two-factor/disable` with `password`: turns it off (the secret, the recovery codes and every trusted browser go). Answers `{two_factor_enabled: false, two_factor_required}`. When the role must use it (`two_factor_required: true`) this is the move to a new phone: from the next request the person is held on setting it up again (`two_factor_setup_required`), and `auth/two-factor/setup` starts it.
+- `POST /api/v1/auth/two-factor/recovery-codes` with `password`: 8 new `recovery_codes`, shown once; the old ones stop working.
+- No password: 422 `errors.password` "Enter your password to confirm."; a wrong one: "That is not your password.". Already off (or no codes to replace): 409 `conflict`. Demo accounts: 403.
+
+## A colleague who lost their phone
+
+`POST /api/v1/admin/users/{id}/reset-two-factor` turns a colleague's two-step sign-in off (the web's "Turn off two-step sign-in" on User accounts; docs/api/admin.md). `GET /api/v1/admin/users/{id}` says `two_factor_enabled` and `can_reset_two_factor`.
+
+## Secrets are never kept for a replay
+
+The answers that carry a secret (`setup`'s `secret`, `confirm`'s and `recovery-codes`' `recovery_codes`) are sent with `Cache-Control: no-store`, and the idempotency middleware never stores such an answer (docs/api/idempotency.md). A retry under the same `Idempotency-Key` runs again and returns a new secret or a new set of codes: the newest one shown is the one that works. A `confirm` sent again after it succeeded answers 409 "Two-step sign-in is already on. If you did not see your recovery codes, make new ones in My account."
 
 ## Devices and signing out everywhere
 

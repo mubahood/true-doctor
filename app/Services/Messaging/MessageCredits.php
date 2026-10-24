@@ -17,6 +17,9 @@ final class MessageCredits
 {
     public const ENTRIES = ['topup', 'grant', 'send', 'refund'];
 
+    /** Below this the balance is shown as running low ("Top up before reminders stop"). */
+    public const LOW_BALANCE = 50;
+
     public function balance(int $hospitalId): int
     {
         return (int) (MessageCredit::query()->withoutGlobalScopes()

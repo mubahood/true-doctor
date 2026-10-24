@@ -99,6 +99,9 @@ The matrix above is the default. A clinic changes it with twelve plain-language 
   hospital admin cannot be switched off, demoted or deleted (`StaffService::assertKeepsAnAdmin`).
 - A part of a page a role cannot open says "You do not have access to this. Ask your
   hospital admin." (`x-ui.no-access`), and so do the 403 page and the API's generic 403.
+- The app has the same screen and the same rules through `GET admin/access`,
+  `PUT admin/access/roles/{role}/abilities/{ability}`, `POST admin/access/roles/{role}/reset` and
+  `GET`/`PUT admin/users/{id}/abilities` (docs/api/admin.md).
 
 ## What a practice starts with
 
