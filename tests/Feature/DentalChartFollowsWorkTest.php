@@ -123,7 +123,7 @@ class DentalChartFollowsWorkTest extends TestCase
             ->call('picked', 'patient_id', $this->patient->id)
             ->call('setTab', 'intake')
             ->assertSet('formChart', [])
-            ->set('dob', now()->subYears(5)->toDateString())
+            ->set('age_years', '5')
             ->assertSet('chart_primary', true)
             ->assertSeeHtml('wire:click="pickTooth(55)"')
             ->call('pickTooth', 55)->set('chartFinding', 'mobility')->call('applyTooth')
