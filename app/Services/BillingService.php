@@ -166,6 +166,51 @@ class BillingService
     }
 
     /**
+     * The bill's Add charge: a service off the price list or a product off
+     * the shelf, on an order of its own raised completed, so the charge has a
+     * piece of work behind it like every other line (docs/orders.md, "Add
+     * charge is not an exception"). A product leaves the shelf in the same
+     * transaction as the charge and may be given without billing (`$billed`,
+     * null for the hospital's choice); a service priced as a range takes
+     * `$unitPrice` inside it.
+     *
+     * Refused once the visit is invoiced: the invoice is a copy of the bill.
+     * The visit row is locked first, the lock generateInvoice() takes, so a
+     * charge and an invoice raised at the same moment cannot both pass.
+     *
+     * The web's bill and `POST /api/v1/visits/{uuid}/bill/lines` both come here.
+     */
+    public function addCharge(Visit $visit, string $kind, int $id, string $quantity, ?int $by = null, ?string $unitPrice = null, ?bool $billed = null, ?string $note = null): OrderItem
+    {
+        return DB::transaction(function () use ($visit, $kind, $id, $quantity, $by, $unitPrice, $billed, $note) {
+            Visit::whereKey($visit->id)->lockForUpdate()->first();
+            if ($this->hasLiveInvoice($visit)) {
+                throw new RuntimeException('This visit has been invoiced, so its charges can no longer be changed.');
+            }
+
+            if ($kind === 'product') {
+                /** @var \App\Models\StockItem $item */
+                $item = \App\Models\StockItem::whereKey($id)->firstOrFail();
+                $orders = app(OrderService::class);
+
+                // A walk-in buying paracetamol still goes through an order: the
+                // charge and the stock movement happen together.
+                $order = $orders->place($visit, OrderType::Pharmacy, $item->name, ['status' => OrderStatus::Completed], $by);
+                $line = $orders->addProductItem($order, $item, $quantity, $by, $billed);
+            } else {
+                $line = $this->orderService($visit, $id, $quantity, $by, $unitPrice);
+            }
+
+            $note = trim((string) $note);
+            if ($note !== '') {
+                $line->update(['notes' => mb_substr($note, 0, 255)]);
+            }
+
+            return $line;
+        });
+    }
+
+    /**
      * Correct a line that is already on the bill.
      *
      * The quantity and the note: name and unit price are SNAPSHOTS taken

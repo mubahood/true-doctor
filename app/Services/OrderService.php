@@ -405,6 +405,19 @@ class OrderService
     }
 
     /**
+     * The unit price this line may take, or null to keep its own; a sentence
+     * when it may not (the rule below). Lets a caller say which field was
+     * refused before it asks updateItem(), which applies the same rule again.
+     */
+    public function priceFor(OrderItem $line, ?string $asked): ?string
+    {
+        /** @var Order $order */
+        $order = $line->order()->firstOrFail();
+
+        return $this->allowedPrice($order, $line, $asked);
+    }
+
+    /**
      * The unit price a line may be changed to, or null to keep its own.
      *
      * Only a service priced as a range can move, and only inside its range:

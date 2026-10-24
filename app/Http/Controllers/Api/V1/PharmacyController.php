@@ -37,9 +37,20 @@ class PharmacyController extends Controller
 
         $out = [];
         foreach ($visit->dispensations()->with(['items', 'dispensedBy'])->latest()->get() as $d) {
+            // Each line was billed on the dispensing's own order, one order line
+            // per dispensed line and in the same order (DispensationService), so
+            // the two pair up by position: what was given, and whether it is on
+            // the bill. A pair whose names differ is not trusted (null).
+            $order = \App\Models\Order::where('subject_type', $d->getMorphClass())->where('subject_id', $d->id)->latest('id')->first();
+            $charged = $order === null ? [] : $order->items()->reorder()->orderBy('id')->get()->values()->all();
             $items = [];
-            foreach ($d->items as $i) {
-                $items[] = ['name' => $i->name, 'quantity' => $i->quantity, 'unit_price' => $i->unit_price, 'line_total' => $i->line_total];
+            foreach ($d->items->sortBy('id')->values() as $n => $i) {
+                $line = $charged[$n] ?? null;
+                $items[] = [
+                    'name' => $i->name, 'quantity' => $i->quantity, 'unit_price' => $i->unit_price, 'line_total' => $i->line_total,
+                    // Given without billing: off the shelf, not on the bill (docs/orders.md).
+                    'billed' => $line !== null && $line->name === $i->name ? $line->isBilled() : null,
+                ];
             }
             $out[] = [
                 'uuid' => $d->uuid,
@@ -50,7 +61,9 @@ class PharmacyController extends Controller
             ];
         }
 
-        return ApiResponse::success($out);
+        // Where a new line starts in the dispense form (web: Dispense::blankRow):
+        // Billed, or Not billed in a dental clinic unless Billing settings say.
+        return ApiResponse::withMeta($out, ['products_billed' => app(\App\Support\HospitalSettings::class)->productsBilledByDefault()]);
     }
 
     /** Dispense and bill, in one go; a shortfall names the drug and the row. */

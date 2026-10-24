@@ -91,6 +91,8 @@ permission:
   `billed` (boolean, product only; left out, the hospital's choice), each item carries `billed`
   and `billing_set_at`, and `PUT /api/v1/orders/{uuid}/items/{id}/billed` `{billed}` switches one
   (422 once the visit is invoiced). See `docs/orders.md` ("Billed or not billed").
+  A line is corrected in place with `PATCH /api/v1/orders/{uuid}/items/{id}`, and the bill at the
+  counter (Add charge, the discount, putting it back in step) is in [`api/orders-and-bill.md`](api/orders-and-bill.md).
 - **Invoices** (`billing.view`): `GET /api/v1/invoices` (`?status=`), `GET {uuid}` — full money
   breakdown + line items.
 

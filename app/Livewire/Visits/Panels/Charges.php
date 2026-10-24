@@ -9,12 +9,10 @@ use App\Models\Invoice;
 use App\Models\OrderItem;
 use App\Models\Service;
 use App\Models\StockItem;
-use App\Models\Visit;
 use App\Services\BillingService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Lazy;
 use Livewire\Attributes\On;
@@ -453,9 +451,20 @@ class Charges extends Component
         ]);
 
         try {
-            $line = $this->kind === 'product'
-                ? $this->sellProduct($visit)
-                : $billing->orderService($visit, (int) $this->service_id, $this->quantity, Auth::id(), $range === null ? null : (string) $this->unit_price);
+            // The same door as the API's Add charge (BillingService::addCharge):
+            // its own completed order, stock and charge together, refused once
+            // the visit is invoiced.
+            $product = $this->kind === 'product';
+            $billing->addCharge(
+                $visit,
+                $product ? 'product' : 'service',
+                (int) ($product ? $this->stock_item_id : $this->service_id),
+                (string) $this->quantity,
+                Auth::id(),
+                $range === null ? null : (string) $this->unit_price,
+                $product ? $this->billed : null,
+                $this->note,
+            );
         } catch (Throwable $e) {
             // "Not enough Amoxicillin in stock: 3 available, 10 requested" is
             // the reader's business; anything else is not.
@@ -465,39 +474,12 @@ class Charges extends Component
             return;
         }
 
-        if (($this->note ?? '') !== '') {
-            $line->update(['notes' => trim((string) $this->note)]);
-        }
-
         $this->reset(['kind', 'service_id', 'stock_item_id', 'quantity', 'note', 'unit_price']);
         $this->showAdd = false;
         $this->refreshCharges();
 
         $this->dispatch('toast', message: 'Added to the bill.', type: 'success');
         $this->dispatch('visit-updated');
-    }
-
-    /**
-     * Sell something off the shelf straight onto the bill.
-     *
-     * A walk-in buying paracetamol is a real thing, and it still goes through
-     * an order: the charge and the stock movement happen together, so the bill
-     * and the shelf cannot disagree.
-     */
-    private function sellProduct(Visit $visit): OrderItem
-    {
-        /** @var StockItem $item */
-        $item = StockItem::findOrFail($this->stock_item_id);
-
-        $orders = app(\App\Services\OrderService::class);
-
-        return DB::transaction(function () use ($orders, $visit, $item) {
-            $order = $orders->place($visit, \App\Enums\OrderType::Pharmacy, $item->name, [
-                'status' => \App\Enums\OrderStatus::Completed,
-            ], Auth::id());
-
-            return $orders->addProductItem($order, $item, $this->quantity, Auth::id(), $this->billed);
-        });
     }
 
     public function generateInvoice(BillingService $billing): mixed

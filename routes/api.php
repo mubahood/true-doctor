@@ -261,5 +261,6 @@ Route::prefix('v1')->middleware('api.app-version')->group(function () {
         foreach (['care', 'pharmacy', 'finance', 'admin', 'extras', 'plane', 'notify', 'journeys'] as $area) {
             require __DIR__."/api/{$area}.php";
         }
+        require __DIR__.'/api/gap-orders.php';
     });
 });
