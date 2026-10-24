@@ -31,10 +31,14 @@ Service: `App\Services\PatientLinks\PatientLinkService` (links), `App\Services\P
 
 | Endpoint | Permission |
 |---|---|
-| `GET /patient-links?patient={uuid}&state=active\|expired\|revoked\|locked&per_page=` | `patients.view` |
+| `GET /patient-links?patient={uuid}&state=active\|expired\|revoked\|locked&q=&per_page=` | `patients.view` |
+| `GET /patients/{uuid}/shareable` | `patients.view` (what is offered follows the document's own) |
 | `POST /patient-links` | the document's own (above) |
 | `GET /patient-links/{uuid}` | `patients.view` |
 | `DELETE /patient-links/{uuid}` | the document's own |
+
+`q` searches like the web list: the patient's name or number, the document's number or title. Every link row
+carries `can_revoke`: the link still opens (or is locked) and this person may print that document.
 
 A link of another hospital, or a document of another hospital, is `404`.
 
@@ -54,21 +58,32 @@ replays the same answer (and the same code) and makes no second link.
 {
   "link": { "uuid": "…", "document_type": "lab_result", "document_label": "Lab result", "reference": "LAB-000042",
             "patient": { "uuid": "…", "name": "Amina Nakato", "patient_no": "P-000012" },
-            "state": "active", "state_label": "Active", "expires_at": "2026-10-24T10:00:00+03:00",
+            "state": "active", "state_label": "Active", "state_tone": "success", "expires_at": "2026-10-24T10:00:00+03:00",
             "revoked_at": null, "locked_at": null, "failed_attempts": 0, "opens_count": 0, "last_opened_at": null,
-            "created_by": "Dr. Okello", "created_at": "…" },
+            "created_by": "Dr. Okello", "created_at": "…", "can_revoke": true },
   "url": "https://…/p/Xy7…",
   "code": "482913",
+  "qr": "data:image/png;base64,iVBORw0…",
   "message": { "uuid": "…", "status": "queued", "status_label": "Waiting to send", "skip_reason": null }
 }
 ```
+
+`qr` is the link as a QR (a PNG data URI) for the patient's phone camera, or null if it could not be drawn; the
+link is made either way.
 
 `message` is `null` when no text was asked for or messages are off for the clinic. `422` with `errors.document` when
 the document cannot be sent yet ("The lab has not released this result yet.").
 
 ### GET /patient-links/{uuid}
 
-The link (as above) plus `opens`: the last 50 attempts, newest first, each `{event, event_label, ip, user_agent, at}`.
+The link (as above) plus `revoked_by` (who withdrew it), `message` (`status`, `status_label`, `skip_reason` of the
+text, or null when none was asked for) and `opens`: the last 50 attempts, newest first, each
+`{event, event_label, ip, user_agent, at}`.
+
+### GET /patients/{uuid}/shareable
+
+What can be sent to this patient now, for the app's "Share a link" on the patient record: see
+[`patient-records.md`](patient-records.md#what-can-be-sent-by-link).
 
 ### DELETE /patient-links/{uuid}
 

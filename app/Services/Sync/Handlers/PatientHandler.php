@@ -41,6 +41,9 @@ class PatientHandler extends EntityHandler
      */
     private const MERGEABLE = [
         'first_name', 'last_name', 'dob', 'sex',
+        // An age typed at the desk is a date worked out on the device and
+        // marked as an estimate, as the API's store takes it (docs/patients.md).
+        'dob_estimated',
         'phone_1', 'phone_2', 'email', 'address', 'home_address', 'district_id',
         'blood_type', 'allergies', 'chronic_conditions',
         'spouse_name', 'father_name', 'mother_name',

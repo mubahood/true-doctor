@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property numeric-string $coverage_percent
+ * @property \Illuminate\Support\Carbon|null $valid_from
  * @property \Illuminate\Support\Carbon|null $valid_to
  * @property bool $is_active
  */

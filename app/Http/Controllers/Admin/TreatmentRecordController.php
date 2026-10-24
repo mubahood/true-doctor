@@ -23,7 +23,8 @@ class TreatmentRecordController extends Controller
     public function photo(Patient $patient, TreatmentRecordItem $item): StreamedResponse
     {
         $this->authorize('viewAny', TreatmentRecord::class);
-        abort_unless($item->record->patient_id === $patient->id, 404);
+        // A photo of a record removed since (soft-deleted) has no record: gone, not an error.
+        abort_unless($item->record?->patient_id === $patient->id, 404);
         abort_unless($this->service->disk()->exists($item->photo_path), 404);
 
         return $this->service->disk()->response($item->photo_path, null, [

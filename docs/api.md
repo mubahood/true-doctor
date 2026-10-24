@@ -107,7 +107,7 @@ service+policy+resource pattern as needed.
 
 The surface beyond the first resources is documented per area, next to the routes in `routes/api/*.php`:
 [`api/care.md`](api/care.md), [`api/pharmacy.md`](api/pharmacy.md), [`api/finance.md`](api/finance.md),
-[`api/admin.md`](api/admin.md) and [`api/extras.md`](api/extras.md), [`api/patients.md`](api/patients.md) (the patient page as data, `GET /api/v1/patients/{uuid}/summary`) (suggestions at `GET /api/v1/insights`,
+[`api/admin.md`](api/admin.md) and [`api/extras.md`](api/extras.md), [`api/patients.md`](api/patients.md) (the patient page as data, `GET /api/v1/patients/{uuid}/summary`), [`api/patient-records.md`](api/patient-records.md) (the record's documents, insurance cover, dependents, treatment records, the ID card and what can be sent by link) (suggestions at `GET /api/v1/insights`,
 public self-registration for the app, and starter-data imports). They share this envelope, auth and error model.
 Writes are safe to retry with an `Idempotency-Key` header: [`api/idempotency.md`](api/idempotency.md).
 Refunds and credit notes (ask, approve, reject, PDF): [`api/refunds.md`](api/refunds.md).

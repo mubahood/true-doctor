@@ -2,14 +2,9 @@
 
 namespace App\Livewire\PatientLinks\Panels;
 
-use App\Enums\MessageChannel;
-use App\Enums\MessagePurpose;
 use App\Enums\SharedDocumentType;
-use App\Models\Hospital;
 use App\Models\Patient;
 use App\Models\PatientLink;
-use App\Services\Messaging\ConsentService;
-use App\Services\Messaging\MessagingSettings;
 use App\Services\PatientLinks\PatientLinkService;
 use App\Services\PatientLinks\SharedDocuments;
 use Illuminate\Database\Eloquent\Collection;
@@ -149,30 +144,15 @@ class Share extends Component
         return $record === null ? null : app(SharedDocuments::class)->patientOf($this->documentType(), $record);
     }
 
-    /** Texts are on for the hospital, and the patient said yes to texts about their care. */
+    /** Texts are on for the hospital, and the patient said yes to texts about their care (PatientLinkService). */
     private function canText(?Patient $patient): bool
     {
-        if ($patient === null) {
-            return false;
-        }
-        $settings = MessagingSettings::of(Hospital::query()->find($patient->hospital_id));
-
-        return $settings->smsEnabled() && $settings->eventOn('document_link')
-            && app(ConsentService::class)->allows($patient, MessageChannel::Sms, MessagePurpose::Care);
+        return $patient !== null && app(PatientLinkService::class)->canText($patient);
     }
 
     private function textNote(?Patient $patient): ?string
     {
-        if ($patient === null || $this->canText($patient)) {
-            return null;
-        }
-        $settings = MessagingSettings::of(Hospital::query()->find($patient->hospital_id));
-
-        return match (true) {
-            ! $settings->smsEnabled() => 'Text messages are off for this clinic: copy the link and code instead.',
-            ! $settings->eventOn('document_link') => 'Texting documents is switched off in Messages to patients.',
-            default => 'The patient has not agreed to texts about their care: copy the link and code instead.',
-        };
+        return $patient === null ? null : app(PatientLinkService::class)->textNote($patient);
     }
 
     /** @return Collection<int,PatientLink> */

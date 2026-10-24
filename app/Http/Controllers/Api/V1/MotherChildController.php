@@ -164,7 +164,12 @@ class MotherChildController extends Controller
     public function due(Request $request): JsonResponse
     {
         abort_unless(MotherChild::canView($request->user()), 403, 'Your role cannot do that.');
-        $on = $request->query('on') ? Carbon::parse((string) $request->query('on'))->startOfDay() : Carbon::today();
+        // A date that does not parse is today, as on the web list (never a server error).
+        try {
+            $on = $request->query('on') ? Carbon::parse((string) $request->query('on'))->startOfDay() : Carbon::today();
+        } catch (\Throwable) {
+            $on = Carbon::today();
+        }
         $status = in_array($request->query('status'), ['due', 'overdue'], true) ? (string) $request->query('status') : '';
         $rows = $this->immunisations->dueList($on, mb_substr((string) $request->query('q', ''), 0, 100), $status);
         $perPage = min(100, max(1, (int) $request->query('per_page', 20)));
@@ -178,8 +183,12 @@ class MotherChildController extends Controller
             'age_label' => MotherChild::ageLabel(MotherChild::days($r['patient']->dob, $on)),
             'phone' => $r['patient']->phone_1,
             'overdue' => $r['overdue'],
-            'doses' => array_map(fn ($d) => ['key' => $d['key'], 'vaccine' => $d['vaccine'], 'dose' => $d['dose'], 'due_on' => $d['due_on'], 'status' => $d['status']], $r['due']),
-        ])->values(), ['on' => $on->toDateString()]);
+            'doses' => array_map(fn ($d) => ['key' => $d['key'], 'vaccine' => $d['vaccine'], 'dose' => $d['dose'], 'due_on' => $d['due_on'], 'status' => $d['status'], 'tone' => $d['tone']], $r['due']),
+        ])->values(), [
+            'on' => $on->toDateString(),
+            // The web list's tally: overdue doses across every child listed, not just this page.
+            'overdue_total' => (int) $rows->sum('overdue'),
+        ]);
     }
 
     // ── Growth ───────────────────────────────────────────────────────────
@@ -194,6 +203,8 @@ class MotherChildController extends Controller
             'patient_uuid' => $patient->uuid,
             'assessment' => $this->growth->assessment($patient, $points),
             'points' => $points,
+            // The WHO lines the web's chart is drawn on (null without a date of birth and a sex).
+            'reference' => $this->growth->weightReference($patient, $points),
             'source' => config('mother_child.growth.source'),
         ]);
     }

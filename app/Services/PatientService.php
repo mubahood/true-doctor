@@ -54,10 +54,12 @@ class PatientService
      *
      * An age becomes an estimated date (App\Support\BirthDate) flagged
      * `dob_estimated`. A date given outright is exact unless the caller says
-     * it is an estimate (the import, which reads ages too). Editing a record
-     * whose age is unchanged keeps the date it has, so saving a phone number
-     * never moves an estimated birthday. Data with neither key leaves the
-     * date alone.
+     * it is an estimate (the import, which reads ages too; the app, which
+     * works the date out on the device). Editing a record whose age is
+     * unchanged keeps the date it has, and one whose date comes back
+     * unchanged with nothing said of the estimate keeps its flag, so saving a
+     * phone number never moves an estimated birthday or makes it exact. Data
+     * with neither key leaves the date alone.
      *
      * @param  array<string,mixed>  $data
      * @return array<string,mixed>
@@ -83,12 +85,33 @@ class PatientService
         }
 
         if (array_key_exists('dob', $data)) {
+            // The same date sent back with no word about the estimate (the
+            // whole record re-sent by an app to correct a phone number, the
+            // web's date box left as it was) keeps the flag it has: saving
+            // must not turn an estimated birthday into a known one.
+            if (! array_key_exists('dob_estimated', $data) && $this->sameDate($patient?->dob, $data['dob'])) {
+                return $data;
+            }
             $data['dob_estimated'] = filled($data['dob']) && (bool) ($data['dob_estimated'] ?? false);
         } else {
             unset($data['dob_estimated']);
         }
 
         return $data;
+    }
+
+    /** Whether a date given (a string or a date) is the date already held. */
+    private function sameDate(?\DateTimeInterface $held, mixed $given): bool
+    {
+        if ($held === null || blank($given)) {
+            return false;
+        }
+
+        try {
+            return \Illuminate\Support\Carbon::parse($given)->toDateString() === $held->format('Y-m-d');
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     /** Archive (soft-delete) a patient. */

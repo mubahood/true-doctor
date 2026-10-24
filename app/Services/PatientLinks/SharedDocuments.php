@@ -10,6 +10,7 @@ use App\Models\Admission;
 use App\Models\LabOrder;
 use App\Models\Patient;
 use App\Models\RadiologyOrder;
+use App\Models\User;
 use App\Models\Visit;
 use App\Services\DentalService;
 use App\Support\HospitalSettings;
@@ -81,6 +82,79 @@ final class SharedDocuments
             SharedDocumentType::DentalQuote => $record instanceof Patient && $this->dental->quote($record)['items']->isNotEmpty()
                 ? null : 'There is no planned treatment to quote.',
         };
+    }
+
+    /**
+     * What this person may send to this patient by link right now: the
+     * latest few of each kind they may print, each one ready by notReady()
+     * (the query narrows to the likely ones; notReady() has the last word),
+     * newest first within a kind. The phone's "Share a link" picks from this.
+     *
+     * @return list<array{type: SharedDocumentType, record: Model, reference: ?string, title: string, date: ?string}>
+     */
+    public function readyFor(Patient $patient, User $user, int $limit = 5): array
+    {
+        $out = [];
+
+        foreach (SharedDocumentType::cases() as $type) {
+            if (! $type->allows($user)) {
+                continue;
+            }
+
+            $candidates = match ($type) {
+                SharedDocumentType::LabResult => LabOrder::query()->with('items:id,lab_order_id,name')
+                    ->where('patient_id', $patient->id)->where('status', LabOrderStatus::Completed)->latest('id')->limit($limit)->get(),
+                SharedDocumentType::RadiologyReport => RadiologyOrder::query()->with('items:id,radiology_order_id,name')
+                    ->where('patient_id', $patient->id)->where('status', RadiologyOrderStatus::Reported)->latest('id')->limit($limit)->get(),
+                SharedDocumentType::DischargeSummary => Admission::query()
+                    ->where('patient_id', $patient->id)->where('status', AdmissionStatus::Discharged)->latest('id')->limit($limit)->get(),
+                SharedDocumentType::Prescription => Visit::query()
+                    ->where('patient_id', $patient->id)->whereHas('prescriptions', fn ($q) => $q->whereHas('doseItems'))->latest('id')->limit($limit)->get(),
+                SharedDocumentType::DentalQuote => collect([$patient]),
+            };
+
+            foreach ($candidates as $record) {
+                if ($this->notReady($type, $record) !== null) {
+                    continue;
+                }
+                $out[] = [
+                    'type' => $type,
+                    'record' => $record,
+                    'reference' => $this->reference($type, $record),
+                    'title' => $this->title($type, $record),
+                    'date' => $this->dated($record),
+                ];
+            }
+        }
+
+        return $out;
+    }
+
+    /** What the document is about, in a few words: the tests, the studies, the visit. */
+    private function title(SharedDocumentType $type, Model $record): string
+    {
+        $names = fn (iterable $items): string => collect($items)->pluck('name')->filter()->take(3)->implode(', ');
+
+        return match (true) {
+            $record instanceof LabOrder => $names($record->items) ?: $type->label(),
+            $record instanceof RadiologyOrder => $names($record->items) ?: $type->label(),
+            $record instanceof Visit => 'Visit '.$record->visit_no,
+            default => $type->label(),
+        };
+    }
+
+    /** When the document became ready: released, reported, discharged, prescribed. */
+    private function dated(Model $record): ?string
+    {
+        $at = match (true) {
+            $record instanceof LabOrder => $record->completed_at ?? $record->updated_at,
+            $record instanceof RadiologyOrder => $record->reported_at ?? $record->updated_at,
+            $record instanceof Admission => $record->discharged_at ?? $record->updated_at,
+            $record instanceof Visit => $record->created_at,
+            default => null,
+        };
+
+        return $at?->toIso8601String();
     }
 
     public function filename(SharedDocumentType $type, Model $record): string

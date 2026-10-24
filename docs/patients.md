@@ -33,7 +33,11 @@ and months back when months are given, and sets `patients.dob_estimated`. "Enter
 the date of birth instead" switches the form to the date, which is exact. An
 edit that sends the same age keeps the stored date, so saving a phone number
 never moves an estimated birthday. Everything that shows an age reads `dob` as
-before. The import's age column also sets the flag.
+before. The import's age column also sets the flag. The app asks for the age the
+same way and works the date out on the device by the same rule (it registers
+offline), sending it through sync with `dob_estimated: true`; a record sent back
+with its date unchanged and nothing said of the estimate keeps its flag, so an
+older app correcting a phone number never makes an estimated birthday known.
 
 ## Patient number
 

@@ -14,6 +14,12 @@ class PatientDocument extends Model
 
     public const TYPES = ['id', 'insurance', 'consent', 'referral', 'result', 'other'];
 
+    /** A type as the record shows it ("ID", "Referral"). */
+    public static function typeLabel(string $type): string
+    {
+        return $type === 'id' ? 'ID' : ucfirst($type);
+    }
+
     protected $fillable = [
         'uuid', 'patient_id', 'type', 'file_path', 'original_name',
         'mime', 'size', 'note', 'uploaded_by',
