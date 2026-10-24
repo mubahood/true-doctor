@@ -95,6 +95,9 @@ class MetaController extends Controller
                 'two_factor_enabled' => app(\App\Services\TwoFactorService::class)->isEnabled($user),
                 'two_factor_required' => app(\App\Services\TwoFactorService::class)->isRequired($user),
                 'recovery_codes_left' => app(\App\Services\TwoFactorService::class)->recoveryCodesLeft($user),
+                // This server turns it off and makes new recovery codes from the app
+                // (auth/two-factor/disable, auth/two-factor/recovery-codes); older ones do not.
+                'self_service' => true,
             ],
             // The order form: the kinds of work this practice is offered (no
             // admission without wards) and the words its fields use (docs/orders.md).

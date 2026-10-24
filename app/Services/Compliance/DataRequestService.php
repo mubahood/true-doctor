@@ -7,6 +7,7 @@ use App\Enums\DataRequestStatus;
 use App\Models\DataRequest;
 use App\Models\User;
 use App\Support\CurrentHospital;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -33,6 +34,29 @@ class DataRequestService
             'received_on' => ['required', 'date', 'before_or_equal:today'],
             'details' => ['nullable', 'string', 'max:2000'],
         ];
+    }
+
+    /**
+     * The log as the screens list it: open requests first with the soonest
+     * due at the top (it is a worklist before it is a log), then the rest.
+     * Search is the name of who asked, or the patient's name or number.
+     *
+     * @param  array{status?:string, kind?:string, search?:string}  $filters
+     * @return Builder<DataRequest>
+     */
+    public function query(array $filters = []): Builder
+    {
+        $search = trim((string) ($filters['search'] ?? ''));
+
+        return DataRequest::query()->with('patient:id,uuid,first_name,last_name,patient_no')
+            ->when(($filters['status'] ?? '') !== '', fn (Builder $q) => $q->where('status', $filters['status']))
+            ->when(($filters['kind'] ?? '') !== '', fn (Builder $q) => $q->where('kind', $filters['kind']))
+            ->when($search !== '', fn (Builder $q) => $q->where(fn (Builder $qq) => $qq
+                ->where('requester_name', 'like', "%{$search}%")
+                ->orWhereHas('patient', fn (Builder $p) => $p->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")->orWhere('patient_no', 'like', "%{$search}%"))))
+            ->orderByRaw('case when status = ? then 0 else 1 end', [DataRequestStatus::Open->value])
+            ->orderBy('due_on')->orderByDesc('id');
     }
 
     /** @param array<string,mixed> $data validated against rules() */

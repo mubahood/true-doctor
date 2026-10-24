@@ -81,7 +81,7 @@ class AccountSecurityController extends Controller
 
         $pending = $this->twoFactor->begin($request->user());
 
-        return ApiResponse::success(['secret' => $pending['secret'], 'uri' => $pending['uri']]);
+        return $this->secret(ApiResponse::success(['secret' => $pending['secret'], 'uri' => $pending['uri']]));
     }
 
     /** POST auth/two-factor/confirm - a code from the app turns it on; the recovery codes come back once. */
@@ -92,12 +92,64 @@ class AccountSecurityController extends Controller
         }
         $data = $request->validate(['code' => ['required', 'string', 'max:20']]);
 
+        // A retry after a lost answer finds it already on: the codes of that answer
+        // were never kept (no-store), so say so and point to new ones.
+        if ($this->twoFactor->isEnabled($request->user())) {
+            return ApiResponse::error(ApiErrorCode::Conflict, 'Two-step sign-in is already on. If you did not see your recovery codes, make new ones in My account.', 409);
+        }
+
         $codes = $this->twoFactor->confirm($request->user(), $data['code']);
         if ($codes === null) {
             return ApiResponse::error(ApiErrorCode::ValidationFailed, 'That code is not right. Type the newest code the app shows.', 422, ['code' => ['That code is not right. Type the newest code the app shows.']]);
         }
 
-        return ApiResponse::success(['recovery_codes' => $codes], 'Two-step sign-in is on.');
+        return $this->secret(ApiResponse::success(['recovery_codes' => $codes], 'Two-step sign-in is on.'));
+    }
+
+    /**
+     * POST auth/two-factor/recovery-codes - new codes, shown once; the old ones
+     * stop working. Needs the password, as on the web.
+     */
+    public function regenerate(Request $request): JsonResponse
+    {
+        if ($refusal = $this->refuseDemo($request)) {
+            return $refusal;
+        }
+        $this->confirmPassword($request);
+        if (! $this->twoFactor->isEnabled($request->user())) {
+            return ApiResponse::error(ApiErrorCode::Conflict, 'Two-step sign-in is off, so there are no recovery codes to replace.', 409);
+        }
+
+        $codes = $this->twoFactor->regenerateRecoveryCodes($request->user());
+
+        return $this->secret(ApiResponse::success(['recovery_codes' => $codes], 'New recovery codes made. The old ones no longer work.'));
+    }
+
+    /**
+     * POST auth/two-factor/disable - turn your own two-step sign-in off, with
+     * your password (a colleague's is turned off from their account instead).
+     * For a role that must use it, this is the move to a new phone: the next
+     * request holds the person on setting it up again.
+     */
+    public function disable(Request $request): JsonResponse
+    {
+        if ($refusal = $this->refuseDemo($request)) {
+            return $refusal;
+        }
+        $this->confirmPassword($request);
+
+        $user = $request->user();
+        if (! $this->twoFactor->isEnabled($user)) {
+            return ApiResponse::error(ApiErrorCode::Conflict, 'Two-step sign-in is already off.', 409);
+        }
+
+        $this->twoFactor->disable($user);
+        $required = $this->twoFactor->isRequired($user);
+
+        return ApiResponse::success(
+            ['two_factor_enabled' => false, 'two_factor_required' => $required],
+            $required ? 'Two-step sign-in is off. Set it up on the new phone to carry on.' : 'Two-step sign-in is off.',
+        );
     }
 
     /** GET auth/devices - the apps signed in to this account. */
@@ -129,6 +181,24 @@ class AccountSecurityController extends Controller
         $this->security->signOutEverywhere($request->user(), $this->currentTokenId($request));
 
         return ApiResponse::success(null, 'Every other app and browser is signed out.');
+    }
+
+    /** The password, checked the way the web's Account security page checks it, in its words. */
+    private function confirmPassword(Request $request): void
+    {
+        $request->validate(['password' => ['required', 'string', 'current_password:sanctum']], [
+            'password.required' => 'Enter your password to confirm.',
+            'password.current_password' => 'That is not your password.',
+        ]);
+    }
+
+    /** An answer that carries a secret: never cached, never kept by the idempotency store. */
+    private function secret(JsonResponse $response): JsonResponse
+    {
+        $response->headers->set('Cache-Control', 'no-store, private');
+        $response->headers->set('Pragma', 'no-cache');
+
+        return $response;
     }
 
     private function currentTokenId(Request $request): ?int

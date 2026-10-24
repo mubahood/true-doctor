@@ -14,8 +14,8 @@
 
   <div class="tb-stats-grid tb-mb-4" role="group" aria-label="Messages this month">
     @if($metered)
-      <x-dash.stat icon="fa-coins" label="Messages left" :value="number_format($balance)" :tone="$balance < 50 ? 'warn' : 'ok'"
-                   :sub="$balance < 50 ? 'Top up before reminders stop' : 'One message is one text of 160 letters'" />
+      <x-dash.stat icon="fa-coins" label="Messages left" :value="number_format($balance)" :tone="$balance < \App\Services\Messaging\MessageCredits::LOW_BALANCE ? 'warn' : 'ok'"
+                   :sub="$balance < \App\Services\Messaging\MessageCredits::LOW_BALANCE ? 'Top up before reminders stop' : 'One message is one text of 160 letters'" />
     @endif
     <x-dash.stat icon="fa-paper-plane" label="Sent this month" :value="number_format((int) (($month['sent'] ?? 0) + ($month['delivered'] ?? 0)))" :sub="number_format((int) ($month['delivered'] ?? 0)).' delivered'" />
     <x-dash.stat icon="fa-triangle-exclamation" label="Failed or not sent" :value="number_format((int) (($month['failed'] ?? 0) + ($month['skipped'] ?? 0)))"
@@ -77,16 +77,12 @@
         <tr wire:key="msg-{{ $m->id }}">
           <td class="tb-nowrap tb-small">{{ $m->created_at?->format('d M H:i') }}</td>
           <td class="tb-small">{{ $m->patient?->full_name ?? '-' }}<div class="muted tb-xs">{{ \App\Services\Messaging\MessagingSettings::EVENTS[$m->event][0] ?? $m->event }}</div></td>
-          <td class="tb-small msg-body">{{ $m->body }}</td>
+          <td class="tb-small msg-body">{{ $m->logBody() }}</td>
           <td class="mono tb-xs tb-nowrap">{{ $m->to_phone ?? '-' }}</td>
           <td class="tb-small">
             <x-ui.badge :tone="$m->status->tone()">{{ $m->status->label() }}</x-ui.badge>
-            @if($m->skip_reason)
-              <div class="muted tb-xs">{{ match ($m->skip_reason) { 'no_consent' => 'The patient has not agreed to texts', 'no_phone' => 'No mobile number on the record', 'no_credit' => 'No messages left', 'event_off' => 'This message is switched off', default => $m->skip_reason } }}</div>
-            @elseif($m->error)
-              <div class="muted tb-xs">{{ $m->error }}</div>
-            @elseif($m->send_after && $m->status === \App\Enums\MessageStatus::Queued)
-              <div class="muted tb-xs">After the quiet hours, {{ $m->send_after->format('H:i') }}</div>
+            @if($m->statusNote())
+              <div class="muted tb-xs">{{ $m->statusNote() }}</div>
             @endif
           </td>
         </tr>

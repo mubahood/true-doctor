@@ -92,37 +92,16 @@ class Messages extends Component
             ->when($this->status !== '', fn ($q) => $q->where('status', $this->status))
             ->latest('id')->paginate(25);
 
-        $month = PatientMessage::query()->when($hospital === null, fn ($q) => $q->whereRaw('1 = 0'))->where('created_at', '>=', now()->startOfMonth())
-            ->selectRaw('status, count(*) as n')->groupBy('status')->pluck('n', 'status');
+        $month = PatientMessage::monthByStatus($hospital?->id);
 
         return view('livewire.settings.messages', [
             'available' => MessagingSettings::available(),
             'metered' => MessagingSettings::metered(),
             'balance' => $hospital !== null ? app(MessageCredits::class)->balance($hospital->id) : 0,
-            'previews' => $this->previewsFor($hospital ?? new Hospital(['name' => (string) config('app.name')])),
+            'previews' => app(PatientMessenger::class)->previews($hospital ?? new Hospital(['name' => (string) config('app.name')])),
             'log' => $log,
             'month' => $month,
             'statuses' => MessageStatus::cases(),
         ])->title('Messages to patients');
-    }
-
-    /** @return array<string,string> event => what the patient would read, with this clinic's own details */
-    private function previewsFor(Hospital $hospital): array
-    {
-        $messenger = app(PatientMessenger::class);
-        $samples = [
-            'appointment_booked' => ['doctor' => 'Dr. Nakato', 'date' => now()->addDays(3)->format('D j M'), 'time' => '10:30'],
-            'appointment_day_before' => ['time' => '10:30'],
-            'receipt' => ['amount' => '20,000', 'invoice' => 'INV-2026-00123', 'link' => url('/s/r/…')],
-            'dental_recall' => [],
-            'follow_up_due' => [],
-            'document_link' => ['document' => 'lab result', 'link' => url('/p/…'), 'code' => '482913'],
-        ];
-        $out = [];
-        foreach ($samples as $event => $vars) {
-            $out[$event] = $messenger->body($event, $vars, $hospital);
-        }
-
-        return $out;
     }
 }
