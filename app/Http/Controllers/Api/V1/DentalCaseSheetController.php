@@ -216,6 +216,8 @@ class DentalCaseSheetController extends Controller
             'definitions' => $this->definitions(),
             'diagnosis_list' => collect(DentalCaseSheet::DIAGNOSES)->map(fn (array $d, string $k) => ['key' => $k] + $d)->values(),
             'xray_kinds' => DentalCaseSheet::XRAY_KINDS,
+            // Whether the fields marked `women` (pregnancy) are asked of this patient, as the web form decides.
+            'asks_pregnancy' => CaseSheetService::asksPregnancy($visit->patient()->withTrashed()->first()),
             'instructions_url' => route('api.dental.case-sheet.instructions', $visit),
         ] + collect($sheet)->except(['sections', 'groups', 'template'])->all();
     }

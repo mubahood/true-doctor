@@ -3,6 +3,9 @@
 namespace App\Support\Practice;
 
 use App\Models\Hospital;
+use App\Models\Visit;
+use App\Services\DentalCaseSheetService;
+use App\Services\DentalNotesService;
 use App\Services\DentalService;
 use App\Support\HospitalSettings;
 
@@ -174,6 +177,54 @@ final class VisitForm
     }
 
     /**
+     * The visit page's sections in the order the work happens, as the quick
+     * view draws them (Visits\Actions::SECTIONS): in a dental clinic the
+     * chart, the plan and the prescription come before the orders and the
+     * bill; every other practice goes from the summary to the orders. Who
+     * sees each one is still a matter of permissions (Actions::dentalPanel).
+     *
+     * @return list<string>
+     */
+    public function sections(): array
+    {
+        $dental = [
+            'chart' => $this->dentalClinic && $this->dentistry,
+            'plan' => $this->dentalClinic && $this->dentistry,
+            'prescription' => $this->writesDosage(),
+        ];
+
+        return array_values(array_filter(
+            array_keys(\App\Livewire\Visits\Actions::SECTIONS),
+            fn (string $key) => $dental[$key] ?? true,
+        ));
+    }
+
+    /**
+     * How one visit's page is laid out (Visits\Show): written as `simple`
+     * dental notes, the dental `case_sheet` or the `general` clinical note;
+     * and, on a general visit in a hospital that does dentistry, whether the
+     * dental chart shows by itself (`open`) or behind "Open the chart"
+     * (`press`). The same service rules the web page decides by.
+     *
+     * @return array{notes:string, chart:?string}
+     */
+    public static function layoutOf(Visit $visit, ?Hospital $hospital): array
+    {
+        $notes = match (true) {
+            DentalNotesService::appliesTo($visit, $hospital) => 'simple',
+            DentalCaseSheetService::appliesTo($visit, $hospital) => 'case_sheet',
+            default => 'general',
+        };
+
+        return [
+            'notes' => $notes,
+            'chart' => $notes !== 'general' || ! DentalService::enabledFor($hospital)
+                ? null
+                : (DentalService::chartOnVisit($visit, $hospital) ? 'open' : 'press'),
+        ];
+    }
+
+    /**
      * The reason a visit lists under, from the first words of the presenting
      * complaint: its first line or sentence, at most ten words and 60
      * characters, so a list, the queue and a report still show something.
@@ -206,6 +257,8 @@ final class VisitForm
             'dental_notes' => $this->dentalNotes,
             'dental_notes_customised' => $this->dentalNotesCustomised,
             'dentistry' => $this->dentistry,
+            'dental_clinic' => $this->dentalClinic,
+            'sections' => $this->sections(),
             'asks_reason' => $this->asksReason(),
             'suggests' => $this->suggests(),
             'dental_visit_form' => $this->dentalVisitForm(),

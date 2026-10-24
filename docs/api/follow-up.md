@@ -6,6 +6,7 @@ All under `/api/v1`, Sanctum bearer, the usual envelope. Rules in `FollowUpServi
 |---|---|---|---|
 | GET | `visits/{uuid}/review` | `visits.view` + `appointments.view` | `{ suggestion: {days, reason, date}, booked: [appointment] }` |
 | POST | `visits/{uuid}/review` | `visits.view` + `appointments.manage` | Body `{date: "Y-m-d", time: "H:i", doctor_user_id?}`. 201 with the appointment; 422 when the time is not free or outside the doctor's hours |
+| GET | `visits/{uuid}/review/times?date=` | `visits.view` + `appointments.manage` | The free times for the review, as the visit page offers them (a dental visit's from its case sheet, any other's from here): `{kind, date, doctor_user_id, doctor, minutes, times[], note}` ([visit-page.md](visit-page.md)) |
 | GET | `follow-ups?show=week\|missed\|recalls&q=` | `appointments.view` | Paged rows `{kind: review\|recall, id, key, due_on, what, flag, patient, appointment}`; `meta.counts` has the size of each whole list, `meta.show` the list answered, `meta.search` the search applied. `q` (up to 100) finds a patient by name, number or phone, every word somewhere (`Patient::matchWords`), as the web page's search box does |
 | POST | `follow-ups/text` | `appointments.manage` | Body `{kind, id}` (a row's `kind` and `id`). `data.sent` true or false, `message` says why not (no consent, no phone, no credit, texts off). Sent once per thing due |
 

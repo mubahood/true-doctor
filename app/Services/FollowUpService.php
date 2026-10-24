@@ -9,8 +9,11 @@ use App\Enums\MessageStatus;
 use App\Models\Appointment;
 use App\Models\DentalTreatmentItem;
 use App\Models\Patient;
+use App\Models\User;
 use App\Models\Visit;
 use App\Services\Messaging\PatientMessenger;
+use App\Support\DoctorSlots;
+use App\Support\HospitalSettings;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -144,6 +147,47 @@ final class FollowUpService
             'source' => 'walk_in',
             'reason' => 'Review',
         ], $by);
+    }
+
+    /**
+     * The free times for the review booked from a visit, as the visit page
+     * offers them. A dental visit books from its case sheet's Follow-up
+     * (DentalCaseSheetService::bookReview: the visit's dentist, else whoever
+     * books, for REVIEW_MINUTES there), any other visit from Book a review
+     * (bookReview above: the visit's doctor). Without a day: a dental visit
+     * offers the suggested day or the first day after it the dentist is free,
+     * any other visit the suggested day.
+     *
+     * @return array{kind:string, date:string, doctor_user_id:?int, doctor:?string, minutes:int, times:list<string>, note:?string}
+     */
+    public function reviewTimes(Visit $visit, User $by, ?string $date = null): array
+    {
+        $dental = DentalCaseSheetService::appliesTo($visit, app(HospitalSettings::class)->hospital());
+        $doctor = $dental ? ($visit->doctor_user_id ?? $by->id) : $visit->doctor_user_id;
+        $minutes = $dental ? DentalCaseSheetService::REVIEW_MINUTES : self::REVIEW_MINUTES;
+
+        if ($date === null) {
+            $date = $dental
+                ? DoctorSlots::firstFreeDay((int) $doctor, app(DentalCaseSheetService::class)->reviewSuggestion($visit)['on'] ?? Carbon::today()->addWeek()->toDateString(), $minutes)
+                : $this->suggestion($visit)['date'];
+        }
+
+        $times = $doctor === null ? [] : DoctorSlots::open((int) $doctor, $date, $minutes);
+
+        return [
+            'kind' => $dental ? 'dental' : 'general',
+            'date' => $date,
+            'doctor_user_id' => $doctor,
+            // The visit's own doctor, or the one booking: never another clinic's.
+            'doctor' => $doctor === null ? null : User::query()->whereKey($doctor)->value('name'),
+            'minutes' => $minutes,
+            'times' => $times,
+            'note' => match (true) {
+                $times !== [] => null,
+                $doctor === null => 'This visit has no doctor yet. Book the review from Appointments instead.',
+                default => DoctorSlots::note((int) $doctor, $date, $minutes),
+            },
+        ];
     }
 
     // ── The receptionist's list ─────────────────────────────────────────
