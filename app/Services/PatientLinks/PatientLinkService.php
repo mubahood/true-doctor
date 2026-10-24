@@ -2,13 +2,18 @@
 
 namespace App\Services\PatientLinks;
 
+use App\Enums\MessageChannel;
+use App\Enums\MessagePurpose;
 use App\Enums\SharedDocumentType;
+use App\Models\Hospital;
 use App\Models\Patient;
 use App\Models\PatientLink;
 use App\Models\PatientLinkOpen;
 use App\Models\PatientMessage;
 use App\Models\Scopes\HospitalScope;
 use App\Models\User;
+use App\Services\Messaging\ConsentService;
+use App\Services\Messaging\MessagingSettings;
 use App\Services\Messaging\PatientMessenger;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -98,6 +103,35 @@ final class PatientLinkService
 
             return ['link' => $link, 'url' => $url, 'code' => $code, 'message' => $message];
         });
+    }
+
+    /**
+     * Whether the link and its code can be texted to this patient: texts are
+     * on for the clinic, texting documents is on, and the patient said yes to
+     * texts about their care. The web's "Send to patient" and the app ask the
+     * same question.
+     */
+    public function canText(Patient $patient): bool
+    {
+        $settings = MessagingSettings::of(Hospital::query()->find($patient->hospital_id));
+
+        return $settings->smsEnabled() && $settings->eventOn('document_link')
+            && app(ConsentService::class)->allows($patient, MessageChannel::Sms, MessagePurpose::Care);
+    }
+
+    /** Why the link cannot be texted, in words for the screen; null when it can. */
+    public function textNote(Patient $patient): ?string
+    {
+        if ($this->canText($patient)) {
+            return null;
+        }
+        $settings = MessagingSettings::of(Hospital::query()->find($patient->hospital_id));
+
+        return match (true) {
+            ! $settings->smsEnabled() => 'Text messages are off for this clinic: copy the link and code instead.',
+            ! $settings->eventOn('document_link') => 'Texting documents is switched off in Messages to patients.',
+            default => 'The patient has not agreed to texts about their care: copy the link and code instead.',
+        };
     }
 
     /** Withdraw a link: it stops working at once, whatever its expiry. */

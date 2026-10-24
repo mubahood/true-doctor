@@ -20,7 +20,7 @@
       <tbody>
         @forelse($this->documents as $doc)
           <tr wire:key="doc-{{ $doc->id }}">
-            <td><x-ui.badge tone="info">{{ ucfirst($doc->type) }}</x-ui.badge></td>
+            <td><x-ui.badge tone="info">{{ \App\Models\PatientDocument::typeLabel($doc->type) }}</x-ui.badge></td>
             <td>
               <x-ui.link :href="route('admin.patients.documents.download', [$this->patient, $doc])" :navigate="false">{{ $doc->original_name }}</x-ui.link>
               @if($doc->note)<div class="muted tb-xs">{{ $doc->note }}</div>@endif
@@ -51,7 +51,7 @@
           <x-ui.field label="Type" for="doc-type" name="type" required>
             <select id="doc-type" wire:model="type" class="tb-select" required>
               @foreach($this->types as $docType)
-                <option value="{{ $docType }}">{{ ucfirst($docType) }}</option>
+                <option value="{{ $docType }}">{{ \App\Models\PatientDocument::typeLabel($docType) }}</option>
               @endforeach
             </select>
           </x-ui.field>

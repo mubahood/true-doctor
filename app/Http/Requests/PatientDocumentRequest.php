@@ -12,6 +12,12 @@ use Illuminate\Validation\Rule;
  */
 class PatientDocumentRequest extends FormRequest
 {
+    /** The largest file accepted, in KB (10 MB). The app reads it to say so before sending. */
+    public const MAX_KB = 10240;
+
+    /** What a document may be: a PDF, a picture or a Word file. */
+    public const MIMES = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'doc', 'docx'];
+
     public function authorize(): bool
     {
         return true; // caller authorizes via PatientPolicy@manageDocuments
@@ -33,7 +39,7 @@ class PatientDocumentRequest extends FormRequest
         return [
             'type' => ['required', Rule::in(PatientDocument::TYPES)],
             'note' => ['nullable', 'string', 'max:255'],
-            'file' => ['required', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx'],
+            'file' => ['required', 'file', 'max:'.self::MAX_KB, 'mimes:'.implode(',', self::MIMES)],
         ];
     }
 }

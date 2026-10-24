@@ -163,6 +163,59 @@ class GrowthService
         return ['flag' => false, 'reason' => null];
     }
 
+    /** The WHO weight-for-age lines a chart draws: −3, −2, the median and +2. */
+    public const REFERENCE_Z = [-3, -2, 0, 2];
+
+    /**
+     * What a weight-for-age chart is drawn on: the WHO lines (kg at each
+     * month from birth), from birth to a little past the latest weighing (a
+     * year at least, five years at most), and a top for the kg axis that
+     * fits the +3 line and every weighing. Null without a date of birth and a
+     * sex. The web's chart and the app's read the same answer.
+     *
+     * @param  list<array<string,mixed>>  $points  as points() gives them
+     * @return array{months:int, kg_max:float, lines:list<array{z:int, points:list<array{0:int, 1:float}>}>}|null
+     */
+    public function weightReference(Patient $patient, array $points): ?array
+    {
+        if ($patient->dob === null || $patient->sex === null) {
+            return null;
+        }
+        $male = $patient->sex === PatientSex::Male;
+        $weighed = self::chartable($points);
+        $lastMonths = $weighed === [] ? 0 : end($weighed)['age_days'] / WhoGrowth::DAYS_PER_MONTH;
+        $months = (int) min(WhoGrowth::MAX_MONTHS, max(12, (int) ceil(($lastMonths + 3) / 6) * 6));
+        $at = fn (float $z, int $m) => WhoGrowth::weightAt($z, (int) round($m * WhoGrowth::DAYS_PER_MONTH), $male);
+
+        $lines = [];
+        foreach (self::REFERENCE_Z as $z) {
+            $line = [];
+            for ($m = 0; $m <= $months; $m++) {
+                $line[] = [$m, round((float) $at($z, $m), 2)];
+            }
+            $lines[] = ['z' => $z, 'points' => $line];
+        }
+
+        return [
+            'months' => $months,
+            'kg_max' => (float) ceil(max($at(3, $months) ?? 0, ...array_map(fn ($p) => (float) $p['weight'], $weighed ?: [['weight' => 0]])) + 1),
+            'lines' => $lines,
+        ];
+    }
+
+    /**
+     * The weighings a weight-for-age chart can place: weighed, with an age,
+     * and within the WHO tables (five years).
+     *
+     * @param  list<array<string,mixed>>  $points
+     * @return list<array<string,mixed>>
+     */
+    public static function chartable(array $points): array
+    {
+        return array_values(array_filter($points, fn ($p) => $p['weight'] !== null && $p['age_days'] !== null
+            && $p['age_days'] <= WhoGrowth::MAX_MONTHS * WhoGrowth::DAYS_PER_MONTH));
+    }
+
     /**
      * Record a measurement at a child clinic. Append-only; a repeated `uuid`
      * is recorded once.

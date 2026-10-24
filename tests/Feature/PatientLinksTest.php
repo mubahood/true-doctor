@@ -304,13 +304,15 @@ class PatientLinksTest extends TestCase
             ->json('data');
         $this->assertMatchesRegularExpression('/^\d{6}$/', $made['code']);
 
-        // A retry after a lost reply replays the answer and makes no second link.
+        // The answer holds the link and code in clear, so it is never stored
+        // for a replay: a retry makes a fresh link (the newest shown is the one sent).
         $this->postJson('/api/v1/patient-links', ['document_type' => 'lab_result', 'document_uuid' => $order->uuid, 'days' => 14], ['Idempotency-Key' => $key])
-            ->assertCreated()->assertJsonPath('data.code', $made['code']);
-        $this->assertSame(1, PatientLink::query()->count());
+            ->assertCreated();
+        $this->assertSame(2, PatientLink::query()->count());
+        PatientLink::query()->latest('id')->first()->forceFill(['revoked_at' => now()])->save();
 
         $uuid = $made['link']['uuid'];
-        $this->getJson('/api/v1/patient-links?patient='.$this->patient->uuid)->assertOk()
+        $this->getJson('/api/v1/patient-links?state=active&patient='.$this->patient->uuid)->assertOk()
             ->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.uuid', $uuid);
         $this->getJson("/api/v1/patient-links/{$uuid}")->assertOk()->assertJsonPath('data.opens', []);
         $this->deleteJson("/api/v1/patient-links/{$uuid}")->assertOk()->assertJsonPath('data.state', 'revoked');

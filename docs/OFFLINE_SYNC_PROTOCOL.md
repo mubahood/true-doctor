@@ -299,7 +299,7 @@ a device showing a stale one would be telling a pharmacist something untrue.
 
 | Entity | Verbs | Conflict strategy | Notes |
 |---|---|---|---|
-| `patients` | create · update · delete | Three-way field merge; `dob`, `sex`, `blood_type`, `allergies`, `chronic_conditions` are never auto-merged | `patient_no` is server-allocated and returned in `assigned` |
+| `patients` | create · update · delete | Three-way field merge; `dob`, `sex`, `blood_type`, `allergies`, `chronic_conditions` are never auto-merged | `patient_no` is server-allocated and returned in `assigned`. An age typed on the device travels as the date worked out from it with `dob_estimated: true` (pulled too, as the base); a payload that leaves `dob_estimated` out keeps the server's flag while the date is unchanged |
 | `vitals` | create | none — append-only | Needs `admission_uuid`. `VitalRound` is an **inpatient** record |
 | `nursing_notes` | create | none — append-only | Needs `admission_uuid` |
 | `med_administrations` | create | none — append-only | Needs `admission_uuid`. `status` is one of `given`, `withheld`, `refused` (`MedicationAdminStatus`, validated with the web form's own rule) — anything else is `rejected: validation_failed` |

@@ -4,7 +4,8 @@ Envelope, auth and error codes are in [`../api.md`](../api.md). Code: `routes/ap
 `PatientSummaryController`, logic in `app/Services/PatientSummaryService.php` (the same service the
 web patient page reads - see [`../patients.md`](../patients.md), "The patient record").
 Tests: `tests/Feature/Api/PatientSummaryApiTest.php`. The older `GET /patients/{uuid}/brief`
-(what the desk needs before opening a visit) is unchanged.
+(what the desk needs before opening a visit) is unchanged. The record's panels (documents, insurance cover,
+dependents, treatment records) and the ID card are in [`patient-records.md`](patient-records.md).
 
 ## `GET /api/v1/patients/{uuid}/summary`
 

@@ -25,7 +25,7 @@ A contact: `uuid`, `seen_on`, `contact_no` (the scheduled contact it counts agai
 | GET | `patients/{uuid}/immunisations` | | `dob`, `card[]`, `counts` {`given`, `due`, `overdue`, `next`}, `source` |
 | POST | `patients/{uuid}/immunisations` | `doses[]`: `dose_key`, `given_on?` (today), `given_elsewhere?`, `batch_no?`, `notes?`, `uuid?`; `visit_uuid?` | 201: `recorded` (uuids), `card`, `counts` |
 | POST | `immunisations/{uuid}/void` | `reason` | `uuid`, `voided_at` |
-| GET | `immunisations/due` | `?on=YYYY-MM-DD&status=due\|overdue&q=&page=&per_page=` | paged list: `patient_uuid`, `patient_no`, `name`, `age_label`, `phone`, `overdue`, `doses[]` (`key`, `vaccine`, `dose`, `due_on`, `status`); `meta.on` |
+| GET | `immunisations/due` | `?on=YYYY-MM-DD&status=due\|overdue&q=&page=&per_page=` | paged list: `patient_uuid`, `patient_no`, `name`, `age_label`, `phone`, `overdue`, `doses[]` (`key`, `vaccine`, `dose`, `due_on`, `status`, `tone`); `meta.on`, `meta.overdue_total` (overdue doses across the whole list) |
 
 A card row: `key`, `vaccine`, `dose`, `age_label`, `due_on`, `status` (`given`, `due`, `overdue`, `upcoming`, `missed`), `tone`, `given_on`, `given_elsewhere`, `batch_no`, `uuid` (of the dose given), `recorded_by`.
 
@@ -33,12 +33,18 @@ A card row: `key`, `vaccine`, `dose`, `age_label`, `due_on`, `status` (`given`, 
 
 | Method | Path | Body | Answer |
 |---|---|---|---|
-| GET | `patients/{uuid}/growth` | | `assessment`, `points[]`, `source` |
+| GET | `patients/{uuid}/growth` | | `assessment`, `points[]`, `reference`, `source` |
 | POST | `patients/{uuid}/growth` | `measured_on?` (today), `weight?` (kg), `height?` (cm, lying under two), `muac?` (cm), `oedema?`, `notes?`, `visit_uuid?`, `uuid?` (at least one measure) | 201: `uuid`, `assessment` |
 
 A point (oldest first; the clinic's measurements and the visits' vitals, one per day): `date`, `weight`, `height`, `muac`, `oedema`, `source` (`clinic`, `visit`), `uuid`, `age_days`, `age_label`, `weight_z`, `height_z`, `weight_band`, `height_band`, `muac_band` (each band `key`, `label`, `tone`, or null).
 
 `assessment`: `points`, `weight` / `height` {`value`, `date`, `z`, `band`}, `muac` {`value`, `date`, `band`}, `oedema`, `faltering` {`flag`, `reason`}.
+
+`reference`: what the weight-for-age chart is drawn on, the same answer the web's chart reads
+(`GrowthService::weightReference`): `months` (the x axis, from birth to a little past the latest weighing: a
+year at least, five years at most), `kg_max` (the top of the kg axis: the +3 line and every weighing fit under
+it) and `lines[]`, one per WHO line (`z`: -3, -2, 0, 2), each `points[]` of `[month, kg]` a month apart. Null
+without a date of birth and a sex. Plot a point at `age_days / 30.4375` months.
 
 ## Errors
 

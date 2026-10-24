@@ -250,6 +250,8 @@ class PullService
                     'last_name' => $p->last_name,
                     'search_key' => mb_strtolower(trim($p->first_name.' '.$p->last_name.' '.$p->patient_no)),
                     'dob' => $p->dob?->format('Y-m-d'),
+                    // Worked out from an age, not a known birthday: the device's base for it.
+                    'dob_estimated' => (bool) $p->dob_estimated,
                     'sex' => $p->sex?->value,
                     'phone_1' => $p->phone_1,
                     'phone_2' => $p->phone_2,
