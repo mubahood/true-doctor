@@ -44,6 +44,36 @@ final class ConsentService
     }
 
     /**
+     * allows() for a page of patients in one query: the newest answer for
+     * this channel and purpose, per patient. A patient never asked is no.
+     *
+     * @param  list<int>  $patientIds
+     * @return array<int,bool> patient id => may be messaged
+     */
+    public function allowsMany(array $patientIds, MessageChannel $channel, MessagePurpose $purpose): array
+    {
+        $out = array_fill_keys($patientIds, false);
+        if ($patientIds === []) {
+            return $out;
+        }
+
+        // Inside the tenant scope: a list always runs for one hospital, and an
+        // answer is written with its patient's hospital (record()).
+        $rows = PatientConsent::query()
+            ->whereIn('patient_id', array_values(array_unique($patientIds)))
+            ->where('channel', $channel->value)
+            ->where('purpose', $purpose->value)
+            ->orderByDesc('recorded_at')->orderByDesc('id')
+            ->get(['id', 'patient_id', 'granted', 'recorded_at']);
+
+        foreach ($rows->unique('patient_id') as $row) {
+            $out[(int) $row->patient_id] = (bool) $row->granted;
+        }
+
+        return $out;
+    }
+
+    /**
      * Record answers, writing only the ones that change what is in force, so
      * re-saving a form does not pad the history.
      *
