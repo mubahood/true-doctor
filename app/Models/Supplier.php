@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToHospital;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -69,6 +70,26 @@ class Supplier extends Model
             'received' => bcadd((string) ($this->receipts()->sum('total') ?: '0'), '0', 2),
             'returned' => bcadd((string) ($this->returns()->sum('total') ?: '0'), '0', 2),
         ];
+    }
+
+    /**
+     * The directory's filters, shared by the web list and the API: 'active' or
+     * 'inactive' (anything else is both), and a name, contact person or phone.
+     *
+     * @param  Builder<Supplier>  $q
+     * @return Builder<Supplier>
+     */
+    public function scopeListed(Builder $q, ?string $status, ?string $search): Builder
+    {
+        $search = trim((string) $search);
+        $status = (string) $status;
+
+        return $q
+            ->when(in_array($status, ['active', 'inactive'], true), fn (Builder $x) => $x->where('is_active', $status === 'active'))
+            ->when($search !== '', fn (Builder $x) => $x->where(fn (Builder $y) => $y
+                ->where('name', 'like', "%{$search}%")
+                ->orWhere('contact_person', 'like', "%{$search}%")
+                ->orWhere('phone', 'like', "%{$search}%")));
     }
 
     /** A supplier with orders is history: archive is refused, deactivate instead. */

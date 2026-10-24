@@ -393,6 +393,34 @@ class ProcurementTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_an_item_that_has_run_out_can_be_picked_for_an_order_and_the_list_and_directory_share_one_filter(): void
+    {
+        $draft = $this->procurement()->createOrder($this->supplier, [], [], $this->pharmacist);
+
+        // The draft's item picker lists every active item, in stock or not:
+        // paracetamol (none on the shelf) is exactly what needs ordering.
+        $this->get(route('admin.purchase-orders.show', $draft))->assertOk()->assertSee('data-resource="medicines"', false);
+        Livewire::test(\App\Livewire\Ui\SelectSearch::class, ['resource' => 'medicines', 'name' => 'po_stock_item_id'])
+            ->set('query', 'Paracetamol')
+            ->assertSee('Paracetamol 500mg')
+            ->call('pick', $this->paracetamol->id)
+            ->assertDispatched('select-search:picked', name: 'po_stock_item_id', id: $this->paracetamol->id);
+
+        // Overdue: still waiting for goods after the day they were expected.
+        $late = $this->procurement()->markOrdered($this->procurement()->createOrder($this->supplier, ['expected_date' => now()->subDays(3)->toDateString()], [
+            ['stock_item_id' => $this->amoxicillin->id, 'quantity' => '5'],
+        ], $this->pharmacist), $this->pharmacist);
+        $this->assertTrue($late->isOverdue());
+        $this->assertFalse($draft->isOverdue());
+        $this->get(route('admin.purchase-orders.index'))->assertOk()->assertSee($late->po_no);
+
+        // The directory searches the contact and the phone too (Supplier::listed).
+        $this->supplier->update(['contact_person' => 'Moses Store', 'phone' => '0772 000 111']);
+        Livewire::test(SuppliersIndex::class)->set('search', 'Moses')->assertSee('Nile Pharma Distributors');
+        Livewire::test(SuppliersIndex::class)->set('search', '000 111')->assertSee('Nile Pharma Distributors');
+        Livewire::test(SuppliersIndex::class)->set('status', 'inactive')->assertDontSee('Nile Pharma Distributors');
+    }
+
     // ── API ────────────────────────────────────────────────────────────
 
     public function test_the_app_raises_sends_and_receives_an_order_and_a_retried_delivery_is_received_once(): void
