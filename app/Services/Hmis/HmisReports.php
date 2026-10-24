@@ -7,6 +7,7 @@ use App\Models\Admission;
 use App\Models\Patient;
 use App\Models\Visit;
 use App\Models\VisitDiagnosis;
+use App\Support\CurrentHospital;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -28,6 +29,106 @@ use Illuminate\Support\Collection;
  */
 class HmisReports
 {
+    /**
+     * The forms, as the page offers them: 105 and 108 for a month, 033b for
+     * a week. The page, its files and the API read this one list. (PHP keeps
+     * "105" and "108" as integer keys; say `(string) $key` when it matters.)
+     *
+     * @var array<int|string, array{label:string,period:'month'|'week'}>
+     */
+    public const FORMS = [
+        '105' => ['label' => 'HMIS 105 · outpatients (monthly)', 'period' => 'month'],
+        '108' => ['label' => 'HMIS 108 · inpatients (monthly)', 'period' => 'month'],
+        '033b' => ['label' => 'HMIS 033b · surveillance (weekly)', 'period' => 'week'],
+    ];
+
+    /**
+     * The facility the forms are about. Never none: with no hospital in
+     * context the tenant scope filters nothing, and a form would add up
+     * every hospital's patients (a super admin who has not opened one, or
+     * any super admin over the API). As MonthlyReports::requireHospital().
+     */
+    public static function requireHospital(): void
+    {
+        abort_if(app(CurrentHospital::class)->id() === null, 404);
+    }
+
+    /** The form asked for, or 105 when it is not one of them. */
+    public static function form(?string $form): string
+    {
+        return is_string($form) && isset(self::FORMS[$form]) ? $form : '105';
+    }
+
+    /** The month a monthly form opens on: the last whole one, the one being reported. */
+    public static function defaultMonth(): string
+    {
+        return now()->subMonthNoOverflow()->format('Y-m');
+    }
+
+    /** The week the weekly form opens on: last week's Monday. */
+    public static function defaultWeek(): string
+    {
+        return now()->subWeek()->startOfWeek()->toDateString();
+    }
+
+    /**
+     * A form's figures: 105 and 108 for `$month` (`2026-09`), 033b for the
+     * week holding `$week` (any day of it). The page, its PDF and CSV and
+     * the API read a form through here, so they always count the same days.
+     * A month or day that does not read is the default one.
+     *
+     * @return array<string,mixed>
+     */
+    public function forForm(string $form, string $month, string $week): array
+    {
+        $form = self::form($form);
+        if ($form === '033b') {
+            return $this->weekly($this->day($week) ?? Carbon::parse(self::defaultWeek()));
+        }
+
+        // From the first of the month, never "this day of that month": on the
+        // 31st, "2026-09" read as Y-m alone would be 1 October.
+        $from = $this->day(preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month) === 1 ? $month.'-01' : '')
+            ?? Carbon::createFromFormat('Y-m-d', self::defaultMonth().'-01')->startOfDay();
+        $to = $from->copy()->addMonth();
+
+        return $form === '108' ? $this->ipd($from, $to) : $this->opd($from, $to);
+    }
+
+    /**
+     * The form's lines as the page draws them, each a grid of age band × sex:
+     * the attendances and each diagnosis for 105; admissions, discharges and
+     * deaths for 108; none for 033b, which is a list of conditions.
+     *
+     * @param  array<string,mixed>  $report  what forForm() gave for the form
+     * @return array<string, array<string, array<string,int>>> label => band => male/female => count
+     */
+    public function lines(string $form, array $report): array
+    {
+        return match (self::form($form)) {
+            '033b' => [],
+            '108' => ['Admissions' => $report['admissions'], 'Discharges' => $report['discharges'], 'Deaths' => $report['deaths']],
+            default => ['New attendance' => $report['attendance']['new'], 'Re-attendance' => $report['attendance']['re']]
+                + collect($report['diagnoses'])->mapWithKeys(fn ($d) => [$d['label'] => $d['counts']])->all(),
+        };
+    }
+
+    /** A real `Y-m-d` date at the start of its day, or null. */
+    private function day(string $value): ?Carbon
+    {
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) !== 1) {
+            return null;
+        }
+
+        try {
+            $day = Carbon::createFromFormat('Y-m-d', $value);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return $day instanceof Carbon && $day->format('Y-m-d') === $value ? $day->startOfDay() : null;
+    }
+
     /** @return array<string, array{label:string,codes:list<string>,notifiable?:bool}> */
     public function conditions(): array
     {

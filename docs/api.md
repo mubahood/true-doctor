@@ -111,7 +111,7 @@ The surface beyond the first resources is documented per area, next to the route
 public self-registration for the app, and starter-data imports). They share this envelope, auth and error model.
 Writes are safe to retry with an `Idempotency-Key` header: [`api/idempotency.md`](api/idempotency.md).
 Refunds and credit notes (ask, approve, reject, PDF): [`api/refunds.md`](api/refunds.md).
-Reports and the monthly reports (income, expenses, receivables, patient records; summary or detail; PDF, Excel, CSV): [`api/reports.md`](api/reports.md).
+Reports, the monthly reports (income, expenses, receivables, patient records; summary or detail; PDF, Excel, CSV) and the Ministry reports (HMIS 105, 108, 033b; missing data; PDF, CSV): [`api/reports.md`](api/reports.md).
 Notifications, devices, notification preferences and upcoming reminders: [`api/notify.md`](api/notify.md).
 Suppliers, purchase orders, goods received and returns to supplier: [`api/procurement.md`](api/procurement.md).
 The dosage on a visit (medicine from stock, dose, how often, days; `GET`/`POST`/`DELETE visits/{uuid}/dosage`): [`api/dosage.md`](api/dosage.md).

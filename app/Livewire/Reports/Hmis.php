@@ -3,7 +3,6 @@
 namespace App\Livewire\Reports;
 
 use App\Services\Hmis\HmisReports;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
@@ -30,31 +29,23 @@ class Hmis extends Component
     public function mount(): void
     {
         abort_unless(Auth::user()?->can('reports.view'), 403);
-        $this->month = preg_match('/^\d{4}-\d{2}$/', $this->month) === 1 ? $this->month : now()->subMonthNoOverflow()->format('Y-m');
-        $this->week = preg_match('/^\d{4}-\d{2}-\d{2}$/', $this->week) === 1 ? $this->week : now()->subWeek()->startOfWeek()->toDateString();
-        $this->form = in_array($this->form, ['105', '108', '033b'], true) ? $this->form : '105';
+        HmisReports::requireHospital();
+        $this->month = preg_match('/^\d{4}-\d{2}$/', $this->month) === 1 ? $this->month : HmisReports::defaultMonth();
+        $this->week = preg_match('/^\d{4}-\d{2}-\d{2}$/', $this->week) === 1 ? $this->week : HmisReports::defaultWeek();
+        $this->form = HmisReports::form($this->form);
     }
 
     public function render(HmisReports $hmis): View
     {
         abort_unless(Auth::user()?->can('reports.view'), 403);
-        $from = Carbon::createFromFormat('Y-m', $this->month)->startOfMonth();
-        $to = $from->copy()->addMonth();
+        HmisReports::requireHospital();
+        $report = $hmis->forForm($this->form, $this->month, $this->week);
 
-        $report = match ($this->form) {
-            '108' => $hmis->ipd($from, $to),
-            '033b' => $hmis->weekly(Carbon::parse($this->week)),
-            default => $hmis->opd($from, $to),
-        };
-
-        // The form's lines, each a grid of age band × sex.
-        $rows = match ($this->form) {
-            '033b' => [],
-            '108' => ['Admissions' => $report['admissions'], 'Discharges' => $report['discharges'], 'Deaths' => $report['deaths']],
-            default => ['New attendance' => $report['attendance']['new'], 'Re-attendance' => $report['attendance']['re']]
-                + collect($report['diagnoses'])->mapWithKeys(fn ($d) => [$d['label'] => $d['counts']])->all(),
-        };
-
-        return view('livewire.reports.hmis', ['report' => $report, 'rows' => $rows])->title('Ministry reports (HMIS)');
+        // The form's lines, each a grid of age band × sex (the API reads the same).
+        return view('livewire.reports.hmis', [
+            'report' => $report,
+            'rows' => $hmis->lines($this->form, $report),
+            'forms' => HmisReports::FORMS,
+        ])->title('Ministry reports (HMIS)');
     }
 }
